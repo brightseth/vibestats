@@ -239,12 +239,11 @@
 
     /* Archetype card */
     .archetype-card {
-      width: min(380px, 85vw);
+      width: min(360px, 85vw);
       background: linear-gradient(145deg, #0d0d18, #12121f);
       border: 1px solid rgba(107,143,255,0.25);
-      border-radius: 20px; padding: 36px 28px 28px;
+      border-radius: 20px; padding: 28px 24px 22px;
       text-align: center; position: relative; overflow: hidden;
-      box-shadow: 0 0 80px rgba(107,143,255,0.08);
     }
     .archetype-card::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
@@ -267,12 +266,12 @@
       font-family: var(--mono); font-size: 13px;
       color: var(--text-muted); font-style: italic; margin-bottom: 24px;
     }
-    .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
     .card-stat {
-      padding: 12px 8px; background: rgba(255,255,255,0.02);
+      padding: 10px 8px; background: rgba(255,255,255,0.02);
       border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);
     }
-    .card-stat-val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: #fff; }
+    .card-stat-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: #fff; }
     .card-stat-label {
       font-size: 10px; color: var(--text-dim);
       text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px;
@@ -294,10 +293,87 @@
       background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: var(--text);
     }
     .share-btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .share-btn-save {
+      background: linear-gradient(135deg, rgba(107,143,255,0.15), rgba(167,139,250,0.1));
+      border: 1px solid rgba(107,143,255,0.35); color: var(--accent-bright, #8aadff);
+    }
+    .share-btn-save:hover { border-color: var(--accent); }
     .share-btn-restart {
       background: transparent; border: 1px solid var(--border); color: var(--text-dim);
     }
     .share-btn-restart:hover { border-color: var(--text-muted); color: var(--text-muted); }
+
+    /* Animated card glow */
+    @keyframes cardGlow {
+      0%, 100% { box-shadow: 0 0 60px rgba(107,143,255,0.08), 0 0 30px rgba(167,139,250,0.05); }
+      50% { box-shadow: 0 0 90px rgba(107,143,255,0.15), 0 0 50px rgba(167,139,250,0.1); }
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(15deg); }
+      100% { transform: translateX(200%) rotate(15deg); }
+    }
+    @keyframes borderRotate {
+      0% { --border-angle: 0deg; }
+      100% { --border-angle: 360deg; }
+    }
+    .archetype-card {
+      animation: cardGlow 3s ease-in-out infinite;
+    }
+    .archetype-card .shimmer-overlay {
+      position: absolute; inset: 0; overflow: hidden; border-radius: 20px; pointer-events: none; z-index: 10;
+    }
+    .archetype-card .shimmer-overlay::after {
+      content: ''; position: absolute; top: -50%; left: -50%;
+      width: 40%; height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+      animation: shimmer 4s ease-in-out infinite;
+    }
+
+    /* Confetti canvas */
+    .confetti-canvas {
+      position: fixed; inset: 0; z-index: 300; pointer-events: none;
+    }
+
+    /* Depth visualization */
+    .depth-bars {
+      display: flex; align-items: flex-end; gap: 2px;
+      height: 80px; width: min(360px, 85vw); margin: 20px 0;
+    }
+    .depth-bar {
+      flex: 1; border-radius: 2px 2px 0 0;
+      background: var(--accent); opacity: 0.3;
+      transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .depth-bar.highlight { opacity: 1; }
+
+    /* Multi-clauding terminals */
+    .mc-terminals {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 6px; margin: 20px 0; width: min(280px, 75vw);
+    }
+    .mc-term {
+      aspect-ratio: 4/3; border-radius: 5px;
+      border: 1px solid rgba(167,139,250,0.3);
+      background: rgba(167,139,250,0.06);
+      position: relative; overflow: hidden;
+      opacity: 0; transform: scale(0.8);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .slide.active .mc-term { opacity: 1; transform: scale(1); }
+    .mc-term::after {
+      content: ''; position: absolute; top: 5px; left: 5px;
+      width: 3px; height: 8px; background: var(--purple);
+      border-radius: 1px; animation: termBlink 1s step-end infinite;
+    }
+    @keyframes termBlink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+    .slide.active .mc-term:nth-child(1) { transition-delay: 0.3s; }
+    .slide.active .mc-term:nth-child(2) { transition-delay: 0.45s; }
+    .slide.active .mc-term:nth-child(3) { transition-delay: 0.6s; }
+    .slide.active .mc-term:nth-child(4) { transition-delay: 0.75s; }
+    .slide.active .mc-term:nth-child(5) { transition-delay: 0.9s; }
+    .slide.active .mc-term:nth-child(6) { transition-delay: 1.05s; }
+    .slide.active .mc-term:nth-child(7) { transition-delay: 1.2s; }
+    .slide.active .mc-term:nth-child(8) { transition-delay: 1.35s; }
 
     .tap-hint {
       position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
@@ -360,6 +436,9 @@
     <div class="analyzing-bar"><div class="analyzing-fill" id="analyzing-fill"></div></div>
   </div>
 
+  <!-- Confetti canvas -->
+  <canvas class="confetti-canvas hidden" id="confetti-canvas"></canvas>
+
   <!-- WRAPPED STATE -->
   <div class="wrapped-page hidden" id="wrapped-page">
     <div class="progress" id="progress"></div>
@@ -367,6 +446,7 @@
     <div class="tap-hint" id="tap-hint">tap to continue</div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
     // ========================================
     // ARCHETYPE DEFINITIONS
@@ -433,10 +513,14 @@
     // ========================================
     // ARCHETYPE SCORING
     // ========================================
+    // Non-code languages (don't count toward polyglot archetype)
+    const NON_CODE_LANGS = new Set(['markdown', 'json', 'toml', 'yaml', 'yml', 'xml', 'csv', 'txt', 'ini', 'conf', 'env']);
+
     function scoreArchetypes(data) {
       const m = data.metrics || {};
       const tools = m.tool_usage || {};
-      const langs = Object.keys(m.language_usage || {});
+      const allLangs = Object.keys(m.language_usage || {});
+      const langs = allLangs.filter(l => !NON_CODE_LANGS.has(l.toLowerCase()));
       const totalTools = Object.values(tools).reduce((s, v) => s + v, 0) || 1;
       const sessions = m.total_sessions || 1;
       const messages = m.total_messages || 0;
@@ -574,6 +658,8 @@
       const topLang = langs[0] ? langs[0][0] : 'Code';
       const langTotal = langs.reduce((s, [,v]) => s + v, 0) || 1;
 
+      const codeLangs = Object.keys(langUsage).filter(l => !NON_CODE_LANGS.has(l.toLowerCase()));
+
       return {
         name: (data.meta && data.meta.user) || 'Anonymous Vibecoder',
         dateRange: (data.meta && data.meta.date_range) || '',
@@ -592,7 +678,9 @@
         msgsPerSession: sessions > 0 ? Math.round(messages / sessions) : 0,
         langs, topLang, langTotal,
         langCount: Object.keys(langUsage).length,
+        codeLangCount: codeLangs.length,
         workingStyle: data.user_profile?.working_style || '',
+        isEmerging: sessions < 50,
       };
     }
 
@@ -636,33 +724,38 @@
     function generateSlides(insights, archetype, scores) {
       const a = ARCHETYPES[archetype];
       const slides = [];
+      const emerging = insights.isEmerging;
+      const emergingLabel = emerging ? ' so far' : '';
 
       // Slide 1: Opening
       slides.push(`
         <div class="slide active" data-slide="0" style="background:radial-gradient(ellipse at 50% 80%,rgba(107,143,255,0.08),transparent 70%)">
           <div class="slide-label anim">vibestats wrapped</div>
           <div class="big-number anim d1">${insights.days}</div>
-          <div class="big-unit anim d2">days in code</div>
+          <div class="big-unit anim d2">days in code${emergingLabel}</div>
           <div style="font-size:clamp(28px,7vw,48px);font-weight:800;color:#fff;margin-top:28px" class="anim d3">${insights.name}</div>
           <div style="font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-top:8px" class="anim d4">${insights.dateRange}</div>
         </div>
       `);
 
       // Slide 2: The Pace
+      const paceNarrative = emerging
+        ? (insights.commitsPerDay > 5
+          ? "A strong start.<br><strong>The momentum is building.</strong>"
+          : "Every journey starts somewhere.<br><strong>You've begun.</strong>")
+        : (insights.commitsPerDay > 50
+          ? "That's not a sprint.<br><strong>That's a lifestyle.</strong>"
+          : insights.commitsPerDay > 5
+          ? "Consistent shipping velocity.<br><strong>You keep the momentum.</strong>"
+          : "Deliberate and intentional.<br><strong>Every commit counts.</strong>");
+
       slides.push(`
         <div class="slide" data-slide="1" style="background:radial-gradient(ellipse at 50% 30%,rgba(107,143,255,0.15),transparent 60%)">
           <div class="slide-label anim">your pace</div>
           <div class="big-number anim d1">${insights.commitsPerDay.toLocaleString()}</div>
           <div class="big-unit anim d2">commits per day</div>
           <div class="stat-row anim d3">${insights.messagesPerDay.toLocaleString()} messages &middot; ${insights.commandsPerDay.toLocaleString()} commands &middot; every day</div>
-          <div class="slide-body anim d4" style="margin-top:24px">
-            ${insights.commitsPerDay > 50
-              ? "That's not a sprint.<br><strong>That's a lifestyle.</strong>"
-              : insights.commitsPerDay > 5
-              ? "Consistent shipping velocity.<br><strong>You keep the momentum.</strong>"
-              : "Deliberate and intentional.<br><strong>Every commit counts.</strong>"
-            }
-          </div>
+          <div class="slide-body anim d4" style="margin-top:24px">${paceNarrative}</div>
         </div>
       `);
 
@@ -703,40 +796,89 @@
       // Slide 4: Your Languages
       const langBars = insights.langs.map(([name, val], i) => {
         const pct = Math.round(val / insights.langTotal * 100);
+        const isNonCode = NON_CODE_LANGS.has(name.toLowerCase());
         return `<div class="lang-bar-row">
-          <div class="lang-bar-name">${langName(name)}</div>
-          <div class="lang-bar-track"><div class="lang-bar-fill" style="width:${pct}%;background:${langColor(name, i)}"></div></div>
+          <div class="lang-bar-name" style="${isNonCode ? 'opacity:0.5' : ''}">${langName(name)}</div>
+          <div class="lang-bar-track"><div class="lang-bar-fill" style="width:${pct}%;background:${langColor(name, i)};${isNonCode ? 'opacity:0.4' : ''}"></div></div>
           <div class="lang-bar-pct">${pct}%</div>
         </div>`;
       }).join('');
+
+      const langNarrative = insights.codeLangCount >= 5
+        ? "A true polyglot.<br>You speak the machine's many dialects."
+        : insights.codeLangCount >= 3
+        ? "A focused versatility.<br>You pick the right tool for the job."
+        : emerging
+        ? "Finding your language.<br><strong>The stack is forming.</strong>"
+        : "Deep specialization.<br><strong>One stack, mastered.</strong>";
 
       slides.push(`
         <div class="slide" data-slide="3" style="background:radial-gradient(ellipse at 50% 50%,rgba(255,121,198,0.08),transparent 60%)">
           <div class="slide-label anim">your stack</div>
           <div class="slide-body anim d1" style="margin-bottom:4px">
-            <strong>${insights.langCount} language${insights.langCount !== 1 ? 's' : ''}</strong>
+            <strong>${insights.codeLangCount} coding language${insights.codeLangCount !== 1 ? 's' : ''}</strong>
+            ${insights.langCount > insights.codeLangCount ? `<span style="font-size:12px;color:var(--text-dim)"> + ${insights.langCount - insights.codeLangCount} config</span>` : ''}
           </div>
           <div class="lang-bars anim d2">${langBars}</div>
-          <div class="slide-body anim d3" style="font-size:14px">
-            ${insights.langCount >= 5
-              ? "A true polyglot.<br>You speak the machine's many dialects."
-              : insights.langCount >= 3
-              ? "A focused versatility.<br>You pick the right tool for the job."
-              : "Deep specialization.<br><strong>One stack, mastered.</strong>"
-            }
-          </div>
+          <div class="slide-body anim d3" style="font-size:14px">${langNarrative}</div>
         </div>
       `);
 
-      // Slide 5: Resilience (if satisfaction data exists) or Volume
+      // Slide 5: Session Depth / Multi-clauding
+      if (insights.multiClauding !== null && insights.multiClauding > 0) {
+        // Multi-clauding slide
+        const termCount = insights.multiClauding >= 40 ? 8 : insights.multiClauding >= 20 ? 6 : 4;
+        const terms = Array(termCount).fill('<div class="mc-term"></div>').join('');
+        slides.push(`
+          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 50%,rgba(167,139,250,0.12),transparent 60%)">
+            <div class="slide-label anim">the multiplier</div>
+            <div class="big-number anim d1" style="background:linear-gradient(135deg,#fff 30%,var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${insights.multiClauding}%</div>
+            <div class="slide-body anim d2" style="margin-top:12px">
+              of your messages happened<br>
+              <strong>while you were already<br>in another session.</strong>
+            </div>
+            <div class="mc-terminals anim d3">${terms}</div>
+            <div class="slide-body anim d4" style="font-size:14px">
+              ${insights.multiClauding >= 40
+                ? "Most people use one Claude at a time.<br><strong>You run a fleet.</strong>"
+                : insights.multiClauding >= 15
+                ? "You multitask with Claude.<br><strong>Parallel thinking.</strong>"
+                : "Occasionally parallel.<br><strong>You know when to split focus.</strong>"
+              }
+            </div>
+          </div>
+        `);
+      } else {
+        // Session depth slide
+        slides.push(`
+          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 40%,rgba(167,139,250,0.1),transparent 60%)">
+            <div class="slide-label anim">session depth</div>
+            <div class="big-number anim d1">${insights.msgsPerSession}</div>
+            <div class="big-unit anim d2">messages per session</div>
+            <div class="stat-row anim d3">${fmt(insights.messages)} total &middot; ${fmt(insights.sessions)} sessions</div>
+            <div class="slide-body anim d4" style="margin-top:20px">
+              ${insights.msgsPerSession > 15
+                ? "When you start, you don't come up for air.<br><strong>Deep work.</strong>"
+                : insights.msgsPerSession > 8
+                ? "Focused sessions with clear intent.<br><strong>Quality conversations.</strong>"
+                : emerging
+                ? "Getting familiar.<br><strong>Your sessions will deepen.</strong>"
+                : "Quick, directed sessions.<br><strong>You know what you need.</strong>"
+              }
+            </div>
+          </div>
+        `);
+      }
+
+      // Slide 6: Resilience / Volume
       if (insights.satisfaction !== null) {
         slides.push(`
-          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 60%,rgba(34,197,94,0.1),transparent 60%)">
+          <div class="slide" data-slide="5" style="background:radial-gradient(ellipse at 50% 60%,rgba(34,197,94,0.1),transparent 60%)">
             <div class="slide-label anim">through the storm</div>
             <div class="big-number anim d1" style="background:linear-gradient(135deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${insights.satisfaction}%</div>
             <div class="big-unit anim d2">satisfied</div>
             ${insights.frictionEvents > 0 ? `<div class="stat-row anim d3">despite ${insights.frictionEvents} friction events</div>` : ''}
-            <div class="verdict anim d4">
+            <div class="verdict anim d4" style="font-size:clamp(20px,5vw,32px);font-weight:800;color:#fff;text-align:center;margin-top:24px;line-height:1.4">
               ${insights.satisfaction >= 80
                 ? "You and Claude?<br><strong>It's working.</strong>"
                 : insights.satisfaction >= 60
@@ -748,25 +890,26 @@
         `);
       } else {
         slides.push(`
-          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 40%,rgba(167,139,250,0.1),transparent 60%)">
+          <div class="slide" data-slide="5" style="background:radial-gradient(ellipse at 50% 40%,rgba(167,139,250,0.1),transparent 60%)">
             <div class="slide-label anim">your volume</div>
             <div class="big-number anim d1">${fmt(insights.messages)}</div>
             <div class="big-unit anim d2">messages exchanged</div>
             <div class="stat-row anim d3">${fmt(insights.sessions)} sessions &middot; ${fmt(insights.commits)} commits</div>
             <div class="slide-body anim d4" style="margin-top:20px">
-              <strong>${insights.messages > 10000 ? "A serious partnership." : "Growing together."}</strong>
+              <strong>${insights.messages > 10000 ? "A serious partnership." : emerging ? "Just getting started." : "Growing together."}</strong>
             </div>
           </div>
         `);
       }
 
-      // Slide 6: Archetype Card
-      const tweetText = `I'm ${a.name}\n\n${a.tagline}\n\n${insights.commitsPerDay} commits/day. ${fmt(insights.sessions)} sessions. ${insights.langCount} languages.\n\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\nvibestats.io/generate\n\n#vibestats #vibecoding`;
+      // Slide 7: Archetype Card (the shareable moment)
+      const tweetText = `I'm ${a.name}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\nvibestats.io/generate\n\n#vibestats #vibecoding #claudecode`;
 
       slides.push(`
-        <div class="slide" data-slide="5" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.05) 50%,transparent 80%)">
-          <div class="archetype-card anim d1" style="--card-gradient:${a.borderGradient}">
+        <div class="slide" data-slide="6" data-archetype="${archetype}" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.05) 50%,transparent 80%)">
+          <div class="archetype-card anim d1" id="archetype-card" style="--card-gradient:${a.borderGradient}">
             <style>.archetype-card::before{background:${a.borderGradient}}</style>
+            <div class="shimmer-overlay"></div>
             <div class="card-label">your vibecoding personality</div>
             <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
             <div class="archetype-tagline">"${a.tagline}"</div>
@@ -780,7 +923,7 @@
                 <div class="card-stat-label">commits</div>
               </div>
               <div class="card-stat">
-                <div class="card-stat-val">${insights.langCount}</div>
+                <div class="card-stat-val">${insights.codeLangCount}</div>
                 <div class="card-stat-label">languages</div>
               </div>
               <div class="card-stat">
@@ -797,6 +940,10 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               Share
             </a>
+            <button class="share-btn share-btn-save" onclick="saveCard()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Save card
+            </button>
             <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('https://vibestats.io/generate').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
               Copy link
             </button>
@@ -979,6 +1126,124 @@
         setTimeout(() => el.textContent = orig, 1500);
       });
     }
+
+    // ========================================
+    // CONFETTI SYSTEM
+    // ========================================
+    let confettiActive = false;
+    function launchConfetti(archetypeKey) {
+      if (confettiActive) return;
+      confettiActive = true;
+      const canvas = document.getElementById('confetti-canvas');
+      canvas.classList.remove('hidden');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext('2d');
+
+      const a = ARCHETYPES[archetypeKey];
+      // Extract colors from gradient
+      const colorMatch = a.gradient.match(/#[0-9a-fA-F]{6}/g) || ['#6B8FFF', '#a78bfa'];
+      const colors = [...colorMatch, '#ffffff', '#ffffff80'];
+
+      const particles = [];
+      for (let i = 0; i < 100; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: -10 - Math.random() * 40,
+          vx: (Math.random() - 0.5) * 3,
+          vy: Math.random() * 3 + 1.5,
+          w: Math.random() * 8 + 3,
+          h: Math.random() * 5 + 2,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 10,
+          gravity: 0.03 + Math.random() * 0.02,
+          drift: (Math.random() - 0.5) * 0.3,
+          opacity: 1,
+          decay: 0.003 + Math.random() * 0.004,
+        });
+      }
+
+      function frame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        for (const p of particles) {
+          if (p.opacity <= 0) continue;
+          alive = true;
+          p.x += p.vx + p.drift;
+          p.vy += p.gravity;
+          p.y += p.vy;
+          p.vx *= 0.99;
+          p.rotation += p.rotSpeed;
+          p.opacity -= p.decay;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation * Math.PI / 180);
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+        if (alive) requestAnimationFrame(frame);
+        else {
+          canvas.classList.add('hidden');
+          confettiActive = false;
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // ========================================
+    // SAVE CARD AS IMAGE
+    // ========================================
+    async function saveCard() {
+      const card = document.getElementById('archetype-card');
+      if (!card || typeof html2canvas === 'undefined') {
+        // Fallback: screenshot instruction
+        alert('Take a screenshot to save your card!');
+        return;
+      }
+      try {
+        const btn = event.target.closest('.share-btn-save');
+        if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+        const canvas = await html2canvas(card, {
+          backgroundColor: '#06060a',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        const link = document.createElement('a');
+        link.download = 'vibestats-card.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        if (btn) {
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Saved!';
+          setTimeout(() => {
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Save card';
+            btn.disabled = false;
+          }, 3000);
+        }
+      } catch (err) {
+        console.error('Save failed:', err);
+        alert('Take a screenshot to save your card!');
+      }
+    }
+
+    // ========================================
+    // TRIGGER CONFETTI ON ARCHETYPE REVEAL
+    // ========================================
+    const origGoTo = goTo;
+    goTo = function(index) {
+      origGoTo(index);
+      // Check if we just landed on the archetype card slide (last slide)
+      setTimeout(() => {
+        const activeSlide = document.querySelector('.slide.active');
+        if (activeSlide && activeSlide.dataset.archetype) {
+          launchConfetti(activeSlide.dataset.archetype);
+        }
+      }, 350);
+    };
   </script>
 </body>
 </html>
