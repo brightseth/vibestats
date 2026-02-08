@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Find Your Vibecoding Personality | vibestats</title>
+  <meta name="description" content="Upload your Claude Code insights and discover your vibecoding personality. Are you The Orchestrator? The Shipper? The Architect? Find out.">
+  <meta property="og:title" content="What's your vibecoding personality? | vibestats">
+  <meta property="og:description" content="Upload your Claude Code insights and discover your archetype. The Orchestrator, The Shipper, The Architect, The Debugger...">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vibestats.io/generate">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface-2: #14141e;
+      --border: #252535;
+      --text: #E0E0E0;
+      --text-muted: #8888a0;
+      --text-dim: #555568;
+      --accent: #6B8FFF;
+      --green: #22c55e;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --purple: #a78bfa;
+      --pink: #ff79c6;
+      --cyan: #22d3ee;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--sans); background: var(--bg); color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== UPLOAD STATE ===== */
+    .upload-page {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 32px;
+      text-align: center;
+    }
+    .upload-page.hidden { display: none; }
+
+    .upload-logo {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      color: var(--accent); letter-spacing: 0.05em; margin-bottom: 40px;
+    }
+    .upload-title {
+      font-size: clamp(28px, 7vw, 48px); font-weight: 900;
+      color: #fff; letter-spacing: -0.02em; line-height: 1.15;
+      max-width: 600px; margin-bottom: 12px;
+    }
+    .upload-sub {
+      font-size: 16px; color: var(--text-muted); max-width: 480px;
+      line-height: 1.7; margin-bottom: 40px;
+    }
+
+    .drop-zone {
+      width: min(500px, 90vw); padding: 48px 32px;
+      border: 2px dashed var(--border); border-radius: 20px;
+      background: var(--surface); cursor: pointer;
+      transition: all 0.3s; position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(107,143,255,0.04);
+    }
+    .drop-zone-icon {
+      font-size: 40px; margin-bottom: 16px; opacity: 0.5;
+    }
+    .drop-zone-text {
+      font-size: 15px; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .drop-zone-hint {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+
+    .file-path {
+      margin-top: 32px; padding: 14px 20px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; font-family: var(--mono); font-size: 12px;
+      color: var(--text-dim); max-width: 500px;
+      word-break: break-all; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .file-path:hover { border-color: var(--accent); }
+    .file-path .label {
+      display: block; font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+    }
+    .file-path code { color: var(--accent); }
+
+    .upload-error {
+      margin-top: 16px; padding: 12px 20px;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px; font-size: 13px; color: var(--red);
+      display: none; max-width: 500px;
+    }
+
+    .archetypes-preview {
+      display: flex; gap: 10px; margin-top: 48px; flex-wrap: wrap;
+      justify-content: center; max-width: 600px;
+    }
+    .archetype-chip {
+      font-family: var(--mono); font-size: 11px;
+      padding: 6px 14px; border-radius: 20px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    /* ===== ANALYZING STATE ===== */
+    .analyzing {
+      position: fixed; inset: 0; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      background: var(--bg); z-index: 200;
+    }
+    .analyzing.hidden { display: none; }
+    .analyzing-text {
+      font-family: var(--mono); font-size: 14px; color: var(--text-muted);
+      transition: opacity 0.3s;
+    }
+    .analyzing-bar {
+      width: 200px; height: 3px; background: var(--surface-2);
+      border-radius: 2px; margin-top: 20px; overflow: hidden;
+    }
+    .analyzing-fill {
+      height: 100%; background: var(--accent); border-radius: 2px;
+      width: 0; transition: width 0.5s ease;
+    }
+
+    /* ===== WRAPPED STATE (reuses wrapped.html patterns) ===== */
+    .wrapped-page { position: fixed; inset: 0; }
+    .wrapped-page.hidden { display: none; }
+
+    .progress {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; gap: 4px; padding: 12px 16px;
+      background: linear-gradient(to bottom, rgba(6,6,10,0.9), transparent);
+    }
+    .progress-seg {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,0.12);
+      transition: background 0.3s;
+    }
+    .progress-seg.done { background: rgba(255,255,255,0.7); }
+    .progress-seg.active { background: rgba(255,255,255,0.25); }
+    .progress-seg.active::after {
+      content: ''; display: block; height: 100%; border-radius: 2px;
+      background: rgba(255,255,255,0.8);
+      animation: progressFill 5s linear forwards;
+    }
+    @keyframes progressFill { from { width: 0; } to { width: 100%; } }
+
+    .slides { position: relative; width: 100%; height: 100%; }
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 32px 40px;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: scale(0.97); cursor: pointer; overflow: hidden;
+    }
+    .slide.active { opacity: 1; visibility: visible; transform: scale(1); }
+    .slide.exiting {
+      opacity: 0; transform: scale(1.02);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .anim {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1),
+                  transform 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+    .slide.active .anim { opacity: 1; transform: translateY(0); }
+    .slide.active .anim.d1 { transition-delay: 0.15s; }
+    .slide.active .anim.d2 { transition-delay: 0.3s; }
+    .slide.active .anim.d3 { transition-delay: 0.5s; }
+    .slide.active .anim.d4 { transition-delay: 0.7s; }
+    .slide.active .anim.d5 { transition-delay: 0.9s; }
+
+    .slide-label {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 20px;
+    }
+    .big-number {
+      font-family: var(--mono); font-weight: 800;
+      font-size: clamp(64px, 18vw, 140px); line-height: 1;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .big-unit {
+      font-family: var(--sans); font-size: clamp(18px, 4vw, 28px);
+      font-weight: 700; color: var(--text-muted); margin-top: 4px;
+    }
+    .slide-body {
+      font-size: clamp(15px, 3.5vw, 20px); color: var(--text-muted);
+      text-align: center; line-height: 1.7; max-width: 480px;
+    }
+    .slide-body strong { color: #fff; font-weight: 600; }
+    .stat-row {
+      font-family: var(--mono); font-size: clamp(12px, 2.5vw, 15px);
+      color: var(--text-dim); text-align: center; margin-top: 8px;
+    }
+
+    .ratio-visual { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .ratio-block { text-align: center; }
+    .ratio-num {
+      font-family: var(--mono); font-size: clamp(32px, 8vw, 52px);
+      font-weight: 800; line-height: 1;
+    }
+    .ratio-label {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;
+    }
+    .ratio-sep { font-family: var(--mono); font-size: 28px; color: var(--text-dim); }
+
+    .lang-bars { display: flex; flex-direction: column; gap: 8px; width: min(400px, 85vw); margin: 20px 0; }
+    .lang-bar-row { display: flex; align-items: center; gap: 10px; }
+    .lang-bar-name { font-family: var(--mono); font-size: 12px; color: var(--text-muted); width: 90px; text-align: right; }
+    .lang-bar-track { flex: 1; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+    .lang-bar-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.22,1,0.36,1); }
+    .lang-bar-pct { font-family: var(--mono); font-size: 11px; color: var(--text-dim); width: 36px; }
+
+    .verdict {
+      font-size: clamp(20px, 5vw, 32px); font-weight: 800; color: #fff;
+      text-align: center; margin-top: 24px; line-height: 1.4;
+    }
+
+    /* Archetype card */
+    .archetype-card {
+      width: min(380px, 85vw);
+      background: linear-gradient(145deg, #0d0d18, #12121f);
+      border: 1px solid rgba(107,143,255,0.25);
+      border-radius: 20px; padding: 36px 28px 28px;
+      text-align: center; position: relative; overflow: hidden;
+      box-shadow: 0 0 80px rgba(107,143,255,0.08);
+    }
+    .archetype-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .archetype-card::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(107,143,255,0.2), transparent);
+    }
+    .card-label {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .archetype-name {
+      font-family: var(--sans); font-size: clamp(28px, 7vw, 40px);
+      font-weight: 900; letter-spacing: -0.02em;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1.15; margin-bottom: 8px;
+    }
+    .archetype-tagline {
+      font-family: var(--mono); font-size: 13px;
+      color: var(--text-muted); font-style: italic; margin-bottom: 24px;
+    }
+    .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .card-stat {
+      padding: 12px 8px; background: rgba(255,255,255,0.02);
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);
+    }
+    .card-stat-val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: #fff; }
+    .card-stat-label {
+      font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px;
+    }
+    .card-user { font-size: 14px; font-weight: 600; color: #fff; }
+    .card-period { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+    .card-brand { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-top: 12px; letter-spacing: 0.1em; }
+
+    .share-row { display: flex; gap: 10px; margin-top: 24px; justify-content: center; flex-wrap: wrap; }
+    .share-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border-radius: 10px; font-family: var(--mono);
+      font-size: 12px; text-decoration: none; cursor: pointer;
+      border: none; transition: all 0.2s; font-weight: 500;
+    }
+    .share-btn-x { background: #fff; color: #000; }
+    .share-btn-x:hover { background: #e0e0e0; }
+    .share-btn-copy {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: var(--text);
+    }
+    .share-btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .share-btn-restart {
+      background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .share-btn-restart:hover { border-color: var(--text-muted); color: var(--text-muted); }
+
+    .tap-hint {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      letter-spacing: 0.1em; z-index: 50;
+      animation: tapPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes tapPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+
+    @media (max-width: 480px) {
+      .slide { padding: 50px 24px 32px; }
+      .archetype-card { padding: 28px 20px 24px; }
+      .share-row { flex-direction: column; align-items: stretch; }
+      .share-btn { justify-content: center; }
+      .upload-page { padding: 24px; }
+      .drop-zone { padding: 36px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- UPLOAD STATE -->
+  <div class="upload-page" id="upload-page">
+    <div class="upload-logo">vibestats</div>
+    <h1 class="upload-title">What's your vibecoding personality?</h1>
+    <p class="upload-sub">
+      Upload your Claude Code insights file and discover your archetype.
+      Everything stays in your browser — no data leaves your machine.
+    </p>
+
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-zone-icon">&#x1F4C4;</div>
+      <div class="drop-zone-text">Drop your insights file here</div>
+      <div class="drop-zone-hint">or click to browse</div>
+      <input type="file" accept=".json" id="file-input">
+    </div>
+
+    <div class="file-path" onclick="copyPath()">
+      <span class="label">File location</span>
+      <code>~/.claude/usage-data/agent-insights.json</code>
+    </div>
+
+    <div class="upload-error" id="upload-error"></div>
+
+    <div class="archetypes-preview">
+      <span class="archetype-chip">The Orchestrator</span>
+      <span class="archetype-chip">The Shipper</span>
+      <span class="archetype-chip">The Architect</span>
+      <span class="archetype-chip">The Debugger</span>
+      <span class="archetype-chip">The Polyglot</span>
+      <span class="archetype-chip">The Sprinter</span>
+      <span class="archetype-chip">The Deep Diver</span>
+      <span class="archetype-chip">The Builder</span>
+    </div>
+  </div>
+
+  <!-- ANALYZING STATE -->
+  <div class="analyzing hidden" id="analyzing">
+    <div class="analyzing-text" id="analyzing-text">Reading your data...</div>
+    <div class="analyzing-bar"><div class="analyzing-fill" id="analyzing-fill"></div></div>
+  </div>
+
+  <!-- WRAPPED STATE -->
+  <div class="wrapped-page hidden" id="wrapped-page">
+    <div class="progress" id="progress"></div>
+    <div class="slides" id="slides"></div>
+    <div class="tap-hint" id="tap-hint">tap to continue</div>
+  </div>
+
+  <script>
+    // ========================================
+    // ARCHETYPE DEFINITIONS
+    // ========================================
+    const ARCHETYPES = {
+      orchestrator: {
+        name: 'THE ORCHESTRATOR',
+        tagline: "You don't code — you conduct.",
+        description: "Multi-session maestro running parallel agents from a central command hub.",
+        gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)',
+        borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #a78bfa, transparent)',
+      },
+      shipper: {
+        name: 'THE SHIPPER',
+        tagline: "Done is better than perfect. You live this.",
+        description: "High commit velocity. You push code like it's breathing.",
+        gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)',
+        borderGradient: 'linear-gradient(90deg, transparent, #22c55e, #22d3ee, transparent)',
+      },
+      architect: {
+        name: 'THE ARCHITECT',
+        tagline: "You read before you write. You plan before you build.",
+        description: "Deep reader, careful planner. Your code is deliberate.",
+        gradient: 'linear-gradient(135deg, #6B8FFF, #3b82f6)',
+        borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #3b82f6, transparent)',
+      },
+      debugger: {
+        name: 'THE DEBUGGER',
+        tagline: "You don't guess. You investigate.",
+        description: "High grep usage, systematic problem solver. Friction doesn't stop you.",
+        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+        borderGradient: 'linear-gradient(90deg, transparent, #f59e0b, #ef4444, transparent)',
+      },
+      polyglot: {
+        name: 'THE POLYGLOT',
+        tagline: "One language is never enough.",
+        description: "Diverse tech stack, versatile builder across languages and paradigms.",
+        gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b, #22c55e, #6B8FFF)',
+        borderGradient: 'linear-gradient(90deg, transparent, #ff79c6, #22c55e, #6B8FFF, transparent)',
+      },
+      sprinter: {
+        name: 'THE SPRINTER',
+        tagline: "Fast, focused, ferocious.",
+        description: "High-intensity sessions, rapid-fire messages. You move at breakneck speed.",
+        gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)',
+        borderGradient: 'linear-gradient(90deg, transparent, #ef4444, #ff79c6, transparent)',
+      },
+      deepdiver: {
+        name: 'THE DEEP DIVER',
+        tagline: "You go deep, not wide.",
+        description: "Fewer sessions but much deeper. When you start, you don't come up for air.",
+        gradient: 'linear-gradient(135deg, #3b82f6, #1e40af)',
+        borderGradient: 'linear-gradient(90deg, transparent, #3b82f6, #1e40af, transparent)',
+      },
+      builder: {
+        name: 'THE BUILDER',
+        tagline: "You build things that didn't exist before.",
+        description: "High write-to-read ratio. You create more than you consume.",
+        gradient: 'linear-gradient(135deg, #22c55e, #16a34a)',
+        borderGradient: 'linear-gradient(90deg, transparent, #22c55e, #16a34a, transparent)',
+      }
+    };
+
+    // ========================================
+    // ARCHETYPE SCORING
+    // ========================================
+    function scoreArchetypes(data) {
+      const m = data.metrics || {};
+      const tools = m.tool_usage || {};
+      const langs = Object.keys(m.language_usage || {});
+      const totalTools = Object.values(tools).reduce((s, v) => s + v, 0) || 1;
+      const sessions = m.total_sessions || 1;
+      const messages = m.total_messages || 0;
+      const commits = m.commits || 0;
+      const days = parseDays(data);
+
+      const msgsPerSession = messages / sessions;
+      const commitsPerSession = commits / sessions;
+      const sessionsPerDay = sessions / Math.max(days, 1);
+      const bashRate = (tools.bash || 0) / totalTools;
+      const readRate = (tools.read || 0) / totalTools;
+      const editRate = (tools.edit || 0) / totalTools;
+      const writeRate = (tools.write || 0) / totalTools;
+      const grepRate = (tools.grep || 0) / totalTools;
+      const bashEditRatio = (tools.bash || 0) / Math.max(tools.edit || 1, 1);
+      const readWriteRatio = (tools.read || 0) / Math.max(tools.write || 1, 1);
+      const mcRate = m.multi_clauding_rate || 0;
+      const frictionRate = (m.buggy_code_events || 0) / sessions;
+      const satRate = m.satisfaction_rate || 0.5;
+
+      const scores = {};
+
+      // THE ORCHESTRATOR — parallel sessions + system-level commands
+      scores.orchestrator = clamp(
+        (mcRate > 0.15 ? 40 : mcRate * 250) +
+        (bashEditRatio > 2.5 ? 30 : bashEditRatio * 12) +
+        (sessions > 1000 ? 30 : sessions * 0.03)
+      );
+
+      // THE SHIPPER — high commit rate + high write usage
+      scores.shipper = clamp(
+        (commitsPerSession > 0.8 ? 40 : commitsPerSession * 50) +
+        (writeRate > 0.06 ? 30 : writeRate * 500) +
+        (commits > 500 ? 30 : commits * 0.06)
+      );
+
+      // THE ARCHITECT — reads a lot, careful, deep sessions
+      scores.architect = clamp(
+        (readWriteRatio > 3.5 ? 40 : readWriteRatio * 11) +
+        (readRate > 0.2 ? 30 : readRate * 150) +
+        (msgsPerSession > 10 ? 30 : msgsPerSession * 3)
+      );
+
+      // THE DEBUGGER — grep heavy, deals with friction
+      scores.debugger = clamp(
+        (grepRate > 0.04 ? 40 : grepRate * 1000) +
+        (frictionRate > 0.01 ? 30 : frictionRate * 3000) +
+        (bashRate > 0.4 ? 30 : bashRate * 75)
+      );
+
+      // THE POLYGLOT — many languages
+      scores.polyglot = clamp(
+        (langs.length >= 6 ? 50 : langs.length * 8) +
+        (langs.length >= 4 ? 30 : langs.length * 7) +
+        20
+      );
+
+      // THE SPRINTER — high intensity, many sessions/day
+      scores.sprinter = clamp(
+        (sessionsPerDay > 10 ? 40 : sessionsPerDay * 4) +
+        (msgsPerSession > 8 ? 30 : msgsPerSession * 3.75) +
+        (messages > 5000 ? 30 : messages * 0.006)
+      );
+
+      // THE DEEP DIVER — few sessions, very deep
+      scores.deepdiver = clamp(
+        (msgsPerSession > 15 ? 45 : msgsPerSession * 3) +
+        (sessionsPerDay < 5 ? 30 : Math.max(0, 30 - sessionsPerDay * 6)) +
+        (msgsPerSession > 20 ? 25 : msgsPerSession * 1.25)
+      );
+
+      // THE BUILDER — high write + edit relative to read
+      scores.builder = clamp(
+        (writeRate > 0.06 ? 35 : writeRate * 583) +
+        (editRate > 0.15 ? 35 : editRate * 233) +
+        ((tools.write || 0) > 1000 ? 30 : (tools.write || 0) * 0.03)
+      );
+
+      return scores;
+    }
+
+    function clamp(v) { return Math.min(100, Math.max(0, v)); }
+
+    function parseDays(data) {
+      try {
+        const range = (data.meta && data.meta.date_range) || '';
+        const parts = range.split(' to ');
+        if (parts.length === 2) {
+          const d1 = new Date(parts[0].trim());
+          const d2 = new Date(parts[1].trim());
+          return Math.max(1, Math.ceil((d2 - d1) / 86400000));
+        }
+      } catch(e) {}
+      // Fallback: estimate from session count
+      return Math.max(1, Math.ceil((data.metrics?.total_sessions || 100) / 20));
+    }
+
+    function getTopArchetype(scores) {
+      let best = null, bestScore = -1;
+      for (const [key, score] of Object.entries(scores)) {
+        if (score > bestScore) { bestScore = score; best = key; }
+      }
+      return best || 'builder';
+    }
+
+    // ========================================
+    // DATA EXTRACTION
+    // ========================================
+    function extractInsights(data) {
+      const m = data.metrics || {};
+      const tools = m.tool_usage || {};
+      const langUsage = m.language_usage || {};
+      const days = parseDays(data);
+      const sessions = m.total_sessions || 0;
+      const messages = m.total_messages || 0;
+      const commits = m.commits || 0;
+      const bash = tools.bash || 0;
+      const edit = tools.edit || 0;
+      const write = tools.write || 0;
+      const read = tools.read || 0;
+      const grep = tools.grep || 0;
+
+      // Sort languages
+      const langs = Object.entries(langUsage)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      const topLang = langs[0] ? langs[0][0] : 'Code';
+      const langTotal = langs.reduce((s, [,v]) => s + v, 0) || 1;
+
+      return {
+        name: (data.meta && data.meta.user) || 'Anonymous Vibecoder',
+        dateRange: (data.meta && data.meta.date_range) || '',
+        days,
+        sessions,
+        messages,
+        commits,
+        bash, edit, write, read, grep,
+        commitsPerDay: Math.round(commits / days),
+        messagesPerDay: Math.round(messages / days),
+        commandsPerDay: Math.round(bash / days),
+        bashEditRatio: edit > 0 ? (bash / edit).toFixed(1) : 'N/A',
+        satisfaction: m.satisfaction_rate ? Math.round(m.satisfaction_rate * 100) : null,
+        multiClauding: m.multi_clauding_rate ? Math.round(m.multi_clauding_rate * 100) : null,
+        frictionEvents: (m.buggy_code_events || 0) + (m.deployment_sessions || 0),
+        langs, topLang, langTotal,
+        langCount: Object.keys(langUsage).length,
+        workingStyle: data.user_profile?.working_style || '',
+      };
+    }
+
+    function fmt(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+      return n.toLocaleString();
+    }
+
+    // ========================================
+    // SLIDE GENERATION
+    // ========================================
+    function generateSlides(insights, archetype, scores) {
+      const a = ARCHETYPES[archetype];
+      const slides = [];
+
+      // Slide 1: Opening
+      slides.push(`
+        <div class="slide active" data-slide="0" style="background:radial-gradient(ellipse at 50% 80%,rgba(107,143,255,0.08),transparent 70%)">
+          <div class="slide-label anim">vibestats wrapped</div>
+          <div class="big-number anim d1">${insights.days}</div>
+          <div class="big-unit anim d2">days in code</div>
+          <div style="font-size:clamp(28px,7vw,48px);font-weight:800;color:#fff;margin-top:28px" class="anim d3">${insights.name}</div>
+          <div style="font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-top:8px" class="anim d4">${insights.dateRange}</div>
+        </div>
+      `);
+
+      // Slide 2: The Pace
+      slides.push(`
+        <div class="slide" data-slide="1" style="background:radial-gradient(ellipse at 50% 30%,rgba(107,143,255,0.15),transparent 60%)">
+          <div class="slide-label anim">your pace</div>
+          <div class="big-number anim d1">${insights.commitsPerDay.toLocaleString()}</div>
+          <div class="big-unit anim d2">commits per day</div>
+          <div class="stat-row anim d3">${insights.messagesPerDay.toLocaleString()} messages &middot; ${insights.commandsPerDay.toLocaleString()} commands &middot; every day</div>
+          <div class="slide-body anim d4" style="margin-top:24px">
+            ${insights.commitsPerDay > 50
+              ? "That's not a sprint.<br><strong>That's a lifestyle.</strong>"
+              : insights.commitsPerDay > 10
+              ? "Consistent shipping velocity.<br><strong>You keep the momentum.</strong>"
+              : "Quality over quantity.<br><strong>Every commit counts.</strong>"
+            }
+          </div>
+        </div>
+      `);
+
+      // Slide 3: Your Signature (tool ratio)
+      slides.push(`
+        <div class="slide" data-slide="2" style="background:radial-gradient(ellipse at 50% 50%,rgba(34,211,238,0.1),transparent 60%)">
+          <div class="slide-label anim">your signature</div>
+          <div class="slide-body anim d1" style="margin-bottom:8px">
+            <strong>For every line you edit<br>you run ${insights.bashEditRatio} commands.</strong>
+          </div>
+          <div class="ratio-visual anim d2">
+            <div class="ratio-block">
+              <div class="ratio-num" style="color:var(--cyan)">${fmt(insights.bash)}</div>
+              <div class="ratio-label">bash</div>
+            </div>
+            <div class="ratio-sep">:</div>
+            <div class="ratio-block">
+              <div class="ratio-num" style="color:var(--accent)">${fmt(insights.edit)}</div>
+              <div class="ratio-label">edits</div>
+            </div>
+            <div class="ratio-sep">:</div>
+            <div class="ratio-block">
+              <div class="ratio-num" style="color:var(--purple)">${fmt(insights.write)}</div>
+              <div class="ratio-label">writes</div>
+            </div>
+          </div>
+          <div class="slide-body anim d3" style="margin-top:20px">
+            ${parseFloat(insights.bashEditRatio) > 2
+              ? "You don't write code.<br><strong>You orchestrate systems.</strong>"
+              : parseFloat(insights.bashEditRatio) > 1
+              ? "Balanced between execution and creation.<br><strong>A versatile workflow.</strong>"
+              : "You write more than you run.<br><strong>A creator at heart.</strong>"
+            }
+          </div>
+        </div>
+      `);
+
+      // Slide 4: Your Languages
+      const langColors = ['#3178c6', '#f7df1e', '#6B8FFF', '#e34c26', '#a78bfa', '#dea584'];
+      const langBars = insights.langs.map(([name, val], i) => {
+        const pct = Math.round(val / insights.langTotal * 100);
+        return `<div class="lang-bar-row">
+          <div class="lang-bar-name">${name}</div>
+          <div class="lang-bar-track"><div class="lang-bar-fill" style="width:${pct}%;background:${langColors[i] || '#6B8FFF'}"></div></div>
+          <div class="lang-bar-pct">${pct}%</div>
+        </div>`;
+      }).join('');
+
+      slides.push(`
+        <div class="slide" data-slide="3" style="background:radial-gradient(ellipse at 50% 50%,rgba(255,121,198,0.08),transparent 60%)">
+          <div class="slide-label anim">your stack</div>
+          <div class="slide-body anim d1" style="margin-bottom:4px">
+            <strong>${insights.langCount} language${insights.langCount !== 1 ? 's' : ''}</strong>
+          </div>
+          <div class="lang-bars anim d2">${langBars}</div>
+          <div class="slide-body anim d3" style="font-size:14px">
+            ${insights.langCount >= 5
+              ? "A true polyglot.<br>You speak the machine's many dialects."
+              : insights.langCount >= 3
+              ? "A focused versatility.<br>You pick the right tool for the job."
+              : "Deep specialization.<br><strong>One stack, mastered.</strong>"
+            }
+          </div>
+        </div>
+      `);
+
+      // Slide 5: Resilience (if satisfaction data exists) or Volume
+      if (insights.satisfaction !== null) {
+        slides.push(`
+          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 60%,rgba(34,197,94,0.1),transparent 60%)">
+            <div class="slide-label anim">through the storm</div>
+            <div class="big-number anim d1" style="background:linear-gradient(135deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${insights.satisfaction}%</div>
+            <div class="big-unit anim d2">satisfied</div>
+            ${insights.frictionEvents > 0 ? `<div class="stat-row anim d3">despite ${insights.frictionEvents} friction events</div>` : ''}
+            <div class="verdict anim d4">
+              ${insights.satisfaction >= 80
+                ? "You and Claude?<br><strong>It's working.</strong>"
+                : insights.satisfaction >= 60
+                ? "Through the friction,<br><strong>you keep building.</strong>"
+                : "Plenty of friction.<br><strong>You push through anyway.</strong>"
+              }
+            </div>
+          </div>
+        `);
+      } else {
+        slides.push(`
+          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 40%,rgba(167,139,250,0.1),transparent 60%)">
+            <div class="slide-label anim">your volume</div>
+            <div class="big-number anim d1">${fmt(insights.messages)}</div>
+            <div class="big-unit anim d2">messages exchanged</div>
+            <div class="stat-row anim d3">${fmt(insights.sessions)} sessions &middot; ${fmt(insights.commits)} commits</div>
+            <div class="slide-body anim d4" style="margin-top:20px">
+              <strong>${insights.messages > 10000 ? "A serious partnership." : "Growing together."}</strong>
+            </div>
+          </div>
+        `);
+      }
+
+      // Slide 6: Archetype Card
+      const tweetText = `I'm ${a.name}\n\n${a.tagline}\n\n${insights.commitsPerDay} commits/day. ${fmt(insights.sessions)} sessions. ${insights.langCount} languages.\n\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\nvibestats.io/generate\n\n#vibestats #vibecoding`;
+
+      slides.push(`
+        <div class="slide" data-slide="5" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.05) 50%,transparent 80%)">
+          <div class="archetype-card anim d1" style="--card-gradient:${a.borderGradient}">
+            <style>.archetype-card::before{background:${a.borderGradient}}</style>
+            <div class="card-label">your vibecoding personality</div>
+            <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
+            <div class="archetype-tagline">"${a.tagline}"</div>
+            <div class="card-stats">
+              <div class="card-stat">
+                <div class="card-stat-val">${fmt(insights.sessions)}</div>
+                <div class="card-stat-label">sessions</div>
+              </div>
+              <div class="card-stat">
+                <div class="card-stat-val">${insights.commitsPerDay}/day</div>
+                <div class="card-stat-label">commits</div>
+              </div>
+              <div class="card-stat">
+                <div class="card-stat-val">${insights.langCount}</div>
+                <div class="card-stat-label">languages</div>
+              </div>
+              <div class="card-stat">
+                <div class="card-stat-val">${insights.satisfaction !== null ? insights.satisfaction + '%' : fmt(insights.messages)}</div>
+                <div class="card-stat-label">${insights.satisfaction !== null ? 'satisfaction' : 'messages'}</div>
+              </div>
+            </div>
+            <div class="card-user">${insights.name}</div>
+            <div class="card-period">${insights.days} days &middot; ${insights.dateRange}</div>
+            <div class="card-brand">vibestats.io</div>
+          </div>
+          <div class="share-row anim d3">
+            <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" rel="noopener">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              Share
+            </a>
+            <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('https://vibestats.io/generate').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
+              Copy link
+            </button>
+            <button class="share-btn share-btn-restart" onclick="location.reload()">
+              Try again
+            </button>
+          </div>
+        </div>
+      `);
+
+      return slides;
+    }
+
+    // ========================================
+    // SLIDE NAVIGATION
+    // ========================================
+    let currentSlide = 0;
+    let totalSlides = 0;
+    let transitioning = false;
+
+    function initSlideshow(slideHTML) {
+      const slidesEl = document.getElementById('slides');
+      slidesEl.innerHTML = slideHTML.join('');
+      totalSlides = slideHTML.length;
+      currentSlide = 0;
+
+      // Build progress bar
+      const progress = document.getElementById('progress');
+      progress.innerHTML = '';
+      for (let i = 0; i < totalSlides; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'progress-seg' + (i === 0 ? ' active' : '');
+        progress.appendChild(seg);
+      }
+
+      // Navigation
+      slidesEl.addEventListener('click', (e) => {
+        if (e.target.closest('.share-btn, .share-row, a, button')) return;
+        const rect = slidesEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        if (x < rect.width * 0.3 && currentSlide > 0) goTo(currentSlide - 1);
+        else if (currentSlide < totalSlides - 1) goTo(currentSlide + 1);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentSlide + 1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentSlide - 1); }
+      });
+
+      let tx = 0;
+      document.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+      document.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - tx;
+        if (Math.abs(dx) > 50) {
+          if (dx < 0) goTo(currentSlide + 1);
+          else goTo(currentSlide - 1);
+        }
+      }, { passive: true });
+    }
+
+    function goTo(index) {
+      if (transitioning || index === currentSlide || index < 0 || index >= totalSlides) return;
+      transitioning = true;
+      const slides = document.querySelectorAll('.slide');
+      slides[currentSlide].classList.add('exiting');
+      slides[currentSlide].classList.remove('active');
+      setTimeout(() => {
+        slides[currentSlide]?.classList.remove('exiting');
+        slides[index].classList.add('active');
+        currentSlide = index;
+        updateProgress();
+        document.getElementById('tap-hint').style.display =
+          index === totalSlides - 1 ? 'none' : '';
+        transitioning = false;
+      }, 300);
+    }
+
+    function updateProgress() {
+      document.querySelectorAll('.progress-seg').forEach((seg, i) => {
+        seg.className = 'progress-seg';
+        if (i < currentSlide) seg.classList.add('done');
+        if (i === currentSlide) seg.classList.add('active');
+      });
+    }
+
+    // ========================================
+    // FILE HANDLING
+    // ========================================
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const errorEl = document.getElementById('upload-error');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) processFile(e.target.files[0]);
+    });
+
+    function processFile(file) {
+      errorEl.style.display = 'none';
+      if (!file.name.endsWith('.json')) {
+        showError('Please upload a .json file');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data.metrics && !data.meta) {
+            showError('This doesn\'t look like a Claude Code insights file. Expected "metrics" or "meta" fields.');
+            return;
+          }
+          runAnalysis(data);
+        } catch (err) {
+          showError('Could not parse JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+
+    // ========================================
+    // ANALYSIS FLOW
+    // ========================================
+    async function runAnalysis(data) {
+      // Hide upload, show analyzing
+      document.getElementById('upload-page').classList.add('hidden');
+      const analyzingEl = document.getElementById('analyzing');
+      analyzingEl.classList.remove('hidden');
+      const textEl = document.getElementById('analyzing-text');
+      const fillEl = document.getElementById('analyzing-fill');
+
+      // Animated analyzing sequence
+      fillEl.style.width = '30%';
+      textEl.textContent = 'Reading your data...';
+      await wait(600);
+
+      fillEl.style.width = '60%';
+      textEl.textContent = 'Analyzing patterns...';
+      await wait(700);
+
+      fillEl.style.width = '85%';
+      textEl.textContent = 'Calculating archetype...';
+
+      const scores = scoreArchetypes(data);
+      const archetype = getTopArchetype(scores);
+      const insights = extractInsights(data);
+
+      await wait(800);
+      fillEl.style.width = '100%';
+      textEl.textContent = ARCHETYPES[archetype].name;
+      await wait(600);
+
+      // Generate and show wrapped
+      const slideHTML = generateSlides(insights, archetype, scores);
+      analyzingEl.classList.add('hidden');
+      document.getElementById('wrapped-page').classList.remove('hidden');
+      initSlideshow(slideHTML);
+    }
+
+    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function copyPath() {
+      navigator.clipboard.writeText('~/.claude/usage-data/agent-insights.json').then(() => {
+        const el = document.querySelector('.file-path code');
+        const orig = el.textContent;
+        el.textContent = 'Copied!';
+        setTimeout(() => el.textContent = orig, 1500);
+      });
+    }
+  </script>
+</body>
+</html>
