@@ -534,12 +534,20 @@
       return Math.max(1, Math.ceil((data.metrics?.total_sessions || 100) / 20));
     }
 
+    // Priority order for tiebreaking (most distinctive first)
+    const ARCHETYPE_PRIORITY = [
+      'orchestrator', 'deepdiver', 'polyglot', 'shipper',
+      'debugger', 'sprinter', 'architect', 'builder'
+    ];
+
     function getTopArchetype(scores) {
       let best = null, bestScore = -1;
-      for (const [key, score] of Object.entries(scores)) {
-        if (score > bestScore) { bestScore = score; best = key; }
-      }
-      return best || 'builder';
+      // Sort by score descending, then by priority order for ties
+      const sorted = Object.entries(scores).sort((a, b) => {
+        if (b[1] !== a[1]) return b[1] - a[1];
+        return ARCHETYPE_PRIORITY.indexOf(a[0]) - ARCHETYPE_PRIORITY.indexOf(b[0]);
+      });
+      return sorted[0] ? sorted[0][0] : 'builder';
     }
 
     // ========================================
@@ -559,10 +567,10 @@
       const read = tools.read || 0;
       const grep = tools.grep || 0;
 
-      // Sort languages
+      // Sort languages (show up to 7 for polyglots)
       const langs = Object.entries(langUsage)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
+        .slice(0, 7);
       const topLang = langs[0] ? langs[0][0] : 'Code';
       const langTotal = langs.reduce((s, [,v]) => s + v, 0) || 1;
 
@@ -578,19 +586,48 @@
         messagesPerDay: Math.round(messages / days),
         commandsPerDay: Math.round(bash / days),
         bashEditRatio: edit > 0 ? (bash / edit).toFixed(1) : 'N/A',
-        satisfaction: m.satisfaction_rate ? Math.round(m.satisfaction_rate * 100) : null,
-        multiClauding: m.multi_clauding_rate ? Math.round(m.multi_clauding_rate * 100) : null,
-        frictionEvents: (m.buggy_code_events || 0) + (m.deployment_sessions || 0),
+        satisfaction: m.satisfaction_rate != null ? Math.round(m.satisfaction_rate * 100) : null,
+        multiClauding: m.multi_clauding_rate != null ? Math.round(m.multi_clauding_rate * 100) : null,
+        frictionEvents: (m.buggy_code_events || 0),
+        msgsPerSession: sessions > 0 ? Math.round(messages / sessions) : 0,
         langs, topLang, langTotal,
         langCount: Object.keys(langUsage).length,
         workingStyle: data.user_profile?.working_style || '',
       };
     }
 
+    // Semantic language color map
+    const LANG_COLORS = {
+      javascript: '#f7df1e', typescript: '#3178c6', python: '#3776AB',
+      rust: '#dea584', go: '#00ADD8', html: '#e34c26', css: '#264de4',
+      markdown: '#6B8FFF', json: '#a78bfa', sql: '#e38c00',
+      terraform: '#7B42BC', bash: '#4EAA25', toml: '#9c4221',
+      ruby: '#CC342D', java: '#ED8B00', kotlin: '#7F52FF',
+      swift: '#F05138', cpp: '#00599C', c: '#A8B9CC',
+    };
+    const LANG_FALLBACK_COLORS = ['#6B8FFF', '#a78bfa', '#ff79c6', '#22d3ee', '#f59e0b', '#22c55e', '#ef4444'];
+
+    // Title-case language names
+    const LANG_NAMES = {
+      javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python',
+      rust: 'Rust', go: 'Go', html: 'HTML', css: 'CSS', markdown: 'Markdown',
+      json: 'JSON', sql: 'SQL', terraform: 'Terraform', bash: 'Bash',
+      toml: 'TOML', ruby: 'Ruby', java: 'Java', kotlin: 'Kotlin',
+      swift: 'Swift', cpp: 'C++', c: 'C',
+    };
+
     function fmt(n) {
       if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-      if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+      if (n >= 10000) return (n / 1000).toFixed(0) + 'K';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
       return n.toLocaleString();
+    }
+
+    function langColor(name, i) {
+      return LANG_COLORS[name.toLowerCase()] || LANG_FALLBACK_COLORS[i % LANG_FALLBACK_COLORS.length];
+    }
+    function langName(key) {
+      return LANG_NAMES[key.toLowerCase()] || key.charAt(0).toUpperCase() + key.slice(1);
     }
 
     // ========================================
@@ -621,9 +658,9 @@
           <div class="slide-body anim d4" style="margin-top:24px">
             ${insights.commitsPerDay > 50
               ? "That's not a sprint.<br><strong>That's a lifestyle.</strong>"
-              : insights.commitsPerDay > 10
+              : insights.commitsPerDay > 5
               ? "Consistent shipping velocity.<br><strong>You keep the momentum.</strong>"
-              : "Quality over quantity.<br><strong>Every commit counts.</strong>"
+              : "Deliberate and intentional.<br><strong>Every commit counts.</strong>"
             }
           </div>
         </div>
@@ -634,7 +671,7 @@
         <div class="slide" data-slide="2" style="background:radial-gradient(ellipse at 50% 50%,rgba(34,211,238,0.1),transparent 60%)">
           <div class="slide-label anim">your signature</div>
           <div class="slide-body anim d1" style="margin-bottom:8px">
-            <strong>For every line you edit<br>you run ${insights.bashEditRatio} commands.</strong>
+            <strong>For every edit you make,<br>you run ${insights.bashEditRatio} commands.</strong>
           </div>
           <div class="ratio-visual anim d2">
             <div class="ratio-block">
@@ -664,12 +701,11 @@
       `);
 
       // Slide 4: Your Languages
-      const langColors = ['#3178c6', '#f7df1e', '#6B8FFF', '#e34c26', '#a78bfa', '#dea584'];
       const langBars = insights.langs.map(([name, val], i) => {
         const pct = Math.round(val / insights.langTotal * 100);
         return `<div class="lang-bar-row">
-          <div class="lang-bar-name">${name}</div>
-          <div class="lang-bar-track"><div class="lang-bar-fill" style="width:${pct}%;background:${langColors[i] || '#6B8FFF'}"></div></div>
+          <div class="lang-bar-name">${langName(name)}</div>
+          <div class="lang-bar-track"><div class="lang-bar-fill" style="width:${pct}%;background:${langColor(name, i)}"></div></div>
           <div class="lang-bar-pct">${pct}%</div>
         </div>`;
       }).join('');
