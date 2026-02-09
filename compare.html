@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Compare Vibecoding Personalities | vibestats</title>
+  <meta name="description" content="Compare your vibecoding personality with a friend. See your chemistry, dynamic, and pairing name.">
+  <meta property="og:title" content="Compare Vibecoding Personalities | vibestats">
+  <meta property="og:description" content="See how two vibecoding archetypes work together. Chemistry, dynamics, and pairing names.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vibestats.io/compare">
+  <meta property="og:image" content="https://vibestats.io/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://vibestats.io/og-card.png">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a; --surface: #0d0d14; --surface-2: #14141e; --border: #252535;
+      --text: #E0E0E0; --text-muted: #8888a0; --text-dim: #555568;
+      --accent: #6B8FFF; --purple: #a78bfa; --green: #22c55e; --amber: #f59e0b;
+      --red: #ef4444; --pink: #ff79c6; --cyan: #22d3ee;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans); background: var(--bg); color: var(--text);
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 48px 24px 64px; text-align: center;
+    }
+
+    .logo {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; letter-spacing: 0.05em; margin-bottom: 32px;
+      text-decoration: none;
+    }
+
+    h1 {
+      font-size: clamp(24px, 6vw, 40px); font-weight: 900; color: #fff;
+      letter-spacing: -0.02em; line-height: 1.2; max-width: 600px; margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 15px; color: var(--text-muted); max-width: 480px;
+      line-height: 1.6; margin-bottom: 40px;
+    }
+
+    /* Picker grid */
+    .you-label {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 16px;
+    }
+    .you-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 24px; border-radius: 12px; margin-bottom: 32px;
+      font-family: var(--sans); font-size: 18px; font-weight: 800;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .pick-label {
+      font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;
+    }
+
+    .archetype-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+      width: min(440px, 90vw); margin-bottom: 40px;
+    }
+    .arch-pick {
+      padding: 16px 12px; border-radius: 14px; cursor: pointer;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: all 0.2s; text-align: center; text-decoration: none;
+      min-height: 44px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+    }
+    .arch-pick:hover { border-color: var(--accent); background: rgba(107,143,255,0.04); }
+    .arch-pick-name {
+      font-family: var(--sans); font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .arch-pick-tag {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+
+    /* Result card */
+    .result { display: none; width: min(480px, 90vw); }
+    .result.visible { display: block; }
+
+    .pair-card {
+      background: linear-gradient(145deg, #0d0d18, #12121f);
+      border: 1px solid rgba(107,143,255,0.2); border-radius: 20px;
+      padding: 32px 24px; text-align: center; position: relative; overflow: hidden;
+    }
+    .pair-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--purple), transparent);
+    }
+
+    .pair-vs {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .pair-type {
+      font-size: clamp(14px, 3.5vw, 18px); font-weight: 800;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pair-x {
+      font-family: var(--mono); font-size: 14px; color: var(--text-dim);
+    }
+
+    .pair-name {
+      font-size: clamp(28px, 7vw, 44px); font-weight: 900; color: #fff;
+      letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 12px;
+    }
+
+    .pair-chemistry {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin-bottom: 16px;
+    }
+    .chem-star {
+      width: 18px; height: 18px; color: var(--amber);
+    }
+    .chem-star.empty { opacity: 0.15; }
+    .chem-label {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      margin-left: 8px; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+
+    .pair-dynamic {
+      font-size: 16px; color: var(--text-muted); line-height: 1.7;
+      max-width: 400px; margin: 0 auto 24px;
+    }
+
+    .pair-traits {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px;
+    }
+    .pair-trait {
+      padding: 10px; background: rgba(255,255,255,0.02);
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);
+    }
+    .pair-trait-label {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;
+    }
+    .pair-trait-val {
+      font-size: 13px; font-weight: 600; color: #fff;
+    }
+
+    .pair-brand {
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .result-actions {
+      display: flex; gap: 10px; margin-top: 24px; justify-content: center; flex-wrap: wrap;
+    }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border-radius: 10px; font-family: var(--mono);
+      font-size: 12px; text-decoration: none; cursor: pointer;
+      border: none; transition: all 0.2s; font-weight: 500; min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .action-btn-x { background: #fff; color: #000; }
+    .action-btn-x:hover { background: #e0e0e0; }
+    .action-btn-copy {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: var(--text);
+    }
+    .action-btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .action-btn-cta {
+      background: linear-gradient(135deg, rgba(107,143,255,0.15), rgba(167,139,250,0.1));
+      border: 1px solid rgba(107,143,255,0.35); color: #8aadff;
+    }
+    .action-btn-cta:hover { border-color: var(--accent); }
+
+    .footer {
+      margin-top: 48px; font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .page { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    }
+
+    @media (max-width: 480px) {
+      .archetype-grid { gap: 8px; }
+      .arch-pick { padding: 12px 8px; }
+      .result-actions { flex-direction: column; align-items: stretch; }
+      .action-btn { justify-content: center; }
+      .pair-vs { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="logo" href="/">vibestats</a>
+
+    <!-- Picker state -->
+    <div id="picker">
+      <h1 id="picker-title">Compare with a friend</h1>
+      <p class="subtitle" id="picker-subtitle">Pick your friend's archetype to see your chemistry.</p>
+      <div id="you-section"></div>
+      <div class="pick-label" id="pick-label">Your friend is...</div>
+      <div class="archetype-grid" id="archetype-grid"></div>
+      <p style="font-size:13px;color:var(--text-dim);max-width:400px">
+        Don't know their archetype? Send them to
+        <a href="/" style="color:var(--accent);text-decoration:none">vibestats.io</a>
+        to find out.
+      </p>
+    </div>
+
+    <!-- Result state -->
+    <div class="result" id="result">
+      <div class="pair-card" id="pair-card">
+        <div class="pair-vs" id="pair-vs"></div>
+        <div class="pair-name" id="pair-name"></div>
+        <div class="pair-chemistry" id="pair-chemistry"></div>
+        <div class="pair-dynamic" id="pair-dynamic"></div>
+        <div class="pair-traits" id="pair-traits"></div>
+        <div class="pair-brand">vibestats.io</div>
+      </div>
+      <div class="result-actions" id="result-actions"></div>
+    </div>
+
+    <div class="footer">
+      made with <a href="https://slashvibe.dev">/vibe</a>
+    </div>
+  </div>
+
+  <script>
+    const ARCHETYPES = {
+      orchestrator: { name: 'THE ORCHESTRATOR', short: 'Orchestrator', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)', color: '#6B8FFF', strength: 'Parallel execution', style: 'Conductor' },
+      shipper: { name: 'THE SHIPPER', short: 'Shipper', gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)', color: '#22c55e', strength: 'Ship velocity', style: 'Deployer' },
+      architect: { name: 'THE ARCHITECT', short: 'Architect', gradient: 'linear-gradient(135deg, #6B8FFF, #3b82f6)', color: '#6B8FFF', strength: 'System design', style: 'Planner' },
+      debugger: { name: 'THE DEBUGGER', short: 'Debugger', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#f59e0b', strength: 'Investigation', style: 'Detective' },
+      polyglot: { name: 'THE POLYGLOT', short: 'Polyglot', gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b)', color: '#ff79c6', strength: 'Versatility', style: 'Multilingual' },
+      sprinter: { name: 'THE SPRINTER', short: 'Sprinter', gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)', color: '#ef4444', strength: 'Raw speed', style: 'Rapid-fire' },
+      deepdiver: { name: 'THE DEEP DIVER', short: 'Deep Diver', gradient: 'linear-gradient(135deg, #3b82f6, #1e40af)', color: '#3b82f6', strength: 'Deep focus', style: 'Immersive' },
+      builder: { name: 'THE BUILDER', short: 'Builder', gradient: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#22c55e', strength: 'Creation', style: 'Maker' },
+    };
+
+    // Compatibility data: key = "type1:type2" (alphabetical order)
+    // { name, dynamic, chemistry (1-5), vibe }
+    const COMPAT = {
+      // Same-type pairings
+      'architect:architect': { name: 'Analysis Paralysis', dynamic: 'The plans are immaculate. The diagrams are beautiful. The code? Still pending review.', chemistry: 2, vibe: 'Overthinking in stereo' },
+      'builder:builder': { name: 'Makers Gonna Make', dynamic: 'Pure creation energy. Everything is a greenfield project. The world gains two new repos before lunch.', chemistry: 5, vibe: 'Double the output' },
+      'debugger:debugger': { name: 'Crime Scene Unit', dynamic: 'No bug survives this pairing. The codebase has never been more investigated. New features might have to wait.', chemistry: 4, vibe: 'Nothing escapes' },
+      'deepdiver:deepdiver': { name: 'The Abyss', dynamic: 'They went deep on Monday. It\'s Thursday. Someone should check on them. The code, however, is pristine.', chemistry: 4, vibe: 'Profound understanding' },
+      'orchestrator:orchestrator': { name: 'Mission Control', dynamic: 'Two conductors, one orchestra. Parallel sessions everywhere. Just make sure someone actually writes the code.', chemistry: 3, vibe: 'Maximum coordination' },
+      'polyglot:polyglot': { name: 'Tower of Babel', dynamic: 'Name a language. They both know it. Name another. Same. The stack is infinite and the type systems are arguing.', chemistry: 4, vibe: 'Every language covered' },
+      'shipper:shipper': { name: 'Launch Party', dynamic: 'Nothing stays in draft. Git log is a blur. Production deploys happen before the PR description is written.', chemistry: 4, vibe: 'Relentless velocity' },
+      'sprinter:sprinter': { name: 'Chaos Engines', dynamic: 'Fast. Faster. Fastest. The CI pipeline can\'t keep up. Hope the tests pass because nobody\'s slowing down.', chemistry: 3, vibe: 'Pure adrenaline' },
+
+      // Cross-type pairings (alphabetical key order)
+      'architect:builder': { name: 'Blueprints & Bricks', dynamic: 'One designs the system. The other builds it. Everything gets built right the first time. The rarest and most productive pairing.', chemistry: 5, vibe: 'Perfect complement' },
+      'architect:debugger': { name: 'The Investigators', dynamic: 'One reads the code carefully. The other interrogates it. Bugs and bad architecture don\'t survive this pair.', chemistry: 4, vibe: 'Thorough analysis' },
+      'architect:deepdiver': { name: 'The Scholars', dynamic: 'They don\'t just read code — they understand it. Deep thinking meets systematic planning. Slow but unbreakable.', chemistry: 4, vibe: 'Deep understanding' },
+      'architect:orchestrator': { name: 'Grand Design', dynamic: 'Plans at scale. Every agent has a mission. Every session has a purpose. The architect designs, the orchestrator deploys.', chemistry: 4, vibe: 'Strategic execution' },
+      'architect:polyglot': { name: 'System Polymath', dynamic: 'Architecture blueprints in every language. Beautiful system design that spans the entire tech stack.', chemistry: 3, vibe: 'Broad + deep' },
+      'architect:shipper': { name: 'Plan vs Ship', dynamic: 'The eternal productive tension. "Is it ready?" "I already pushed." One ensures quality. The other ensures delivery.', chemistry: 3, vibe: 'Healthy tension' },
+      'architect:sprinter': { name: 'Speed & Strategy', dynamic: 'Move fast with a map. Plans execute at lightspeed. The architect prevents the sprinter from running off a cliff.', chemistry: 4, vibe: 'Guided velocity' },
+      'builder:debugger': { name: 'Create & Break', dynamic: 'Build, break, fix, repeat. The eternal cycle of all software. One makes things, the other makes sure they work.', chemistry: 3, vibe: 'The software cycle' },
+      'builder:deepdiver': { name: 'The Craftsman', dynamic: 'Deep, deliberate creation. Things get built to last. No shortcuts, no hacks. Just solid, beautiful work.', chemistry: 5, vibe: 'Quality craftsmanship' },
+      'builder:orchestrator': { name: 'The Forge', dynamic: 'Parallel creation streams at full capacity. One coordinates, the other creates. Maximum output, minimum waste.', chemistry: 4, vibe: 'Scaled creation' },
+      'builder:polyglot': { name: 'Universal Creator', dynamic: 'Building things in every language imaginable. No tool is off-limits. The repo has more file extensions than most companies.', chemistry: 4, vibe: 'Boundless creation' },
+      'builder:shipper': { name: 'Feature Factory', dynamic: 'One creates, both ship. The backlog doesn\'t stand a chance. Features go from idea to production at an alarming rate.', chemistry: 5, vibe: 'Pure production' },
+      'builder:sprinter': { name: 'Rapid Prototyper', dynamic: 'Ideas become code before the coffee cools. Speed meets creation. The prototype is done before the meeting ends.', chemistry: 4, vibe: 'Instant creation' },
+      'debugger:deepdiver': { name: 'Forensic Analysis', dynamic: 'When they investigate, they find EVERYTHING. Deep focus meets systematic search. The root cause doesn\'t stand a chance.', chemistry: 5, vibe: 'Total investigation' },
+      'debugger:orchestrator': { name: 'Bug Command', dynamic: 'Bugs don\'t hide when you have eyes everywhere. Parallel debugging sessions, coordinated investigation. Systematic elimination.', chemistry: 4, vibe: 'Coordinated debugging' },
+      'debugger:polyglot': { name: 'Bug Hunters International', dynamic: 'Bugs have nowhere to hide, in any language. Cross-stack debugging with polyglot precision. Nothing is safe.', chemistry: 4, vibe: 'Universal debugging' },
+      'debugger:shipper': { name: 'Unstoppable', dynamic: 'One investigates, one ships. Problems get found and fixed at production speed. The most dangerous duo in software.', chemistry: 5, vibe: 'Find it, fix it, ship it' },
+      'debugger:sprinter': { name: 'Rapid Response', dynamic: 'Fast debugging. Fix it before the user notices. The incident response team that every company wishes they had.', chemistry: 3, vibe: 'Quick fixes' },
+      'deepdiver:orchestrator': { name: 'Wide & Deep', dynamic: 'One sees the whole board. The other sees through it. Coverage from every angle. Nothing is overlooked or oversimplified.', chemistry: 5, vibe: 'Complete coverage' },
+      'deepdiver:polyglot': { name: 'Language Scholar', dynamic: 'Deep expertise across many domains. Not just knowing languages — truly understanding them. The senior devs\' senior dev.', chemistry: 4, vibe: 'Polymath depth' },
+      'deepdiver:shipper': { name: 'Quality Shipping', dynamic: 'Deep work that actually ships. Rare and powerful. The code is thoughtful AND it\'s in production. Best of both worlds.', chemistry: 4, vibe: 'Depth + delivery' },
+      'deepdiver:sprinter': { name: 'Opposite Poles', dynamic: 'One goes fast. The other goes deep. Productive if they find rhythm — explosive if they don\'t. A high-ceiling, low-floor pairing.', chemistry: 2, vibe: 'Creative tension' },
+      'orchestrator:polyglot': { name: 'Universal Command', dynamic: 'Every language, every session, every terminal. The polyglot\'s breadth meets the orchestrator\'s scale. Multilingual parallelism.', chemistry: 3, vibe: 'Polyglot at scale' },
+      'orchestrator:shipper': { name: 'Traffic Control', dynamic: 'One directs, one delivers. A well-oiled deployment machine. Shipping at scale with orchestrated precision.', chemistry: 4, vibe: 'Scaled shipping' },
+      'orchestrator:sprinter': { name: 'Blitz Commander', dynamic: 'Fast and coordinated. The speed run of software development. Every parallel stream is a sprint.', chemistry: 4, vibe: 'Parallel sprints' },
+      'polyglot:shipper': { name: 'World Tour', dynamic: 'Shipping across every language and framework. Global domination, one deploy at a time. The monorepo\'s dream team.', chemistry: 4, vibe: 'Ship everywhere' },
+      'polyglot:sprinter': { name: 'World Sprint', dynamic: 'Fast in every language. Dangerously versatile. The hackathon team that wins every time, in every category.', chemistry: 3, vibe: 'Speed + breadth' },
+      'shipper:sprinter': { name: 'Sonic Boom', dynamic: 'Pure velocity. Everything ships yesterday. The git log is measured in commits per minute. CI/CD was made for this pair.', chemistry: 4, vibe: 'Maximum velocity' },
+    };
+
+    function getCompatKey(a, b) {
+      return [a, b].sort().join(':');
+    }
+
+    function getCompat(a, b) {
+      const key = getCompatKey(a, b);
+      return COMPAT[key] || { name: 'Unknown Pairing', dynamic: 'An unexplored combination.', chemistry: 3, vibe: 'Mysterious' };
+    }
+
+    const starSVG = `<svg class="chem-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+    const starEmptySVG = `<svg class="chem-star empty" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+
+    function renderStars(n) {
+      let html = '';
+      for (let i = 0; i < 5; i++) html += i < n ? starSVG : starEmptySVG;
+      return html;
+    }
+
+    // Parse URL params
+    const params = new URLSearchParams(window.location.search);
+    const meType = params.get('me') || params.get('a');
+    const themType = params.get('b');
+
+    // If both types present, show result directly
+    if (meType && themType && ARCHETYPES[meType] && ARCHETYPES[themType]) {
+      showResult(meType, themType);
+    } else if (meType && ARCHETYPES[meType]) {
+      showPicker(meType);
+    } else {
+      showPicker(null);
+    }
+
+    function showPicker(myType) {
+      const picker = document.getElementById('picker');
+      const youSection = document.getElementById('you-section');
+      const grid = document.getElementById('archetype-grid');
+      const title = document.getElementById('picker-title');
+      const subtitle = document.getElementById('picker-subtitle');
+      const pickLabel = document.getElementById('pick-label');
+
+      if (myType && ARCHETYPES[myType]) {
+        const a = ARCHETYPES[myType];
+        title.textContent = 'Compare with a friend';
+        subtitle.textContent = 'Pick their archetype to see your chemistry.';
+        youSection.innerHTML = `
+          <div class="you-label">You are</div>
+          <div class="you-badge" style="background:${a.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border-color:${a.color}40">${a.name}</div>
+        `;
+        pickLabel.textContent = 'Your friend is...';
+      } else {
+        title.textContent = 'Compare two archetypes';
+        subtitle.textContent = 'Pick two vibecoding personalities to see their chemistry.';
+        youSection.innerHTML = '';
+        pickLabel.textContent = 'Pick the first archetype';
+      }
+
+      grid.innerHTML = '';
+      for (const [key, a] of Object.entries(ARCHETYPES)) {
+        const card = document.createElement('a');
+        card.className = 'arch-pick';
+        card.href = '#';
+        card.innerHTML = `
+          <div class="arch-pick-name" style="background:${a.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${a.short}</div>
+          <div class="arch-pick-tag">${a.strength}</div>
+        `;
+        card.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (myType) {
+            const url = new URL(window.location);
+            url.searchParams.set('a', myType);
+            url.searchParams.set('b', key);
+            url.searchParams.delete('me');
+            window.history.pushState({}, '', url);
+            showResult(myType, key);
+          } else {
+            // First pick — now show picker for second
+            const url = new URL(window.location);
+            url.searchParams.set('me', key);
+            window.history.pushState({}, '', url);
+            showPicker(key);
+          }
+        });
+        grid.appendChild(card);
+      }
+    }
+
+    function showResult(aType, bType) {
+      document.getElementById('picker').style.display = 'none';
+      const result = document.getElementById('result');
+      result.classList.add('visible');
+
+      const a = ARCHETYPES[aType];
+      const b = ARCHETYPES[bType];
+      const compat = getCompat(aType, bType);
+
+      // Pair types
+      document.getElementById('pair-vs').innerHTML = `
+        <span class="pair-type" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</span>
+        <span class="pair-x">&times;</span>
+        <span class="pair-type" style="background:${b.gradient};-webkit-background-clip:text;background-clip:text">${b.name}</span>
+      `;
+
+      document.getElementById('pair-name').textContent = compat.name;
+      document.getElementById('pair-chemistry').innerHTML = renderStars(compat.chemistry) + `<span class="chem-label">${compat.chemistry}/5 chemistry</span>`;
+      document.getElementById('pair-dynamic').textContent = compat.dynamic;
+
+      document.getElementById('pair-traits').innerHTML = `
+        <div class="pair-trait">
+          <div class="pair-trait-label">${a.short} brings</div>
+          <div class="pair-trait-val">${a.strength}</div>
+        </div>
+        <div class="pair-trait">
+          <div class="pair-trait-label">${b.short} brings</div>
+          <div class="pair-trait-val">${b.strength}</div>
+        </div>
+        <div class="pair-trait">
+          <div class="pair-trait-label">${a.short}'s style</div>
+          <div class="pair-trait-val">${a.style}</div>
+        </div>
+        <div class="pair-trait">
+          <div class="pair-trait-label">${b.short}'s style</div>
+          <div class="pair-trait-val">${b.style}</div>
+        </div>
+      `;
+
+      // Update page title and og
+      document.title = `${a.name} + ${b.name} = ${compat.name} | vibestats`;
+
+      // Share URL
+      const shareUrl = `https://vibestats.io/compare?a=${aType}&b=${bType}`;
+      const tweetText = `${a.name} + ${b.name} = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\nCompare your vibecoding personality:\n${shareUrl}\n\n#vibestats #vibecoding`;
+
+      document.getElementById('result-actions').innerHTML = `
+        <a class="action-btn action-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share
+        </a>
+        <button class="action-btn action-btn-copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
+          Copy link
+        </button>
+        <a class="action-btn action-btn-cta" href="/" style="text-decoration:none">
+          What's YOUR archetype? &rarr;
+        </a>
+        <button class="action-btn action-btn-copy" onclick="tryDifferent()" style="border-color:var(--border);color:var(--text-dim)">
+          Try different pair
+        </button>
+      `;
+    }
+
+    function tryDifferent() {
+      const url = new URL(window.location);
+      const meType = url.searchParams.get('a');
+      url.searchParams.delete('b');
+      if (meType) url.searchParams.set('me', meType);
+      window.history.pushState({}, '', url);
+      document.getElementById('result').classList.remove('visible');
+      document.getElementById('picker').style.display = '';
+      showPicker(meType);
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', () => {
+      const p = new URLSearchParams(window.location.search);
+      const a = p.get('a') || p.get('me');
+      const b = p.get('b');
+      if (a && b && ARCHETYPES[a] && ARCHETYPES[b]) {
+        showResult(a, b);
+      } else {
+        document.getElementById('result').classList.remove('visible');
+        document.getElementById('picker').style.display = '';
+        showPicker(a && ARCHETYPES[a] ? a : null);
+      }
+    });
+  </script>
+</body>
+</html>

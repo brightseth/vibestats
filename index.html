@@ -878,6 +878,89 @@
       };
     }
 
+    // ========================================
+    // MICRO-INSIGHT: "THE REAL NUMBER"
+    // ========================================
+    function pickHolyShitStat(insights) {
+      const candidates = [];
+
+      // Estimated hours pair-programming with Claude (~45sec per message exchange)
+      const estHours = Math.round(insights.messages * 0.75 / 60);
+      if (estHours >= 8) {
+        const comparison = estHours >= 300
+          ? "That's almost two months of full-time work.<br><strong>Your longest collaboration — with an AI.</strong>"
+          : estHours >= 150
+          ? "A full month of working hours.<br><strong>Side by side with an AI.</strong>"
+          : estHours >= 60
+          ? "More than a full work week of pairing.<br><strong>This isn't a tool. It's a partnership.</strong>"
+          : "More than most people spend learning a new framework.<br><strong>You went deep.</strong>";
+        candidates.push({
+          number: estHours, unit: 'hours with Claude', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--purple))',
+          impressiveness: Math.min(estHours / 200, 1),
+        });
+      }
+
+      // Lines of code (estimated from write + edit tool counts, ~12 lines per operation)
+      const linesEst = Math.round(((insights.write || 0) + (insights.edit || 0)) * 12);
+      if (linesEst >= 10000) {
+        const comparison = linesEst >= 100000
+          ? "More than the Linux kernel's first release.<br><strong>You didn't just vibe — you built a world.</strong>"
+          : linesEst >= 50000
+          ? "More code than most open-source libraries.<br><strong>Created with an AI partner.</strong>"
+          : "A serious body of work.<br><strong>Line by line, you built something real.</strong>";
+        candidates.push({
+          number: fmt(linesEst), unit: 'lines of code', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--green))',
+          impressiveness: Math.min(linesEst / 80000, 1),
+        });
+      }
+
+      // Commands executed
+      if (insights.bash >= 5000) {
+        const comparison = insights.bash >= 30000
+          ? "One every few seconds of coding time.<br><strong>Your terminal never sleeps.</strong>"
+          : insights.bash >= 10000
+          ? "That's a command every couple of minutes, all day.<br><strong>You don't just write code — you run systems.</strong>"
+          : "Your terminal has stories to tell.<br><strong>Each command, a decision.</strong>";
+        candidates.push({
+          number: fmt(insights.bash), unit: 'commands executed', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--cyan))',
+          impressiveness: Math.min(insights.bash / 20000, 1),
+        });
+      }
+
+      // Commits shipped
+      if (insights.commits >= 200) {
+        const comparison = insights.commits >= 2000
+          ? "More than most teams ship in a year.<br><strong>You are the team.</strong>"
+          : insights.commits >= 500
+          ? "A commit every few hours, relentlessly.<br><strong>Shipping is not a phase. It's a lifestyle.</strong>"
+          : "Each one a choice to push forward.<br><strong>Consistent velocity.</strong>";
+        candidates.push({
+          number: fmt(insights.commits), unit: 'commits shipped', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--green))',
+          impressiveness: Math.min(insights.commits / 1500, 1),
+        });
+      }
+
+      // Files investigated (read + grep)
+      const filesInvestigated = (insights.read || 0) + (insights.grep || 0);
+      if (filesInvestigated >= 3000) {
+        const comparison = filesInvestigated >= 15000
+          ? "You've read more code than most devs write in a year.<br><strong>Understanding before creating.</strong>"
+          : "A deep investigation of every corner of your codebase.<br><strong>Nothing escapes you.</strong>";
+        candidates.push({
+          number: fmt(filesInvestigated), unit: 'files investigated', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--amber))',
+          impressiveness: Math.min(filesInvestigated / 10000, 1),
+        });
+      }
+
+      candidates.sort((a, b) => b.impressiveness - a.impressiveness);
+      return candidates[0] || null;
+    }
+
     // Semantic language color map
     const LANG_COLORS = {
       javascript: '#f7df1e', typescript: '#3178c6', python: '#3776AB',
@@ -952,6 +1035,19 @@
           <div class="slide-body anim d4" style="margin-top:24px">${paceNarrative}</div>
         </div>
       `);
+
+      // Slide: The Real Number (holy shit stat)
+      const holyShit = pickHolyShitStat(insights);
+      if (holyShit) {
+        slides.push(`
+          <div class="slide" data-slide="${slides.length}" style="background:radial-gradient(ellipse at 50% 50%,rgba(167,139,250,0.15),transparent 60%)">
+            <div class="slide-label anim">the real number</div>
+            <div class="big-number anim d1" style="background:${holyShit.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${typeof holyShit.number === 'number' ? holyShit.number.toLocaleString() : holyShit.number}</div>
+            <div class="big-unit anim d2">${holyShit.unit}</div>
+            <div class="slide-body anim d3" style="margin-top:24px">${holyShit.comparison}</div>
+          </div>
+        `);
+      }
 
       // Slide 3: Your Signature (tool ratio)
       slides.push(`
@@ -1171,6 +1267,10 @@
             <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
               Copy link
             </button>
+            <a class="share-btn share-btn-copy" href="/compare?me=${archetype}" style="text-decoration:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Compare
+            </a>
             <button class="share-btn share-btn-restart" onclick="location.reload()">
               Try again
             </button>
