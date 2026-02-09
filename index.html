@@ -493,8 +493,9 @@
     </div>
 
     <div class="file-path" onclick="copyPath()">
-      <span class="label">File location</span>
+      <span class="label">How to find your file</span>
       <code>~/.claude/usage-data/agent-insights.json</code>
+      <span style="display:block;font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0">Click to copy path &middot; Open in Finder or terminal</span>
     </div>
 
     <div class="upload-error" id="upload-error"></div>
@@ -537,7 +538,7 @@
   <div class="wrapped-page hidden" id="wrapped-page">
     <div class="progress" id="progress"></div>
     <div class="slides" id="slides"></div>
-    <div class="tap-hint" id="tap-hint">tap to continue</div>
+    <div class="tap-hint" id="tap-hint"></div>
   </div>
 
   <script src="/lib/html2canvas.min.js"></script>
@@ -713,12 +714,30 @@
         (1 - sig(readWriteRatio, 2.0, 1)) * 30 +
         sig((tools.write || 0) + (tools.edit || 0), 1500, 0.001) * 20;
 
+      // Primary signal strengths for percentile (sigmoid output = 0-1)
+      const primarySignals = {
+        orchestrator: sig(mcRate, 0.15, 12),
+        shipper: sig(commitsPerSession, 1.0, 2.5),
+        architect: sig(readWriteRatio, 2.5, 1.5),
+        debugger: sig(grepRate, 0.05, 35),
+        polyglot: sig(langs.length, 5, 0.8),
+        sprinter: sig(sessionsPerDay, 6, 0.4),
+        deepdiver: sig(msgsPerSession, 12, 0.25),
+        builder: sig(writeEditRate, 0.2, 10),
+      };
+
       // Normalize: power-amplify differences so top archetype stands out
       const maxRaw = Math.max(...Object.values(raw));
       const scores = {};
       for (const k of Object.keys(raw)) {
         const ratio = maxRaw > 0 ? raw[k] / maxRaw : 0;
         scores[k] = Math.round(Math.pow(ratio, 1.5) * 92);
+      }
+
+      // Attach percentile: top N% based on primary signal strength
+      scores._percentiles = {};
+      for (const k of Object.keys(primarySignals)) {
+        scores._percentiles[k] = Math.max(1, Math.round((1 - primarySignals[k]) * 100));
       }
 
       return scores;
@@ -979,21 +998,31 @@
         </div>`;
       }).join('');
 
+      // Dominant language insight
+      const topLangPct = insights.langs[0] ? Math.round(insights.langs[0][1] / insights.langTotal * 100) : 0;
+      const topLangDominant = topLangPct >= 60;
+
       const langNarrative = insights.codeLangCount >= 5
         ? "A true polyglot.<br>You speak the machine's many dialects."
         : insights.codeLangCount >= 3
         ? "A focused versatility.<br>You pick the right tool for the job."
         : emerging
         ? "Finding your language.<br><strong>The stack is forming.</strong>"
+        : topLangDominant
+        ? `<strong>${langName(insights.topLang)}</strong> is your native tongue.`
         : "Deep specialization.<br><strong>One stack, mastered.</strong>";
 
       slides.push(`
         <div class="slide" data-slide="3" style="background:radial-gradient(ellipse at 50% 50%,rgba(255,121,198,0.08),transparent 60%)">
           <div class="slide-label anim">your stack</div>
-          <div class="slide-body anim d1" style="margin-bottom:4px">
-            <strong>${insights.codeLangCount} coding language${insights.codeLangCount !== 1 ? 's' : ''}</strong>
-            ${insights.langCount > insights.codeLangCount ? `<span style="font-size:12px;color:var(--text-dim)"> + ${insights.langCount - insights.codeLangCount} config</span>` : ''}
-          </div>
+          ${topLangDominant && !emerging ? `
+            <div class="big-number anim d1" style="font-size:clamp(36px,9vw,56px);background:linear-gradient(135deg,${langColor(insights.topLang, 0)},#fff 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${topLangPct}% ${langName(insights.topLang)}</div>
+          ` : `
+            <div class="slide-body anim d1" style="margin-bottom:4px">
+              <strong>${insights.codeLangCount} coding language${insights.codeLangCount !== 1 ? 's' : ''}</strong>
+              ${insights.langCount > insights.codeLangCount ? `<span style="font-size:12px;color:var(--text-dim)"> + ${insights.langCount - insights.codeLangCount} config</span>` : ''}
+            </div>
+          `}
           <div class="lang-bars anim d2">${langBars}</div>
           <div class="slide-body anim d3" style="font-size:14px">${langNarrative}</div>
         </div>
@@ -1078,7 +1107,25 @@
       }
 
       // Slide 7: Archetype Card (the shareable moment)
-      const tweetText = `I'm ${a.name}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\nvibestats.io\n\n#vibestats #vibecoding #claudecode`;
+      const pct = scores._percentiles ? scores._percentiles[archetype] : null;
+
+      // Build shareable card URL with encoded params
+      const cardParams = new URLSearchParams({
+        a: archetype, n: insights.name, d: insights.days,
+        c: insights.commitsPerDay, l: insights.codeLangCount,
+        s: insights.sessions,
+      });
+      if (insights.satisfaction !== null) cardParams.set('sat', insights.satisfaction);
+      if (pct) cardParams.set('p', pct);
+      const shareUrl = `https://vibestats.io/card?${cardParams}`;
+
+      // Tweet variants — pick one randomly
+      const tweetVariants = [
+        `I'm ${a.name}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\n${shareUrl}\n\n#vibestats #vibecoding`,
+        `${a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nFind yours: vibestats.io\n\n#vibestats #claudecode`,
+        `My vibecoding personality: ${a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nWhat's yours?\n${shareUrl}\n\n#vibestats #vibecoding`,
+      ];
+      const tweetText = tweetVariants[Math.floor(Math.random() * tweetVariants.length)];
 
       slides.push(`
         <div class="slide" data-slide="6" data-archetype="${archetype}" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.05) 50%,transparent 80%)">
@@ -1088,6 +1135,7 @@
             <div class="card-label">your vibecoding personality</div>
             <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
             <div class="archetype-tagline">"${a.tagline}"</div>
+            ${pct ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:16px;padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">top ${pct}%</div>` : ''}
             <div class="card-stats">
               <div class="card-stat">
                 <div class="card-stat-val">${fmt(insights.sessions)}</div>
@@ -1120,7 +1168,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
               Save card
             </button>
-            <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('https://vibestats.io').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
+            <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
               Copy link
             </button>
             <button class="share-btn share-btn-restart" onclick="location.reload()">
@@ -1420,6 +1468,12 @@
         }
       }, 350);
     };
+
+    // ========================================
+    // TAP vs CLICK HINT
+    // ========================================
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    document.getElementById('tap-hint').textContent = isTouch ? 'tap to continue' : 'click to continue →';
   </script>
 </body>
 </html>
