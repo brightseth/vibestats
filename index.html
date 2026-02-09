@@ -998,7 +998,7 @@
     // ========================================
     // SLIDE GENERATION
     // ========================================
-    function generateSlides(insights, archetype, scores) {
+    function generateSlides(insights, archetype, scores, previousResult) {
       const a = ARCHETYPES[archetype];
       const slides = [];
       const emerging = insights.isEmerging;
@@ -1032,6 +1032,7 @@
           <div class="big-number anim d1">${insights.commitsPerDay.toLocaleString()}</div>
           <div class="big-unit anim d2">commits per day</div>
           <div class="stat-row anim d3">${insights.messagesPerDay.toLocaleString()} messages &middot; ${insights.commandsPerDay.toLocaleString()} commands &middot; every day</div>
+          ${(() => { const comp = getComparisonMultiple('commitsPerDay', insights.commitsPerDay); return comp ? `<div class="stat-row anim d3" style="color:var(--accent);margin-top:4px">${comp}</div>` : ''; })()}
           <div class="slide-body anim d4" style="margin-top:24px">${paceNarrative}</div>
         </div>
       `);
@@ -1202,8 +1203,14 @@
         `);
       }
 
-      // Slide 7: Archetype Card (the shareable moment)
+      // Evolution slide (if previous result exists)
+      const evoSlide = buildEvolutionSlide(previousResult, archetype, insights);
+      if (evoSlide) slides.push(evoSlide);
+
+      // Archetype Card (the shareable moment)
       const pct = scores._percentiles ? scores._percentiles[archetype] : null;
+      const rarity = getArchetypeRarity(archetype);
+      const communityTotal = aggregateStats ? aggregateStats.total : null;
 
       // Build shareable card URL with encoded params
       const cardParams = new URLSearchParams({
@@ -1231,7 +1238,8 @@
             <div class="card-label">your vibecoding personality</div>
             <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
             <div class="archetype-tagline">"${a.tagline}"</div>
-            ${pct ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:16px;padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">top ${pct}%</div>` : ''}
+            ${pct ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:${rarity ? '6px' : '16px'};padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">top ${pct}%</div>` : ''}
+            ${rarity ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:16px">${rarity}% of vibecoders are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
             <div class="card-stats">
               <div class="card-stat">
                 <div class="card-stat-val">${fmt(insights.sessions)}</div>
@@ -1254,6 +1262,7 @@
             <div class="card-period">${insights.days} days &middot; ${insights.dateRange}</div>
             ${buildScoreBreakdown(scores, archetype)}
             <div class="card-brand">vibestats.io</div>
+            ${communityTotal ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em">${communityTotal.toLocaleString()} vibecoders analyzed</div>` : ''}
           </div>
           <div class="share-row anim d3">
             <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" rel="noopener">
@@ -1403,6 +1412,146 @@
     }
 
     // ========================================
+    // AGGREGATE STATS
+    // ========================================
+    let aggregateStats = null;
+
+    async function fetchAggregateStats() {
+      try {
+        const res = await fetch('/api/stats');
+        if (res.ok) aggregateStats = await res.json();
+      } catch (e) { /* graceful degradation */ }
+    }
+
+    async function submitStats(archetype, insights) {
+      try {
+        await fetch('/api/stats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            archetype,
+            commitsPerDay: insights.commitsPerDay,
+            sessions: insights.sessions,
+            languages: insights.codeLangCount,
+            msgsPerSession: insights.msgsPerSession,
+            days: insights.days,
+          }),
+        });
+      } catch (e) { /* fire and forget */ }
+    }
+
+    function getArchetypeRarity(archetype) {
+      if (!aggregateStats || !aggregateStats.total) return null;
+      const count = (aggregateStats.archetypes || {})[archetype] || 0;
+      const pct = Math.max(1, Math.round(count / aggregateStats.total * 100));
+      return pct;
+    }
+
+    function getComparisonMultiple(metric, value) {
+      if (!aggregateStats || !aggregateStats.averages) return null;
+      const avg = aggregateStats.averages[metric];
+      if (!avg || avg === 0) return null;
+      const multiple = value / avg;
+      if (multiple >= 1.5) return `${multiple.toFixed(1)}x above average`;
+      if (multiple <= 0.67) return `${(1 / multiple).toFixed(1)}x more focused`;
+      return null;
+    }
+
+    // ========================================
+    // EVOLUTION TRACKING (localStorage)
+    // ========================================
+    function saveToHistory(archetype, scores, insights) {
+      try {
+        const history = JSON.parse(localStorage.getItem('vibestats_history') || '[]');
+        history.push({
+          date: new Date().toISOString().split('T')[0],
+          dateRange: insights.dateRange,
+          archetype,
+          topScore: scores[archetype],
+          metrics: {
+            commitsPerDay: insights.commitsPerDay,
+            sessions: insights.sessions,
+            languages: insights.codeLangCount,
+            msgsPerSession: insights.msgsPerSession,
+            days: insights.days,
+          },
+        });
+        // Keep last 10 entries
+        if (history.length > 10) history.splice(0, history.length - 10);
+        localStorage.setItem('vibestats_history', JSON.stringify(history));
+      } catch (e) { /* localStorage unavailable */ }
+    }
+
+    function getPreviousResult() {
+      try {
+        const history = JSON.parse(localStorage.getItem('vibestats_history') || '[]');
+        return history.length > 0 ? history[history.length - 1] : null;
+      } catch (e) { return null; }
+    }
+
+    function buildEvolutionSlide(prev, current, currentInsights) {
+      if (!prev) return null;
+      const prevArch = ARCHETYPES[prev.archetype];
+      const currArch = ARCHETYPES[current];
+      if (!prevArch || !currArch) return null;
+
+      const changed = prev.archetype !== current;
+      const pm = prev.metrics || {};
+
+      // Metric deltas
+      const deltas = [];
+      if (pm.commitsPerDay != null) {
+        const d = currentInsights.commitsPerDay - pm.commitsPerDay;
+        if (d !== 0) deltas.push({ label: 'commits/day', from: pm.commitsPerDay, to: currentInsights.commitsPerDay, delta: d });
+      }
+      if (pm.sessions != null) {
+        const d = currentInsights.sessions - pm.sessions;
+        if (d !== 0) deltas.push({ label: 'sessions', from: pm.sessions, to: currentInsights.sessions, delta: d });
+      }
+      if (pm.languages != null) {
+        const d = currentInsights.codeLangCount - pm.languages;
+        if (d !== 0) deltas.push({ label: 'languages', from: pm.languages, to: currentInsights.codeLangCount, delta: d });
+      }
+      if (pm.msgsPerSession != null) {
+        const d = currentInsights.msgsPerSession - pm.msgsPerSession;
+        if (d !== 0) deltas.push({ label: 'msgs/session', from: pm.msgsPerSession, to: currentInsights.msgsPerSession, delta: d });
+      }
+
+      const deltaHTML = deltas.slice(0, 3).map(d => {
+        const sign = d.delta > 0 ? '+' : '';
+        const color = d.delta > 0 ? 'var(--green)' : 'var(--amber)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${d.label}</span>
+          <span style="font-family:var(--mono);font-size:13px"><span style="color:var(--text-dim)">${d.from} →</span> <strong style="color:#fff">${d.to}</strong> <span style="color:${color};font-size:11px">${sign}${d.delta}</span></span>
+        </div>`;
+      }).join('');
+
+      const narrative = changed
+        ? `You were <strong style="background:${prevArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${prevArch.name}</strong>.<br>Now you're evolving.`
+        : `Still <strong>${currArch.name}</strong> — but the numbers tell a different story.`;
+
+      return `
+        <div class="slide" data-slide="evo" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.06) 50%,transparent 80%)">
+          <div class="slide-label anim">your evolution</div>
+          ${changed ? `
+            <div class="anim d1" style="display:flex;align-items:center;gap:16px;margin:16px 0">
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${prevArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${prevArch.name}</span>
+              <span style="font-family:var(--mono);font-size:20px;color:var(--text-dim)">→</span>
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${currArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${currArch.name}</span>
+            </div>
+          ` : `
+            <div class="big-number anim d1" style="font-size:clamp(28px,7vw,40px);background:${currArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${currArch.name}</div>
+          `}
+          <div class="slide-body anim d2" style="margin:16px 0">${narrative}</div>
+          ${deltaHTML ? `<div class="anim d3" style="width:min(320px,85vw);margin-top:8px">${deltaHTML}</div>` : ''}
+          <div class="slide-body anim d4" style="font-size:13px;color:var(--text-dim);margin-top:20px">
+            Previous: ${prev.date} &middot; ${prev.dateRange || ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // ========================================
     // ANALYSIS FLOW
     // ========================================
     async function runAnalysis(data) {
@@ -1412,6 +1561,9 @@
       analyzingEl.classList.remove('hidden');
       const textEl = document.getElementById('analyzing-text');
       const fillEl = document.getElementById('analyzing-fill');
+
+      // Fetch aggregate stats in parallel with animation
+      const statsPromise = fetchAggregateStats();
 
       // Animated analyzing sequence
       fillEl.style.width = '30%';
@@ -1429,16 +1581,26 @@
       const archetype = getTopArchetype(scores);
       const insights = extractInsights(data);
 
+      // Wait for aggregate stats to finish
+      await statsPromise;
+
+      // Check for evolution (previous result in localStorage)
+      const previousResult = getPreviousResult();
+
       await wait(800);
       fillEl.style.width = '100%';
       textEl.textContent = ARCHETYPES[archetype].name;
       await wait(600);
 
       // Generate and show wrapped
-      const slideHTML = generateSlides(insights, archetype, scores);
+      const slideHTML = generateSlides(insights, archetype, scores, previousResult);
       analyzingEl.classList.add('hidden');
       document.getElementById('wrapped-page').classList.remove('hidden');
       initSlideshow(slideHTML);
+
+      // Save to history + submit aggregate stats (after showing results)
+      saveToHistory(archetype, scores, insights);
+      submitStats(archetype, insights);
     }
 
     function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
