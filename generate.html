@@ -4,12 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Find Your Vibecoding Personality | vibestats</title>
-  <meta name="description" content="Upload your Claude Code insights and discover your vibecoding personality. Are you The Orchestrator? The Shipper? The Architect? Find out.">
+  <meta name="description" content="Upload your Claude Code insights and discover your vibecoding personality. 8 archetypes. Your stats, narrated. Everything stays in your browser.">
   <meta property="og:title" content="What's your vibecoding personality? | vibestats">
   <meta property="og:description" content="Upload your Claude Code insights and discover your archetype. The Orchestrator, The Shipper, The Architect, The Debugger...">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vibestats.io/generate">
+  <meta property="og:image" content="https://vibestats.io/og-card.png">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://vibestats.io/og-card.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
@@ -48,7 +50,10 @@
 
     .upload-logo {
       font-family: var(--mono); font-size: 13px; font-weight: 600;
-      color: var(--accent); letter-spacing: 0.05em; margin-bottom: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.05em; margin-bottom: 40px;
     }
     .upload-title {
       font-size: clamp(28px, 7vw, 48px); font-weight: 900;
@@ -308,7 +313,12 @@
     }
     .card-user { font-size: 14px; font-weight: 600; color: #fff; }
     .card-period { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 4px; }
-    .card-brand { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-top: 12px; letter-spacing: 0.1em; }
+    .card-brand {
+      font-family: var(--mono); font-size: 10px; margin-top: 12px; letter-spacing: 0.1em;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
     /* Score breakdown */
     .score-breakdown {
@@ -495,6 +505,10 @@
       <span class="archetype-chip">The Sprinter</span>
       <span class="archetype-chip">The Deep Diver</span>
       <span class="archetype-chip">The Builder</span>
+    </div>
+
+    <div style="margin-top:48px;font-family:var(--mono);font-size:10px;color:var(--text-dim)">
+      made with <a href="https://slashvibe.dev" style="color:var(--accent);text-decoration:none">/vibe</a>
     </div>
   </div>
 

@@ -382,9 +382,11 @@
       color: var(--text-dim); margin-top: 4px;
     }
     .card-brand {
-      font-family: var(--mono); font-size: 10px;
-      color: var(--accent); margin-top: 12px;
+      font-family: var(--mono); font-size: 10px; margin-top: 12px;
       letter-spacing: 0.1em;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     /* Share buttons */
@@ -625,7 +627,7 @@
 
   <canvas class="confetti-canvas hidden" id="confetti-canvas"></canvas>
   <div class="tap-hint" id="tap-hint">tap to continue</div>
-  <a class="back-link" href="/" id="back-link">dashboard &rarr;</a>
+  <a class="back-link" href="/" id="back-link">vibestats.io</a>
 
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
