@@ -105,8 +105,38 @@
       display: none; max-width: 500px;
     }
 
+    .demo-section {
+      margin-top: 32px; text-align: center;
+    }
+    .demo-divider {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+      max-width: 500px; margin-left: auto; margin-right: auto;
+    }
+    .demo-divider::before, .demo-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .demo-divider span {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .demo-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border-radius: 12px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      font-family: var(--mono); font-size: 13px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+    }
+    .demo-btn:hover {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(107,143,255,0.06);
+    }
+    .demo-hint {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      margin-top: 8px;
+    }
+
     .archetypes-preview {
-      display: flex; gap: 10px; margin-top: 48px; flex-wrap: wrap;
+      display: flex; gap: 10px; margin-top: 36px; flex-wrap: wrap;
       justify-content: center; max-width: 600px;
     }
     .archetype-chip {
@@ -239,10 +269,10 @@
 
     /* Archetype card */
     .archetype-card {
-      width: min(360px, 85vw);
+      width: min(380px, 88vw);
       background: linear-gradient(145deg, #0d0d18, #12121f);
       border: 1px solid rgba(107,143,255,0.25);
-      border-radius: 20px; padding: 28px 24px 22px;
+      border-radius: 20px; padding: 28px 24px 20px;
       text-align: center; position: relative; overflow: hidden;
     }
     .archetype-card::before {
@@ -279,6 +309,35 @@
     .card-user { font-size: 14px; font-weight: 600; color: #fff; }
     .card-period { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 4px; }
     .card-brand { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-top: 12px; letter-spacing: 0.1em; }
+
+    /* Score breakdown */
+    .score-breakdown {
+      display: flex; flex-direction: column; gap: 5px;
+      width: 100%; margin-top: 16px; padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .score-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .score-name {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      width: 72px; text-align: right; text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .score-track {
+      flex: 1; height: 4px; background: rgba(255,255,255,0.04);
+      border-radius: 2px; overflow: hidden;
+    }
+    .score-fill {
+      height: 100%; border-radius: 2px;
+      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .score-pct {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      width: 28px; text-align: right;
+    }
+    .score-row.primary .score-name { color: var(--text-muted); font-weight: 600; }
+    .score-row.primary .score-pct { color: var(--text-muted); font-weight: 600; }
 
     .share-row { display: flex; gap: 10px; margin-top: 24px; justify-content: center; flex-wrap: wrap; }
     .share-btn {
@@ -418,6 +477,15 @@
 
     <div class="upload-error" id="upload-error"></div>
 
+    <div class="demo-section">
+      <div class="demo-divider"><span>or</span></div>
+      <button class="demo-btn" onclick="runDemo()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Try a demo
+      </button>
+      <div class="demo-hint">See what it looks like with sample data</div>
+    </div>
+
     <div class="archetypes-preview">
       <span class="archetype-chip">The Orchestrator</span>
       <span class="archetype-chip">The Shipper</span>
@@ -513,6 +581,27 @@
     // ========================================
     // ARCHETYPE SCORING
     // ========================================
+    // ========================================
+    // SCORE BREAKDOWN RENDERER
+    // ========================================
+    function buildScoreBreakdown(scores, topArchetype) {
+      const sorted = Object.entries(scores)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5); // Show top 5
+      const rows = sorted.map(([key, score]) => {
+        const a = ARCHETYPES[key];
+        const isPrimary = key === topArchetype;
+        const colors = a.gradient.match(/#[0-9a-fA-F]{6}/g) || ['#6B8FFF'];
+        const barColor = colors[0];
+        return `<div class="score-row${isPrimary ? ' primary' : ''}">
+          <div class="score-name">${key === 'deepdiver' ? 'diver' : key.slice(0, 8)}</div>
+          <div class="score-track"><div class="score-fill" style="width:${Math.round(score)}%;background:${barColor}${isPrimary ? '' : '80'}"></div></div>
+          <div class="score-pct">${Math.round(score)}%</div>
+        </div>`;
+      }).join('');
+      return `<div class="score-breakdown">${rows}</div>`;
+    }
+
     // Non-code languages (don't count toward polyglot archetype)
     const NON_CODE_LANGS = new Set(['markdown', 'json', 'toml', 'yaml', 'yml', 'xml', 'csv', 'txt', 'ini', 'conf', 'env']);
 
@@ -632,6 +721,61 @@
         return ARCHETYPE_PRIORITY.indexOf(a[0]) - ARCHETYPE_PRIORITY.indexOf(b[0]);
       });
       return sorted[0] ? sorted[0][0] : 'builder';
+    }
+
+    // ========================================
+    // SAMPLE DATA PROFILES (for demo mode)
+    // ========================================
+    const DEMO_PROFILES = [
+      {
+        meta: { user: 'Alex Chen', date_range: '2025-12-01 to 2026-01-15' },
+        user_profile: { working_style: 'Fast-moving builder shipping features at high velocity' },
+        metrics: {
+          total_sessions: 280, total_messages: 3360, commits: 980,
+          satisfaction_rate: 0.85, multi_clauding_rate: 0.03,
+          buggy_code_events: 8,
+          tool_usage: { bash: 6000, read: 4000, edit: 5500, write: 4200, grep: 300 },
+          language_usage: { typescript: 45000, javascript: 8000, css: 2000 }
+        }
+      },
+      {
+        meta: { user: 'Jordan Park', date_range: '2026-01-01 to 2026-02-01' },
+        user_profile: { working_style: 'Methodical researcher who goes deep on complex problems' },
+        metrics: {
+          total_sessions: 45, total_messages: 1350, commits: 90,
+          satisfaction_rate: 0.92, multi_clauding_rate: null,
+          buggy_code_events: 2,
+          tool_usage: { bash: 1800, read: 4800, edit: 1200, write: 200, grep: 900 },
+          language_usage: { rust: 28000, toml: 4000, markdown: 2000 }
+        }
+      },
+      {
+        meta: { user: 'Sam Rivera', date_range: '2025-11-15 to 2026-01-30' },
+        user_profile: { working_style: 'Versatile builder across many languages and paradigms' },
+        metrics: {
+          total_sessions: 200, total_messages: 3000, commits: 520,
+          satisfaction_rate: 0.78, multi_clauding_rate: 0.08,
+          buggy_code_events: 15,
+          tool_usage: { bash: 8000, read: 6000, edit: 5000, write: 2000, grep: 1200 },
+          language_usage: { python: 15000, typescript: 12000, go: 8000, rust: 5000, ruby: 3000, sql: 2000, swift: 1500 }
+        }
+      },
+      {
+        meta: { user: 'Morgan Blake', date_range: '2025-12-10 to 2026-02-05' },
+        user_profile: { working_style: 'Multi-session commander running parallel agent workflows' },
+        metrics: {
+          total_sessions: 800, total_messages: 9600, commits: 2400,
+          satisfaction_rate: 0.68, multi_clauding_rate: 0.42,
+          buggy_code_events: 45,
+          tool_usage: { bash: 38000, read: 10000, edit: 8000, write: 3500, grep: 2800 },
+          language_usage: { typescript: 30000, javascript: 18000, python: 5000, markdown: 8000, json: 6000 }
+        }
+      },
+    ];
+
+    function runDemo() {
+      const profile = DEMO_PROFILES[Math.floor(Math.random() * DEMO_PROFILES.length)];
+      runAnalysis(profile);
     }
 
     // ========================================
@@ -933,6 +1077,7 @@
             </div>
             <div class="card-user">${insights.name}</div>
             <div class="card-period">${insights.days} days &middot; ${insights.dateRange}</div>
+            ${buildScoreBreakdown(scores, archetype)}
             <div class="card-brand">vibestats.io</div>
           </div>
           <div class="share-row anim d3">
