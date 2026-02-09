@@ -25,7 +25,7 @@ export default function handler(req, res) {
   const percentile = p ? esc(p) : null;
 
   const ogParams = new URLSearchParams(req.query).toString();
-  const ogImageUrl = `https://vibestats.io/og-card.png`;
+  const ogImageUrl = `https://vibestats.io/api/og?${ogParams}`;
   const cardUrl = `https://vibestats.io/card?${ogParams}`;
 
   const html = `<!DOCTYPE html>
