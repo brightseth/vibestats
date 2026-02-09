@@ -897,7 +897,7 @@
         candidates.push({
           number: estHours, unit: 'hours with Claude', comparison,
           gradient: 'linear-gradient(135deg, #fff 40%, var(--purple))',
-          impressiveness: Math.min(estHours / 200, 1),
+          impressiveness: Math.min(estHours / 100, 1),
         });
       }
 
@@ -912,7 +912,7 @@
         candidates.push({
           number: fmt(linesEst), unit: 'lines of code', comparison,
           gradient: 'linear-gradient(135deg, #fff 40%, var(--green))',
-          impressiveness: Math.min(linesEst / 80000, 1),
+          impressiveness: Math.min(linesEst / 120000, 1),
         });
       }
 
@@ -926,7 +926,7 @@
         candidates.push({
           number: fmt(insights.bash), unit: 'commands executed', comparison,
           gradient: 'linear-gradient(135deg, #fff 40%, var(--cyan))',
-          impressiveness: Math.min(insights.bash / 20000, 1),
+          impressiveness: Math.min(insights.bash / 15000, 1),
         });
       }
 
@@ -940,7 +940,7 @@
         candidates.push({
           number: fmt(insights.commits), unit: 'commits shipped', comparison,
           gradient: 'linear-gradient(135deg, #fff 40%, var(--green))',
-          impressiveness: Math.min(insights.commits / 1500, 1),
+          impressiveness: Math.min(insights.commits / 1000, 1),
         });
       }
 
@@ -953,7 +953,7 @@
         candidates.push({
           number: fmt(filesInvestigated), unit: 'files investigated', comparison,
           gradient: 'linear-gradient(135deg, #fff 40%, var(--amber))',
-          impressiveness: Math.min(filesInvestigated / 10000, 1),
+          impressiveness: Math.min(filesInvestigated / 8000, 1),
         });
       }
 
