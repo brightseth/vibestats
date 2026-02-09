@@ -593,8 +593,14 @@
     };
 
     // ========================================
-    // ARCHETYPE SCORING
+    // ARCHETYPE SCORING (v2 — sigmoid + power-law normalization)
     // ========================================
+
+    // Smooth 0→1 curve: midpoint = 50% output, steepness controls slope
+    function sig(x, midpoint, steepness) {
+      return 1 / (1 + Math.exp(-(x - midpoint) * steepness));
+    }
+
     // ========================================
     // SCORE BREAKDOWN RENDERER
     // ========================================
@@ -639,73 +645,72 @@
       const writeRate = (tools.write || 0) / totalTools;
       const grepRate = (tools.grep || 0) / totalTools;
       const bashEditRatio = (tools.bash || 0) / Math.max(tools.edit || 1, 1);
-      const readWriteRatio = (tools.read || 0) / Math.max(tools.write || 1, 1);
+      const readWriteRatio = (tools.read || 0) / Math.max((tools.write || 0) + (tools.edit || 0), 1);
+      const writeEditRate = ((tools.write || 0) + (tools.edit || 0)) / totalTools;
       const mcRate = m.multi_clauding_rate || 0;
       const frictionRate = (m.buggy_code_events || 0) / sessions;
-      const satRate = m.satisfaction_rate || 0.5;
 
+      // Raw signal strength per archetype (each 0–100, using sigmoid curves)
+      // Primary signal (50%) + secondary (30%) + tertiary/anti-correlation (20%)
+      const raw = {};
+
+      // ORCHESTRATOR: multi-clauding is THE differentiator
+      raw.orchestrator =
+        sig(mcRate, 0.15, 12) * 50 +
+        sig(bashEditRatio, 2.5, 1) * 30 +
+        sig(sessions, 400, 0.005) * 20;
+
+      // SHIPPER: commits per session is THE differentiator
+      raw.shipper =
+        sig(commitsPerSession, 1.0, 2.5) * 50 +
+        sig(commits / Math.max(days, 1), 8, 0.2) * 30 +
+        sig(writeRate, 0.06, 25) * 20;
+
+      // ARCHITECT: read:write ratio is THE differentiator
+      raw.architect =
+        sig(readWriteRatio, 2.5, 1.5) * 50 +
+        sig(readRate, 0.25, 8) * 30 +
+        sig(msgsPerSession, 10, 0.15) * 20;
+
+      // DEBUGGER: grep rate is THE differentiator
+      raw.debugger =
+        sig(grepRate, 0.05, 35) * 50 +
+        sig(frictionRate, 0.03, 40) * 30 +
+        sig(bashRate, 0.4, 5) * 20;
+
+      // POLYGLOT: language count is THE differentiator
+      raw.polyglot =
+        sig(langs.length, 5, 0.8) * 60 +
+        sig(langs.length, 3, 1.5) * 40;
+
+      // SPRINTER: many sessions/day + shorter sessions (anti-deep diver)
+      raw.sprinter =
+        sig(sessionsPerDay, 6, 0.4) * 50 +
+        sig(messages, 4000, 0.0004) * 25 +
+        (1 - sig(msgsPerSession, 12, 0.2)) * 25;
+
+      // DEEP DIVER: deep sessions + few sessions/day (anti-sprinter)
+      raw.deepdiver =
+        sig(msgsPerSession, 12, 0.25) * 50 +
+        (1 - sig(sessionsPerDay, 5, 0.4)) * 30 +
+        sig(msgsPerSession, 20, 0.15) * 20;
+
+      // BUILDER: high write+edit rate + low read:write (anti-architect)
+      raw.builder =
+        sig(writeEditRate, 0.2, 10) * 50 +
+        (1 - sig(readWriteRatio, 2.0, 1)) * 30 +
+        sig((tools.write || 0) + (tools.edit || 0), 1500, 0.001) * 20;
+
+      // Normalize: power-amplify differences so top archetype stands out
+      const maxRaw = Math.max(...Object.values(raw));
       const scores = {};
-
-      // THE ORCHESTRATOR — parallel sessions + system-level commands
-      scores.orchestrator = clamp(
-        (mcRate > 0.15 ? 40 : mcRate * 250) +
-        (bashEditRatio > 2.5 ? 30 : bashEditRatio * 12) +
-        (sessions > 1000 ? 30 : sessions * 0.03)
-      );
-
-      // THE SHIPPER — high commit rate + high write usage
-      scores.shipper = clamp(
-        (commitsPerSession > 0.8 ? 40 : commitsPerSession * 50) +
-        (writeRate > 0.06 ? 30 : writeRate * 500) +
-        (commits > 500 ? 30 : commits * 0.06)
-      );
-
-      // THE ARCHITECT — reads a lot, careful, deep sessions
-      scores.architect = clamp(
-        (readWriteRatio > 3.5 ? 40 : readWriteRatio * 11) +
-        (readRate > 0.2 ? 30 : readRate * 150) +
-        (msgsPerSession > 10 ? 30 : msgsPerSession * 3)
-      );
-
-      // THE DEBUGGER — grep heavy, deals with friction
-      scores.debugger = clamp(
-        (grepRate > 0.04 ? 40 : grepRate * 1000) +
-        (frictionRate > 0.01 ? 30 : frictionRate * 3000) +
-        (bashRate > 0.4 ? 30 : bashRate * 75)
-      );
-
-      // THE POLYGLOT — many languages
-      scores.polyglot = clamp(
-        (langs.length >= 6 ? 50 : langs.length * 8) +
-        (langs.length >= 4 ? 30 : langs.length * 7) +
-        20
-      );
-
-      // THE SPRINTER — high intensity, many sessions/day
-      scores.sprinter = clamp(
-        (sessionsPerDay > 10 ? 40 : sessionsPerDay * 4) +
-        (msgsPerSession > 8 ? 30 : msgsPerSession * 3.75) +
-        (messages > 5000 ? 30 : messages * 0.006)
-      );
-
-      // THE DEEP DIVER — few sessions, very deep
-      scores.deepdiver = clamp(
-        (msgsPerSession > 15 ? 45 : msgsPerSession * 3) +
-        (sessionsPerDay < 5 ? 30 : Math.max(0, 30 - sessionsPerDay * 6)) +
-        (msgsPerSession > 20 ? 25 : msgsPerSession * 1.25)
-      );
-
-      // THE BUILDER — high write + edit relative to read
-      scores.builder = clamp(
-        (writeRate > 0.06 ? 35 : writeRate * 583) +
-        (editRate > 0.15 ? 35 : editRate * 233) +
-        ((tools.write || 0) > 1000 ? 30 : (tools.write || 0) * 0.03)
-      );
+      for (const k of Object.keys(raw)) {
+        const ratio = maxRaw > 0 ? raw[k] / maxRaw : 0;
+        scores[k] = Math.round(Math.pow(ratio, 1.5) * 92);
+      }
 
       return scores;
     }
-
-    function clamp(v) { return Math.min(100, Math.max(0, v)); }
 
     function parseDays(data) {
       try {
