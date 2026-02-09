@@ -48,19 +48,31 @@ export default async function handler(req, res) {
     if (!hasRedis) return res.status(200).json({ ok: true, stored: false });
 
     try {
+      // Rate limit: 1 submission per IP per hour
+      const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+      const rlKey = `vs:rl:${ip}`;
+      const rlCheck = await pipeline([['GET', rlKey]]);
+      if (rlCheck[0]?.result) {
+        return res.status(429).json({ error: 'Rate limited — 1 submission per hour' });
+      }
+      await pipeline([['SET', rlKey, '1', 'EX', '3600']]);
+
       const { archetype, commitsPerDay, sessions, languages, msgsPerSession, days } = req.body || {};
       if (!archetype || !ARCHETYPE_KEYS.includes(archetype)) {
         return res.status(400).json({ error: 'valid archetype required' });
       }
 
+      // Clamp numeric values to prevent extreme inputs
+      const clamp = (v, max) => Math.min(Math.max(Number(v) || 0, 0), max);
+
       await pipeline([
         ['INCR', 'vs:total'],
         ['INCR', `vs:arch:${archetype}`],
-        ['INCRBYFLOAT', 'vs:sum:cpd', String(Number(commitsPerDay) || 0)],
-        ['INCRBYFLOAT', 'vs:sum:sess', String(Number(sessions) || 0)],
-        ['INCRBYFLOAT', 'vs:sum:langs', String(Number(languages) || 0)],
-        ['INCRBYFLOAT', 'vs:sum:mps', String(Number(msgsPerSession) || 0)],
-        ['INCRBYFLOAT', 'vs:sum:days', String(Number(days) || 0)],
+        ['INCRBYFLOAT', 'vs:sum:cpd', String(clamp(commitsPerDay, 200))],
+        ['INCRBYFLOAT', 'vs:sum:sess', String(clamp(sessions, 10000))],
+        ['INCRBYFLOAT', 'vs:sum:langs', String(clamp(languages, 50))],
+        ['INCRBYFLOAT', 'vs:sum:mps', String(clamp(msgsPerSession, 500))],
+        ['INCRBYFLOAT', 'vs:sum:days', String(clamp(days, 1000))],
       ]);
 
       res.status(200).json({ ok: true, stored: true });
