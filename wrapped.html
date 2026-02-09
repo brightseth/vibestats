@@ -14,8 +14,7 @@
   <meta name="twitter:description" content="360 commits/day across 8 parallel Claude Code sessions. What's your vibecoding personality?">
   <meta property="og:image" content="https://vibestats.io/og-card.png">
   <meta name="twitter:image" content="https://vibestats.io/og-card.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
     :root {
       --bg: #06060a;
@@ -434,6 +433,15 @@
     }
     .back-link:hover { color: var(--accent); }
 
+    /* iOS safe areas */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .slide { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+      .tap-hint { bottom: calc(32px + env(safe-area-inset-bottom)); }
+      .back-link { bottom: calc(16px + env(safe-area-inset-bottom)); }
+    }
+    .share-btn { min-height: 44px; -webkit-tap-highlight-color: transparent; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+
     /* Mobile adjustments */
     @media (max-width: 480px) {
       .slide { padding: 50px 24px 32px; }
@@ -619,7 +627,7 @@
 
       <div class="cta-generate anim d4">
         What's YOUR vibecoding personality?<br>
-        <a href="/generate">Find out &rarr;</a>
+        <a href="/">Find out &rarr;</a>
       </div>
     </div>
 
@@ -629,7 +637,7 @@
   <div class="tap-hint" id="tap-hint">tap to continue</div>
   <a class="back-link" href="/" id="back-link">vibestats.io</a>
 
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="/lib/html2canvas.min.js"></script>
   <script>
     const TOTAL_SLIDES = 7;
     let current = 0;
