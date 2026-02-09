@@ -14,181 +14,101 @@ const ARCHETYPES = {
 };
 
 export default async function handler(req) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const key = searchParams.get('a') || 'builder';
-    const name = searchParams.get('n') || 'Vibecoder';
-    const days = searchParams.get('d') || '?';
-    const commits = searchParams.get('c') || '?';
-    const langs = searchParams.get('l') || '?';
-    const sessions = searchParams.get('s') || '?';
-    const sat = searchParams.get('sat');
-    const pct = searchParams.get('p');
+  const { searchParams } = new URL(req.url);
+  const key = searchParams.get('a') || 'builder';
+  const name = searchParams.get('n') || 'Vibecoder';
+  const days = searchParams.get('d') || '?';
+  const commits = searchParams.get('c') || '?';
+  const langs = searchParams.get('l') || '?';
+  const sessions = searchParams.get('s') || '?';
+  const sat = searchParams.get('sat');
+  const pct = searchParams.get('p');
+  const a = ARCHETYPES[key] || ARCHETYPES.builder;
 
-    const a = ARCHETYPES[key] || ARCHETYPES.builder;
-
-    // Build stat boxes HTML-style for satori
-    const statItems = [
-      { val: sessions, label: 'sessions' },
-      { val: commits + '/day', label: 'commits' },
-      { val: langs, label: 'languages' },
-      { val: sat ? sat + '%' : '—', label: sat ? 'satisfaction' : '' },
-    ];
-
-    return new ImageResponse(
-      {
-        type: 'div',
-        props: {
-          style: {
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#06060a',
-            padding: '40px 60px',
-            fontFamily: 'Inter, sans-serif',
-          },
-          children: [
-            // Label
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: 14,
-                  color: '#555568',
-                  letterSpacing: '0.2em',
-                  marginBottom: 24,
-                },
-                children: 'YOUR VIBECODING PERSONALITY',
-              },
-            },
-            // Archetype name
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: 72,
-                  fontWeight: 900,
-                  color: a.color,
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.1,
-                  marginBottom: 8,
-                },
-                children: a.name,
-              },
-            },
-            // Tagline
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: 22,
-                  color: '#8888a0',
-                  fontStyle: 'italic',
-                  marginBottom: 36,
-                },
-                children: '"' + a.tagline + '"',
-              },
-            },
-            // Stats row
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  gap: 20,
-                  marginBottom: 36,
-                },
-                children: statItems.map(item => ({
-                  type: 'div',
-                  props: {
-                    style: {
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      padding: '14px 28px',
-                      backgroundColor: 'rgba(255,255,255,0.04)',
-                      borderRadius: 12,
-                      border: '1px solid rgba(255,255,255,0.06)',
-                    },
-                    children: [
-                      {
-                        type: 'div',
-                        props: {
-                          style: { fontSize: 28, fontWeight: 700, color: '#ffffff' },
-                          children: String(item.val),
-                        },
-                      },
-                      {
-                        type: 'div',
-                        props: {
-                          style: {
-                            fontSize: 11,
-                            color: '#666680',
-                            marginTop: 4,
-                            letterSpacing: '0.06em',
-                          },
-                          children: item.label.toUpperCase(),
-                        },
-                      },
-                    ],
-                  },
-                })),
-              },
-            },
-            // User name
-            {
-              type: 'div',
-              props: {
-                style: { fontSize: 22, fontWeight: 600, color: '#ffffff' },
-                children: name,
-              },
-            },
-            // Days
-            {
-              type: 'div',
-              props: {
-                style: { fontSize: 14, color: '#555568', marginTop: 4 },
-                children: days + ' days of vibecoding',
-              },
-            },
-            // Percentile (if available)
-            ...(pct ? [{
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: 14,
-                  color: a.color,
-                  marginTop: 16,
-                  padding: '6px 20px',
-                  border: '1px solid ' + a.color + '40',
-                  borderRadius: 20,
-                  display: 'flex',
-                },
-                children: 'top ' + pct + '%',
-              },
-            }] : []),
-            // Brand
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: 13,
-                  color: '#444458',
-                  letterSpacing: '0.12em',
-                  marginTop: 20,
-                },
-                children: 'vibestats.io',
-              },
-            },
-          ],
-        },
+  const el = {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#06060a',
+        padding: 60,
+        fontFamily: 'sans-serif',
       },
-      { width: 1200, height: 630 },
-    );
-  } catch (e) {
-    return new Response('OG generation failed: ' + e.message, { status: 500 });
-  }
+      children: [
+        {
+          type: 'span',
+          props: {
+            style: { fontSize: 14, color: '#555568', letterSpacing: 4, marginBottom: 24 },
+            children: 'YOUR VIBECODING PERSONALITY',
+          },
+        },
+        {
+          type: 'span',
+          props: {
+            style: { fontSize: 72, fontWeight: 900, color: a.color, marginBottom: 8 },
+            children: a.name,
+          },
+        },
+        {
+          type: 'span',
+          props: {
+            style: { fontSize: 22, color: '#8888a0', marginBottom: 36 },
+            children: '"' + a.tagline + '"',
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { display: 'flex', gap: 20, marginBottom: 36 },
+            children: [
+              { type: 'div', props: { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 20, backgroundColor: '#111118', borderRadius: 12 }, children: [
+                { type: 'span', props: { style: { fontSize: 28, fontWeight: 700, color: 'white' }, children: String(sessions) } },
+                { type: 'span', props: { style: { fontSize: 11, color: '#666680', marginTop: 4 }, children: 'SESSIONS' } },
+              ]}},
+              { type: 'div', props: { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 20, backgroundColor: '#111118', borderRadius: 12 }, children: [
+                { type: 'span', props: { style: { fontSize: 28, fontWeight: 700, color: 'white' }, children: commits + '/day' } },
+                { type: 'span', props: { style: { fontSize: 11, color: '#666680', marginTop: 4 }, children: 'COMMITS' } },
+              ]}},
+              { type: 'div', props: { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 20, backgroundColor: '#111118', borderRadius: 12 }, children: [
+                { type: 'span', props: { style: { fontSize: 28, fontWeight: 700, color: 'white' }, children: String(langs) } },
+                { type: 'span', props: { style: { fontSize: 11, color: '#666680', marginTop: 4 }, children: 'LANGUAGES' } },
+              ]}},
+              { type: 'div', props: { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 20, backgroundColor: '#111118', borderRadius: 12 }, children: [
+                { type: 'span', props: { style: { fontSize: 28, fontWeight: 700, color: 'white' }, children: sat ? sat + '%' : '—' } },
+                { type: 'span', props: { style: { fontSize: 11, color: '#666680', marginTop: 4 }, children: sat ? 'SATISFACTION' : '' } },
+              ]}},
+            ],
+          },
+        },
+        {
+          type: 'span',
+          props: {
+            style: { fontSize: 22, fontWeight: 600, color: 'white' },
+            children: name,
+          },
+        },
+        {
+          type: 'span',
+          props: {
+            style: { fontSize: 14, color: '#555568', marginTop: 4 },
+            children: days + ' days of vibecoding',
+          },
+        },
+        {
+          type: 'span',
+          props: {
+            style: { fontSize: 13, color: '#444458', letterSpacing: 2, marginTop: 24 },
+            children: 'vibestats.io',
+          },
+        },
+      ],
+    },
+  };
+
+  return new ImageResponse(el, { width: 1200, height: 630 });
 }
