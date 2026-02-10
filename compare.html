@@ -225,6 +225,47 @@
     }
     .vibe-footer-btn:hover { border-color: var(--accent); color: #fff; }
 
+    /* Community pairings card */
+    .community-pairings {
+      width: min(480px, 90vw); margin-top: 24px; opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .community-pairings.loaded { opacity: 1; }
+    .community-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px 24px; text-align: left;
+    }
+    .community-card-header {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px;
+    }
+    .community-live-pair {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .community-live-pair:last-child { border-bottom: none; }
+    .community-pair-name {
+      font-family: var(--sans); font-size: 13px; font-weight: 600; color: #fff;
+      flex: 1;
+    }
+    .community-pair-count {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    }
+    .community-pair-badge {
+      font-family: var(--mono); font-size: 10px; color: var(--accent);
+      padding: 2px 8px; border: 1px solid rgba(107,143,255,0.2);
+      border-radius: 8px;
+    }
+    .community-match-line {
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+      text-align: center;
+    }
+    .community-match-line strong {
+      color: var(--accent); font-weight: 600;
+    }
+
     @supports (padding: env(safe-area-inset-bottom)) {
       .page { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
     }
@@ -267,6 +308,7 @@
         <div class="pair-brand">vibestats.io</div>
       </div>
       <div class="result-actions" id="result-actions"></div>
+      <div class="community-pairings" id="community-pairings"></div>
     </div>
 
     <div class="vibe-footer">
@@ -491,6 +533,52 @@
           Try different pair
         </button>
       `;
+
+      // Fetch community pairing data from /vibe
+      fetchCommunityPairings(aType, bType);
+    }
+
+    async function fetchCommunityPairings(aType, bType) {
+      const container = document.getElementById('community-pairings');
+      if (!container) return;
+      try {
+        const res = await fetch('https://www.slashvibe.dev/api/coding-dna');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success || !data.community) return;
+
+        const { topPairings, total } = data.community;
+        const pairKey = [aType, bType].sort().join(':');
+
+        // Find if this specific pairing exists in live data
+        const thisPair = topPairings.find(p => `${p.a}:${p.b}` === pairKey);
+
+        let html = '<div class="community-card">';
+        html += '<div class="community-card-header">Popular pairings on /vibe this week</div>';
+
+        if (topPairings.length > 0) {
+          const show = topPairings.slice(0, 3);
+          for (const p of show) {
+            const isThis = `${p.a}:${p.b}` === pairKey;
+            html += `<div class="community-live-pair">
+              <span class="community-pair-name">${p.name}${isThis ? ' <span class="community-pair-badge">your pair</span>' : ''}</span>
+              <span class="community-pair-count">${p.count} active</span>
+            </div>`;
+          }
+        } else {
+          html += '<div style="font-size:12px;color:var(--text-dim);padding:8px 0">No pairing data yet — be the first!</div>';
+        }
+
+        if (thisPair) {
+          html += `<div class="community-match-line"><strong>${thisPair.count}</strong> ${thisPair.name} pair${thisPair.count !== 1 ? 's' : ''} active on /vibe</div>`;
+        } else if (total > 0) {
+          html += `<div class="community-match-line"><strong>${total}</strong> vibecoding personalities on /vibe</div>`;
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+        container.classList.add('loaded');
+      } catch (e) { /* graceful degradation */ }
     }
 
     function tryDifferent() {
@@ -501,6 +589,8 @@
       window.history.pushState({}, '', url);
       document.getElementById('result').classList.remove('visible');
       document.getElementById('picker').style.display = '';
+      const cp = document.getElementById('community-pairings');
+      if (cp) { cp.innerHTML = ''; cp.classList.remove('loaded'); }
       showPicker(meType);
     }
 
