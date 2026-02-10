@@ -147,9 +147,24 @@ export default function handler(req, res) {
     <div class="user">${name}</div>
     <div class="period">${days} days of vibecoding</div>
     ${percentile ? `<div class="percentile">top ${percentile}%</div>` : ''}
+    <div id="community-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:8px"></div>
     <div class="brand">vibestats.io</div>
   </div>
   <a class="cta" href="/">What's YOUR personality? &rarr;</a>
+  <a class="cta" href="https://www.slashvibe.dev/join?ref=vibestats_card&archetype=${key}" target="_blank" rel="noopener" style="margin-top:12px;background:linear-gradient(135deg,rgba(107,143,255,0.2),rgba(167,139,250,0.15));border-color:rgba(107,143,255,0.5)">Find other ${esc(arch.name.replace('THE ', ''))}s on /vibe &rarr;</a>
+  <script>
+    (async function() {
+      try {
+        var r = await fetch('https://www.slashvibe.dev/api/archetype-stats');
+        if (!r.ok) return;
+        var d = await r.json();
+        if (!d.success || !d.distribution) return;
+        var count = d.distribution['${key}'] || 0;
+        var el = document.getElementById('community-count');
+        if (el && count > 0) el.textContent = count + ' other ' + '${esc(arch.name.replace('THE ', ''))}' + (count !== 1 ? 's' : '') + ' on /vibe';
+      } catch(e) {}
+    })();
+  </script>
   <div class="footer">made with <a href="https://slashvibe.dev">/vibe</a></div>
 </body>
 </html>`;

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Coding Genome | vibestats</title>
+  <meta name="description" content="How the Claude Code community codes. Live archetype distribution, community averages, and the coding genome barcode. Updated in real time.">
+  <meta property="og:title" content="The Coding Genome | vibestats">
+  <meta property="og:description" content="How the Claude Code community codes. Live archetype distribution, community averages, and genome barcode.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vibestats.io/genome">
+  <meta property="og:image" content="https://vibestats.io/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://vibestats.io/og-card.png">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a; --surface: #0d0d14; --surface-2: #14141e; --border: #252535;
+      --text: #E0E0E0; --text-muted: #8888a0; --text-dim: #555568;
+      --accent: #6B8FFF; --purple: #a78bfa; --green: #22c55e; --amber: #f59e0b;
+      --red: #ef4444; --pink: #ff79c6; --cyan: #22d3ee;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans); background: var(--bg); color: var(--text);
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---- Nav ---- */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 32px; max-width: 1200px; margin: 0 auto; width: 100%;
+    }
+    .nav-logo {
+      font-family: var(--mono); font-size: 14px; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; letter-spacing: 0.05em; text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+      text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--accent); }
+
+    /* ---- Page Container ---- */
+    .page {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px 80px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* ---- Section spacing ---- */
+    .section {
+      width: 100%; margin-bottom: 64px;
+    }
+    .section-label {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(20px, 4vw, 28px); font-weight: 800; color: #fff;
+      letter-spacing: -0.02em; margin-bottom: 24px;
+    }
+
+    /* ---- Hero ---- */
+    .hero {
+      text-align: center; padding: 64px 0 48px; width: 100%;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 7vw, 64px); font-weight: 900; color: #fff;
+      letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff 0%, #c0c0d0 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle {
+      font-size: clamp(14px, 2.5vw, 18px); color: var(--text-muted);
+      line-height: 1.6; max-width: 520px; margin: 0 auto 24px;
+    }
+    .hero-counter {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 10px 24px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-family: var(--mono); font-size: 14px; color: var(--text);
+    }
+    .hero-counter .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    .hero-counter .count {
+      font-weight: 700; color: #fff; font-size: 18px;
+      min-width: 40px; text-align: center;
+    }
+    .hero-counter .count-label {
+      color: var(--text-muted); font-size: 12px;
+    }
+
+    @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ---- Skeleton ---- */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ---- Distribution Bars ---- */
+    .dist-bars { display: flex; flex-direction: column; gap: 12px; }
+    .dist-row {
+      display: grid; grid-template-columns: 120px 1fr 60px; gap: 12px;
+      align-items: center;
+    }
+    .dist-name {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      text-transform: capitalize; text-align: right;
+    }
+    .dist-bar-track {
+      height: 28px; background: var(--surface); border-radius: 6px;
+      overflow: hidden; position: relative;
+    }
+    .dist-bar-fill {
+      height: 100%; border-radius: 6px; transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+      width: 0; position: relative;
+    }
+    .dist-bar-fill::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08));
+      border-radius: 6px;
+    }
+    .dist-meta {
+      font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+      text-align: left; white-space: nowrap;
+    }
+    .dist-meta .dist-count { color: #fff; font-weight: 600; }
+    .dist-skeleton-row {
+      display: grid; grid-template-columns: 120px 1fr 60px; gap: 12px;
+      align-items: center;
+    }
+    .dist-skeleton-row .sk-name { width: 80px; height: 16px; }
+    .dist-skeleton-row .sk-bar { height: 28px; width: 100%; }
+    .dist-skeleton-row .sk-meta { width: 50px; height: 14px; }
+
+    /* ---- Averages Grid ---- */
+    .avg-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+    }
+    .avg-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 16px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .avg-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.5;
+    }
+    .avg-label {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;
+    }
+    .avg-value {
+      font-size: 32px; font-weight: 900; color: #fff;
+      letter-spacing: -0.02em; margin-bottom: 12px;
+      line-height: 1;
+    }
+    .avg-bar-track {
+      height: 4px; background: var(--surface-2); border-radius: 2px;
+      overflow: hidden;
+    }
+    .avg-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+      width: 0;
+    }
+    .avg-threshold {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      margin-top: 6px;
+    }
+    .avg-skeleton-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 16px; text-align: center;
+    }
+    .avg-skeleton-card .sk-label { width: 60px; height: 10px; margin: 0 auto 8px; }
+    .avg-skeleton-card .sk-val { width: 50px; height: 32px; margin: 0 auto 12px; }
+    .avg-skeleton-card .sk-bar { width: 100%; height: 4px; }
+
+    /* ---- Archetype Profiles ---- */
+    .profile-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    }
+    .profile-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; transition: transform 0.2s, border-color 0.2s;
+    }
+    .profile-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+    .profile-accent { height: 3px; }
+    .profile-body { padding: 20px 16px; }
+    .profile-name {
+      font-family: var(--sans); font-size: 16px; font-weight: 800;
+      margin-bottom: 2px;
+    }
+    .profile-tagline {
+      font-family: var(--mono); font-size: 11px; font-style: italic;
+      margin-bottom: 10px; line-height: 1.4;
+    }
+    .profile-pct {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .profile-desc {
+      font-size: 13px; color: var(--text-muted); line-height: 1.5;
+    }
+
+    /* ---- Genome Barcode ---- */
+    .barcode-container {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px 24px; text-align: center;
+      overflow: hidden;
+    }
+    .barcode-vis {
+      display: flex; align-items: flex-end; justify-content: center;
+      gap: 2px; min-height: 80px; margin-bottom: 24px;
+      flex-wrap: nowrap; overflow: hidden;
+    }
+    .barcode-bar {
+      border-radius: 1px 1px 0 0; opacity: 0;
+      animation: barcodeIn 0.6s ease forwards;
+    }
+    @keyframes barcodeIn {
+      from { opacity: 0; transform: scaleY(0); }
+      to { opacity: 0.85; transform: scaleY(1); }
+    }
+    .barcode-legend {
+      display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
+    }
+    .barcode-legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+    }
+    .barcode-legend-swatch {
+      width: 12px; height: 12px; border-radius: 3px;
+    }
+    .barcode-skeleton {
+      display: flex; align-items: flex-end; justify-content: center;
+      gap: 2px; min-height: 80px; margin-bottom: 24px;
+    }
+
+    /* ---- CTAs ---- */
+    .cta-row {
+      display: flex; gap: 12px; justify-content: center;
+      flex-wrap: wrap; padding: 16px 0;
+    }
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: 12px;
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      text-decoration: none; cursor: pointer; border: none;
+      transition: all 0.2s; min-height: 48px;
+    }
+    .cta-primary {
+      background: linear-gradient(135deg, var(--accent), #5070dd);
+      color: #fff;
+    }
+    .cta-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .cta-secondary {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text);
+    }
+    .cta-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .cta-vibe {
+      background: linear-gradient(135deg, rgba(107,143,255,0.2), rgba(167,139,250,0.15));
+      border: 1px solid rgba(107,143,255,0.5); color: #8aadff;
+    }
+    .cta-vibe:hover {
+      border-color: var(--accent); color: #fff;
+      background: linear-gradient(135deg, rgba(107,143,255,0.3), rgba(167,139,250,0.2));
+    }
+
+    /* ---- /vibe Footer ---- */
+    .vibe-footer { margin-top: 16px; width: min(400px, 90vw); }
+    .vibe-footer-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px 24px; text-align: center;
+    }
+    .vibe-footer-logo {
+      font-family: var(--mono); font-size: 16px; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .vibe-footer-tagline { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+    .vibe-footer-presence {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+      margin: 12px 0;
+    }
+    .vibe-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    .vibe-footer-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 20px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(107,143,255,0.12), rgba(167,139,250,0.08));
+      border: 1px solid rgba(107,143,255,0.3);
+      font-family: var(--mono); font-size: 12px; font-weight: 500;
+      color: #8aadff; text-decoration: none; transition: all 0.2s;
+    }
+    .vibe-footer-btn:hover { border-color: var(--accent); color: #fff; }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 768px) {
+      .nav { padding: 16px 20px; }
+      .nav-links { gap: 16px; }
+      .hero { padding: 40px 0 32px; }
+      .avg-grid { grid-template-columns: repeat(3, 1fr); }
+      .profile-grid { grid-template-columns: repeat(2, 1fr); }
+      .dist-row { grid-template-columns: 90px 1fr 50px; gap: 8px; }
+      .dist-name { font-size: 11px; }
+      .dist-skeleton-row { grid-template-columns: 90px 1fr 50px; gap: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .page { padding: 0 16px 64px; }
+      .nav { padding: 14px 16px; }
+      .nav-links { gap: 12px; }
+      .nav-links a { font-size: 11px; }
+      .hero { padding: 28px 0 24px; }
+      .section { margin-bottom: 48px; }
+      .avg-grid { grid-template-columns: repeat(2, 1fr); }
+      .profile-grid { grid-template-columns: 1fr; }
+      .dist-row { grid-template-columns: 80px 1fr 44px; gap: 6px; }
+      .dist-name { font-size: 10px; }
+      .dist-skeleton-row { grid-template-columns: 80px 1fr 44px; gap: 6px; }
+      .cta-row { flex-direction: column; align-items: stretch; }
+      .cta-btn { justify-content: center; }
+      .barcode-vis { gap: 1px; }
+    }
+
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .page { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a class="nav-logo" href="/">vibestats</a>
+    <div class="nav-links">
+      <a href="/">Quiz</a>
+      <a href="/compare">Compare</a>
+      <a href="/genome" class="active">Genome</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1>The Coding Genome</h1>
+      <p class="hero-subtitle">How the Claude Code community codes. Updated live.</p>
+      <div class="hero-counter">
+        <span class="pulse-dot"></span>
+        <span class="count" id="hero-total">&mdash;</span>
+        <span class="count-label">coders mapped</span>
+      </div>
+    </section>
+
+    <!-- Archetype Distribution -->
+    <section class="section">
+      <div class="section-label">Archetype Distribution</div>
+      <div class="section-title">What the community looks like</div>
+      <div class="dist-bars" id="dist-bars">
+        <!-- Skeleton -->
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+        <div class="dist-skeleton-row"><div class="skeleton sk-name"></div><div class="skeleton sk-bar"></div><div class="skeleton sk-meta"></div></div>
+      </div>
+    </section>
+
+    <!-- Community Averages -->
+    <section class="section">
+      <div class="section-label">Community Averages</div>
+      <div class="section-title">The average Claude Code session</div>
+      <div class="avg-grid" id="avg-grid">
+        <!-- Skeleton -->
+        <div class="avg-skeleton-card"><div class="skeleton sk-label"></div><div class="skeleton sk-val"></div><div class="skeleton sk-bar"></div></div>
+        <div class="avg-skeleton-card"><div class="skeleton sk-label"></div><div class="skeleton sk-val"></div><div class="skeleton sk-bar"></div></div>
+        <div class="avg-skeleton-card"><div class="skeleton sk-label"></div><div class="skeleton sk-val"></div><div class="skeleton sk-bar"></div></div>
+        <div class="avg-skeleton-card"><div class="skeleton sk-label"></div><div class="skeleton sk-val"></div><div class="skeleton sk-bar"></div></div>
+        <div class="avg-skeleton-card"><div class="skeleton sk-label"></div><div class="skeleton sk-val"></div><div class="skeleton sk-bar"></div></div>
+      </div>
+    </section>
+
+    <!-- Archetype Profiles -->
+    <section class="section">
+      <div class="section-label">Archetype Profiles</div>
+      <div class="section-title">The 8 archetypes</div>
+      <div class="profile-grid" id="profile-grid"></div>
+    </section>
+
+    <!-- Genome Barcode -->
+    <section class="section">
+      <div class="section-label">Community DNA</div>
+      <div class="section-title">The Genome Barcode</div>
+      <div class="barcode-container">
+        <div class="barcode-vis" id="barcode-vis">
+          <!-- Skeleton bars -->
+          <div class="barcode-skeleton" id="barcode-skeleton"></div>
+        </div>
+        <div class="barcode-legend" id="barcode-legend"></div>
+      </div>
+    </section>
+
+    <!-- CTAs -->
+    <section class="section" style="text-align:center">
+      <div class="cta-row">
+        <a class="cta-btn cta-primary" href="/">Discover your archetype &rarr;</a>
+        <a class="cta-btn cta-secondary" href="/compare">Compare with a friend</a>
+        <a class="cta-btn cta-vibe" href="https://www.slashvibe.dev/join?ref=vibestats_genome" target="_blank" rel="noopener">Join the community on /vibe &rarr;</a>
+      </div>
+    </section>
+
+    <!-- /vibe Footer -->
+    <div class="vibe-footer">
+      <div class="vibe-footer-card">
+        <div class="vibe-footer-logo">/vibe</div>
+        <div class="vibe-footer-tagline">The social network for Claude Code</div>
+        <div class="vibe-footer-presence">
+          <span class="vibe-dot"></span>
+          <span id="vibe-online-count">&mdash;</span> online now
+        </div>
+        <br>
+        <a class="vibe-footer-btn" href="https://www.slashvibe.dev/join?ref=vibestats_genome" target="_blank" rel="noopener">
+          Join /vibe &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== Constants ===== */
+    const ARCHETYPE_COLORS = {
+      orchestrator: '#6B8FFF',
+      shipper:      '#22c55e',
+      architect:    '#3b82f6',
+      debugger:     '#f59e0b',
+      polyglot:     '#ff79c6',
+      sprinter:     '#ef4444',
+      deepdiver:    '#1e40af',
+      builder:      '#16a34a',
+    };
+
+    const ARCHETYPE_PROFILES = {
+      orchestrator: {
+        name: 'The Orchestrator',
+        tagline: "You don't code \u2014 you conduct.",
+        desc: 'Multi-session maestro running parallel agents. Coordinates complexity across terminals, delegates with precision, and sees the whole board at once.',
+        gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)',
+      },
+      shipper: {
+        name: 'The Shipper',
+        tagline: 'Done is better than perfect. You live this.',
+        desc: 'High commit velocity. Features go from idea to production before the standup ends. The git log tells the story.',
+        gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)',
+      },
+      architect: {
+        name: 'The Architect',
+        tagline: 'You read before you write. You plan before you build.',
+        desc: 'Deep reader, careful planner. Systems are designed on paper before a single line is written. Every abstraction is intentional.',
+        gradient: 'linear-gradient(135deg, #3b82f6, #6B8FFF)',
+      },
+      debugger: {
+        name: 'The Debugger',
+        tagline: "You don't guess. You investigate.",
+        desc: 'High grep usage, systematic problem solver. Traces the bug from symptom to root cause with detective-grade precision.',
+        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+      },
+      polyglot: {
+        name: 'The Polyglot',
+        tagline: 'One language is never enough.',
+        desc: 'Diverse tech stack, versatile builder. Moves between TypeScript, Python, Rust, and Go like a native speaker in each.',
+        gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b)',
+      },
+      sprinter: {
+        name: 'The Sprinter',
+        tagline: 'Fast, focused, ferocious.',
+        desc: 'High-intensity sessions, rapid-fire. Short bursts of extreme output. The session timer barely starts before the commits roll in.',
+        gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)',
+      },
+      deepdiver: {
+        name: 'The Deep Diver',
+        tagline: 'You go deep, not wide.',
+        desc: 'Fewer sessions but much deeper. Hours-long explorations into a single problem. The code that emerges is surgical.',
+        gradient: 'linear-gradient(135deg, #1e40af, #3b82f6)',
+      },
+      builder: {
+        name: 'The Builder',
+        tagline: "You build things that didn't exist before.",
+        desc: 'High write-to-read ratio. Greenfield energy. Every session produces something new, tangible, and real.',
+        gradient: 'linear-gradient(135deg, #16a34a, #22c55e)',
+      },
+    };
+
+    const AVG_METRICS = [
+      { key: 'commitsPerDay', label: 'Commits / Day', threshold: 20, format: v => v.toFixed(1) },
+      { key: 'sessions',      label: 'Sessions',      threshold: 500, format: v => Math.round(v).toLocaleString() },
+      { key: 'languages',     label: 'Languages',     threshold: 5,  format: v => v.toFixed(1) },
+      { key: 'msgsPerSession', label: 'Msgs / Session', threshold: 15, format: v => Math.round(v).toString() },
+      { key: 'days',          label: 'Active Days',   threshold: 60, format: v => Math.round(v).toString() },
+    ];
+
+    /* ===== Skeleton for barcode ===== */
+    (function initBarcodeSkeleton() {
+      const el = document.getElementById('barcode-skeleton');
+      let html = '';
+      for (let i = 0; i < 80; i++) {
+        const h = 15 + Math.random() * 40;
+        html += `<div class="skeleton" style="width:3px;height:${h}px;border-radius:1px;flex-shrink:0"></div>`;
+      }
+      el.innerHTML = html;
+    })();
+
+    /* ===== Render Archetype Profiles (static, immediate) ===== */
+    (function renderProfiles() {
+      const grid = document.getElementById('profile-grid');
+      const keys = Object.keys(ARCHETYPE_PROFILES);
+      grid.innerHTML = keys.map(key => {
+        const p = ARCHETYPE_PROFILES[key];
+        const color = ARCHETYPE_COLORS[key];
+        return `
+          <div class="profile-card">
+            <div class="profile-accent" style="background:${p.gradient}"></div>
+            <div class="profile-body">
+              <div class="profile-name" style="color:${color}">${p.name}</div>
+              <div class="profile-tagline" style="color:${color}99">${p.tagline}</div>
+              <div class="profile-pct" id="profile-pct-${key}">&mdash;% of community</div>
+              <div class="profile-desc">${p.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    })();
+
+    /* ===== Data Fetch ===== */
+    async function loadData() {
+      const [statsResult, archetypeStatsResult] = await Promise.allSettled([
+        fetch('/api/stats').then(r => r.ok ? r.json() : null),
+        fetch('https://www.slashvibe.dev/api/archetype-stats').then(r => r.ok ? r.json() : null),
+      ]);
+
+      const stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+
+      if (stats) {
+        renderHeroCount(stats.total);
+        renderDistribution(stats.total, stats.archetypes);
+        renderAverages(stats.averages);
+        renderBarcode(stats.total, stats.archetypes);
+        renderProfilePercentages(stats.total, stats.archetypes);
+      } else {
+        renderErrorState();
+      }
+    }
+
+    /* ===== Render: Hero Count ===== */
+    function renderHeroCount(total) {
+      const el = document.getElementById('hero-total');
+      animateCount(el, total, 1200);
+    }
+
+    function animateCount(el, target, duration) {
+      const start = performance.now();
+      const from = 0;
+      function tick(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(from + (target - from) * ease).toLocaleString();
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    /* ===== Render: Distribution Bars ===== */
+    function renderDistribution(total, archetypes) {
+      const container = document.getElementById('dist-bars');
+      const sorted = Object.entries(archetypes).sort((a, b) => b[1] - a[1]);
+      const maxCount = sorted[0][1];
+
+      container.innerHTML = sorted.map(([key, count]) => {
+        const pct = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+        const barPct = maxCount > 0 ? ((count / maxCount) * 100) : 0;
+        const color = ARCHETYPE_COLORS[key];
+        return `
+          <div class="dist-row">
+            <div class="dist-name" style="color:${color}">${key}</div>
+            <div class="dist-bar-track">
+              <div class="dist-bar-fill" style="background:${color}" data-width="${barPct}%"></div>
+            </div>
+            <div class="dist-meta"><span class="dist-count">${count}</span> <span style="color:var(--text-dim)">${pct}%</span></div>
+          </div>
+        `;
+      }).join('');
+
+      // Animate bars in
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.querySelectorAll('.dist-bar-fill').forEach((bar, i) => {
+            setTimeout(() => {
+              bar.style.width = bar.dataset.width;
+            }, i * 80);
+          });
+        });
+      });
+    }
+
+    /* ===== Render: Averages ===== */
+    function renderAverages(averages) {
+      const grid = document.getElementById('avg-grid');
+      grid.innerHTML = AVG_METRICS.map(m => {
+        const val = averages[m.key] || 0;
+        const pct = Math.min((val / m.threshold) * 100, 100);
+        return `
+          <div class="avg-card">
+            <div class="avg-label">${m.label}</div>
+            <div class="avg-value">${m.format(val)}</div>
+            <div class="avg-bar-track">
+              <div class="avg-bar-fill" data-width="${pct}%"></div>
+            </div>
+            <div class="avg-threshold">vs ${m.threshold} power user</div>
+          </div>
+        `;
+      }).join('');
+
+      // Animate bars
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          grid.querySelectorAll('.avg-bar-fill').forEach((bar, i) => {
+            setTimeout(() => { bar.style.width = bar.dataset.width; }, i * 120);
+          });
+        });
+      });
+    }
+
+    /* ===== Render: Profile Percentages ===== */
+    function renderProfilePercentages(total, archetypes) {
+      for (const [key, count] of Object.entries(archetypes)) {
+        const el = document.getElementById(`profile-pct-${key}`);
+        if (el && total > 0) {
+          el.textContent = ((count / total) * 100).toFixed(1) + '% of community';
+        }
+      }
+    }
+
+    /* ===== Render: Genome Barcode ===== */
+    function renderBarcode(total, archetypes) {
+      const vis = document.getElementById('barcode-vis');
+      const legend = document.getElementById('barcode-legend');
+      const BAR_COUNT = 200;
+
+      // Build proportional array
+      const bars = [];
+      const sorted = Object.entries(archetypes).sort((a, b) => b[1] - a[1]);
+      for (const [key, count] of sorted) {
+        const n = total > 0 ? Math.max(Math.round((count / total) * BAR_COUNT), 1) : Math.round(BAR_COUNT / 8);
+        for (let i = 0; i < n && bars.length < BAR_COUNT; i++) {
+          bars.push(key);
+        }
+      }
+      // Fill remaining
+      while (bars.length < BAR_COUNT) {
+        bars.push(sorted[0][0]);
+      }
+
+      // Shuffle for organic feel (Fisher-Yates)
+      for (let i = bars.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bars[i], bars[j]] = [bars[j], bars[i]];
+      }
+
+      vis.innerHTML = bars.map((key, i) => {
+        const h = 20 + Math.random() * 40;
+        const w = 2 + Math.random() * 2;
+        const delay = i * 8;
+        return `<div class="barcode-bar" style="width:${w}px;height:${h}px;background:${ARCHETYPE_COLORS[key]};animation-delay:${delay}ms;flex-shrink:0"></div>`;
+      }).join('');
+
+      // Legend
+      legend.innerHTML = sorted.map(([key]) => `
+        <div class="barcode-legend-item">
+          <div class="barcode-legend-swatch" style="background:${ARCHETYPE_COLORS[key]}"></div>
+          ${key}
+        </div>
+      `).join('');
+    }
+
+    /* ===== Error State ===== */
+    function renderErrorState() {
+      document.getElementById('hero-total').textContent = '...';
+      document.getElementById('dist-bars').innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:16px 0">Data temporarily unavailable. Refresh to retry.</p>';
+      document.getElementById('avg-grid').innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:16px 0;grid-column:1/-1">Data temporarily unavailable.</p>';
+      document.getElementById('barcode-vis').innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:16px 0">Barcode loading...</p>';
+    }
+
+    /* ===== /vibe Presence ===== */
+    (async function fetchVibePresence() {
+      try {
+        const res = await fetch('https://www.slashvibe.dev/api/presence');
+        if (res.ok) {
+          const data = await res.json();
+          const count = Array.isArray(data) ? data.length : (data.online || data.count || 0);
+          const el = document.getElementById('vibe-online-count');
+          if (el && count > 0) el.textContent = count;
+        }
+      } catch (e) { /* graceful degradation */ }
+    })();
+
+    /* ===== Init ===== */
+    loadData();
+  </script>
+</body>
+</html>

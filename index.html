@@ -348,6 +348,21 @@
     .score-row.primary .score-name { color: var(--text-muted); font-weight: 600; }
     .score-row.primary .score-pct { color: var(--text-muted); font-weight: 600; }
 
+    /* DNA Barcode */
+    .dna-barcode {
+      display: flex; align-items: flex-end; gap: 2px; justify-content: center;
+      height: 32px; margin-top: 14px; padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .dna-bar {
+      width: 6px; border-radius: 2px 2px 0 0; min-height: 3px;
+      transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .sub-archetype {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
     .share-row { display: flex; gap: 10px; margin-top: 24px; justify-content: center; flex-wrap: wrap; }
     .share-btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -694,6 +709,83 @@
         </div>`;
       }).join('');
       return `<div class="score-breakdown">${rows}</div>`;
+    }
+
+    // ========================================
+    // DNA BARCODE + SUB-ARCHETYPE
+    // ========================================
+    const ARCHETYPE_COLORS = {
+      orchestrator: '#6B8FFF', shipper: '#22c55e', architect: '#3b82f6', debugger: '#f59e0b',
+      polyglot: '#ff79c6', sprinter: '#ef4444', deepdiver: '#1e40af', builder: '#16a34a',
+    };
+
+    const SUB_PREFIXES = {
+      orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
+      debugger: 'investigative', polyglot: 'multi-stack', sprinter: 'rapid-fire',
+      deepdiver: 'deep-session', builder: 'prolific',
+    };
+
+    function buildDnaBarcode(scores) {
+      const bars = Object.entries(ARCHETYPE_COLORS).map(([key, color]) => {
+        const score = scores[key] || 0;
+        const height = Math.max(3, Math.round(score / 92 * 28));
+        return `<div class="dna-bar" style="height:${height}px;background:${color};opacity:${0.3 + (score/92)*0.7}"></div>`;
+      }).join('');
+      return `<div class="dna-barcode">${bars}</div>`;
+    }
+
+    function getSubArchetype(scores, primary) {
+      const sorted = Object.entries(scores)
+        .filter(([k]) => k !== primary && !k.startsWith('_'))
+        .sort((a, b) => b[1] - a[1]);
+      if (!sorted.length) return '';
+      const secondary = sorted[0][0];
+      const prefix = SUB_PREFIXES[secondary] || secondary;
+      const primaryShort = primary === 'deepdiver' ? 'Deep Diver' : primary.charAt(0).toUpperCase() + primary.slice(1);
+      return `<div class="sub-archetype">You're a ${prefix} ${primaryShort}</div>`;
+    }
+
+    function buildPredictionSlide(scores, primary, slideIndex) {
+      const sorted = Object.entries(scores)
+        .filter(([k]) => k !== primary && !k.startsWith('_'))
+        .sort((a, b) => b[1] - a[1]);
+      const top2 = sorted[0];
+      if (!top2) return '';
+      const curr = ARCHETYPES[primary];
+      const next = ARCHETYPES[top2[0]];
+      if (!curr || !next) return '';
+
+      if (top2[1] >= 55) {
+        return `
+          <div class="slide" data-slide="${slideIndex}" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.06) 50%,transparent 80%)">
+            <div class="slide-label anim">your next evolution</div>
+            <div class="anim d1" style="display:flex;align-items:center;gap:16px;margin:16px 0;flex-wrap:wrap;justify-content:center">
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${curr.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${curr.name}</span>
+              <span style="font-family:var(--mono);font-size:20px;color:var(--text-dim)">&rarr;</span>
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${next.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${next.name}</span>
+            </div>
+            <div class="slide-body anim d2" style="margin-top:16px">
+              Your coding DNA is shifting toward<br><strong>${next.name}</strong>
+            </div>
+            <div class="slide-body anim d3" style="font-size:14px;color:var(--text-dim);margin-top:20px">
+              Secondary signal: ${top2[1]}% — ${next.tagline.toLowerCase()}
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="slide" data-slide="${slideIndex}" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.06) 50%,transparent 80%)">
+            <div class="slide-label anim">your next evolution</div>
+            <div class="big-number anim d1" style="font-size:clamp(28px,7vw,40px);background:${curr.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${curr.name}</div>
+            <div class="slide-body anim d2" style="margin-top:16px">
+              Your style is crystallizing &mdash;<br><strong>pure ${curr.name.replace('THE ', '')}</strong>
+            </div>
+            <div class="slide-body anim d3" style="font-size:14px;color:var(--text-dim);margin-top:20px">
+              No strong secondary signal. You know exactly who you are.
+            </div>
+          </div>
+        `;
+      }
     }
 
     // Non-code languages (don't count toward polyglot archetype)
@@ -1268,6 +1360,10 @@
       const evoSlide = buildEvolutionSlide(previousResult, archetype, insights);
       if (evoSlide) slides.push(evoSlide);
 
+      // Prediction slide
+      const predSlide = buildPredictionSlide(scores, archetype, slides.length);
+      if (predSlide) slides.push(predSlide);
+
       // Archetype Card (the shareable moment)
       const pct = scores._percentiles ? scores._percentiles[archetype] : null;
       const rarity = getArchetypeRarity(archetype);
@@ -1298,7 +1394,7 @@
             <div class="shimmer-overlay"></div>
             <div class="card-label">your vibecoding personality</div>
             <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
-            <div class="archetype-tagline">"${a.tagline}"</div>
+            ${getSubArchetype(scores, archetype)}<div class="archetype-tagline">"${a.tagline}"</div>
             ${pct ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:${rarity ? '6px' : '16px'};padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">top ${pct}%</div>` : ''}
             ${rarity ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:16px">${rarity}% of vibecoders are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
             <div class="card-stats">
@@ -1322,7 +1418,7 @@
             <div class="card-user">${insights.name}</div>
             <div class="card-period">${insights.days} days &middot; ${insights.dateRange}</div>
             ${buildScoreBreakdown(scores, archetype)}
-            <div class="card-brand">vibestats.io</div>
+            ${buildDnaBarcode(scores)}<div class="card-brand">vibestats.io</div>
             ${communityTotal ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em">${communityTotal.toLocaleString()} vibecoders analyzed</div>` : ''}
           </div>
           <div class="share-row anim d3">

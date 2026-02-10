@@ -491,9 +491,52 @@
           Try different pair
         </button>
       `;
+
+      // Fetch live pairing data from /vibe
+      fetchPairingData(aType, bType, compat);
+    }
+
+    async function fetchPairingData(aType, bType, compat) {
+      const container = document.createElement('div');
+      container.id = 'vibe-pairings';
+      container.style.cssText = 'margin-top:24px;width:min(480px,90vw);opacity:0;transition:opacity 0.5s';
+      document.getElementById('result').appendChild(container);
+
+      try {
+        const res = await fetch('https://www.slashvibe.dev/api/coding-dna');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.community) return;
+
+        const myKey = [aType, bType].sort().join(':');
+        const pairings = (data.community.topPairings || []).slice(0, 3);
+
+        let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;text-align:center">';
+        html += '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:12px">Popular pairings on /vibe</div>';
+
+        if (pairings.length > 0) {
+          pairings.forEach(p => {
+            const isYours = [p.a, p.b].sort().join(':') === myKey;
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${isYours ? 'color:var(--accent)' : 'color:var(--text-muted)'}">
+              <span style="font-family:var(--mono);font-size:12px">${p.name}${isYours ? ' (you!)' : ''}</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${p.count} pairs</span>
+            </div>`;
+          });
+        }
+
+        if (data.community.total > 0) {
+          html += `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${data.community.total} vibecoders with archetypes on /vibe</div>`;
+        }
+        html += '</div>';
+
+        container.innerHTML = html;
+        requestAnimationFrame(() => container.style.opacity = '1');
+      } catch (e) { /* graceful degradation */ }
     }
 
     function tryDifferent() {
+      const vp = document.getElementById('vibe-pairings');
+      if (vp) vp.remove();
       const url = new URL(window.location);
       const meType = url.searchParams.get('a');
       url.searchParams.delete('b');
