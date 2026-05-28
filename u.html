@@ -549,7 +549,7 @@
       if (me && me.gh_handle !== handle) {
         const myLatest = await latestForHandle(me.gh_handle);
         if (myLatest?.archetype) {
-          compareCta.href = `/compare?a=${encodeURIComponent(me.gh_handle)}&b=${encodeURIComponent(handle)}`;
+          compareCta.href = `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(me.gh_handle)}`;
           compareCta.textContent = `See your pairing with @${handle}`;
           note.textContent = 'Instant comparison from your latest saved profile.';
         }

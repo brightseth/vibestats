@@ -40,6 +40,16 @@ async function assertApiImports() {
   console.log(`ok api imports (${apiModules.length})`);
 }
 
+async function assertRoutes() {
+  const config = JSON.parse(await readFile('vercel.json', 'utf8'));
+  const rewrites = config.rewrites || [];
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/compare?a=:other&b=:handle'),
+    'person-backed pair route should rewrite to compare',
+  );
+  console.log('ok route rewrites');
+}
+
 async function assertUploadSanitizer() {
   const { sanitizeUploadPayload } = await import('../api/_lib/uploads.js');
   const payload = sanitizeUploadPayload({
@@ -232,6 +242,7 @@ async function assertBadgeFallback() {
 
 await assertHtmlScriptsParse();
 await assertApiImports();
+await assertRoutes();
 await assertUploadSanitizer();
 await assertSessionRoundTrip();
 await assertSameOriginGuard();

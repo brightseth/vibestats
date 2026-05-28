@@ -6,6 +6,7 @@
   ],
   "rewrites": [
     { "source": "/u/:handle/badge.svg", "destination": "/api/badge?handle=:handle" },
+    { "source": "/u/:handle/pair/:other", "destination": "/compare?a=:other&b=:handle" },
     { "source": "/u/:handle", "destination": "/api/profile?handle=:handle" },
     { "source": "/settings", "destination": "/settings.html" },
     { "source": "/card", "destination": "/api/card" }

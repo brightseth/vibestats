@@ -17,6 +17,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A shareable card** with dynamic OG image (`/card?a=…`) → Twitter intent prefilled.
 - **A community genome page** (`/genome`) — archetype distribution + community averages.
 - **A compatibility view** (`/compare`) — two pasted profiles side-by-side.
+- **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
 - **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites.
 
 **Privacy stance:** the insights JSON never leaves the browser. Only aggregate metrics (archetype + 5 averages) are POSTed to Redis for the community page, rate-limited 1/IP/hr.

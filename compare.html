@@ -530,6 +530,13 @@
       return subject.handle ? `@${subject.handle}` : ARCHETYPES[subject.type].short;
     }
 
+    function canonicalShareUrl(aSubject, bSubject) {
+      if (aSubject.handle && bSubject.handle) {
+        return `https://vibestats.io/u/${encodeURIComponent(bSubject.handle)}/pair/${encodeURIComponent(aSubject.handle)}`;
+      }
+      return `https://vibestats.io/compare?a=${encodeURIComponent(subjectParam(aSubject))}&b=${encodeURIComponent(subjectParam(bSubject))}`;
+    }
+
     function showResult(aSubjectInput, bSubjectInput) {
       const aSubject = normalizeSubject(aSubjectInput);
       const bSubject = normalizeSubject(bSubjectInput);
@@ -582,7 +589,7 @@
       document.title = `${subjectLabel(aSubject)} + ${subjectLabel(bSubject)} = ${compat.name} | vibestats`;
 
       // Share URL
-      const shareUrl = `https://vibestats.io/compare?a=${encodeURIComponent(subjectParam(aSubject))}&b=${encodeURIComponent(subjectParam(bSubject))}`;
+      const shareUrl = canonicalShareUrl(aSubject, bSubject);
       const tweetText = `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\nCompare your vibecoding personality:\n${shareUrl}\n\n#vibestats #vibecoding`;
 
       document.getElementById('result-actions').innerHTML = `

@@ -1801,7 +1801,7 @@
       if (!compareTo || !compareArchetype || !ARCHETYPES[compareArchetype]) return '';
       if (!/^[a-zA-Z0-9-]{1,39}$/.test(compareTo)) return '';
       const compareUrl = currentUser
-        ? `/compare?a=${encodeURIComponent(currentUser.gh_handle)}&b=${encodeURIComponent(compareTo)}`
+        ? `/u/${encodeURIComponent(compareTo)}/pair/${encodeURIComponent(currentUser.gh_handle)}`
         : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(compareArchetype)}`;
       return `<br><a href="${compareUrl}">See your pairing with @${compareTo}</a>`;
     }
