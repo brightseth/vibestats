@@ -3,3 +3,6 @@ node_modules
 test-*.mjs
 test-results
 .env*.local
+
+# Unlisted personal report shares
+r/
