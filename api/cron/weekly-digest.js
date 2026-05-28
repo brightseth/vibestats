@@ -2,6 +2,7 @@ import { originForRequest } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
 import { buildWeeklyDigest } from '../_lib/digest.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
+import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
 import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
 
 const MAX_DIGESTS_PER_RUN = 100;
@@ -82,46 +83,6 @@ async function monthlyRarity(latest) {
   return {
     count,
     tier: rarityTier(count),
-  };
-}
-
-async function weeklyLeaderboardRank(user, latest) {
-  if (user.privacy !== 'public' || !latest?.archetype) return null;
-
-  const rows = await sql()`
-    with weekly as (
-      select
-        u.id,
-        latest.archetype,
-        latest.scores,
-        latest.uploaded_at,
-        row_number() over (
-          order by coalesce((latest.scores->>${latest.archetype})::numeric, 0) desc, latest.uploaded_at desc
-        )::int as rank,
-        count(*) over()::int as total
-      from users u
-      join lateral (
-        select archetype, scores, uploaded_at
-        from uploads
-        where user_id = u.id
-          and uploaded_at >= date_trunc('week', now())
-        order by uploaded_at desc
-        limit 1
-      ) latest on true
-      where u.privacy = 'public'
-        and latest.archetype = ${latest.archetype}
-    )
-    select rank, total
-    from weekly
-    where id = ${user.id}
-    limit 1
-  `;
-  const row = rows[0];
-  if (!row) return null;
-  return {
-    rank: row.rank,
-    total: row.total,
-    label: latest.archetype,
   };
 }
 

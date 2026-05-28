@@ -1,6 +1,7 @@
 import { readSession } from '../_lib/auth.js';
 import { publicUser, sql } from '../_lib/db.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
+import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
 import { publicMatchSettings } from '../_lib/profile-settings.js';
 import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
 
@@ -76,6 +77,7 @@ export default async function handler(req, res) {
       match: publicMatchSettings(settingsRows[0] || {}),
       uploads,
       rarity,
+      leaderboard: await weeklyLeaderboardRank(user, uploads[0]),
     }, {
       'Cache-Control': 'no-store',
     });

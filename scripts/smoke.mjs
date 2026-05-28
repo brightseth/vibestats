@@ -17,6 +17,7 @@ const apiModules = [
   '../api/cron/weekly-digest.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/signatures.js',
+  '../api/_lib/leaderboard-rank.js',
   '../api/_lib/digest.js',
   '../api/leaderboard.js',
   '../api/match.js',
@@ -59,6 +60,8 @@ async function assertApiImports() {
 async function assertRoutes() {
   const config = JSON.parse(await readFile('vercel.json', 'utf8'));
   const leaderboardApi = await readFile('api/leaderboard.js', 'utf8');
+  const profileApi = await readFile('api/u/[handle].js', 'utf8');
+  const profileHtml = await readFile('u.html', 'utf8');
   const rewrites = config.rewrites || [];
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/compare?a=:other&b=:handle'),
@@ -83,6 +86,8 @@ async function assertRoutes() {
   assert(csp.includes("frame-ancestors 'none'"), 'global CSP should keep non-embed pages unframeable');
   assert(leaderboardApi.includes("date_trunc('week', now())"), 'leaderboard API should reset weekly');
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
+  assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
+  assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   console.log('ok route rewrites');
 }

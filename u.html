@@ -553,6 +553,13 @@
       return `${rarity.tier} combo: 1 of ${fmt(rarity.count)} saved ${plural} this month`;
     }
 
+    function leaderboardText(leaderboard) {
+      if (!leaderboard?.rank) return '';
+      const label = ARCHETYPE_SHORT_NAMES[leaderboard.label] || leaderboard.label || 'archetype';
+      const total = leaderboard.total ? ` of ${fmt(leaderboard.total)}` : '';
+      return `#${fmt(leaderboard.rank)}${total} on weekly ${label} board`;
+    }
+
     function uploadStreak(uploads) {
       const sorted = [...uploads]
         .map((upload) => new Date(upload.uploaded_at))
@@ -831,9 +838,10 @@
       document.getElementById('archetype-line').style.backgroundClip = 'text';
       document.getElementById('archetype-line').textContent = arch.name;
       document.getElementById('tagline').textContent = arch.tagline;
-      document.getElementById('signature-row').innerHTML = signature.label ? `
-        <span class="signature-pill">${esc(signature.label)}</span>
-        <span class="signature-detail">${esc(scarcityText(profile.rarity))}</span>
+      const signatureDetails = [scarcityText(profile.rarity), leaderboardText(profile.leaderboard)].filter(Boolean);
+      document.getElementById('signature-row').innerHTML = signature.label || signatureDetails.length ? `
+        ${signature.label ? `<span class="signature-pill">${esc(signature.label)}</span>` : ''}
+        ${signatureDetails.map((detail) => `<span class="signature-detail">${esc(detail)}</span>`).join('')}
       ` : '';
       renderLookingFor(profile);
       document.getElementById('card-name').textContent = arch.name;

@@ -20,7 +20,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
 - **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites.
 - **An embeddable profile card** (`/u/<handle>/embed`) for personal sites, with a link back to compare.
-- **Weekly public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only.
+- **Weekly public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only, with rank shown on `/u/<handle>`.
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
 
 **Privacy stance:** the insights JSON never leaves the browser. Only aggregate metrics (archetype + 5 averages) are POSTed to Redis for the community page, rate-limited 1/IP/hr.
