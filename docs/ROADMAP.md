@@ -60,10 +60,10 @@ Each wave is 1–2 weeks of focused dev. They're sequential because each depends
 **Deliverables:**
 
 1. **GitHub OAuth.** Use NextAuth or a tiny custom flow. The handle is the only profile field that matters at first. Store: `{ gh_id, gh_handle, avatar_url, created_at, last_seen_at }`.
-2. **Postgres on Neon** (reuse the slashvibe stack). Tables: `users`, `uploads` (archetype + metrics over time), `profile_settings` (privacy toggles).
+2. **Postgres on Neon** (fresh vibestats project under the same Vercel/team ownership; do not share the `/vibe` database for Wave 1). Tables: `users`, `uploads` (archetype + metrics over time), `profile_settings` (privacy toggles).
 3. **`/u/<handle>` profile page.** Renders the latest archetype card big, then evolution timeline (sparkline of primary archetype score over time), then community stats (percentile within archetype).
 4. **Upload flow change.** Logged-in users get a "save to your profile" toggle, default on. Logged-out users keep the privacy-first ephemeral path.
-5. **Privacy toggles.** Public profile / unlisted / private. Hide raw counts. Hide languages. Default: public, all visible.
+5. **Privacy toggles.** Public profile / unlisted / private. Hide raw counts. Hide languages. Default: unlisted for Wave 1; directory visibility and leaderboard inclusion require explicit public opt-in.
 6. **OG share at `/u/<handle>`.** Reuse `api/og.js` — same card, real handle.
 
 **Non-goals:**
@@ -81,7 +81,7 @@ create table users (
   avatar_url text,
   created_at timestamptz default now(),
   last_seen_at timestamptz default now(),
-  privacy text default 'public'   -- public | unlisted | private
+  privacy text default 'unlisted' -- public | unlisted | private
 );
 
 create table uploads (
@@ -207,7 +207,7 @@ create index on uploads(user_id, uploaded_at desc);
 - `getvibed.io` ← cringe but maybe right
 - Rename whole product? Probably no — domain equity, search recognition, and the genome page all anchor here.
 
-Default: keep `vibestats` as the brand, ship matchmaker as a feature surface. Revisit at Wave 4 if it's pulling its own gravity.
+Decision: keep `vibestats` as the brand, ship matchmaker as a feature surface. Revisit at Wave 4 if it's pulling its own gravity.
 
 ---
 
@@ -221,12 +221,17 @@ Third risk: **8 archetypes feeling stale at scale.** Once we hit ~5K users, the 
 
 ---
 
-## Open questions for Seth
+## Decision defaults
 
-1. **GitHub OAuth scope:** read-only public profile, or also read commit count for credentializing? Latter strengthens proof but raises permission ask.
-2. **Pricing on Wave 5:** are we building this toward revenue or toward a /vibe community signal? Affects how aggressively we paywall.
-3. **Naming:** rename or stay? (See above.)
-4. **Anthropic relationship:** is there an opportunity to ask them to deep-link `/insights` to vibestats? Worth the ask?
-5. **Genome page evolution:** keep as standalone community-stats page, or fold into `/u/<handle>` as "you vs. community"?
+1. **GitHub OAuth scope:** identity only for Wave 1. Request the minimum needed for `id`, `login`, and `avatar_url`; do not ask for repo, commit, private data, or email scopes. Add credential proof later as an explicit verification feature.
+2. **Database:** fresh Neon project for vibestats, not the shared `/vibe` database. Keep the schema portable so future shared auth is a deliberate migration.
+3. **Privacy default:** `unlisted`. Users can share `/u/<handle>` immediately, but public directory/leaderboard inclusion should be opt-in.
+4. **Naming:** keep `vibestats`. The matchmaker is a feature surface (`/match`, `/u/<handle>/pair`) until it earns a sub-brand.
+5. **Anthropic relationship:** yes, ask about `/insights` deep-linking and signed exports. Treat it as leverage, not a dependency.
+
+Still open for later:
+
+1. **Pricing on Wave 5:** revenue product or `/vibe` community signal?
+2. **Genome page evolution:** keep standalone, or fold into `/u/<handle>` as "you vs. community"?
 
 See `docs/CODEX-KICKOFF.md` for the Wave 1 starting task.

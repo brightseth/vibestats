@@ -47,8 +47,8 @@ Full Wave 1 spec is in `docs/ROADMAP.md`. The constraint: **don't break the priv
 
 ### Tech choices (recommended, not mandatory)
 
-- **Auth:** Auth.js (NextAuth) with the GitHub provider. Or roll a tiny custom OAuth flow — vibestats is static so NextAuth pulls in Next.js, which is a bigger commitment than you might want. **Lean recommendation: tiny custom OAuth flow + signed session cookie (HS256 JWT, `VIBE_SESSION_SECRET`).** Same pattern as the rest of the /vibe stack.
-- **DB:** Neon Postgres. The /vibe platform already uses Neon — coordinate with Seth for a shared instance or a new project. Use `postgres` (the lightweight client) or `@neondatabase/serverless`. Avoid Prisma — overkill here.
+- **Auth:** Auth.js (NextAuth) with the GitHub provider. Or roll a tiny custom OAuth flow — vibestats is static so NextAuth pulls in Next.js, which is a bigger commitment than you might want. **Lean recommendation: tiny custom OAuth flow + signed session cookie (HS256 JWT, `VIBE_SESSION_SECRET`).** Same pattern as the rest of the /vibe stack. For Wave 1, request GitHub identity only: no repo, commit, private data, or email scopes.
+- **DB:** Fresh Neon Postgres project for vibestats under the same Vercel/team ownership, not the shared `/vibe` database. Keep the schema small and portable so a future shared identity layer can be intentional. Use `postgres` (the lightweight client) or `@neondatabase/serverless`. Avoid Prisma — overkill here.
 - **Migrations:** plain SQL files in `db/migrations/000X_description.sql`. Run via a simple `npm run migrate` script. No ORM.
 - **Frontend for `/u/<handle>`:** keep it static HTML + JS for consistency, OR introduce a single Next.js route if you need server-rendered profile pages. Pick the simpler thing.
 
@@ -64,7 +64,7 @@ create table users (
   avatar_url text,
   created_at timestamptz default now(),
   last_seen_at timestamptz default now(),
-  privacy text default 'public' check (privacy in ('public','unlisted','private'))
+  privacy text default 'unlisted' check (privacy in ('public','unlisted','private'))
 );
 
 create table uploads (
@@ -126,11 +126,13 @@ What to **not** ship in week 1: leaderboards, compatibility, embed badge, weekly
 - **State updates:** post to `~/.seth/inbox/$(date +%s)-vibestats.json` with `{type: "update", from: "vibestats", summary: "…"}`. The @seth coordinator picks them up.
 - **Open questions:** comment on the PR or wire a state-sync. Don't wait for Slack — the wire protocol is the fast path.
 
-Open questions from the roadmap that need a Seth answer before you finish Wave 1:
+Default answers from the roadmap review. Implement these unless Seth overrides:
 
-1. GitHub OAuth scope — read-only public, or include commit-count permission?
-2. Shared DB instance with /vibe platform, or a fresh Neon project for vibestats?
-3. Privacy default — public, unlisted, or private?
+1. GitHub OAuth scope — identity only. The app needs `id`, `login`, and `avatar_url`; it does not need commit reads in Wave 1. If credential proof matters later, add an explicit verification step or CLI token flow instead of widening the first permission ask.
+2. Database — fresh Neon project for vibestats. Do not mix product data with `/vibe` until shared auth and retention semantics are designed.
+3. Privacy default — `unlisted`. Users still get `/u/<handle>` and can share it, but directory visibility and leaderboard inclusion should require an explicit public toggle.
+4. Naming — keep `vibestats` as the brand. Ship matchmaker as `/match` or `/u/<handle>/pair`; revisit sub-branding only after Wave 4 has real pull.
+5. Anthropic relationship — yes, ask about `/insights` deep-linking and signed exports, but do not block Wave 1 on it. The CLI is the fallback path.
 
 Ship a stub answer in code and call them out in the PR description.
 
