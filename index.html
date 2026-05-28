@@ -131,6 +131,11 @@
       border-radius: 10px; font-size: 13px; color: var(--red);
       display: none; max-width: 500px;
     }
+    .upload-error.info {
+      background: rgba(107,143,255,0.08);
+      border-color: rgba(107,143,255,0.24);
+      color: #9bb5ff;
+    }
     .privacy-note {
       width: min(500px, 90vw);
       margin: -18px 0 24px;
@@ -1657,8 +1662,11 @@
     const fileInput = document.getElementById('file-input');
     const errorEl = document.getElementById('upload-error');
     const authBar = document.getElementById('auth-bar');
+    const PENDING_UPLOAD_KEY = 'vibestats_pending_upload';
+    const PENDING_UPLOAD_TTL_MS = 30 * 60 * 1000;
     let currentUser = null;
     let authReady = initAuth();
+    renderComparisonIntent();
 
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -1698,8 +1706,33 @@
     }
 
     function showError(msg) {
+      errorEl.classList.remove('info');
       errorEl.textContent = msg;
       errorEl.style.display = 'block';
+    }
+
+    function showInfo(msg) {
+      errorEl.classList.add('info');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+
+    function comparisonIntent() {
+      const params = new URLSearchParams(location.search);
+      const handle = String(params.get('compareTo') || '').trim().replace(/^@/, '');
+      const archetype = String(params.get('compareArchetype') || '').trim();
+      if (!handle || !/^[a-zA-Z0-9-]{1,39}$/.test(handle)) return null;
+      if (!ARCHETYPES[archetype]) return null;
+      return { handle, archetype };
+    }
+
+    function renderComparisonIntent() {
+      const intent = comparisonIntent();
+      if (!intent) return;
+      document.querySelector('.upload-title').textContent = `Compare with @${intent.handle}`;
+      document.querySelector('.upload-sub').textContent = `Upload your Claude Code insights to see your pairing with @${intent.handle}. Your raw file stays in your browser.`;
+      document.querySelector('.drop-zone-text').textContent = `Drop insights to compare with @${intent.handle}`;
+      document.querySelector('.drop-zone-hint').textContent = 'then save a derived profile to unlock the pairing';
     }
 
     // ========================================
@@ -1739,6 +1772,7 @@
         currentUser = null;
       }
       renderAuth();
+      if (currentUser) await resumePendingProfileSave();
       return currentUser;
     }
 
@@ -1794,16 +1828,99 @@
       el.innerHTML = html;
     }
 
+    function comparisonDestination(archetype, user = currentUser) {
+      const intent = comparisonIntent();
+      if (!intent) return '';
+      return user
+        ? `/u/${encodeURIComponent(intent.handle)}/pair/${encodeURIComponent(user.gh_handle)}`
+        : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(intent.archetype)}`;
+    }
+
     function comparisonReturnLink(archetype) {
-      const params = new URLSearchParams(location.search);
-      const compareTo = params.get('compareTo');
-      const compareArchetype = params.get('compareArchetype');
-      if (!compareTo || !compareArchetype || !ARCHETYPES[compareArchetype]) return '';
-      if (!/^[a-zA-Z0-9-]{1,39}$/.test(compareTo)) return '';
-      const compareUrl = currentUser
-        ? `/u/${encodeURIComponent(compareTo)}/pair/${encodeURIComponent(currentUser.gh_handle)}`
-        : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(compareArchetype)}`;
-      return `<br><a href="${compareUrl}">See your pairing with @${compareTo}</a>`;
+      const intent = comparisonIntent();
+      if (!intent) return '';
+      const compareUrl = comparisonDestination(archetype);
+      return `<br><a href="${compareUrl}">See your pairing with @${intent.handle}</a>`;
+    }
+
+    function clearPendingProfileSave() {
+      try {
+        localStorage.removeItem(PENDING_UPLOAD_KEY);
+      } catch (e) { /* localStorage unavailable */ }
+    }
+
+    function stashPendingProfileSave(archetype, scores, insights) {
+      const intent = comparisonIntent();
+      const pending = {
+        createdAt: Date.now(),
+        compareTo: intent?.handle || null,
+        compareArchetype: intent?.archetype || null,
+        // Only derived profile data is persisted here. Raw insights JSON is never stored.
+        payload: derivedUploadPayload(archetype, scores, insights),
+      };
+      try {
+        localStorage.setItem(PENDING_UPLOAD_KEY, JSON.stringify(pending));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function readPendingProfileSave() {
+      try {
+        const pending = JSON.parse(localStorage.getItem(PENDING_UPLOAD_KEY) || 'null');
+        if (!pending?.payload?.archetype || !ARCHETYPES[pending.payload.archetype]) return null;
+        if (pending.compareTo && !/^[a-zA-Z0-9-]{1,39}$/.test(pending.compareTo)) {
+          clearPendingProfileSave();
+          return null;
+        }
+        if (pending.compareArchetype && !ARCHETYPES[pending.compareArchetype]) {
+          clearPendingProfileSave();
+          return null;
+        }
+        if (!pending.createdAt || Date.now() - pending.createdAt > PENDING_UPLOAD_TTL_MS) {
+          clearPendingProfileSave();
+          return null;
+        }
+        return pending;
+      } catch (e) {
+        clearPendingProfileSave();
+        return null;
+      }
+    }
+
+    async function postDerivedUploadPayload(payload) {
+      const res = await fetch('/api/uploads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Profile save failed');
+      return body;
+    }
+
+    async function resumePendingProfileSave() {
+      const pending = readPendingProfileSave();
+      if (!pending || !currentUser) return;
+
+      const intent = comparisonIntent();
+      if (pending.compareTo && (!intent || intent.handle !== pending.compareTo)) return;
+
+      showInfo(pending.compareTo
+        ? `Finishing your saved result, then opening your pairing with @${pending.compareTo}...`
+        : 'Finishing your profile save...');
+      try {
+        const body = await postDerivedUploadPayload(pending.payload);
+        clearPendingProfileSave();
+        const destination = pending.compareTo
+          ? `/u/${encodeURIComponent(pending.compareTo)}/pair/${encodeURIComponent(currentUser.gh_handle)}`
+          : (body.profile_url || `/u/${encodeURIComponent(currentUser.gh_handle)}`);
+        showInfo('Saved derived metrics. Opening your result...');
+        setTimeout(() => { location.href = destination; }, 650);
+      } catch (err) {
+        showError(err.message);
+      }
     }
 
     async function saveProfileUpload(archetype, scores, insights, options = {}) {
@@ -1813,7 +1930,11 @@
         return;
       }
       if (!currentUser) {
-        updateProfileSaveStatus(`<a href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">Sign in with GitHub</a> to save and track your evolution.${comparisonReturnLink(archetype)}`, 'muted');
+        const stashed = stashPendingProfileSave(archetype, scores, insights);
+        const saveCopy = stashed
+          ? 'Sign in with GitHub to save this derived result and open your pairing.'
+          : 'Sign in with GitHub to save and track your evolution.';
+        updateProfileSaveStatus(`<a href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">${saveCopy}</a>${comparisonReturnLink(archetype)}`, 'muted');
         return;
       }
       const saveToggle = document.getElementById('save-to-profile');
@@ -1824,14 +1945,14 @@
 
       updateProfileSaveStatus('Saving derived metrics to your profile...');
       try {
-        const res = await fetch('/api/uploads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(derivedUploadPayload(archetype, scores, insights)),
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.error || 'Profile save failed');
-        updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${body.profile_url}">${body.profile_url}</a>${comparisonReturnLink(archetype)}`);
+        const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights));
+        const compareUrl = comparisonDestination(archetype);
+        if (compareUrl) {
+          updateProfileSaveStatus(`Saved to your profile. Opening your pairing with @${comparisonIntent().handle}...<br><a href="${compareUrl}">Open now</a>`);
+          setTimeout(() => { location.href = compareUrl; }, 650);
+          return;
+        }
+        updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${body.profile_url}">${body.profile_url}</a>`);
       } catch (err) {
         updateProfileSaveStatus(err.message, 'error');
       }

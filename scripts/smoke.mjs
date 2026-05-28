@@ -87,6 +87,17 @@ async function assertRoutes() {
   console.log('ok route rewrites');
 }
 
+async function assertProfileShareLoop() {
+  const indexHtml = await readFile('index.html', 'utf8');
+  const profileHtml = await readFile('u.html', 'utf8');
+  assert(profileHtml.includes('compareTo=${encodeURIComponent(handle)}'), 'profile compare CTA should seed upload-to-compare');
+  assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
+  assert(indexHtml.includes('Only derived profile data is persisted here. Raw insights JSON is never stored.'), 'pending auth save must document derived-only storage');
+  assert(indexHtml.includes('resumePendingProfileSave'), 'upload page should resume pending profile save after auth');
+  assert(indexHtml.includes('/pair/${encodeURIComponent'), 'upload-to-compare should route to handle-backed pairing');
+  console.log('ok profile share loop returns visitors to comparison');
+}
+
 async function assertUploadSanitizer() {
   const { sanitizeUploadPayload } = await import('../api/_lib/uploads.js');
   const payload = sanitizeUploadPayload({
@@ -510,6 +521,7 @@ await assertHtmlScriptsParse();
 await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
+await assertProfileShareLoop();
 await assertUploadSanitizer();
 await assertSessionRoundTrip();
 await assertSameOriginGuard();
