@@ -15,6 +15,28 @@ const ARCHETYPES = {
   builder: { name: 'THE BUILDER', tagline: "You build things that didn't exist before." },
 };
 
+const SUB_PREFIXES = {
+  orchestrator: 'parallel',
+  shipper: 'high-velocity',
+  architect: 'methodical',
+  debugger: 'investigative',
+  polyglot: 'multi-stack',
+  sprinter: 'rapid-fire',
+  deepdiver: 'deep-session',
+  builder: 'prolific',
+};
+
+const ARCHETYPE_SHORT_NAMES = {
+  orchestrator: 'Orchestrator',
+  shipper: 'Shipper',
+  architect: 'Architect',
+  debugger: 'Debugger',
+  polyglot: 'Polyglot',
+  sprinter: 'Sprinter',
+  deepdiver: 'Deep Diver',
+  builder: 'Builder',
+};
+
 function esc(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -26,6 +48,20 @@ function esc(value) {
 function getHandle(req) {
   const raw = req.query?.handle;
   return String(Array.isArray(raw) ? raw[0] : raw || '').trim();
+}
+
+function fallbackSignature(upload) {
+  const primary = upload.archetype;
+  const sorted = Object.entries(upload.scores || {})
+    .filter(([key]) => key !== primary && !key.startsWith('_') && ARCHETYPES[key])
+    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+  if (!sorted.length) return '';
+  const secondary = sorted[0][0];
+  return `${SUB_PREFIXES[secondary] || secondary} ${ARCHETYPE_SHORT_NAMES[primary] || primary}`;
+}
+
+function uploadSignature(upload) {
+  return upload.raw_meta?.signature || fallbackSignature(upload);
 }
 
 function injectProfileMeta(html, meta) {
@@ -82,7 +118,7 @@ export default async function handler(req, res) {
     }
 
     const uploads = await sql()`
-      select archetype, scores, metrics, uploaded_at
+      select archetype, scores, metrics, raw_meta, uploaded_at
       from uploads
       where user_id = ${user.id}
       order by uploaded_at desc
@@ -98,6 +134,7 @@ export default async function handler(req, res) {
     const arch = ARCHETYPES[latest.archetype] || ARCHETYPES.builder;
     const metrics = latest.metrics || {};
     const percentiles = latest.scores?._percentiles || {};
+    const signature = uploadSignature(latest);
     const origin = originForRequest(req);
     const imageParams = new URLSearchParams({
       a: latest.archetype,
@@ -110,8 +147,8 @@ export default async function handler(req, res) {
     if (percentiles[latest.archetype]) imageParams.set('p', String(percentiles[latest.archetype]));
 
     const html = injectProfileMeta(PROFILE_HTML, {
-      title: `@${user.gh_handle} is ${arch.name} | vibestats`,
-      description: `${arch.tagline} ${metrics.days || '?'} days of Claude Code history. Compare your vibecoding personality with @${user.gh_handle}.`,
+      title: `@${user.gh_handle} is ${signature || arch.name} | vibestats`,
+      description: `${signature ? `${signature}. ` : ''}${arch.tagline} ${metrics.days || '?'} days of Claude Code history. Compare your vibecoding personality with @${user.gh_handle}.`,
       url: `${origin}/u/${encodeURIComponent(user.gh_handle)}`,
       image: `${origin}/api/og?${imageParams.toString()}`,
     });

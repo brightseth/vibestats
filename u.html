@@ -151,6 +151,30 @@
       line-height: 1.6;
       max-width: 620px;
     }
+    .signature-row {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .signature-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(107,143,255,0.25);
+      background: rgba(107,143,255,0.08);
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .signature-detail {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
     .viral-actions {
       display: flex;
       align-items: center;
@@ -355,6 +379,7 @@
           </div>
           <div class="archetype-line" id="archetype-line"></div>
           <p class="tagline" id="tagline"></p>
+          <div class="signature-row" id="signature-row"></div>
           <div class="viral-actions">
             <a class="btn primary" id="compare-cta" href="/">Compare with this profile</a>
             <button class="btn" id="copy-profile" type="button">Copy profile</button>
@@ -405,11 +430,43 @@
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
     const shortDate = (value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const SUB_PREFIXES = {
+      orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
+      debugger: 'investigative', polyglot: 'multi-stack', sprinter: 'rapid-fire',
+      deepdiver: 'deep-session', builder: 'prolific',
+    };
+    const ARCHETYPE_SHORT_NAMES = {
+      orchestrator: 'Orchestrator', shipper: 'Shipper', architect: 'Architect',
+      debugger: 'Debugger', polyglot: 'Polyglot', sprinter: 'Sprinter',
+      deepdiver: 'Deep Diver', builder: 'Builder',
+    };
 
     function handleFromLocation() {
       const query = new URLSearchParams(location.search).get('handle');
       if (query) return query;
       return location.pathname.split('/').filter(Boolean).pop() || '';
+    }
+
+    function fallbackSignature(scores, primary) {
+      const sorted = Object.entries(scores || {})
+        .filter(([key]) => key !== primary && !key.startsWith('_') && ARCHETYPES[key])
+        .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+      if (!sorted.length) return null;
+      const secondary = sorted[0][0];
+      return {
+        label: `${SUB_PREFIXES[secondary] || secondary} ${ARCHETYPE_SHORT_NAMES[primary] || primary}`,
+        combo: `${secondary}+${primary}`,
+        secondary,
+      };
+    }
+
+    function vibeSignature(upload) {
+      const fallback = fallbackSignature(upload.scores, upload.archetype);
+      return {
+        label: upload.raw_meta?.signature || fallback?.label || '',
+        combo: upload.raw_meta?.signatureCombo || fallback?.combo || '',
+        secondary: upload.raw_meta?.secondaryArchetype || fallback?.secondary || '',
+      };
     }
 
     async function fetchMe() {
@@ -574,8 +631,9 @@
       const pct = latest.scores?._percentiles?.[latest.archetype];
       const m = latest.metrics || {};
       const avg = stats?.averages || {};
+      const signature = vibeSignature(latest);
 
-      document.title = `@${profile.user.gh_handle} is ${arch.name} | vibestats`;
+      document.title = `@${profile.user.gh_handle} is ${signature.label || arch.name} | vibestats`;
       document.documentElement.style.setProperty('--card-color', arch.color);
       document.documentElement.style.setProperty('--arch-gradient', arch.gradient);
       document.documentElement.style.setProperty('--card-gradient', arch.borderGradient);
@@ -595,9 +653,13 @@
       document.getElementById('archetype-line').style.backgroundClip = 'text';
       document.getElementById('archetype-line').textContent = arch.name;
       document.getElementById('tagline').textContent = arch.tagline;
+      document.getElementById('signature-row').innerHTML = signature.label ? `
+        <span class="signature-pill">${esc(signature.label)}</span>
+        <span class="signature-detail">1 of 56 Claude Code signature combos</span>
+      ` : '';
       document.getElementById('card-name').textContent = arch.name;
       document.getElementById('score-value').textContent = `${score}%`;
-      document.getElementById('card-note').innerHTML = `${pct ? `top ${esc(pct)}% signal` : 'primary archetype signal'}<br>${esc(m.days || 0)} days tracked`;
+      document.getElementById('card-note').innerHTML = `${pct ? `top ${esc(pct)}% signal` : 'primary archetype signal'}<br>${signature.label ? `${esc(signature.label)}<br>` : ''}${esc(m.days || 0)} days tracked`;
 
       const summary = [
         ['commits/day', fmt(m.commitsPerDay), metricContext(m.commitsPerDay, avg.commitsPerDay)],

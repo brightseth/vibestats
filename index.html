@@ -809,6 +809,12 @@
       deepdiver: 'deep-session', builder: 'prolific',
     };
 
+    const ARCHETYPE_SHORT_NAMES = {
+      orchestrator: 'Orchestrator', shipper: 'Shipper', architect: 'Architect',
+      debugger: 'Debugger', polyglot: 'Polyglot', sprinter: 'Sprinter',
+      deepdiver: 'Deep Diver', builder: 'Builder',
+    };
+
     function buildDnaBarcode(scores) {
       const bars = Object.entries(ARCHETYPE_COLORS).map(([key, color]) => {
         const score = scores[key] || 0;
@@ -819,14 +825,23 @@
     }
 
     function getSubArchetype(scores, primary) {
+      const signature = buildVibeSignature(scores, primary);
+      return signature ? `<div class="sub-archetype">You're a ${signature.label}</div>` : '';
+    }
+
+    function buildVibeSignature(scores, primary) {
       const sorted = Object.entries(scores)
         .filter(([k]) => k !== primary && !k.startsWith('_'))
         .sort((a, b) => b[1] - a[1]);
-      if (!sorted.length) return '';
+      if (!sorted.length) return null;
       const secondary = sorted[0][0];
       const prefix = SUB_PREFIXES[secondary] || secondary;
-      const primaryShort = primary === 'deepdiver' ? 'Deep Diver' : primary.charAt(0).toUpperCase() + primary.slice(1);
-      return `<div class="sub-archetype">You're a ${prefix} ${primaryShort}</div>`;
+      const primaryShort = ARCHETYPE_SHORT_NAMES[primary] || primary;
+      return {
+        label: `${prefix} ${primaryShort}`,
+        combo: `${secondary}+${primary}`,
+        secondary,
+      };
     }
 
     function buildPredictionSlide(scores, primary, slideIndex) {
@@ -1452,6 +1467,7 @@
       const pct = scores._percentiles ? scores._percentiles[archetype] : null;
       const rarity = getArchetypeRarity(archetype);
       const communityTotal = aggregateStats ? aggregateStats.total : null;
+      const signature = buildVibeSignature(scores, archetype);
 
       // Build shareable card URL with encoded params
       const cardParams = new URLSearchParams({
@@ -1461,6 +1477,7 @@
       });
       if (insights.satisfaction !== null) cardParams.set('sat', insights.satisfaction);
       if (pct) cardParams.set('p', pct);
+      if (signature) cardParams.set('sig', signature.label);
       const cardShareUrl = `https://vibestats.io/card?${cardParams}`;
       const saveToggle = document.getElementById('save-to-profile');
       const shouldShareProfile = !options.demo && currentUser && saveToggle && saveToggle.checked;
@@ -1470,14 +1487,14 @@
       // Tweet variants — pick one randomly
       const tweetVariants = profileShareUrl
         ? [
-            `I'm ${a.name}\n\n"${a.tagline}"\n\nSee how you'd pair with me:\n${profileShareUrl}\n\nvia @slashvibe #vibestats #claudecode`,
-            `My Claude Code profile: ${a.name}${pct ? ` — top ${pct}%` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\n${profileShareUrl}\n\n#vibestats`,
-            `This is how I build with Claude Code: ${a.name}\n\nHow do you compare?\n${profileShareUrl}\n\nvia @slashvibe #vibestats`,
+            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\nSee how you'd pair with me:\n${profileShareUrl}\n\nvia @slashvibe #vibestats #claudecode`,
+            `My Claude Code signature: ${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\n${profileShareUrl}\n\n#vibestats`,
+            `This is how I build with Claude Code: ${signature ? signature.label : a.name}\n\nHow do you compare?\n${profileShareUrl}\n\nvia @slashvibe #vibestats`,
           ]
         : [
-            `I'm ${a.name}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
-            `${a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nFind yours: vibestats.io — a /vibe project\n\n#vibestats #claudecode`,
-            `My vibecoding personality: ${a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nWhat's yours?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+            `${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nFind yours: vibestats.io — a /vibe project\n\n#vibestats #claudecode`,
+            `My vibecoding signature: ${signature ? signature.label : a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nWhat's yours?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
           ];
       const tweetText = tweetVariants[Math.floor(Math.random() * tweetVariants.length)];
 
@@ -1491,6 +1508,7 @@
             ${getSubArchetype(scores, archetype)}<div class="archetype-tagline">"${a.tagline}"</div>
             ${pct ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:${rarity ? '6px' : '16px'};padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">top ${pct}%</div>` : ''}
             ${rarity ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:16px">${rarity}% of vibecoders are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
+            ${signature ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin:${rarity ? '-8px' : '0'} 0 16px">1 of 56 Claude Code signature combos</div>` : ''}
             <div class="card-stats">
               <div class="card-stat">
                 <div class="card-stat-val">${fmt(insights.sessions)}</div>
@@ -1728,6 +1746,7 @@
     }
 
     function derivedUploadPayload(archetype, scores, insights) {
+      const signature = buildVibeSignature(scores, archetype);
       return {
         archetype,
         scores,
@@ -1742,6 +1761,11 @@
           dateRange: insights.dateRange,
           source: 'browser',
           version: 'wave-1',
+          ...(signature ? {
+            signature: signature.label,
+            signatureCombo: signature.combo,
+            secondaryArchetype: signature.secondary,
+          } : {}),
         },
       };
     }

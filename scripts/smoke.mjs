@@ -58,6 +58,9 @@ async function assertUploadSanitizer() {
     raw_meta: {
       dateRange: '2026-01-01 to 2026-01-09',
       source: 'browser',
+      signature: 'high-velocity Builder',
+      signatureCombo: 'shipper+builder',
+      secondaryArchetype: 'shipper',
       rawJson: { should: 'drop' },
     },
   });
@@ -66,6 +69,8 @@ async function assertUploadSanitizer() {
   assert(payload.scores.orchestrator === 0, 'scores should clamp to 0');
   assert(payload.metrics.languages === 4, 'derived languages metric should persist');
   assert(!('raw' in payload.metrics), 'raw metric payload must be dropped');
+  assert(payload.raw_meta.signature === 'high-velocity Builder', 'signature metadata should persist');
+  assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should persist');
   assert(!('rawJson' in payload.raw_meta), 'raw_meta allowlist must drop unknown fields');
   console.log('ok upload sanitizer preserves privacy boundary');
 }

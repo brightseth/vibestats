@@ -62,9 +62,13 @@ export function sanitizeUploadPayload(body = {}) {
 
   const rawMeta = {};
   const sourceMeta = body.raw_meta && typeof body.raw_meta === 'object' ? body.raw_meta : {};
-  for (const key of ['dateRange', 'source', 'version']) {
+  for (const key of ['dateRange', 'source', 'version', 'signature', 'signatureCombo']) {
     const value = cleanText(sourceMeta[key], key === 'dateRange' ? 80 : 40);
     if (value) rawMeta[key] = value;
+  }
+  const secondaryArchetype = cleanText(sourceMeta.secondaryArchetype, 32);
+  if (ARCHETYPE_KEYS.includes(secondaryArchetype) && secondaryArchetype !== archetype) {
+    rawMeta.secondaryArchetype = secondaryArchetype;
   }
 
   return { archetype, scores, metrics, raw_meta: rawMeta };
