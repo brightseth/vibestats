@@ -19,6 +19,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A compatibility view** (`/compare`) — two pasted profiles side-by-side.
 - **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
 - **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites.
+- **An embeddable profile card** (`/u/<handle>/embed`) for personal sites, with a link back to compare.
 
 **Privacy stance:** the insights JSON never leaves the browser. Only aggregate metrics (archetype + 5 averages) are POSTed to Redis for the community page, rate-limited 1/IP/hr.
 
@@ -57,6 +58,8 @@ vibestats/
 │   ├── u/[handle].js  # profile JSON
 │   ├── stats.js       # POST aggregate, GET community averages
 │   ├── og.js          # dynamic OG image (Satori SVG → PNG)
+│   ├── badge.js       # portable SVG profile badge
+│   ├── embed.js       # frameable profile card (`/u/<handle>/embed`)
 │   └── card.js        # share landing page (`/card?a=…`)
 ├── db/migrations/     # plain SQL migrations
 ├── scripts/migrate.mjs
@@ -119,6 +122,7 @@ CI is currently manual — Wave 1 adds GitHub Actions on push to `main`.
 - **Pre-push hygiene:** scan diff for secrets, transcripts, internal notes before pushing. `.env.local` is git-ignored — keep it that way.
 - **All scoring math lives in `index.html`** for now (single-page tradition). When duplicated in `api/*.js`, keep the duplicate in sync until Wave 1 lifts it to `lib/scoring.js`.
 - **8 archetypes are canonical.** Adding a 9th is a breaking change (touches scoring, OG, share URL params, community aggregates, compatibility math). See ROADMAP Wave 3 for sub-archetypes — those are additive.
+- **Framing policy:** non-embed pages stay unframeable through CSP `frame-ancestors 'none'`. Do not restore a global `X-Frame-Options: DENY`; it would break `/u/<handle>/embed`.
 
 ## Docs
 

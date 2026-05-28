@@ -434,6 +434,7 @@
             <a class="btn primary" id="compare-cta" href="/">Compare with this profile</a>
             <button class="btn" id="copy-profile" type="button">Copy profile</button>
             <button class="btn" id="copy-badge" type="button">Copy badge</button>
+            <button class="btn" id="copy-embed" type="button">Copy embed</button>
           </div>
           <div class="viral-note" id="viral-note"></div>
           <section class="compat-panel" id="compat-panel"></section>
@@ -652,11 +653,13 @@
       const compareCta = document.getElementById('compare-cta');
       const copyBtn = document.getElementById('copy-profile');
       const copyBadgeBtn = document.getElementById('copy-badge');
+      const copyEmbedBtn = document.getElementById('copy-embed');
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
       const profilePath = `/u/${encodeURIComponent(handle)}`;
       const badgePath = `${profilePath}/badge.svg`;
+      const embedPath = `${profilePath}/embed`;
       const uploadCompareUrl = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
 
       compareCta.href = uploadCompareUrl;
@@ -697,6 +700,18 @@
         } catch {
           copyBadgeBtn.textContent = 'Copy failed';
           setTimeout(() => { copyBadgeBtn.textContent = 'Copy badge'; }, 1500);
+        }
+      });
+
+      copyEmbedBtn.addEventListener('click', async () => {
+        const iframe = `<iframe src="${location.origin}${embedPath}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
+        try {
+          await navigator.clipboard.writeText(iframe);
+          copyEmbedBtn.textContent = 'Embed copied!';
+          setTimeout(() => { copyEmbedBtn.textContent = 'Copy embed'; }, 1500);
+        } catch {
+          copyEmbedBtn.textContent = 'Copy failed';
+          setTimeout(() => { copyEmbedBtn.textContent = 'Copy embed'; }, 1500);
         }
       });
     }

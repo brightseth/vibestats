@@ -19,6 +19,7 @@ const apiModules = [
   '../api/stats.js',
   '../api/card.js',
   '../api/badge.js',
+  '../api/embed.js',
   '../api/og.js',
 ];
 
@@ -48,6 +49,15 @@ async function assertRoutes() {
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/compare?a=:other&b=:handle'),
     'person-backed pair route should rewrite to compare',
   );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/u/:handle/embed' && rewrite.destination === '/api/embed?handle=:handle'),
+    'profile embed route should rewrite to embed API',
+  );
+  const globalHeaders = (config.headers || []).find((entry) => entry.source === '/(.*)')?.headers || [];
+  const headerKeys = new Set(globalHeaders.map((header) => header.key.toLowerCase()));
+  const csp = globalHeaders.find((header) => header.key.toLowerCase() === 'content-security-policy')?.value || '';
+  assert(!headerKeys.has('x-frame-options'), 'global X-Frame-Options must stay off so the embed function can be frameable');
+  assert(csp.includes("frame-ancestors 'none'"), 'global CSP should keep non-embed pages unframeable');
   console.log('ok route rewrites');
 }
 
@@ -256,6 +266,46 @@ async function assertBadgeFallback() {
   }
 }
 
+async function assertEmbedFallback() {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const { default: handler } = await import('../api/embed.js');
+    let statusCode = 0;
+    let contentType = '';
+    let csp = '';
+    let body = '';
+    const req = {
+      method: 'GET',
+      query: { handle: 'brightseth' },
+      headers: { host: 'localhost:3000' },
+    };
+    const res = {
+      setHeader(name, value) {
+        if (name.toLowerCase() === 'content-type') contentType = value;
+        if (name.toLowerCase() === 'content-security-policy') csp = value;
+      },
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      send(value) {
+        body = String(value);
+      },
+    };
+
+    await handler(req, res);
+    assert(statusCode === 200, 'embed fallback should render HTTP 200 when DB is absent');
+    assert(contentType.includes('text/html'), 'embed fallback should return HTML');
+    assert(csp.includes('frame-ancestors https:'), 'embed CSP should allow HTTPS framing');
+    assert(body.includes('@brightseth'), 'embed fallback should include handle');
+    assert(body.includes('VIBESTATS PROFILE'), 'embed fallback should render a neutral profile card');
+    console.log('ok embed fallback renders frameable profile card without DB');
+  } finally {
+    console.error = originalError;
+  }
+}
+
 await assertHtmlScriptsParse();
 await assertApiImports();
 await assertRoutes();
@@ -267,5 +317,6 @@ await assertProfileSettingsHelpers();
 await assertSignatureHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
+await assertEmbedFallback();
 
 console.log('smoke checks passed');
