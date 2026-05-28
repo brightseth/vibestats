@@ -113,4 +113,5 @@ CI is currently manual — Wave 1 adds GitHub Actions on push to `main`.
 ## Docs
 
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — strategic direction, 4 waves of execution, opinion on what's actually viral.
+- [`docs/GOAL.md`](docs/GOAL.md) — north star and viral loop guardrails.
 - [`docs/CODEX-KICKOFF.md`](docs/CODEX-KICKOFF.md) — paste-ready brief for the next developer picking this up.

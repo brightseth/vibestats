@@ -1744,19 +1744,29 @@
       el.innerHTML = html;
     }
 
+    function comparisonReturnLink(archetype) {
+      const params = new URLSearchParams(location.search);
+      const compareTo = params.get('compareTo');
+      const compareArchetype = params.get('compareArchetype');
+      if (!compareTo || !compareArchetype || !ARCHETYPES[compareArchetype]) return '';
+      if (!/^[a-zA-Z0-9-]{1,39}$/.test(compareTo)) return '';
+      const compareUrl = `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(compareArchetype)}`;
+      return `<br><a href="${compareUrl}">See your pairing with @${compareTo}</a>`;
+    }
+
     async function saveProfileUpload(archetype, scores, insights, options = {}) {
       await authReady;
       if (options.demo) {
-        updateProfileSaveStatus('Demo data is not saved to profiles.', 'muted');
+        updateProfileSaveStatus(`Demo data is not saved to profiles.${comparisonReturnLink(archetype)}`, 'muted');
         return;
       }
       if (!currentUser) {
-        updateProfileSaveStatus(`<a href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">Sign in with GitHub</a> to save and track your evolution.`, 'muted');
+        updateProfileSaveStatus(`<a href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">Sign in with GitHub</a> to save and track your evolution.${comparisonReturnLink(archetype)}`, 'muted');
         return;
       }
       const saveToggle = document.getElementById('save-to-profile');
       if (saveToggle && !saveToggle.checked) {
-        updateProfileSaveStatus('Profile save is off. Your result stayed local.', 'muted');
+        updateProfileSaveStatus(`Profile save is off. Your result stayed local.${comparisonReturnLink(archetype)}`, 'muted');
         return;
       }
 
@@ -1769,7 +1779,7 @@
         });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body.error || 'Profile save failed');
-        updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${body.profile_url}">${body.profile_url}</a>`);
+        updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${body.profile_url}">${body.profile_url}</a>${comparisonReturnLink(archetype)}`);
       } catch (err) {
         updateProfileSaveStatus(err.message, 'error');
       }

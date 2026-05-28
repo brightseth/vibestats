@@ -151,6 +151,20 @@
       line-height: 1.6;
       max-width: 620px;
     }
+    .viral-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+    .viral-note {
+      margin-top: 10px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+    }
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(5, minmax(100px, 1fr));
@@ -341,6 +355,11 @@
           </div>
           <div class="archetype-line" id="archetype-line"></div>
           <p class="tagline" id="tagline"></p>
+          <div class="viral-actions">
+            <a class="btn primary" id="compare-cta" href="/">Compare with this profile</a>
+            <button class="btn" id="copy-profile" type="button">Copy profile</button>
+          </div>
+          <div class="viral-note" id="viral-note"></div>
           <div class="summary-grid" id="summary-grid"></div>
         </div>
 
@@ -417,6 +436,56 @@
           <a class="btn primary" href="/api/auth/github/start?returnTo=${encodeURIComponent(`/u/${profileHandle}`)}">Sign in with GitHub</a>
         `;
       }
+    }
+
+    async function latestForHandle(handle) {
+      if (!handle) return null;
+      try {
+        const res = await fetch(`/api/u/${encodeURIComponent(handle)}`);
+        if (!res.ok) return null;
+        const profile = await res.json();
+        return profile.uploads?.[0] || null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function renderViralActions(me, profile, latest) {
+      const compareCta = document.getElementById('compare-cta');
+      const copyBtn = document.getElementById('copy-profile');
+      const note = document.getElementById('viral-note');
+      const handle = profile.user.gh_handle;
+      const hostArchetype = latest.archetype;
+      const profilePath = `/u/${encodeURIComponent(handle)}`;
+      const uploadCompareUrl = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
+
+      compareCta.href = uploadCompareUrl;
+      compareCta.textContent = `Compare with @${handle}`;
+      note.textContent = 'Upload yours once and vibestats will show your pairing with this profile.';
+
+      if (me && me.gh_handle !== handle) {
+        const myLatest = await latestForHandle(me.gh_handle);
+        if (myLatest?.archetype) {
+          compareCta.href = `/compare?a=${encodeURIComponent(myLatest.archetype)}&b=${encodeURIComponent(hostArchetype)}`;
+          compareCta.textContent = `See your pairing with @${handle}`;
+          note.textContent = 'Instant comparison from your latest saved profile.';
+        }
+      } else if (me && me.gh_handle === handle) {
+        compareCta.href = `/compare?me=${encodeURIComponent(hostArchetype)}`;
+        compareCta.textContent = 'Create a pairing link';
+        note.textContent = 'Pick another archetype and share the compatibility result.';
+      }
+
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(`${location.origin}${profilePath}`);
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy profile'; }, 1500);
+        } catch {
+          copyBtn.textContent = 'Copy failed';
+          setTimeout(() => { copyBtn.textContent = 'Copy profile'; }, 1500);
+        }
+      });
     }
 
     function metricContext(value, avg, higherText = 'above avg', lowerText = 'below avg') {
@@ -547,6 +616,7 @@
 
       renderSparkline(profile.uploads, latest.archetype, arch.color);
       renderTimeline(profile.uploads, arch.color);
+      renderViralActions(me, profile, latest);
 
       document.getElementById('loading').style.display = 'none';
       document.getElementById('profile').style.display = 'block';
