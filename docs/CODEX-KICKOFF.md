@@ -24,22 +24,23 @@ Full Wave 1 spec is in `docs/ROADMAP.md`. The constraint: **don't break the priv
 
 **Front-end:** static HTML pages with inline JS (`index.html`, `wrapped.html`, `dashboard.html`, `compare.html`, `genome.html`). All scoring math is in `index.html`. The other pages duplicate slices of it — keep duplicates in sync OR (better) lift scoring to `lib/scoring.js` and import.
 
-**Back-end:** Vercel Edge Functions in `api/`:
+**Back-end:** Vercel Functions in `api/`:
 - `api/stats.js` — POST archetype + 5 averages to Upstash Redis (aggregate counters, rate-limited 1/IP/hr).
 - `api/og.js` — Satori-rendered SVG → PNG for share cards.
 - `api/card.js` — share landing page (`/card?a=…`), reads URL params, renders OG + redirects.
+- Wave 1 branch adds `api/auth/*`, `api/me.js`, `api/uploads.js`, `api/u/[handle].js`, and `api/settings*`.
 
-**Storage:** Upstash Redis (`KV_REST_API_URL` + `KV_REST_API_TOKEN`). Aggregate-only — no per-user data.
+**Storage:** Upstash Redis (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) for anonymous aggregates; Neon Postgres for authenticated derived metrics.
 
 **Hosting:** Vercel project `lets-vibe/vibestats`, aliased to `vibestats.io`. `vercel.json` has `cleanUrls: true` and a strict CSP — read it before you add external resources.
 
-**Auth:** none yet. Adding it is your job.
+**Auth:** Wave 1 branch adds custom GitHub OAuth with a signed `vibestats_auth` cookie.
 
 **Conventions:**
 - Branch discipline: feature branch → PR → merge to main. Don't push to main directly.
 - Pre-push hygiene: scan diff for secrets, transcripts, internal notes.
 - ESM everywhere (`"type": "module"` in package.json).
-- No build step today — static files + Edge Functions. If you need a build step (for example, to bundle React for `/u/<handle>`), commit to it deliberately and update the README.
+- No build step today — static files + Vercel Functions. If you need a build step (for example, to bundle React for `/u/<handle>`), commit to it deliberately and update the README.
 
 ---
 
@@ -102,6 +103,8 @@ create index users_handle_idx on users(gh_handle);
 2. Schema migration + the two new POST/GET upload endpoints.
 3. `/u/<handle>` minimum-viable: card + sparkline + percentile chip.
 4. README + ROADMAP updates if anything changes shape.
+
+The `feat/wave-1-identity` branch has a first pass of these pieces. Continue from there rather than rebuilding them.
 
 What to **not** ship in week 1: leaderboards, compatibility, embed badge, weekly email. Those are Wave 2 and 3.
 

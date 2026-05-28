@@ -5,6 +5,8 @@
     { "source": "/generate", "destination": "/", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/u/:handle", "destination": "/u.html?handle=:handle" },
+    { "source": "/settings", "destination": "/settings.html" },
     { "source": "/card", "destination": "/api/card" }
   ],
   "headers": [

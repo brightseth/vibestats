@@ -47,6 +47,29 @@
     }
     .upload-page.hidden { display: none; }
 
+    .auth-bar {
+      position: fixed; top: 16px; right: 16px; z-index: 500;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .auth-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      min-height: 40px; padding: 8px 12px; border-radius: 10px;
+      background: rgba(13,13,20,0.88); border: 1px solid var(--border);
+      color: var(--text-muted); text-decoration: none;
+      font-family: var(--mono); font-size: 12px;
+      backdrop-filter: blur(14px);
+    }
+    .auth-pill.primary {
+      color: #9bb5ff;
+      border-color: rgba(107,143,255,0.45);
+      background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
+    }
+    .auth-pill img {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
     .upload-logo {
       font-family: var(--mono); font-size: 13px; font-weight: 600;
       background: linear-gradient(135deg, var(--accent), var(--purple));
@@ -108,6 +131,31 @@
       border-radius: 10px; font-size: 13px; color: var(--red);
       display: none; max-width: 500px;
     }
+    .privacy-note {
+      width: min(500px, 90vw);
+      margin: -18px 0 24px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .save-toggle {
+      display: none;
+      width: min(500px, 90vw);
+      margin: -10px 0 24px;
+      justify-content: center;
+    }
+    .save-toggle.visible { display: flex; }
+    .save-toggle label {
+      display: inline-flex; align-items: center; gap: 8px;
+      min-height: 40px; padding: 8px 12px; border-radius: 10px;
+      border: 1px solid rgba(107,143,255,0.22);
+      background: rgba(107,143,255,0.06);
+      color: var(--text-muted);
+      font-family: var(--mono); font-size: 12px;
+      cursor: pointer;
+    }
+    .save-toggle input { accent-color: var(--accent); }
 
     .demo-section {
       margin-top: 32px; text-align: center;
@@ -394,6 +442,31 @@
       background: linear-gradient(135deg, rgba(107,143,255,0.3), rgba(167,139,250,0.2));
       color: #fff;
     }
+    .profile-save-status {
+      display: none;
+      width: min(480px, 88vw);
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(107,143,255,0.25);
+      background: rgba(107,143,255,0.08);
+      color: #9bb5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    .profile-save-status a { color: #fff; text-decoration: none; }
+    .profile-save-status.muted {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+    .profile-save-status.error {
+      color: #ff9a9a;
+      border-color: rgba(239,68,68,0.3);
+      background: rgba(239,68,68,0.08);
+    }
 
     /* Enhanced /vibe footer */
     .vibe-footer { margin-top: 48px; width: min(400px, 90vw); }
@@ -534,6 +607,7 @@
   </style>
 </head>
 <body>
+  <div class="auth-bar" id="auth-bar"></div>
 
   <!-- UPLOAD STATE -->
   <div class="upload-page" id="upload-page">
@@ -541,8 +615,18 @@
     <h1 class="upload-title">What's your vibecoding personality?</h1>
     <p class="upload-sub">
       Upload your Claude Code insights file and discover your archetype.
-      Everything stays in your browser — no data leaves your machine.
+      Your raw insights file stays in your browser.
     </p>
+    <div class="privacy-note">
+      Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
+    </div>
+
+    <div class="save-toggle" id="save-toggle-row">
+      <label>
+        <input type="checkbox" id="save-to-profile" checked>
+        Save derived metrics to my profile
+      </label>
+    </div>
 
     <div class="drop-zone" id="drop-zone">
       <div class="drop-zone-icon">&#x1F4C4;</div>
@@ -978,7 +1062,7 @@
 
     function runDemo() {
       const profile = DEMO_PROFILES[Math.floor(Math.random() * DEMO_PROFILES.length)];
-      runAnalysis(profile);
+      runAnalysis(profile, { demo: true });
     }
 
     // ========================================
@@ -1444,6 +1528,7 @@
               Try again
             </button>
           </div>
+          <div class="profile-save-status anim d4" id="profile-save-status"></div>
         </div>
       `);
 
@@ -1528,6 +1613,9 @@
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const errorEl = document.getElementById('upload-error');
+    const authBar = document.getElementById('auth-bar');
+    let currentUser = null;
+    let authReady = initAuth();
 
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -1598,6 +1686,93 @@
           }),
         });
       } catch (e) { /* fire and forget */ }
+    }
+
+    async function initAuth() {
+      try {
+        const res = await fetch('/api/me');
+        currentUser = res.ok ? (await res.json()).user : null;
+      } catch (e) {
+        currentUser = null;
+      }
+      renderAuth();
+      return currentUser;
+    }
+
+    function renderAuth() {
+      const returnTo = encodeURIComponent(location.pathname + location.search);
+      const saveToggle = document.getElementById('save-toggle-row');
+      if (currentUser) {
+        authBar.innerHTML = `
+          <a class="auth-pill" href="/u/${encodeURIComponent(currentUser.gh_handle)}">
+            ${currentUser.avatar_url ? `<img src="${currentUser.avatar_url}" alt="">` : ''}
+            @${currentUser.gh_handle}
+          </a>
+          <a class="auth-pill" href="/settings">Settings</a>
+        `;
+        saveToggle.classList.add('visible');
+      } else {
+        authBar.innerHTML = `<a class="auth-pill primary" href="/api/auth/github/start?returnTo=${returnTo}">Sign in with GitHub</a>`;
+        saveToggle.classList.remove('visible');
+      }
+    }
+
+    function derivedUploadPayload(archetype, scores, insights) {
+      return {
+        archetype,
+        scores,
+        metrics: {
+          commitsPerDay: insights.commitsPerDay,
+          sessions: insights.sessions,
+          languages: insights.codeLangCount,
+          msgsPerSession: insights.msgsPerSession,
+          days: insights.days,
+        },
+        raw_meta: {
+          dateRange: insights.dateRange,
+          source: 'browser',
+          version: 'wave-1',
+        },
+      };
+    }
+
+    function updateProfileSaveStatus(html, className = '') {
+      const el = document.getElementById('profile-save-status');
+      if (!el) return;
+      el.className = `profile-save-status anim d4 ${className}`.trim();
+      el.style.display = 'block';
+      el.innerHTML = html;
+    }
+
+    async function saveProfileUpload(archetype, scores, insights, options = {}) {
+      await authReady;
+      if (options.demo) {
+        updateProfileSaveStatus('Demo data is not saved to profiles.', 'muted');
+        return;
+      }
+      if (!currentUser) {
+        updateProfileSaveStatus(`<a href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">Sign in with GitHub</a> to save and track your evolution.`, 'muted');
+        return;
+      }
+      const saveToggle = document.getElementById('save-to-profile');
+      if (saveToggle && !saveToggle.checked) {
+        updateProfileSaveStatus('Profile save is off. Your result stayed local.', 'muted');
+        return;
+      }
+
+      updateProfileSaveStatus('Saving derived metrics to your profile...');
+      try {
+        const res = await fetch('/api/uploads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(derivedUploadPayload(archetype, scores, insights)),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || 'Profile save failed');
+        updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${body.profile_url}">${body.profile_url}</a>`);
+      } catch (err) {
+        updateProfileSaveStatus(err.message, 'error');
+      }
     }
 
     function getArchetypeRarity(archetype) {
@@ -1714,7 +1889,7 @@
     // ========================================
     // ANALYSIS FLOW
     // ========================================
-    async function runAnalysis(data) {
+    async function runAnalysis(data, options = {}) {
       // Hide upload, show analyzing
       document.getElementById('upload-page').classList.add('hidden');
       const analyzingEl = document.getElementById('analyzing');
@@ -1761,6 +1936,7 @@
       // Save to history + submit aggregate stats (after showing results)
       saveToHistory(archetype, scores, insights);
       submitStats(archetype, insights);
+      saveProfileUpload(archetype, scores, insights, options);
     }
 
     function wait(ms) { return new Promise(r => setTimeout(r, ms)); }

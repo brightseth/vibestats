@@ -30,11 +30,11 @@ The current product is a one-shot vanity moment. The next product is a **persist
 ## Stack
 
 - **Hosting:** Vercel (`lets-vibe/vibestats` project, aliased to `vibestats.io`).
-- **Runtime:** static HTML/CSS/JS + Vercel Edge Functions (`api/*.js`).
-- **Storage:** Upstash Redis (KV REST API) — aggregate counters only.
+- **Runtime:** static HTML/CSS/JS + Vercel Functions (`api/*.js`).
+- **Storage:** Upstash Redis (KV REST API) for aggregate counters; Neon Postgres for authenticated profile history.
 - **OG images:** `@vercel/og` via Satori (`api/og.js`) + `@resvg/resvg-js`.
-- **Auth:** none (yet).
-- **DB:** none (yet — Wave 1 introduces Neon Postgres).
+- **Auth:** custom GitHub OAuth + signed `vibestats_auth` session cookie.
+- **DB:** Neon Postgres. Raw insights JSON still never leaves the browser.
 
 ```
 vibestats/
@@ -43,10 +43,20 @@ vibestats/
 ├── dashboard.html     # detailed metric view
 ├── compare.html       # two-profile side-by-side
 ├── genome.html        # community genome page
+├── u.html             # public profile shell (`/u/<handle>`)
+├── settings.html      # authenticated settings shell
 ├── api/
+│   ├── auth/          # GitHub OAuth start/callback/logout
+│   ├── me.js          # current session
+│   ├── uploads.js     # authenticated derived-metric uploads
+│   ├── settings.js    # privacy/delete account
+│   ├── settings/      # export endpoint
+│   ├── u/[handle].js  # profile JSON
 │   ├── stats.js       # POST aggregate, GET community averages
 │   ├── og.js          # dynamic OG image (Satori SVG → PNG)
 │   └── card.js        # share landing page (`/card?a=…`)
+├── db/migrations/     # plain SQL migrations
+├── scripts/migrate.mjs
 ├── lib/               # html2canvas (save card as image)
 ├── fonts/             # self-hosted Inter + JetBrains Mono
 └── vercel.json        # cleanUrls, CSP, headers
@@ -64,11 +74,25 @@ npx serve .
 vercel dev
 ```
 
-You'll need `KV_REST_API_URL` + `KV_REST_API_TOKEN` (Upstash) in `.env.local` to test the stats endpoint. Pull from Vercel:
+Copy `.env.example` to `.env.local`. You'll need:
+
+- `KV_REST_API_URL` + `KV_REST_API_TOKEN` for aggregate community stats.
+- `DATABASE_URL` for Neon-backed profiles.
+- `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` for OAuth.
+- `VIBE_SESSION_SECRET` for the signed session cookie.
+- `VIBESTATS_URL` for the OAuth callback origin (`http://localhost:3000` locally).
+
+Pull shared Vercel env when available:
 
 ```bash
 vercel link --project vibestats --scope lets-vibe
 vercel env pull .env.local
+```
+
+Run database migrations:
+
+```bash
+npm run migrate
 ```
 
 ## Deploy

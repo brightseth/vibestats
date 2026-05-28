@@ -1,7 +1,12 @@
 {
   "type": "module",
+  "scripts": {
+    "serve": "npx serve .",
+    "migrate": "node scripts/migrate.mjs"
+  },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "postgres": "^3.4.9",
     "satori": "^0.19.1"
   }
 }
