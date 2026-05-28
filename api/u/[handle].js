@@ -1,5 +1,6 @@
 import { readSession } from '../_lib/auth.js';
 import { publicUser, sql } from '../_lib/db.js';
+import { profileEvolution } from '../_lib/evolution.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
 import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
 import { publicMatchSettings } from '../_lib/profile-settings.js';
@@ -78,6 +79,7 @@ export default async function handler(req, res) {
       uploads,
       rarity,
       leaderboard: await weeklyLeaderboardRank(user, uploads[0]),
+      evolution: profileEvolution(uploads),
     }, {
       'Cache-Control': 'no-store',
     });

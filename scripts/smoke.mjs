@@ -15,6 +15,7 @@ const apiModules = [
   '../api/settings.js',
   '../api/settings/export.js',
   '../api/cron/weekly-digest.js',
+  '../api/_lib/evolution.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/signatures.js',
   '../api/_lib/leaderboard-rank.js',
@@ -87,7 +88,9 @@ async function assertRoutes() {
   assert(leaderboardApi.includes("date_trunc('week', now())"), 'leaderboard API should reset weekly');
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
+  assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
+  assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   console.log('ok route rewrites');
 }
@@ -252,6 +255,34 @@ async function assertSignatureHelpers() {
   assert(signatureFingerprint(upload.scores, 'builder') === signature.fingerprint, 'fingerprint helper should match upload helper');
   assert(rarityTier(8) === 'rare' && rarityTier(40) === 'uncommon' && rarityTier(90) === 'common', 'rarity tiers should classify counts');
   console.log('ok signature rarity helpers');
+}
+
+async function assertEvolutionHelpers() {
+  const { profileEvolution } = await import('../api/_lib/evolution.js');
+  const uploads = [
+    {
+      archetype: 'builder',
+      scores: { builder: 92, shipper: 82, orchestrator: 61 },
+      raw_meta: { rawJson: { should: 'not leak' } },
+      uploaded_at: '2026-05-28T10:00:00.000Z',
+    },
+    {
+      archetype: 'builder',
+      scores: { builder: 88, shipper: 86, debugger: 60 },
+      raw_meta: { rawJson: { should: 'not leak' } },
+      uploaded_at: '2026-05-23T10:00:00.000Z',
+    },
+  ];
+  const evolution = profileEvolution(uploads);
+  assert(evolution.label === '+4 Builder points', 'evolution helper should surface primary score movement');
+  assert(evolution.detail === 'vs last upload', 'evolution helper should describe score delta');
+  assert(!JSON.stringify(evolution).includes('rawJson'), 'evolution helper must not leak raw metadata');
+  const shifted = profileEvolution([
+    { archetype: 'orchestrator', scores: { orchestrator: 91, builder: 75 }, uploaded_at: '2026-05-28T10:00:00.000Z' },
+    { archetype: 'builder', scores: { builder: 89, orchestrator: 72 }, uploaded_at: '2026-05-21T10:00:00.000Z' },
+  ]);
+  assert(shifted.label === 'Builder -> Orchestrator shift', 'evolution helper should surface archetype shifts');
+  console.log('ok profile evolution helpers');
 }
 
 async function assertDigestHelpers() {
@@ -533,6 +564,7 @@ await assertSameOriginGuard();
 await assertReadJsonLimit();
 await assertProfileSettingsHelpers();
 await assertSignatureHelpers();
+await assertEvolutionHelpers();
 await assertDigestHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
