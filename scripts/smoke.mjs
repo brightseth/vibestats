@@ -15,6 +15,7 @@ const apiModules = [
   '../api/settings/export.js',
   '../api/stats.js',
   '../api/card.js',
+  '../api/badge.js',
   '../api/og.js',
 ];
 
@@ -126,10 +127,47 @@ async function assertProfileFallback() {
   }
 }
 
+async function assertBadgeFallback() {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const { default: handler } = await import('../api/badge.js');
+    let statusCode = 0;
+    let contentType = '';
+    let body = '';
+    const req = {
+      method: 'GET',
+      query: { handle: 'brightseth' },
+      headers: { host: 'localhost:3000' },
+    };
+    const res = {
+      setHeader(name, value) {
+        if (name.toLowerCase() === 'content-type') contentType = value;
+      },
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      send(value) {
+        body = String(value);
+      },
+    };
+
+    await handler(req, res);
+    assert(statusCode === 200, 'badge fallback should render HTTP 200 when DB is absent');
+    assert(contentType.includes('image/svg+xml'), 'badge fallback should return SVG');
+    assert(body.includes('@brightseth'), 'badge fallback should include handle');
+    console.log('ok badge fallback renders portable SVG without DB');
+  } finally {
+    console.error = originalError;
+  }
+}
+
 await assertHtmlScriptsParse();
 await assertApiImports();
 await assertUploadSanitizer();
 await assertSessionRoundTrip();
 await assertProfileFallback();
+await assertBadgeFallback();
 
 console.log('smoke checks passed');

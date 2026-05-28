@@ -383,6 +383,7 @@
           <div class="viral-actions">
             <a class="btn primary" id="compare-cta" href="/">Compare with this profile</a>
             <button class="btn" id="copy-profile" type="button">Copy profile</button>
+            <button class="btn" id="copy-badge" type="button">Copy badge</button>
           </div>
           <div class="viral-note" id="viral-note"></div>
           <div class="summary-grid" id="summary-grid"></div>
@@ -510,10 +511,12 @@
     async function renderViralActions(me, profile, latest) {
       const compareCta = document.getElementById('compare-cta');
       const copyBtn = document.getElementById('copy-profile');
+      const copyBadgeBtn = document.getElementById('copy-badge');
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
       const profilePath = `/u/${encodeURIComponent(handle)}`;
+      const badgePath = `${profilePath}/badge.svg`;
       const uploadCompareUrl = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
 
       compareCta.href = uploadCompareUrl;
@@ -541,6 +544,18 @@
         } catch {
           copyBtn.textContent = 'Copy failed';
           setTimeout(() => { copyBtn.textContent = 'Copy profile'; }, 1500);
+        }
+      });
+
+      copyBadgeBtn.addEventListener('click', async () => {
+        const markdown = `[![vibestats: @${handle}](${location.origin}${badgePath})](${location.origin}${profilePath})`;
+        try {
+          await navigator.clipboard.writeText(markdown);
+          copyBadgeBtn.textContent = 'Badge copied!';
+          setTimeout(() => { copyBadgeBtn.textContent = 'Copy badge'; }, 1500);
+        } catch {
+          copyBadgeBtn.textContent = 'Copy failed';
+          setTimeout(() => { copyBadgeBtn.textContent = 'Copy badge'; }, 1500);
         }
       });
     }
