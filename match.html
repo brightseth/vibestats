@@ -218,8 +218,9 @@
       display: block;
       color: #fff;
       font-family: var(--sans);
-      font-size: 15px;
+      font-size: 13px;
       line-height: 1.2;
+      overflow-wrap: anywhere;
     }
     .empty {
       min-height: 280px;
@@ -320,7 +321,7 @@
 
       list.innerHTML = entries.map((entry) => {
         const handle = entry.user?.gh_handle || 'unknown';
-        const metrics = entry.metrics || {};
+        const activity = entry.activity || {};
         const avatar = entry.user?.avatar_url
           ? `<img class="avatar" src="${esc(entry.user.avatar_url)}" alt="@${esc(handle)}">`
           : '<div class="avatar" aria-hidden="true"></div>';
@@ -334,14 +335,14 @@
               <div class="identity">
                 <a class="handle" href="${profilePath}">@${esc(handle)}</a>
                 <div class="signature">${esc(entry.signature?.label || ARCHETYPE_NAMES[entry.archetype] || entry.archetype)}</div>
-                <div class="meta">${esc(fmt(metrics.days))} days tracked · ${esc(entry.score)}% ${esc(ARCHETYPE_NAMES[entry.archetype] || entry.archetype)} signal</div>
+                <div class="meta">${esc(activity.days || 'fresh profile')} · ${esc(entry.score)}% ${esc(ARCHETYPE_NAMES[entry.archetype] || entry.archetype)} signal</div>
                 <div class="intent">${esc(entry.match?.looking_for_label || 'Active')}</div>
               </div>
             </div>
             <div class="stats">
               <div class="fit"><strong>${esc(entry.fit_score)}%</strong><span class="score-label">goal fit</span></div>
-              <div class="metric"><strong>${esc(fmt(metrics.commitsPerDay))}</strong>commits/day</div>
-              <div class="metric"><strong>${esc(fmt(metrics.sessions))}</strong>sessions</div>
+              <div class="metric"><strong>${esc(activity.cadence || 'private')}</strong>cadence</div>
+              <div class="metric"><strong>${esc(activity.depth || 'private')}</strong>history</div>
             </div>
             <div class="actions">
               <a class="btn primary" href="${esc(contactUrl)}" target="${contactUrl.startsWith('/') ? '_self' : '_blank'}" rel="noopener">Contact</a>

@@ -840,6 +840,10 @@
       const score = Number(latest.scores?.[latest.archetype] || 0);
       const pct = latest.scores?._percentiles?.[latest.archetype];
       const m = latest.metrics || {};
+      const activity = latest.activity || {};
+      const visibility = profile.metric_visibility || {};
+      const canShowCounts = Boolean(profile.is_owner || visibility.show_raw_counts);
+      const canShowLanguages = Boolean(profile.is_owner || visibility.show_languages);
       const avg = stats?.averages || {};
       const signature = vibeSignature(latest);
       const streak = uploadStreak(profile.uploads);
@@ -879,15 +883,24 @@
       renderLookingFor(profile);
       document.getElementById('card-name').textContent = arch.name;
       document.getElementById('score-value').textContent = `${score}%`;
-      document.getElementById('card-note').innerHTML = `${pct ? `top ${esc(pct)}% signal` : 'primary archetype signal'}<br>${signature.label ? `${esc(signature.label)}<br>` : ''}${esc(m.days || 0)} days tracked`;
+      const cardActivity = canShowCounts && m.days ? `${esc(m.days)} days tracked` : esc(activity.days || 'exact counts private');
+      document.getElementById('card-note').innerHTML = `${pct ? `top ${esc(pct)}% signal` : 'primary archetype signal'}<br>${signature.label ? `${esc(signature.label)}<br>` : ''}${cardActivity}`;
 
-      const summary = [
+      const summary = canShowCounts ? [
         ['commits/day', fmt(m.commitsPerDay), metricContext(m.commitsPerDay, avg.commitsPerDay)],
         ['sessions', fmt(m.sessions), metricContext(m.sessions, avg.sessions)],
-        ['languages', fmt(m.codeLangCount ?? m.languages), metricContext(m.codeLangCount ?? m.languages, avg.languages)],
         ['msgs/session', fmt(m.msgsPerSession), metricContext(m.msgsPerSession, avg.msgsPerSession)],
         ['days', fmt(m.days), metricContext(m.days, avg.days)],
+      ] : [
+        ['activity', activity.days || 'private', 'coarse visitor view'],
+        ['cadence', activity.cadence || 'private', 'exact count hidden'],
+        ['history', activity.depth || 'private', 'exact count hidden'],
+        ['privacy', 'counts hidden', 'owner can opt in'],
       ];
+      if (canShowLanguages) {
+        const languages = m.codeLangCount ?? m.languages;
+        summary.splice(Math.min(2, summary.length), 0, ['languages', fmt(languages), metricContext(languages, avg.languages)]);
+      }
       document.getElementById('summary-grid').innerHTML = summary.map(([label, value, context]) => `
         <div class="metric">
           <div class="metric-value">${esc(value)}</div>

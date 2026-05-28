@@ -17,6 +17,7 @@ const apiModules = [
   '../api/cron/weekly-digest.js',
   '../api/_lib/evolution.js',
   '../api/_lib/profile-settings.js',
+  '../api/_lib/public-profile.js',
   '../api/_lib/signatures.js',
   '../api/_lib/leaderboard-rank.js',
   '../api/_lib/digest.js',
@@ -64,6 +65,7 @@ async function assertRoutes() {
   const leaderboardApi = await readFile('api/leaderboard.js', 'utf8');
   const browseApi = await readFile('api/browse.js', 'utf8');
   const browseHtml = await readFile('browse.html', 'utf8');
+  const matchApi = await readFile('api/match.js', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   const rewrites = config.rewrites || [];
@@ -94,6 +96,8 @@ async function assertRoutes() {
   assert(csp.includes("frame-ancestors 'none'"), 'global CSP should keep non-embed pages unframeable');
   assert(leaderboardApi.includes("date_trunc('week', now())"), 'leaderboard API should reset weekly');
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
+  assert(!leaderboardApi.includes('languages:'), 'leaderboard API should not expose public language counts');
+  assert(!matchApi.includes('languages:'), 'match API should not expose public language counts');
   assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
   assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
@@ -234,6 +238,7 @@ async function assertProfileSettingsHelpers() {
   }
   assert(rejected, 'invalid digest email should be rejected');
   assert(publicProfileSettings({ weekly_digest_opt_in: true }).weekly_digest_opt_in === true, 'digest opt-in should serialize');
+  assert(publicProfileSettings({ show_raw_counts: true, show_languages: true }).show_languages === true, 'metric visibility should serialize');
   assert(cleanLookingFor('pair-coding') === 'pair-coding', 'looking_for should accept valid values');
   assert(cleanContactUrl('https://x.com/brightseth') === 'https://x.com/brightseth', 'contact URL should normalize valid URL');
   let badLookingForRejected = false;
@@ -254,6 +259,37 @@ async function assertProfileSettingsHelpers() {
     contact_url: 'https://x.com/brightseth',
   }).looking_for === 'idle', 'expired match settings should not serialize as active');
   console.log('ok profile settings helpers');
+}
+
+async function assertPublicProfileHelpers() {
+  const { metricVisibility, publicUpload } = await import('../api/_lib/public-profile.js');
+  const upload = {
+    id: 'upload-1',
+    archetype: 'builder',
+    scores: { builder: 92, shipper: 80 },
+    metrics: { days: 31, commitsPerDay: 12.4, sessions: 88, languages: 6, msgsPerSession: 9 },
+    raw_meta: {
+      signature: 'high-velocity Builder',
+      signatureCombo: 'shipper+builder',
+      signatureFingerprint: 'builder+shipper+orchestrator:90s',
+      secondaryArchetype: 'shipper',
+      dateRange: 'private range',
+    },
+    uploaded_at: '2026-05-28T10:00:00.000Z',
+  };
+  const privateView = publicUpload(upload, metricVisibility({}), { isOwner: false });
+  assert(!privateView.id, 'visitor upload payload should not expose upload id');
+  assert(Object.keys(privateView.metrics).length === 0, 'visitor upload payload should hide exact metrics by default');
+  assert(privateView.activity.cadence === 'high-velocity cadence', 'visitor upload payload should include coarse activity');
+  assert(privateView.raw_meta.signature === 'high-velocity Builder', 'visitor upload payload should keep signature metadata');
+  assert(!('dateRange' in privateView.raw_meta), 'visitor upload payload should omit raw date metadata');
+  const countsView = publicUpload(upload, metricVisibility({ show_raw_counts: true, show_languages: true }), { isOwner: false });
+  assert(countsView.metrics.days === 31, 'opt-in public view should expose raw counts');
+  assert(countsView.metrics.languages === 6, 'opt-in public view should expose language count');
+  const ownerView = publicUpload(upload, metricVisibility({}, { isOwner: true }), { isOwner: true });
+  assert(ownerView.id === 'upload-1', 'owner upload payload should retain upload id');
+  assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
+  console.log('ok public profile helpers hide visitor metrics by default');
 }
 
 async function assertSignatureHelpers() {
@@ -613,6 +649,7 @@ await assertSessionRoundTrip();
 await assertSameOriginGuard();
 await assertReadJsonLimit();
 await assertProfileSettingsHelpers();
+await assertPublicProfileHelpers();
 await assertSignatureHelpers();
 await assertEvolutionHelpers();
 await assertDigestHelpers();

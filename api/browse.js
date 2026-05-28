@@ -1,6 +1,7 @@
 import { json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
+import { publicActivity } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -59,36 +60,6 @@ function getSort(req) {
 function safeNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
-}
-
-function bucketDays(days) {
-  if (days >= 120) return '120+ days tracked';
-  if (days >= 30) return '30-119 days tracked';
-  if (days >= 7) return '7-29 days tracked';
-  if (days > 0) return '<7 days tracked';
-  return 'fresh profile';
-}
-
-function cadenceLabel(commitsPerDay) {
-  if (commitsPerDay >= 12) return 'high-velocity cadence';
-  if (commitsPerDay >= 5) return 'steady cadence';
-  if (commitsPerDay > 0) return 'warming up';
-  return 'cadence pending';
-}
-
-function depthLabel(sessions) {
-  if (sessions >= 100) return 'deep history';
-  if (sessions >= 25) return 'seasoned history';
-  if (sessions > 0) return 'fresh history';
-  return 'history pending';
-}
-
-function publicActivity(metrics = {}) {
-  return {
-    days: bucketDays(safeNumber(metrics.days)),
-    cadence: cadenceLabel(safeNumber(metrics.commitsPerDay)),
-    depth: depthLabel(safeNumber(metrics.sessions)),
-  };
 }
 
 function browseEntry(row) {

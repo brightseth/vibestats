@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { readSession, originForRequest } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
+import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
 const PROFILE_HTML = readFileSync(new URL('../u.html', import.meta.url), 'utf8');
@@ -78,7 +79,8 @@ export default async function handler(req, res) {
     if (!user) return res.status(404).send(genericProfilePage(req, handle));
 
     const session = readSession(req);
-    if (user.privacy === 'private' && session?.sub !== user.id) {
+    const isOwner = session?.sub === user.id;
+    if (user.privacy === 'private' && !isOwner) {
       return res.status(404).send('Not found');
     }
 
@@ -97,7 +99,14 @@ export default async function handler(req, res) {
     }
 
     const arch = ARCHETYPES[latest.archetype] || ARCHETYPES.builder;
-    const metrics = latest.metrics || {};
+    const settingsRows = await sql()`
+      select show_raw_counts, show_languages
+      from profile_settings
+      where user_id = ${user.id}
+      limit 1
+    `;
+    const visibility = metricVisibility(settingsRows[0] || {}, { isOwner });
+    const metrics = visibleMetrics(latest.metrics || {}, visibility);
     const percentiles = latest.scores?._percentiles || {};
     const signature = signatureFromUpload(latest)?.label || '';
     const origin = originForRequest(req);
@@ -113,7 +122,7 @@ export default async function handler(req, res) {
 
     const html = injectProfileMeta(PROFILE_HTML, {
       title: `@${user.gh_handle} is ${signature || arch.name} | vibestats`,
-      description: `${signature ? `${signature}. ` : ''}${arch.tagline} ${metrics.days || '?'} days of Claude Code history. Compare your vibecoding personality with @${user.gh_handle}.`,
+      description: `${signature ? `${signature}. ` : ''}${arch.tagline} ${metrics.days ? `${metrics.days} days of Claude Code history.` : 'A privacy-preserving Claude Code profile.'} Compare your vibecoding personality with @${user.gh_handle}.`,
       url: `${origin}/u/${encodeURIComponent(user.gh_handle)}`,
       image: `${origin}/api/og?${imageParams.toString()}`,
     });

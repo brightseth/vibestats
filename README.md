@@ -23,9 +23,10 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **An embeddable profile card** (`/u/<handle>/embed`) for personal sites, with a link back to compare.
 - **Weekly public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only, with rank shown on `/u/<handle>`.
 - **A public directory** (`/browse`) that filters opt-in profiles by archetype and active intent, showing only coarse derived activity.
+- **Public metric controls** so exact activity counts and language count stay hidden from visitors unless the owner opts in.
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
 
-**Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata.
+**Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default.
 
 ## Where it's going
 

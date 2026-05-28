@@ -1,5 +1,6 @@
 import { readSession, originForRequest } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
+import { metricVisibility, publicUpload } from './_lib/public-profile.js';
 import { rarityTier, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -35,7 +36,26 @@ function metricValue(value) {
   return n.toFixed(1);
 }
 
-function embedHtml({ origin, user, latest, rarity }) {
+function metricCards({ score, latest, visibility }) {
+  const metrics = latest?.metrics || {};
+  const activity = latest?.activity || {};
+  const cards = [`<div class="metric"><strong>${score}%</strong><span>signal</span></div>`];
+  if (visibility?.show_raw_counts) {
+    cards.push(`<div class="metric"><strong>${esc(metricValue(metrics.days))}</strong><span>days</span></div>`);
+    cards.push(`<div class="metric"><strong>${esc(metricValue(metrics.commitsPerDay))}</strong><span>commits/day</span></div>`);
+    cards.push(`<div class="metric"><strong>${esc(metricValue(metrics.sessions))}</strong><span>sessions</span></div>`);
+  } else {
+    cards.push(`<div class="metric"><strong>${esc(activity.days || 'private')}</strong><span>activity</span></div>`);
+    cards.push(`<div class="metric"><strong>${esc(activity.cadence || 'private')}</strong><span>cadence</span></div>`);
+    cards.push(`<div class="metric"><strong>${esc(activity.depth || 'private')}</strong><span>history</span></div>`);
+  }
+  if (visibility?.show_languages) {
+    cards[cards.length - 1] = `<div class="metric"><strong>${esc(metricValue(metrics.languages))}</strong><span>languages</span></div>`;
+  }
+  return cards.join('');
+}
+
+function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
   const hasLatest = Boolean(latest?.archetype && ARCHETYPES[latest.archetype]);
   const arch = hasLatest ? ARCHETYPES[latest.archetype] : {
     name: 'VIBESTATS PROFILE',
@@ -44,7 +64,6 @@ function embedHtml({ origin, user, latest, rarity }) {
     color: '#6B8FFF',
     accent: '#a78bfa',
   };
-  const metrics = latest?.metrics || {};
   const score = hasLatest ? Math.max(0, Math.min(100, Math.round(Number(latest?.scores?.[latest?.archetype]) || 0))) : 0;
   const signature = hasLatest ? signatureFromUpload(latest || {})?.label || arch.short : 'Waiting for an upload';
   const profileUrl = `${origin}/u/${encodeURIComponent(user.gh_handle)}`;
@@ -267,10 +286,7 @@ function embedHtml({ origin, user, latest, rarity }) {
       <div class="signature">${esc(signature)} <span class="tagline">/ ${esc(arch.tagline)}</span></div>
     </div>
     <div class="metrics">
-      <div class="metric"><strong>${score}%</strong><span>signal</span></div>
-      <div class="metric"><strong>${esc(metricValue(metrics.days))}</strong><span>days</span></div>
-      <div class="metric"><strong>${esc(metricValue(metrics.commitsPerDay))}</strong><span>commits/day</span></div>
-      <div class="metric"><strong>${esc(metricValue(metrics.sessions))}</strong><span>sessions</span></div>
+      ${metricCards({ score, latest, visibility })}
     </div>
     <div class="foot">
       <div class="rarity">${esc(rarityLine)}</div>
@@ -287,6 +303,7 @@ function genericEmbedPage(req, handle) {
     user: { gh_handle: handle, avatar_url: '' },
     latest: null,
     rarity: null,
+    visibility: {},
   });
 }
 
@@ -316,9 +333,17 @@ export default async function handler(req, res) {
     if (!user) return res.status(404).send('Not found');
 
     const session = readSession(req);
-    if (user.privacy === 'private' && session?.sub !== user.id) {
+    const isOwner = session?.sub === user.id;
+    if (user.privacy === 'private' && !isOwner) {
       return res.status(404).send('Not found');
     }
+    const settingsRows = await sql()`
+      select show_raw_counts, show_languages
+      from profile_settings
+      where user_id = ${user.id}
+      limit 1
+    `;
+    const visibility = metricVisibility(settingsRows[0] || {}, { isOwner });
 
     const uploads = await sql()`
       select archetype, scores, metrics, raw_meta, uploaded_at
@@ -334,6 +359,7 @@ export default async function handler(req, res) {
         user,
         latest: null,
         rarity: null,
+        visibility,
       }));
     }
 
@@ -358,8 +384,9 @@ export default async function handler(req, res) {
     return sendHtml(res, 200, embedHtml({
       origin: originForRequest(req),
       user,
-      latest,
+      latest: publicUpload(latest, visibility, { isOwner }),
       rarity,
+      visibility,
     }));
   } catch (err) {
     console.error('GET /api/embed error:', err);

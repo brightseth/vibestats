@@ -4,6 +4,7 @@ import { profileEvolution } from '../_lib/evolution.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
 import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
 import { publicMatchSettings } from '../_lib/profile-settings.js';
+import { metricVisibility, publicUpload } from '../_lib/public-profile.js';
 import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
 
 function getHandle(req) {
@@ -44,11 +45,14 @@ export default async function handler(req, res) {
       limit 50
     `;
     const settingsRows = await sql()`
-      select looking_for, looking_for_expires_at, contact_url
+      select show_raw_counts, show_languages, looking_for, looking_for_expires_at, contact_url
       from profile_settings
       where user_id = ${user.id}
       limit 1
     `;
+    const settings = settingsRows[0] || {};
+    const visibility = metricVisibility(settings, { isOwner });
+    const serializedUploads = uploads.map((upload) => publicUpload(upload, visibility, { isOwner }));
     const latestSignature = signatureFromUpload(uploads[0]);
     let rarity = null;
     if (latestSignature?.fingerprint) {
@@ -75,8 +79,9 @@ export default async function handler(req, res) {
     json(res, 200, {
       user: publicUser(user, { includePrivacy: isOwner }),
       is_owner: Boolean(isOwner),
-      match: publicMatchSettings(settingsRows[0] || {}),
-      uploads,
+      metric_visibility: visibility,
+      match: publicMatchSettings(settings),
+      uploads: serializedUploads,
       rarity,
       leaderboard: await weeklyLeaderboardRank(user, uploads[0]),
       evolution: profileEvolution(uploads),

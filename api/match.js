@@ -1,5 +1,6 @@
 import { json, methodNotAllowed } from './_lib/http.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
+import { publicActivity } from './_lib/public-profile.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
@@ -61,12 +62,7 @@ function entry(row, goal) {
       combo: signature.combo,
       secondary: signature.secondary,
     } : null,
-    metrics: {
-      days: safeNumber(row.metrics?.days),
-      commitsPerDay: safeNumber(row.metrics?.commitsPerDay),
-      sessions: safeNumber(row.metrics?.sessions),
-      languages: safeNumber(row.metrics?.codeLangCount ?? row.metrics?.languages),
-    },
+    activity: publicActivity(row.metrics || {}),
     uploaded_at: row.uploaded_at,
   };
 }

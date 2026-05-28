@@ -247,8 +247,9 @@
       display: block;
       color: #fff;
       font-family: var(--sans);
-      font-size: 15px;
+      font-size: 13px;
       line-height: 1.2;
+      overflow-wrap: anywhere;
     }
     .empty {
       min-height: 280px;
@@ -355,7 +356,7 @@
 
       list.innerHTML = entries.map((entry) => {
         const handle = entry.user?.gh_handle || 'unknown';
-        const metrics = entry.metrics || {};
+        const activity = entry.activity || {};
         const avatar = entry.user?.avatar_url
           ? `<img class="avatar" src="${esc(entry.user.avatar_url)}" alt="@${esc(handle)}">`
           : '<div class="avatar" aria-hidden="true"></div>';
@@ -367,14 +368,13 @@
               <div class="identity">
                 <a class="handle" href="/u/${encodeURIComponent(handle)}">@${esc(handle)}</a>
                 <div class="signature">${esc(entry.signature?.label || ARCHETYPES[entry.archetype]?.name || entry.archetype)}</div>
-                <div class="meta">${esc(fmt(metrics.days))} days tracked</div>
+                <div class="meta">${esc(activity.days || 'fresh profile')}</div>
               </div>
             </div>
             <div class="stats">
               <div class="score"><strong>${esc(entry.score)}%</strong><span class="score-label">signal</span></div>
-              <div class="metric"><strong>${esc(fmt(metrics.commitsPerDay))}</strong>commits/day</div>
-              <div class="metric"><strong>${esc(fmt(metrics.sessions))}</strong>sessions</div>
-              <div class="metric"><strong>${esc(fmt(metrics.languages))}</strong>languages</div>
+              <div class="metric"><strong>${esc(activity.cadence || 'private')}</strong>cadence</div>
+              <div class="metric"><strong>${esc(activity.depth || 'private')}</strong>history</div>
             </div>
           </article>
         `;

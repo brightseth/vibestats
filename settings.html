@@ -118,6 +118,14 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+    .visibility-controls {
+      display: grid;
+      grid-template-columns: max-content max-content auto;
+      align-items: center;
+      justify-content: end;
+      gap: 10px;
+      min-width: min(360px, 100%);
+    }
     .intent-controls {
       display: grid;
       grid-template-columns: minmax(150px, 190px) minmax(220px, 1fr) auto;
@@ -132,6 +140,7 @@
       color: var(--text-muted);
       font-family: var(--mono);
       font-size: 12px;
+      white-space: nowrap;
     }
     input[type="checkbox"] {
       width: 18px;
@@ -194,6 +203,7 @@
       .nav { flex-direction: column; align-items: stretch; }
       .row { align-items: stretch; flex-direction: column; }
       .btn, select { width: 100%; }
+      .visibility-controls { grid-template-columns: 1fr; justify-content: stretch; }
       .digest-controls { justify-content: stretch; }
       .digest-controls .btn, .digest-controls input[type="email"] { width: 100%; }
       .intent-controls { grid-template-columns: 1fr; width: 100%; }
@@ -241,6 +251,23 @@
             <div class="hint" id="profile-url"></div>
           </div>
           <a class="btn" id="profile-link" href="#">Open profile</a>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Public metrics</div>
+            <div class="hint">Visitors see archetype, score, signature, rarity, and coarse activity by default. Exact counts and language count require explicit opt-in.</div>
+          </div>
+          <div class="visibility-controls">
+            <label class="check-row">
+              <input type="checkbox" id="show-raw-counts">
+              <span>Show counts</span>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" id="show-languages">
+              <span>Show language count</span>
+            </label>
+            <button class="btn" id="save-visibility">Save</button>
+          </div>
         </div>
         <div class="row">
           <div>
@@ -345,6 +372,8 @@
       document.getElementById('profile-link').href = `/u/${encodeURIComponent(user.gh_handle)}`;
       document.getElementById('weekly-digest').checked = Boolean(settings?.weekly_digest_opt_in);
       document.getElementById('digest-email').value = settings?.digest_email || '';
+      document.getElementById('show-raw-counts').checked = Boolean(settings?.show_raw_counts);
+      document.getElementById('show-languages').checked = Boolean(settings?.show_languages);
       document.getElementById('looking-for').value = settings?.looking_for || 'idle';
       document.getElementById('contact-url').value = settings?.contact_url || '';
 
@@ -374,6 +403,25 @@
           document.getElementById('weekly-digest').checked = Boolean(body.settings?.weekly_digest_opt_in);
           document.getElementById('digest-email').value = body.settings?.digest_email || '';
           showMessage(body.settings?.weekly_digest_opt_in ? 'Weekly digest saved.' : 'Weekly digest off.');
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('save-visibility').addEventListener('click', async () => {
+        const showRawCounts = document.getElementById('show-raw-counts').checked;
+        const showLanguages = document.getElementById('show-languages').checked;
+        try {
+          const body = await api('/api/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({
+              show_raw_counts: showRawCounts,
+              show_languages: showLanguages,
+            }),
+          });
+          document.getElementById('show-raw-counts').checked = Boolean(body.settings?.show_raw_counts);
+          document.getElementById('show-languages').checked = Boolean(body.settings?.show_languages);
+          showMessage('Public metric visibility saved.');
         } catch (err) {
           showMessage(err.message, true);
         }

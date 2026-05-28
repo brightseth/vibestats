@@ -1,5 +1,6 @@
 import { json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
+import { publicActivity } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -21,16 +22,6 @@ function getArchetype(req) {
 function safeNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
-}
-
-function publicMetrics(metrics = {}) {
-  return {
-    commitsPerDay: safeNumber(metrics.commitsPerDay),
-    sessions: safeNumber(metrics.sessions),
-    languages: safeNumber(metrics.codeLangCount ?? metrics.languages),
-    msgsPerSession: safeNumber(metrics.msgsPerSession),
-    days: safeNumber(metrics.days),
-  };
 }
 
 function leaderboardEntry(row, index) {
@@ -55,7 +46,7 @@ function leaderboardEntry(row, index) {
       combo: signature.combo,
       secondary: signature.secondary,
     } : null,
-    metrics: publicMetrics(row.metrics),
+    activity: publicActivity(row.metrics || {}),
     uploaded_at: row.uploaded_at,
   };
 }
