@@ -1235,7 +1235,7 @@
     // ========================================
     // SLIDE GENERATION
     // ========================================
-    function generateSlides(insights, archetype, scores, previousResult) {
+    function generateSlides(insights, archetype, scores, previousResult, options = {}) {
       const a = ARCHETYPES[archetype];
       const slides = [];
       const emerging = insights.isEmerging;
@@ -1461,14 +1461,24 @@
       });
       if (insights.satisfaction !== null) cardParams.set('sat', insights.satisfaction);
       if (pct) cardParams.set('p', pct);
-      const shareUrl = `https://vibestats.io/card?${cardParams}`;
+      const cardShareUrl = `https://vibestats.io/card?${cardParams}`;
+      const saveToggle = document.getElementById('save-to-profile');
+      const shouldShareProfile = !options.demo && currentUser && saveToggle && saveToggle.checked;
+      const profileShareUrl = shouldShareProfile ? `https://vibestats.io/u/${encodeURIComponent(currentUser.gh_handle)}` : null;
+      const shareUrl = profileShareUrl || cardShareUrl;
 
       // Tweet variants — pick one randomly
-      const tweetVariants = [
-        `I'm ${a.name}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\n${shareUrl}\n\nvia @slashvibe #vibestats`,
-        `${a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nFind yours: vibestats.io — a /vibe project\n\n#vibestats #claudecode`,
-        `My vibecoding personality: ${a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nWhat's yours?\n${shareUrl}\n\nvia @slashvibe #vibestats`,
-      ];
+      const tweetVariants = profileShareUrl
+        ? [
+            `I'm ${a.name}\n\n"${a.tagline}"\n\nSee how you'd pair with me:\n${profileShareUrl}\n\nvia @slashvibe #vibestats #claudecode`,
+            `My Claude Code profile: ${a.name}${pct ? ` — top ${pct}%` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\n${profileShareUrl}\n\n#vibestats`,
+            `This is how I build with Claude Code: ${a.name}\n\nHow do you compare?\n${profileShareUrl}\n\nvia @slashvibe #vibestats`,
+          ]
+        : [
+            `I'm ${a.name}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+            `${a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nFind yours: vibestats.io — a /vibe project\n\n#vibestats #claudecode`,
+            `My vibecoding personality: ${a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nWhat's yours?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+          ];
       const tweetText = tweetVariants[Math.floor(Math.random() * tweetVariants.length)];
 
       slides.push(`
@@ -1938,7 +1948,8 @@
       await wait(600);
 
       // Generate and show wrapped
-      const slideHTML = generateSlides(insights, archetype, scores, previousResult);
+      await authReady.catch(() => null);
+      const slideHTML = generateSlides(insights, archetype, scores, previousResult, options);
       analyzingEl.classList.add('hidden');
       document.getElementById('wrapped-page').classList.remove('hidden');
       initSlideshow(slideHTML);
