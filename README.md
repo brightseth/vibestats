@@ -20,7 +20,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
 - **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites.
 - **An embeddable profile card** (`/u/<handle>/embed`) for personal sites, with a link back to compare.
-- **Public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only.
+- **Weekly public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only.
 
 **Privacy stance:** the insights JSON never leaves the browser. Only aggregate metrics (archetype + 5 averages) are POSTed to Redis for the community page, rate-limited 1/IP/hr.
 
@@ -90,6 +90,7 @@ Copy `.env.example` to `.env.local`. You'll need:
 - `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` for OAuth.
 - `VIBE_SESSION_SECRET` for the signed session cookie.
 - `VIBESTATS_URL` for the OAuth callback origin (`http://localhost:3000` locally).
+- `CRON_SECRET`, `RESEND_API_KEY`, and `DIGEST_FROM_EMAIL` for the opt-in weekly digest cron.
 
 Pull shared Vercel env when available:
 
@@ -104,6 +105,8 @@ Run database migrations:
 npm run migrate
 ```
 
+Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured.
+
 Run local smoke checks:
 
 ```bash
@@ -117,7 +120,7 @@ npm run doctor:identity
 vercel --prod
 ```
 
-CI is currently manual — Wave 1 adds GitHub Actions on push to `main`.
+CI runs the smoke harness on pull requests and pushes to `main`.
 
 ## Conventions
 

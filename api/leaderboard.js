@@ -82,6 +82,7 @@ export default async function handler(req, res) {
         from users u
         join uploads up on up.user_id = u.id
         where u.privacy = 'public'
+          and up.uploaded_at >= date_trunc('week', now())
         order by u.id, up.uploaded_at desc
       ),
       filtered as (
@@ -89,15 +90,16 @@ export default async function handler(req, res) {
         from latest_uploads
         where archetype = ${archetype}
       )
-      select *, count(*) over()::int as total
+      select *, count(*) over()::int as total, date_trunc('week', now()) as week_start
       from filtered
       order by coalesce((scores->>${archetype})::numeric, 0) desc, uploaded_at desc
-      limit 50
+      limit 25
     `;
 
     return json(res, 200, {
       archetype,
       label: ARCHETYPES[archetype].name,
+      week_start: rows[0]?.week_start || null,
       total: rows[0]?.total || 0,
       entries: rows.map(leaderboardEntry),
     }, {
@@ -108,6 +110,7 @@ export default async function handler(req, res) {
     return json(res, 200, {
       archetype,
       label: ARCHETYPES[archetype].name,
+      week_start: null,
       total: 0,
       entries: [],
       unavailable: true,

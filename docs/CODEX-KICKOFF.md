@@ -83,6 +83,7 @@ create table profile_settings (
   weekly_digest_opt_in boolean not null default false,
   digest_email text,
   email_consent_at timestamptz,
+  weekly_digest_sent_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

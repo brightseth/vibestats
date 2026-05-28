@@ -14,8 +14,10 @@ const apiModules = [
   '../api/u/[handle].js',
   '../api/settings.js',
   '../api/settings/export.js',
+  '../api/cron/weekly-digest.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/signatures.js',
+  '../api/_lib/digest.js',
   '../api/leaderboard.js',
   '../api/stats.js',
   '../api/card.js',
@@ -45,6 +47,7 @@ async function assertApiImports() {
 
 async function assertRoutes() {
   const config = JSON.parse(await readFile('vercel.json', 'utf8'));
+  const leaderboardApi = await readFile('api/leaderboard.js', 'utf8');
   const rewrites = config.rewrites || [];
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/compare?a=:other&b=:handle'),
@@ -63,6 +66,9 @@ async function assertRoutes() {
   const csp = globalHeaders.find((header) => header.key.toLowerCase() === 'content-security-policy')?.value || '';
   assert(!headerKeys.has('x-frame-options'), 'global X-Frame-Options must stay off so the embed function can be frameable');
   assert(csp.includes("frame-ancestors 'none'"), 'global CSP should keep non-embed pages unframeable');
+  assert(leaderboardApi.includes("date_trunc('week', now())"), 'leaderboard API should reset weekly');
+  assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
+  assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   console.log('ok route rewrites');
 }
 
@@ -196,6 +202,48 @@ async function assertSignatureHelpers() {
   assert(signatureFingerprint(upload.scores, 'builder') === signature.fingerprint, 'fingerprint helper should match upload helper');
   assert(rarityTier(8) === 'rare' && rarityTier(40) === 'uncommon' && rarityTier(90) === 'common', 'rarity tiers should classify counts');
   console.log('ok signature rarity helpers');
+}
+
+async function assertDigestHelpers() {
+  const { buildWeeklyDigest, uploadStreak } = await import('../api/_lib/digest.js');
+  const uploads = [
+    {
+      archetype: 'builder',
+      scores: { builder: 92, shipper: 82, orchestrator: 61, _percentiles: { builder: 4 } },
+      metrics: { days: 31, commitsPerDay: 12.4, sessions: 88, languages: 6 },
+      raw_meta: {
+        signature: 'high-velocity Builder',
+        signatureCombo: 'shipper+builder',
+        signatureFingerprint: 'builder+shipper+orchestrator:90s',
+        secondaryArchetype: 'shipper',
+        rawJson: { should: 'not leak' },
+      },
+      uploaded_at: '2026-05-28T10:00:00.000Z',
+    },
+    {
+      archetype: 'builder',
+      scores: { builder: 88, shipper: 78 },
+      metrics: { days: 24, commitsPerDay: 9.1, sessions: 61, languages: 5 },
+      raw_meta: {},
+      uploaded_at: '2026-05-23T10:00:00.000Z',
+    },
+  ];
+  const digest = buildWeeklyDigest({
+    user: { gh_handle: 'brightseth' },
+    uploads,
+    rarity: { count: 8, tier: 'rare' },
+    leaderboard: { rank: 4, total: 25, label: 'builder' },
+    origin: 'https://vibestats.io',
+    now: new Date('2026-05-28T12:00:00.000Z'),
+  });
+
+  assert(uploadStreak(uploads) === 2, 'digest streak helper should count uploads within 7 days');
+  assert(digest.subject.includes('week'), 'digest subject should include week label');
+  assert(digest.text.includes('+4 points vs last upload'), 'digest text should include score movement');
+  assert(digest.text.includes('#4 on the weekly Builder board'), 'digest text should include leaderboard position');
+  assert(digest.html.includes('/api/og?'), 'digest HTML should include the profile card image');
+  assert(!digest.html.includes('rawJson') && !digest.text.includes('rawJson'), 'digest must not leak raw metadata');
+  console.log('ok weekly digest helpers render derived-only email');
 }
 
 async function assertProfileFallback() {
@@ -349,6 +397,46 @@ async function assertLeaderboardFallback() {
   }
 }
 
+async function assertDigestCronAuth() {
+  const { default: handler } = await import('../api/cron/weekly-digest.js');
+  const previousSecret = process.env.CRON_SECRET;
+  const originalError = console.error;
+  process.env.CRON_SECRET = 'smoke-cron-secret';
+  console.error = () => {};
+  const req = {
+    method: 'GET',
+    query: { dryRun: '1' },
+    headers: { host: 'localhost:3000', authorization: 'Bearer wrong-secret' },
+  };
+  let statusCode = 0;
+  let body = '';
+  const res = {
+    setHeader() {},
+    status(code) {
+      statusCode = code;
+      return this;
+    },
+    json(value) {
+      body = JSON.stringify(value);
+    },
+  };
+
+  try {
+    await handler(req, res);
+    const parsed = JSON.parse(body);
+    assert(statusCode === 401, 'weekly digest cron should reject invalid bearer token');
+    assert(parsed.error === 'Unauthorized', 'weekly digest cron should return unauthorized error');
+    console.log('ok weekly digest cron requires bearer secret');
+  } finally {
+    console.error = originalError;
+    if (previousSecret == null) {
+      delete process.env.CRON_SECRET;
+    } else {
+      process.env.CRON_SECRET = previousSecret;
+    }
+  }
+}
+
 await assertHtmlScriptsParse();
 await assertApiImports();
 await assertRoutes();
@@ -358,9 +446,11 @@ await assertSameOriginGuard();
 await assertReadJsonLimit();
 await assertProfileSettingsHelpers();
 await assertSignatureHelpers();
+await assertDigestHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();
 await assertLeaderboardFallback();
+await assertDigestCronAuth();
 
 console.log('smoke checks passed');

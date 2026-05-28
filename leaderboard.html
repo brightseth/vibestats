@@ -297,11 +297,11 @@
       <div>
         <div class="eyebrow">public leaderboard</div>
         <h1 id="title">Builder leaderboard</h1>
-        <p class="lead" id="lead">Ranked public profiles by latest saved archetype signal. Unlisted and private profiles are not included.</p>
+        <p class="lead" id="lead">Ranked public profiles by this week's latest saved archetype signal. Unlisted and private profiles are not included.</p>
       </div>
       <div class="hero-stat">
         <strong id="total">-</strong>
-        <span id="total-label">public profiles</span>
+        <span id="total-label">public profiles this week</span>
       </div>
     </section>
 
@@ -393,7 +393,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Leaderboard unavailable');
         document.getElementById('total').textContent = fmt(data.total);
-        document.getElementById('total-label').textContent = data.unavailable ? 'database unavailable' : 'public profiles';
+        document.getElementById('total-label').textContent = data.unavailable ? 'database unavailable' : 'public profiles this week';
         renderEntries(data.entries || []);
       } catch (err) {
         document.getElementById('list').innerHTML = `<div class="empty">Leaderboard unavailable.<br>${esc(err.message)}</div>`;

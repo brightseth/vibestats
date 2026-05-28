@@ -5,6 +5,7 @@ export function publicProfileSettings(row = {}) {
     weekly_digest_opt_in: Boolean(row.weekly_digest_opt_in),
     digest_email: row.digest_email || null,
     email_consent_at: row.email_consent_at || null,
+    weekly_digest_sent_at: row.weekly_digest_sent_at || null,
     updated_at: row.updated_at || null,
   };
 }
@@ -14,7 +15,7 @@ export async function getProfileSettings(userId) {
     insert into profile_settings (user_id)
     values (${userId})
     on conflict (user_id) do update set user_id = excluded.user_id
-    returning weekly_digest_opt_in, digest_email, email_consent_at, updated_at
+    returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at, updated_at
   `;
   return rows[0];
 }

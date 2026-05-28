@@ -77,7 +77,7 @@ export default async function handler(req, res) {
                 digest_email = excluded.digest_email,
                 email_consent_at = excluded.email_consent_at,
                 updated_at = now()
-          returning weekly_digest_opt_in, digest_email, email_consent_at, updated_at
+          returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at, updated_at
         `;
         nextSettings = settingsRows[0];
       }
