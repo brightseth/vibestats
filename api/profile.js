@@ -62,6 +62,12 @@ function genericProfilePage(req, handle) {
   });
 }
 
+function profileCacheControl(user) {
+  return user?.privacy === 'private'
+    ? 'private, no-store'
+    : 'public, s-maxage=300, stale-while-revalidate=3600';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).send('Method not allowed');
 
@@ -94,7 +100,7 @@ export default async function handler(req, res) {
     const latest = uploads[0];
     if (!latest) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=300');
+      res.setHeader('Cache-Control', profileCacheControl(user));
       return res.status(200).send(genericProfilePage(req, user.gh_handle));
     }
 
@@ -105,7 +111,7 @@ export default async function handler(req, res) {
       where user_id = ${user.id}
       limit 1
     `;
-    const visibility = metricVisibility(settingsRows[0] || {}, { isOwner });
+    const visibility = metricVisibility(settingsRows[0] || {}, { isOwner: false });
     const metrics = visibleMetrics(latest.metrics || {}, visibility);
     const percentiles = latest.scores?._percentiles || {};
     const signature = signatureFromUpload(latest)?.label || '';
@@ -128,7 +134,7 @@ export default async function handler(req, res) {
     });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
+    res.setHeader('Cache-Control', profileCacheControl(user));
     res.status(200).send(html);
   } catch (err) {
     console.error('GET /api/profile error:', err);

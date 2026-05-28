@@ -68,6 +68,7 @@ async function assertRoutes() {
   const browseHtml = await readFile('browse.html', 'utf8');
   const matchApi = await readFile('api/match.js', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
+  const profileHtmlApi = await readFile('api/profile.js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   const rewrites = config.rewrites || [];
   assert(
@@ -107,6 +108,8 @@ async function assertRoutes() {
   assert((await readFile('match.html', 'utf8')).includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
+  assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
+  assert(profileHtmlApi.includes("'private, no-store'"), 'private owner profile HTML must not be publicly cacheable');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
