@@ -65,6 +65,12 @@ function sendSvg(res, status, svg, cache = 'public, s-maxage=300, stale-while-re
   res.status(status).send(svg);
 }
 
+function profileAssetCacheControl(user) {
+  return user?.privacy === 'private'
+    ? 'private, no-store'
+    : 'public, s-maxage=300, stale-while-revalidate=3600';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).send('Method not allowed');
 
@@ -84,7 +90,8 @@ export default async function handler(req, res) {
     if (!user) return res.status(404).send('Not found');
 
     const session = readSession(req);
-    if (user.privacy === 'private' && session?.sub !== user.id) {
+    const isOwner = session?.sub === user.id;
+    if (user.privacy === 'private' && !isOwner) {
       return res.status(404).send('Not found');
     }
 
@@ -104,7 +111,7 @@ export default async function handler(req, res) {
       label,
       archetype: arch?.name || 'vibestats',
       color: arch?.color || '#6B8FFF',
-    }));
+    }), profileAssetCacheControl(user));
   } catch (err) {
     console.error('GET /api/badge error:', err);
     return sendSvg(res, 200, badgeSvg({ handle }), 'public, s-maxage=60');

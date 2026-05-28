@@ -314,6 +314,12 @@ function sendHtml(res, status, html, cache = 'public, s-maxage=300, stale-while-
   res.status(status).send(html);
 }
 
+function profileAssetCacheControl(user) {
+  return user?.privacy === 'private'
+    ? 'private, no-store'
+    : 'public, s-maxage=300, stale-while-revalidate=3600';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).send('Method not allowed');
 
@@ -343,7 +349,7 @@ export default async function handler(req, res) {
       where user_id = ${user.id}
       limit 1
     `;
-    const visibility = metricVisibility(settingsRows[0] || {}, { isOwner });
+    const visibility = metricVisibility(settingsRows[0] || {}, { isOwner: false });
 
     const uploads = await sql()`
       select archetype, scores, metrics, raw_meta, uploaded_at
@@ -360,7 +366,7 @@ export default async function handler(req, res) {
         latest: null,
         rarity: null,
         visibility,
-      }));
+      }), profileAssetCacheControl(user));
     }
 
     const latestSignature = signatureFromUpload(latest);
@@ -384,10 +390,10 @@ export default async function handler(req, res) {
     return sendHtml(res, 200, embedHtml({
       origin: originForRequest(req),
       user,
-      latest: publicUpload(latest, visibility, { isOwner }),
+      latest: publicUpload(latest, visibility, { isOwner: false }),
       rarity,
       visibility,
-    }));
+    }), profileAssetCacheControl(user));
   } catch (err) {
     console.error('GET /api/embed error:', err);
     return sendHtml(res, 200, genericEmbedPage(req, handle), 'public, s-maxage=60');

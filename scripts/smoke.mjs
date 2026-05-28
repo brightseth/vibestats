@@ -69,6 +69,8 @@ async function assertRoutes() {
   const matchApi = await readFile('api/match.js', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const profileHtmlApi = await readFile('api/profile.js', 'utf8');
+  const embedApi = await readFile('api/embed.js', 'utf8');
+  const badgeApi = await readFile('api/badge.js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   const rewrites = config.rewrites || [];
   assert(
@@ -110,6 +112,10 @@ async function assertRoutes() {
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
   assert(profileHtmlApi.includes("'private, no-store'"), 'private owner profile HTML must not be publicly cacheable');
+  assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
+  assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
+  assert(embedApi.includes("'private, no-store'"), 'private owner profile embed must not be publicly cacheable');
+  assert(badgeApi.includes("'private, no-store'"), 'private owner profile badge must not be publicly cacheable');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
