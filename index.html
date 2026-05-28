@@ -1483,6 +1483,7 @@
       const shouldShareProfile = !options.demo && currentUser && saveToggle && saveToggle.checked;
       const profileShareUrl = shouldShareProfile ? `https://vibestats.io/u/${encodeURIComponent(currentUser.gh_handle)}` : null;
       const shareUrl = profileShareUrl || cardShareUrl;
+      const compareSeed = shouldShareProfile ? currentUser.gh_handle : archetype;
 
       // Tweet variants — pick one randomly
       const tweetVariants = profileShareUrl
@@ -1545,7 +1546,7 @@
             <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
               Copy link
             </button>
-            <a class="share-btn share-btn-copy" href="/compare?me=${archetype}" style="text-decoration:none">
+            <a class="share-btn share-btn-copy" href="/compare?me=${encodeURIComponent(compareSeed)}" style="text-decoration:none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               Compare
             </a>
@@ -1784,7 +1785,9 @@
       const compareArchetype = params.get('compareArchetype');
       if (!compareTo || !compareArchetype || !ARCHETYPES[compareArchetype]) return '';
       if (!/^[a-zA-Z0-9-]{1,39}$/.test(compareTo)) return '';
-      const compareUrl = `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(compareArchetype)}`;
+      const compareUrl = currentUser
+        ? `/compare?a=${encodeURIComponent(currentUser.gh_handle)}&b=${encodeURIComponent(compareTo)}`
+        : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(compareArchetype)}`;
       return `<br><a href="${compareUrl}">See your pairing with @${compareTo}</a>`;
     }
 

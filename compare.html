@@ -106,10 +106,17 @@
       display: flex; align-items: center; justify-content: center; gap: 16px;
       margin-bottom: 20px; flex-wrap: wrap;
     }
+    .pair-person {
+      display: grid; justify-items: center; gap: 4px; min-width: 0;
+    }
     .pair-type {
       font-size: clamp(14px, 3.5vw, 18px); font-weight: 800;
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
+    }
+    .pair-profile-meta {
+      max-width: 180px; color: var(--text-dim); font-family: var(--mono);
+      font-size: 10px; line-height: 1.35;
     }
     .pair-x {
       font-family: var(--mono); font-size: 14px; color: var(--text-dim);
@@ -191,6 +198,10 @@
       background: linear-gradient(135deg, rgba(107,143,255,0.3), rgba(167,139,250,0.2));
       color: #fff;
     }
+    .compare-status {
+      min-height: 18px; margin: -24px 0 24px;
+      color: var(--text-dim); font-family: var(--mono); font-size: 12px;
+    }
 
     /* Enhanced /vibe footer */
     .vibe-footer { margin-top: 48px; width: min(400px, 90vw); }
@@ -246,6 +257,7 @@
     <div id="picker">
       <h1 id="picker-title">Compare with a friend</h1>
       <p class="subtitle" id="picker-subtitle">Pick your friend's archetype to see your chemistry.</p>
+      <div class="compare-status" id="compare-status"></div>
       <div id="you-section"></div>
       <div class="pick-label" id="pick-label">Your friend is...</div>
       <div class="archetype-grid" id="archetype-grid"></div>
@@ -352,6 +364,9 @@
 
     const starSVG = `<svg class="chem-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
     const starEmptySVG = `<svg class="chem-star empty" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+    const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let currentComparison = null;
 
     function renderStars(n) {
       let html = '';
@@ -359,21 +374,93 @@
       return html;
     }
 
-    // Parse URL params
-    const params = new URLSearchParams(window.location.search);
-    const meType = params.get('me') || params.get('a');
-    const themType = params.get('b');
+    routeCompare();
 
-    // If both types present, show result directly
-    if (meType && themType && ARCHETYPES[meType] && ARCHETYPES[themType]) {
-      showResult(meType, themType);
-    } else if (meType && ARCHETYPES[meType]) {
-      showPicker(meType);
-    } else {
+    function setStatus(message) {
+      const el = document.getElementById('compare-status');
+      if (el) el.textContent = message || '';
+    }
+
+    function subjectParam(subject) {
+      return subject?.param || subject?.handle || subject?.type || '';
+    }
+
+    function normalizeSubject(subject) {
+      if (!subject) return null;
+      if (typeof subject === 'string') return ARCHETYPES[subject] ? { type: subject, param: subject } : null;
+      if (!ARCHETYPES[subject.type]) return null;
+      return { ...subject, param: subjectParam(subject) };
+    }
+
+    function subjectLabel(subject) {
+      return subject.handle ? `@${subject.handle}` : ARCHETYPES[subject.type].name;
+    }
+
+    function subjectMeta(subject) {
+      if (!subject.handle) return '';
+      return subject.signature || ARCHETYPES[subject.type].name;
+    }
+
+    async function resolveCompareSubject(value) {
+      const raw = String(value || '').trim().replace(/^@/, '');
+      if (!raw) return null;
+      if (ARCHETYPES[raw]) return { type: raw, param: raw };
+      if (!HANDLE_RE.test(raw)) return null;
+
+      try {
+        const res = await fetch(`/api/u/${encodeURIComponent(raw)}`);
+        if (!res.ok) return null;
+        const profile = await res.json();
+        const latest = profile.uploads?.[0];
+        if (!latest?.archetype || !ARCHETYPES[latest.archetype]) return null;
+        return {
+          type: latest.archetype,
+          handle: profile.user.gh_handle,
+          signature: latest.raw_meta?.signature || '',
+          param: profile.user.gh_handle,
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    async function routeCompare() {
+      const params = new URLSearchParams(window.location.search);
+      const aParam = params.get('a');
+      const bParam = params.get('b');
+      const meParam = params.get('me') || aParam;
+
+      if (aParam && bParam) {
+        setStatus('Resolving profiles...');
+        const [aSubject, bSubject] = await Promise.all([
+          resolveCompareSubject(aParam),
+          resolveCompareSubject(bParam),
+        ]);
+        if (aSubject && bSubject) {
+          setStatus('');
+          showResult(aSubject, bSubject);
+          return;
+        }
+        setStatus('Could not load one profile. Pick archetypes instead.');
+        showPicker(null);
+        return;
+      }
+
+      if (meParam) {
+        setStatus(ARCHETYPES[meParam] ? '' : 'Resolving profile...');
+        const subject = await resolveCompareSubject(meParam);
+        setStatus(subject ? '' : (meParam ? 'Could not load that profile. Pick an archetype instead.' : ''));
+        showPicker(subject);
+        return;
+      }
+
+      setStatus('');
       showPicker(null);
     }
 
-    function showPicker(myType) {
+    function showPicker(mySubject) {
+      const subject = normalizeSubject(mySubject);
+      const myType = subject?.type || null;
       const picker = document.getElementById('picker');
       const youSection = document.getElementById('you-section');
       const grid = document.getElementById('archetype-grid');
@@ -386,8 +473,9 @@
         title.textContent = 'Compare with a friend';
         subtitle.textContent = 'Pick their archetype to see your chemistry.';
         youSection.innerHTML = `
-          <div class="you-label">You are</div>
-          <div class="you-badge" style="background:${a.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border-color:${a.color}40">${a.name}</div>
+          <div class="you-label">${subject.handle ? 'Profile' : 'You are'}</div>
+          <div class="you-badge" style="background:${a.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border-color:${a.color}40">${esc(subjectLabel(subject))}</div>
+          ${subjectMeta(subject) ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:-22px;margin-bottom:24px">${esc(subjectMeta(subject))}</div>` : ''}
         `;
         pickLabel.textContent = 'Your friend is...';
       } else {
@@ -410,37 +498,61 @@
           e.preventDefault();
           if (myType) {
             const url = new URL(window.location);
-            url.searchParams.set('a', myType);
+            url.searchParams.set('a', subjectParam(subject));
             url.searchParams.set('b', key);
             url.searchParams.delete('me');
             window.history.pushState({}, '', url);
-            showResult(myType, key);
+            showResult(subject, { type: key, param: key });
           } else {
             // First pick — now show picker for second
             const url = new URL(window.location);
             url.searchParams.set('me', key);
             window.history.pushState({}, '', url);
-            showPicker(key);
+            showPicker({ type: key, param: key });
           }
         });
         grid.appendChild(card);
       }
     }
 
-    function showResult(aType, bType) {
+    function pairPersonHtml(subject) {
+      const a = ARCHETYPES[subject.type];
+      const meta = subjectMeta(subject);
+      return `
+        <span class="pair-person">
+          <span class="pair-type" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${esc(subjectLabel(subject))}</span>
+          ${meta ? `<span class="pair-profile-meta">${esc(meta)}</span>` : ''}
+        </span>
+      `;
+    }
+
+    function traitLabel(subject) {
+      return subject.handle ? `@${subject.handle}` : ARCHETYPES[subject.type].short;
+    }
+
+    function showResult(aSubjectInput, bSubjectInput) {
+      const aSubject = normalizeSubject(aSubjectInput);
+      const bSubject = normalizeSubject(bSubjectInput);
+      if (!aSubject || !bSubject) {
+        showPicker(null);
+        return;
+      }
+      currentComparison = { a: aSubject, b: bSubject };
       document.getElementById('picker').style.display = 'none';
       const result = document.getElementById('result');
       result.classList.add('visible');
 
+      const aType = aSubject.type;
+      const bType = bSubject.type;
       const a = ARCHETYPES[aType];
       const b = ARCHETYPES[bType];
       const compat = getCompat(aType, bType);
 
       // Pair types
       document.getElementById('pair-vs').innerHTML = `
-        <span class="pair-type" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</span>
+        ${pairPersonHtml(aSubject)}
         <span class="pair-x">&times;</span>
-        <span class="pair-type" style="background:${b.gradient};-webkit-background-clip:text;background-clip:text">${b.name}</span>
+        ${pairPersonHtml(bSubject)}
       `;
 
       document.getElementById('pair-name').textContent = compat.name;
@@ -449,29 +561,29 @@
 
       document.getElementById('pair-traits').innerHTML = `
         <div class="pair-trait">
-          <div class="pair-trait-label">${a.short} brings</div>
+          <div class="pair-trait-label">${esc(traitLabel(aSubject))} brings</div>
           <div class="pair-trait-val">${a.strength}</div>
         </div>
         <div class="pair-trait">
-          <div class="pair-trait-label">${b.short} brings</div>
+          <div class="pair-trait-label">${esc(traitLabel(bSubject))} brings</div>
           <div class="pair-trait-val">${b.strength}</div>
         </div>
         <div class="pair-trait">
-          <div class="pair-trait-label">${a.short}'s style</div>
+          <div class="pair-trait-label">${esc(traitLabel(aSubject))}'s style</div>
           <div class="pair-trait-val">${a.style}</div>
         </div>
         <div class="pair-trait">
-          <div class="pair-trait-label">${b.short}'s style</div>
+          <div class="pair-trait-label">${esc(traitLabel(bSubject))}'s style</div>
           <div class="pair-trait-val">${b.style}</div>
         </div>
       `;
 
       // Update page title and og
-      document.title = `${a.name} + ${b.name} = ${compat.name} | vibestats`;
+      document.title = `${subjectLabel(aSubject)} + ${subjectLabel(bSubject)} = ${compat.name} | vibestats`;
 
       // Share URL
-      const shareUrl = `https://vibestats.io/compare?a=${aType}&b=${bType}`;
-      const tweetText = `${a.name} + ${b.name} = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\nCompare your vibecoding personality:\n${shareUrl}\n\n#vibestats #vibecoding`;
+      const shareUrl = `https://vibestats.io/compare?a=${encodeURIComponent(subjectParam(aSubject))}&b=${encodeURIComponent(subjectParam(bSubject))}`;
+      const tweetText = `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\nCompare your vibecoding personality:\n${shareUrl}\n\n#vibestats #vibecoding`;
 
       document.getElementById('result-actions').innerHTML = `
         <a class="action-btn action-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" rel="noopener">
@@ -538,13 +650,13 @@
       const vp = document.getElementById('vibe-pairings');
       if (vp) vp.remove();
       const url = new URL(window.location);
-      const meType = url.searchParams.get('a');
+      const seed = currentComparison?.a || null;
       url.searchParams.delete('b');
-      if (meType) url.searchParams.set('me', meType);
+      if (seed) url.searchParams.set('me', subjectParam(seed));
       window.history.pushState({}, '', url);
       document.getElementById('result').classList.remove('visible');
       document.getElementById('picker').style.display = '';
-      showPicker(meType);
+      showPicker(seed);
     }
 
     // /vibe funnel tracking + presence
@@ -583,16 +695,11 @@
 
     // Handle browser back/forward
     window.addEventListener('popstate', () => {
-      const p = new URLSearchParams(window.location.search);
-      const a = p.get('a') || p.get('me');
-      const b = p.get('b');
-      if (a && b && ARCHETYPES[a] && ARCHETYPES[b]) {
-        showResult(a, b);
-      } else {
-        document.getElementById('result').classList.remove('visible');
-        document.getElementById('picker').style.display = '';
-        showPicker(a && ARCHETYPES[a] ? a : null);
-      }
+      const vp = document.getElementById('vibe-pairings');
+      if (vp) vp.remove();
+      document.getElementById('result').classList.remove('visible');
+      document.getElementById('picker').style.display = '';
+      routeCompare();
     });
   </script>
 </body>

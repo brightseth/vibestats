@@ -523,12 +523,12 @@
       if (me && me.gh_handle !== handle) {
         const myLatest = await latestForHandle(me.gh_handle);
         if (myLatest?.archetype) {
-          compareCta.href = `/compare?a=${encodeURIComponent(myLatest.archetype)}&b=${encodeURIComponent(hostArchetype)}`;
+          compareCta.href = `/compare?a=${encodeURIComponent(me.gh_handle)}&b=${encodeURIComponent(handle)}`;
           compareCta.textContent = `See your pairing with @${handle}`;
           note.textContent = 'Instant comparison from your latest saved profile.';
         }
       } else if (me && me.gh_handle === handle) {
-        compareCta.href = `/compare?me=${encodeURIComponent(hostArchetype)}`;
+        compareCta.href = `/compare?me=${encodeURIComponent(handle)}`;
         compareCta.textContent = 'Create a pairing link';
         note.textContent = 'Pick another archetype and share the compatibility result.';
       }
