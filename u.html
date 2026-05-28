@@ -435,6 +435,7 @@
             <button class="btn" id="copy-profile" type="button">Copy profile</button>
             <button class="btn" id="copy-badge" type="button">Copy badge</button>
             <button class="btn" id="copy-embed" type="button">Copy embed</button>
+            <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
           <section class="compat-panel" id="compat-panel"></section>
@@ -654,6 +655,7 @@
       const copyBtn = document.getElementById('copy-profile');
       const copyBadgeBtn = document.getElementById('copy-badge');
       const copyEmbedBtn = document.getElementById('copy-embed');
+      const leaderboardCta = document.getElementById('leaderboard-cta');
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
@@ -664,6 +666,8 @@
 
       compareCta.href = uploadCompareUrl;
       compareCta.textContent = `Compare with @${handle}`;
+      leaderboardCta.href = `/leaderboard/${encodeURIComponent(hostArchetype)}`;
+      leaderboardCta.textContent = `${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'Archetype'} board`;
       note.textContent = 'Upload yours once and vibestats will show your pairing with this profile.';
 
       if (me && me.gh_handle !== handle) {

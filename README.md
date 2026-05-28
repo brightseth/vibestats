@@ -20,6 +20,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
 - **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites.
 - **An embeddable profile card** (`/u/<handle>/embed`) for personal sites, with a link back to compare.
+- **Public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only.
 
 **Privacy stance:** the insights JSON never leaves the browser. Only aggregate metrics (archetype + 5 averages) are POSTed to Redis for the community page, rate-limited 1/IP/hr.
 
@@ -47,6 +48,7 @@ vibestats/
 ├── dashboard.html     # detailed metric view
 ├── compare.html       # two-profile side-by-side
 ├── genome.html        # community genome page
+├── leaderboard.html   # public archetype leaderboards
 ├── u.html             # public profile shell (`/u/<handle>`)
 ├── settings.html      # authenticated settings shell
 ├── api/
@@ -56,6 +58,7 @@ vibestats/
 │   ├── settings.js    # privacy/digest/delete account
 │   ├── settings/      # export endpoint
 │   ├── u/[handle].js  # profile JSON
+│   ├── leaderboard.js # public leaderboard JSON
 │   ├── stats.js       # POST aggregate, GET community averages
 │   ├── og.js          # dynamic OG image (Satori SVG → PNG)
 │   ├── badge.js       # portable SVG profile badge

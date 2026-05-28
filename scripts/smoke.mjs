@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret';
 
-const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html'];
+const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html', 'leaderboard.html'];
 const apiModules = [
   '../api/profile.js',
   '../api/auth/github/start.js',
@@ -16,6 +16,7 @@ const apiModules = [
   '../api/settings/export.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/signatures.js',
+  '../api/leaderboard.js',
   '../api/stats.js',
   '../api/card.js',
   '../api/badge.js',
@@ -52,6 +53,10 @@ async function assertRoutes() {
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/embed' && rewrite.destination === '/api/embed?handle=:handle'),
     'profile embed route should rewrite to embed API',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/leaderboard/:archetype' && rewrite.destination === '/leaderboard.html?archetype=:archetype'),
+    'archetype leaderboard route should rewrite to leaderboard page',
   );
   const globalHeaders = (config.headers || []).find((entry) => entry.source === '/(.*)')?.headers || [];
   const headerKeys = new Set(globalHeaders.map((header) => header.key.toLowerCase()));
@@ -306,6 +311,44 @@ async function assertEmbedFallback() {
   }
 }
 
+async function assertLeaderboardFallback() {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const { default: handler } = await import('../api/leaderboard.js');
+    let statusCode = 0;
+    let body = '';
+    const req = {
+      method: 'GET',
+      query: { archetype: 'builder' },
+      headers: { host: 'localhost:3000' },
+    };
+    const res = {
+      setHeader() {},
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      json(value) {
+        body = JSON.stringify(value);
+      },
+      send(value) {
+        body = String(value);
+      },
+    };
+
+    await handler(req, res);
+    const parsed = JSON.parse(body);
+    assert(statusCode === 200, 'leaderboard fallback should render HTTP 200 when DB is absent');
+    assert(parsed.archetype === 'builder', 'leaderboard fallback should preserve archetype');
+    assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'leaderboard fallback should return empty entries');
+    assert(parsed.unavailable === true, 'leaderboard fallback should mark DB unavailable');
+    console.log('ok leaderboard fallback keeps public board shell usable without DB');
+  } finally {
+    console.error = originalError;
+  }
+}
+
 await assertHtmlScriptsParse();
 await assertApiImports();
 await assertRoutes();
@@ -318,5 +361,6 @@ await assertSignatureHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();
+await assertLeaderboardFallback();
 
 console.log('smoke checks passed');

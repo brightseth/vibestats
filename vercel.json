@@ -9,6 +9,8 @@
     { "source": "/u/:handle/embed", "destination": "/api/embed?handle=:handle" },
     { "source": "/u/:handle/pair/:other", "destination": "/compare?a=:other&b=:handle" },
     { "source": "/u/:handle", "destination": "/api/profile?handle=:handle" },
+    { "source": "/leaderboard/:archetype", "destination": "/leaderboard.html?archetype=:archetype" },
+    { "source": "/leaderboard", "destination": "/leaderboard.html" },
     { "source": "/settings", "destination": "/settings.html" },
     { "source": "/card", "destination": "/api/card" }
   ],
