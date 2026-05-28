@@ -22,9 +22,10 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites.
 - **An embeddable profile card** (`/u/<handle>/embed`) for personal sites, with a link back to compare.
 - **Weekly public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only, with rank shown on `/u/<handle>`.
+- **A public directory** (`/browse`) that filters opt-in profiles by archetype and active intent, showing only coarse derived activity.
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
 
-**Privacy stance:** the insights JSON never leaves the browser. Only aggregate metrics (archetype + 5 averages) are POSTed to Redis for the community page, rate-limited 1/IP/hr.
+**Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata.
 
 ## Where it's going
 
@@ -51,6 +52,7 @@ vibestats/
 ├── compare.html       # two-profile side-by-side
 ├── genome.html        # community genome page
 ├── leaderboard.html   # public archetype leaderboards
+├── browse.html        # opt-in public profile directory
 ├── match.html         # public goal-driven match surface
 ├── u.html             # public profile shell (`/u/<handle>`)
 ├── settings.html      # authenticated settings shell
@@ -62,6 +64,7 @@ vibestats/
 │   ├── settings/      # export endpoint
 │   ├── u/[handle].js  # profile JSON
 │   ├── leaderboard.js # public leaderboard JSON
+│   ├── browse.js      # public directory JSON
 │   ├── match.js       # public active-intent match JSON
 │   ├── stats.js       # POST aggregate, GET community averages
 │   ├── og.js          # dynamic OG image (Satori SVG → PNG)

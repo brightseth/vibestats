@@ -1823,11 +1823,15 @@
             ${currentUser.avatar_url ? `<img src="${currentUser.avatar_url}" alt="">` : ''}
             @${currentUser.gh_handle}
           </a>
+          <a class="auth-pill" href="/browse">Browse</a>
           <a class="auth-pill" href="/settings">Settings</a>
         `;
         saveToggle.classList.add('visible');
       } else {
-        authBar.innerHTML = `<a class="auth-pill primary" href="/api/auth/github/start?returnTo=${returnTo}">Sign in with GitHub</a>`;
+        authBar.innerHTML = `
+          <a class="auth-pill" href="/browse">Browse</a>
+          <a class="auth-pill primary" href="/api/auth/github/start?returnTo=${returnTo}">Sign in with GitHub</a>
+        `;
         saveToggle.classList.remove('visible');
       }
     }

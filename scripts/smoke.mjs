@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret';
 
-const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html', 'leaderboard.html', 'match.html'];
+const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html', 'leaderboard.html', 'match.html', 'browse.html'];
 const apiModules = [
   '../api/profile.js',
   '../api/auth/github/start.js',
@@ -22,6 +22,7 @@ const apiModules = [
   '../api/_lib/digest.js',
   '../api/leaderboard.js',
   '../api/match.js',
+  '../api/browse.js',
   '../api/stats.js',
   '../api/card.js',
   '../api/badge.js',
@@ -61,6 +62,8 @@ async function assertApiImports() {
 async function assertRoutes() {
   const config = JSON.parse(await readFile('vercel.json', 'utf8'));
   const leaderboardApi = await readFile('api/leaderboard.js', 'utf8');
+  const browseApi = await readFile('api/browse.js', 'utf8');
+  const browseHtml = await readFile('browse.html', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   const rewrites = config.rewrites || [];
@@ -80,6 +83,10 @@ async function assertRoutes() {
     rewrites.some((rewrite) => rewrite.source === '/match' && rewrite.destination === '/match.html'),
     'match route should rewrite to match page',
   );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/browse' && rewrite.destination === '/browse.html'),
+    'browse route should rewrite to browse page',
+  );
   const globalHeaders = (config.headers || []).find((entry) => entry.source === '/(.*)')?.headers || [];
   const headerKeys = new Set(globalHeaders.map((header) => header.key.toLowerCase()));
   const csp = globalHeaders.find((header) => header.key.toLowerCase() === 'content-security-policy')?.value || '';
@@ -87,10 +94,14 @@ async function assertRoutes() {
   assert(csp.includes("frame-ancestors 'none'"), 'global CSP should keep non-embed pages unframeable');
   assert(leaderboardApi.includes("date_trunc('week', now())"), 'leaderboard API should reset weekly');
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
+  assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
+  assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
+  assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
+  assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   console.log('ok route rewrites');
 }
@@ -105,6 +116,7 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('/pair/${encodeURIComponent'), 'upload-to-compare should route to handle-backed pairing');
   assert(indexHtml.includes('digest-email-inline'), 'post-save profile flow should offer weekly digest opt-in');
   assert(indexHtml.includes('weekly_digest_opt_in: true'), 'inline digest opt-in should use settings API');
+  assert(indexHtml.includes('<a class="auth-pill" href="/browse">Browse</a>'), 'upload page should expose public browse loop');
   console.log('ok profile share loop returns visitors to comparison');
 }
 
@@ -515,6 +527,42 @@ async function assertMatchFallback() {
   }
 }
 
+async function assertBrowseFallback() {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const { default: handler } = await import('../api/browse.js');
+    let statusCode = 0;
+    let body = '';
+    const req = {
+      method: 'GET',
+      query: { archetype: 'builder', intent: 'active' },
+      headers: { host: 'localhost:3000' },
+    };
+    const res = {
+      setHeader() {},
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      json(value) {
+        body = JSON.stringify(value);
+      },
+    };
+
+    await handler(req, res);
+    const parsed = JSON.parse(body);
+    assert(statusCode === 200, 'browse fallback should render HTTP 200 when DB is absent');
+    assert(parsed.filters.archetype === 'builder', 'browse fallback should preserve archetype filter');
+    assert(parsed.filters.intent === 'active', 'browse fallback should preserve intent filter');
+    assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'browse fallback should return empty entries');
+    assert(parsed.unavailable === true, 'browse fallback should mark DB unavailable');
+    console.log('ok browse fallback keeps public directory shell usable without DB');
+  } finally {
+    console.error = originalError;
+  }
+}
+
 async function assertDigestCronAuth() {
   const { default: handler } = await import('../api/cron/weekly-digest.js');
   const previousSecret = process.env.CRON_SECRET;
@@ -573,6 +621,7 @@ await assertBadgeFallback();
 await assertEmbedFallback();
 await assertLeaderboardFallback();
 await assertMatchFallback();
+await assertBrowseFallback();
 await assertDigestCronAuth();
 
 console.log('smoke checks passed');

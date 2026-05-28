@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Browse vibecoders | vibestats</title>
+  <meta name="description" content="Browse public Claude Code vibestats profiles by archetype and collaboration intent.">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface-2: #14141e;
+      --border: #252535;
+      --text: #e0e0e0;
+      --text-muted: #8888a0;
+      --text-dim: #555568;
+      --accent: #6B8FFF;
+      --green: #22c55e;
+      --purple: #a78bfa;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    .shell {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+    .topbar, .hero, .filters, .entry, .entry-main, .stats, .actions {
+      display: flex;
+      align-items: center;
+    }
+    .topbar {
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 44px;
+    }
+    .brand {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav, .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .btn, .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .btn:hover, .chip:hover, .chip.active { border-color: var(--accent); color: #fff; }
+    .btn.primary {
+      border-color: rgba(107,143,255,0.45);
+      background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
+      color: #c8d5ff;
+    }
+    .hero {
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 24px;
+    }
+    .eyebrow, .lead, .filter-label, .chip, .intent, .meta, .score-label, .empty, .count {
+      font-family: var(--mono);
+      letter-spacing: 0;
+    }
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--text-dim);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    h1 {
+      color: #fff;
+      font-size: 48px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .lead {
+      max-width: 720px;
+      margin-top: 14px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .count {
+      min-width: 160px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(107,143,255,0.1), rgba(255,255,255,0.03));
+      color: var(--text-dim);
+      text-align: right;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .count strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 34px;
+      line-height: 1;
+    }
+    .filter-group {
+      margin-bottom: 16px;
+    }
+    .filter-label {
+      margin-bottom: 8px;
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .filters {
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      min-height: 34px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: transparent;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .chip.active {
+      background: rgba(107,143,255,0.1);
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .entry {
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 104px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .entry-main {
+      min-width: 0;
+      gap: 13px;
+    }
+    .avatar {
+      flex: 0 0 auto;
+      width: 52px;
+      height: 52px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 13px;
+      background: var(--surface-2);
+      object-fit: cover;
+    }
+    .identity { min-width: 0; }
+    .handle {
+      display: inline-block;
+      max-width: 280px;
+      overflow: hidden;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 800;
+      text-decoration: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .handle:hover { color: #c8d5ff; }
+    .signature, .meta {
+      margin-top: 5px;
+      color: var(--text-dim);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .signature {
+      color: #c8d5ff;
+      font-family: var(--mono);
+    }
+    .intent {
+      display: inline-flex;
+      margin-top: 7px;
+      padding: 5px 9px;
+      border: 1px solid rgba(34,197,94,0.24);
+      border-radius: 999px;
+      background: rgba(34,197,94,0.08);
+      color: #baf7d0;
+      font-size: 11px;
+    }
+    .stats {
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .score {
+      min-width: 86px;
+      padding: 10px;
+      border: 1px solid rgba(107,143,255,0.2);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.08);
+      text-align: right;
+    }
+    .score strong {
+      display: block;
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 24px;
+      line-height: 1;
+    }
+    .score-label {
+      display: block;
+      margin-top: 6px;
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .activity {
+      min-width: 118px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: right;
+    }
+    .empty {
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.7;
+    }
+    @media (max-width: 820px) {
+      .topbar, .hero, .entry {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      h1 { font-size: 36px; }
+      .count, .score, .activity { text-align: left; }
+      .stats, .actions { justify-content: flex-start; }
+    }
+    @media (max-width: 520px) {
+      .nav { flex-direction: column; align-items: stretch; width: 100%; }
+      .btn { width: 100%; }
+      .filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+      .chip { flex: 0 0 auto; }
+      .entry-main { align-items: flex-start; }
+      .avatar { width: 42px; height: 42px; }
+      .activity { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <a class="brand" href="/">vibestats</a>
+      <div class="nav">
+        <a class="btn" href="/">Upload</a>
+        <a class="btn" href="/match">Match</a>
+        <a class="btn primary" href="/settings">Go public</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">public directory</div>
+        <h1 id="title">Browse vibecoders</h1>
+        <p class="lead">Opt-in public profiles only. Directory cards show archetype, signature, coarse activity, and active intent; raw insights JSON and language details stay out of the public browse feed.</p>
+      </div>
+      <div class="count">
+        <strong id="total">-</strong>
+        <span id="total-label">public profiles</span>
+      </div>
+    </section>
+
+    <section class="filter-group">
+      <div class="filter-label">Archetype</div>
+      <nav class="filters" id="archetypes" aria-label="Browse by archetype"></nav>
+    </section>
+    <section class="filter-group">
+      <div class="filter-label">Intent</div>
+      <nav class="filters" id="intents" aria-label="Browse by intent"></nav>
+    </section>
+    <section class="filter-group">
+      <div class="filter-label">Sort</div>
+      <nav class="filters" id="sorts" aria-label="Browse sort"></nav>
+    </section>
+
+    <section class="list" id="list">
+      <div class="empty">Loading public profiles...</div>
+    </section>
+  </main>
+
+  <script>
+    const ARCHETYPES = {
+      all: 'All',
+      orchestrator: 'Orchestrator',
+      shipper: 'Shipper',
+      architect: 'Architect',
+      debugger: 'Debugger',
+      polyglot: 'Polyglot',
+      sprinter: 'Sprinter',
+      deepdiver: 'Deep Diver',
+      builder: 'Builder',
+    };
+    const INTENTS = {
+      any: 'Any',
+      active: 'Active',
+      'pair-coding': 'Pair coding',
+      'co-founder': 'Co-founder',
+      hire: 'Hiring',
+      mentor: 'Mentor',
+      mentee: 'Mentee',
+    };
+    const SORTS = {
+      recent: 'Recent',
+      signal: 'Signal',
+    };
+
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = (value) => Number(value || 0).toLocaleString();
+
+    function stateFromLocation() {
+      const params = new URLSearchParams(location.search);
+      const archetype = ARCHETYPES[params.get('archetype')] ? params.get('archetype') : 'all';
+      const intent = INTENTS[params.get('intent')] ? params.get('intent') : 'any';
+      const sort = SORTS[params.get('sort')] ? params.get('sort') : 'recent';
+      return { archetype, intent, sort };
+    }
+
+    function browseUrl(next = {}) {
+      const state = { ...stateFromLocation(), ...next };
+      const params = new URLSearchParams();
+      if (state.archetype !== 'all') params.set('archetype', state.archetype);
+      if (state.intent !== 'any') params.set('intent', state.intent);
+      if (state.sort !== 'recent') params.set('sort', state.sort);
+      const query = params.toString();
+      return query ? `/browse?${query}` : '/browse';
+    }
+
+    function renderChips(id, values, activeKey, paramName) {
+      document.getElementById(id).innerHTML = Object.entries(values).map(([key, label]) => `
+        <a class="chip ${key === activeKey ? 'active' : ''}" href="${browseUrl({ [paramName]: key })}">${esc(label)}</a>
+      `).join('');
+    }
+
+    function shareText(entry) {
+      const handle = entry.user?.gh_handle || 'this profile';
+      const label = entry.signature?.label || entry.archetype_label || entry.archetype;
+      return `See how you'd pair with @${handle}, a ${label}: ${location.origin}/u/${encodeURIComponent(handle)}`;
+    }
+
+    function renderEntries(entries) {
+      const list = document.getElementById('list');
+      if (!entries.length) {
+        list.innerHTML = '<div class="empty">No public profiles match these filters yet.<br>Save your profile, switch it to public, and claim the first slot.</div>';
+        return;
+      }
+
+      list.innerHTML = entries.map((entry) => {
+        const handle = entry.user?.gh_handle || 'unknown';
+        const profilePath = `/u/${encodeURIComponent(handle)}`;
+        const activity = entry.activity || {};
+        const match = entry.match || {};
+        const avatar = entry.user?.avatar_url
+          ? `<img class="avatar" src="${esc(entry.user.avatar_url)}" alt="@${esc(handle)}">`
+          : '<div class="avatar" aria-hidden="true"></div>';
+        return `
+          <article class="entry">
+            <div class="entry-main">
+              ${avatar}
+              <div class="identity">
+                <a class="handle" href="${profilePath}">@${esc(handle)}</a>
+                <div class="signature">${esc(entry.signature?.label || entry.archetype_label || entry.archetype)}</div>
+                <div class="meta">${esc(entry.archetype_label || entry.archetype)} · ${esc(activity.days || 'fresh profile')}</div>
+                ${match.looking_for && match.looking_for !== 'idle' ? `<div class="intent">${esc(match.looking_for_label || match.looking_for)}</div>` : ''}
+              </div>
+            </div>
+            <div class="stats">
+              <div class="score"><strong>${esc(entry.score)}%</strong><span class="score-label">signal</span></div>
+              <div class="activity">${esc(activity.cadence || '')}<br>${esc(activity.depth || '')}</div>
+            </div>
+            <div class="actions">
+              <a class="btn primary" href="/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}">Compare</a>
+              <a class="btn" href="${profilePath}">Profile</a>
+              <button class="btn" type="button" data-share="${esc(shareText(entry))}">Copy share</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      list.querySelectorAll('[data-share]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(button.getAttribute('data-share'));
+            button.textContent = 'Copied!';
+            setTimeout(() => { button.textContent = 'Copy share'; }, 1500);
+          } catch {
+            button.textContent = 'Copy failed';
+            setTimeout(() => { button.textContent = 'Copy share'; }, 1500);
+          }
+        });
+      });
+    }
+
+    async function renderBrowse() {
+      const state = stateFromLocation();
+      renderChips('archetypes', ARCHETYPES, state.archetype, 'archetype');
+      renderChips('intents', INTENTS, state.intent, 'intent');
+      renderChips('sorts', SORTS, state.sort, 'sort');
+      document.title = state.archetype === 'all'
+        ? 'Browse vibecoders | vibestats'
+        : `${ARCHETYPES[state.archetype]} vibecoders | vibestats`;
+
+      try {
+        const params = new URLSearchParams();
+        if (state.archetype !== 'all') params.set('archetype', state.archetype);
+        if (state.intent !== 'any') params.set('intent', state.intent);
+        if (state.sort !== 'recent') params.set('sort', state.sort);
+        const query = params.toString();
+        const res = await fetch(`/api/browse${query ? `?${query}` : ''}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Browse unavailable');
+        document.getElementById('total').textContent = fmt(data.total);
+        document.getElementById('total-label').textContent = data.unavailable ? 'database unavailable' : `${data.filters?.archetype_label || 'public'} profiles`;
+        renderEntries(data.entries || []);
+      } catch (err) {
+        document.getElementById('list').innerHTML = `<div class="empty">Browse unavailable.<br>${esc(err.message)}</div>`;
+      }
+    }
+
+    renderBrowse();
+  </script>
+</body>
+</html>

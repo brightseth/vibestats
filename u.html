@@ -475,6 +475,7 @@
             <button class="btn" id="copy-badge" type="button">Copy badge</button>
             <button class="btn" id="copy-embed" type="button">Copy embed</button>
             <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
+            <a class="btn" id="browse-cta" href="/browse">Browse similar</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
           <section class="compat-panel" id="compat-panel"></section>
@@ -656,12 +657,14 @@
       if (me) {
         nav.innerHTML = `
           <a class="btn" href="/">Upload</a>
+          <a class="btn" href="/browse">Browse</a>
           <a class="btn" href="/settings">Settings</a>
           <a class="btn primary" href="/u/${encodeURIComponent(me.gh_handle)}">@${esc(me.gh_handle)}</a>
         `;
       } else {
         nav.innerHTML = `
           <a class="btn" href="/">Upload</a>
+          <a class="btn" href="/browse">Browse</a>
           <a class="btn primary" href="/api/auth/github/start?returnTo=${encodeURIComponent(`/u/${profileHandle}`)}">Sign in with GitHub</a>
         `;
       }
@@ -685,6 +688,7 @@
       const copyBadgeBtn = document.getElementById('copy-badge');
       const copyEmbedBtn = document.getElementById('copy-embed');
       const leaderboardCta = document.getElementById('leaderboard-cta');
+      const browseCta = document.getElementById('browse-cta');
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
@@ -697,6 +701,8 @@
       compareCta.textContent = `Compare with @${handle}`;
       leaderboardCta.href = `/leaderboard/${encodeURIComponent(hostArchetype)}`;
       leaderboardCta.textContent = `${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'Archetype'} board`;
+      browseCta.href = `/browse?archetype=${encodeURIComponent(hostArchetype)}`;
+      browseCta.textContent = `Browse ${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'similar'}`;
       note.textContent = 'Upload yours once and vibestats will show your pairing with this profile.';
 
       if (me && me.gh_handle !== handle) {
