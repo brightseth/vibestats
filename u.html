@@ -189,6 +189,56 @@
       font-size: 12px;
       line-height: 1.5;
     }
+    .compat-panel {
+      display: none;
+      margin-top: 20px;
+      width: min(620px, 100%);
+      border: 1px solid rgba(107,143,255,0.22);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(107,143,255,0.08), rgba(167,139,250,0.05));
+      padding: 16px;
+    }
+    .compat-panel.visible { display: block; }
+    .compat-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .compat-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .compat-score {
+      font-family: var(--mono);
+      font-size: 22px;
+      color: #fff;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .compat-bar {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .compat-bar > span {
+      display: block;
+      height: 100%;
+      width: var(--compat-score);
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      border-radius: inherit;
+    }
+    .compat-copy {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(5, minmax(100px, 1fr));
@@ -386,6 +436,7 @@
             <button class="btn" id="copy-badge" type="button">Copy badge</button>
           </div>
           <div class="viral-note" id="viral-note"></div>
+          <section class="compat-panel" id="compat-panel"></section>
           <div class="summary-grid" id="summary-grid"></div>
         </div>
 
@@ -443,6 +494,22 @@
       deepdiver: 'Deep Diver', builder: 'Builder',
     };
 
+    const ARCHETYPE_STRENGTHS = {
+      orchestrator: 'parallel execution', shipper: 'shipping velocity', architect: 'system design',
+      debugger: 'investigation', polyglot: 'stack range', sprinter: 'raw speed',
+      deepdiver: 'deep focus', builder: 'creation energy',
+    };
+
+    const COMPAT_OVERRIDES = {
+      'architect:builder': { score: 94, line: 'You turn plans into product. This is a high-output build pair.' },
+      'builder:shipper': { score: 95, line: 'One creates, both ship. This pairing moves ideas into production fast.' },
+      'debugger:shipper': { score: 90, line: 'Problems get found, fixed, and shipped before momentum fades.' },
+      'debugger:deepdiver': { score: 93, line: 'Deep focus plus investigation makes root causes hard to hide.' },
+      'deepdiver:orchestrator': { score: 92, line: 'One sees the whole board while the other goes through it.' },
+      'architect:sprinter': { score: 86, line: 'Fast movement with a map. Strategy keeps velocity pointed somewhere useful.' },
+      'orchestrator:shipper': { score: 88, line: 'Coordination plus delivery makes a strong scaled-shipping pair.' },
+    };
+
     function handleFromLocation() {
       const query = new URLSearchParams(location.search).get('handle');
       if (query) return query;
@@ -491,6 +558,56 @@
         streak += 1;
       }
       return streak;
+    }
+
+    function compatKey(a, b) {
+      return [a, b].sort().join(':');
+    }
+
+    function compatibilityFor(visitorType, hostType, hostHandle) {
+      if (visitorType === hostType) {
+        const short = ARCHETYPE_SHORT_NAMES[hostType] || hostType;
+        return {
+          score: 76,
+          line: `You are both ${short}s. Expect strong shared instincts, plus a need to divide roles clearly.`,
+        };
+      }
+
+      const override = COMPAT_OVERRIDES[compatKey(visitorType, hostType)];
+      if (override) return override;
+
+      const visitorStrength = ARCHETYPE_STRENGTHS[visitorType] || 'momentum';
+      const hostStrength = ARCHETYPE_STRENGTHS[hostType] || 'judgment';
+      return {
+        score: 78,
+        line: `You bring ${visitorStrength}; @${hostHandle} brings ${hostStrength}. This is a complementary Claude Code pair.`,
+      };
+    }
+
+    function renderCompatibilityPanel(me, myLatest, profile, hostLatest) {
+      const panel = document.getElementById('compat-panel');
+      if (!panel || !myLatest?.archetype || !hostLatest?.archetype) return;
+
+      const hostHandle = profile.user.gh_handle;
+      const visitorType = myLatest.archetype;
+      const hostType = hostLatest.archetype;
+      const visitorArch = ARCHETYPES[visitorType] || ARCHETYPES.builder;
+      const hostArch = ARCHETYPES[hostType] || ARCHETYPES.builder;
+      const compat = compatibilityFor(visitorType, hostType, hostHandle);
+      const pairUrl = `/u/${encodeURIComponent(hostHandle)}/pair/${encodeURIComponent(me.gh_handle)}`;
+
+      panel.classList.add('visible');
+      panel.innerHTML = `
+        <div class="compat-head">
+          <div>
+            <div class="compat-title">your pairing</div>
+            <div class="compat-copy"><strong>@${esc(me.gh_handle)}</strong> ${esc(visitorArch.name)} x <strong>@${esc(hostHandle)}</strong> ${esc(hostArch.name)}</div>
+          </div>
+          <div class="compat-score">${esc(compat.score)}%</div>
+        </div>
+        <div class="compat-bar" style="--compat-score:${esc(compat.score)}%"><span></span></div>
+        <div class="compat-copy">${esc(compat.line)} <a href="${pairUrl}">Open full pairing</a></div>
+      `;
     }
 
     async function fetchMe() {
@@ -552,6 +669,7 @@
           compareCta.href = `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(me.gh_handle)}`;
           compareCta.textContent = `See your pairing with @${handle}`;
           note.textContent = 'Instant comparison from your latest saved profile.';
+          renderCompatibilityPanel(me, myLatest, profile, latest);
         }
       } else if (me && me.gh_handle === handle) {
         compareCta.href = `/compare?me=${encodeURIComponent(handle)}`;
