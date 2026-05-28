@@ -10,12 +10,32 @@ export function methodNotAllowed(res, allowed) {
   json(res, 405, { error: 'Method not allowed' });
 }
 
-export async function readJson(req) {
-  if (req.body && typeof req.body === 'object') return req.body;
-  if (typeof req.body === 'string' && req.body.length) return JSON.parse(req.body);
+const DEFAULT_MAX_JSON_BYTES = 64 * 1024;
+
+function payloadTooLarge() {
+  const err = new Error('JSON body too large');
+  err.statusCode = 413;
+  return err;
+}
+
+export async function readJson(req, { maxBytes = DEFAULT_MAX_JSON_BYTES } = {}) {
+  if (req.body && typeof req.body === 'object') {
+    if (Buffer.byteLength(JSON.stringify(req.body), 'utf8') > maxBytes) throw payloadTooLarge();
+    return req.body;
+  }
+  if (typeof req.body === 'string' && req.body.length) {
+    if (Buffer.byteLength(req.body, 'utf8') > maxBytes) throw payloadTooLarge();
+    return JSON.parse(req.body);
+  }
 
   const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
+  let size = 0;
+  for await (const chunk of req) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buffer.length;
+    if (size > maxBytes) throw payloadTooLarge();
+    chunks.push(buffer);
+  }
   const raw = Buffer.concat(chunks).toString('utf8');
   return raw ? JSON.parse(raw) : {};
 }

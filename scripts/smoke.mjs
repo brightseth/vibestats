@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret';
 
@@ -137,6 +138,21 @@ async function assertSameOriginGuard() {
   console.log('ok same-origin mutation guard');
 }
 
+async function assertReadJsonLimit() {
+  const { readJson } = await import('../api/_lib/http.js');
+  const parsed = await readJson(Readable.from(['{"ok":true}']), { maxBytes: 32 });
+  assert(parsed.ok === true, 'readJson should parse small JSON streams');
+
+  let rejected = false;
+  try {
+    await readJson(Readable.from(['{"blob":"', 'x'.repeat(40), '"}']), { maxBytes: 32 });
+  } catch (err) {
+    rejected = err.statusCode === 413;
+  }
+  assert(rejected, 'readJson should reject oversized JSON streams');
+  console.log('ok JSON body size guard');
+}
+
 async function assertProfileSettingsHelpers() {
   const { cleanDigestEmail, publicProfileSettings } = await import('../api/_lib/profile-settings.js');
   assert(cleanDigestEmail('  SETH@EXAMPLE.COM ') === 'seth@example.com', 'digest email should normalize');
@@ -246,6 +262,7 @@ await assertRoutes();
 await assertUploadSanitizer();
 await assertSessionRoundTrip();
 await assertSameOriginGuard();
+await assertReadJsonLimit();
 await assertProfileSettingsHelpers();
 await assertSignatureHelpers();
 await assertProfileFallback();
