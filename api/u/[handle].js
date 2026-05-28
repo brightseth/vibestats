@@ -1,6 +1,7 @@
 import { readSession } from '../_lib/auth.js';
 import { publicUser, sql } from '../_lib/db.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
+import { publicMatchSettings } from '../_lib/profile-settings.js';
 import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
 
 function getHandle(req) {
@@ -40,6 +41,12 @@ export default async function handler(req, res) {
       order by uploaded_at desc
       limit 50
     `;
+    const settingsRows = await sql()`
+      select looking_for, looking_for_expires_at, contact_url
+      from profile_settings
+      where user_id = ${user.id}
+      limit 1
+    `;
     const latestSignature = signatureFromUpload(uploads[0]);
     let rarity = null;
     if (latestSignature?.fingerprint) {
@@ -66,6 +73,7 @@ export default async function handler(req, res) {
     json(res, 200, {
       user: publicUser(user, { includePrivacy: isOwner }),
       is_owner: Boolean(isOwner),
+      match: publicMatchSettings(settingsRows[0] || {}),
       uploads,
       rarity,
     }, {

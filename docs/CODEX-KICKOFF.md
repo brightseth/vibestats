@@ -84,6 +84,9 @@ create table profile_settings (
   digest_email text,
   email_consent_at timestamptz,
   weekly_digest_sent_at timestamptz,
+  looking_for text not null default 'idle',
+  looking_for_expires_at timestamptz,
+  contact_url text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

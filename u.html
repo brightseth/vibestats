@@ -158,6 +158,16 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+    .looking-row {
+      margin-top: 12px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .looking-row.visible { display: flex; }
     .signature-pill {
       display: inline-flex;
       align-items: center;
@@ -174,6 +184,17 @@
       color: var(--text-dim);
       font-family: var(--mono);
       font-size: 12px;
+    }
+    .intent-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,197,94,0.24);
+      background: rgba(34,197,94,0.08);
+      color: #baf7d0;
+      text-decoration: none;
     }
     .viral-actions {
       display: flex;
@@ -430,6 +451,7 @@
           <div class="archetype-line" id="archetype-line"></div>
           <p class="tagline" id="tagline"></p>
           <div class="signature-row" id="signature-row"></div>
+          <div class="looking-row" id="looking-row"></div>
           <div class="viral-actions">
             <a class="btn primary" id="compare-cta" href="/">Compare with this profile</a>
             <button class="btn" id="copy-profile" type="button">Copy profile</button>
@@ -570,6 +592,24 @@
         </div>
         <div class="compat-bar" style="--compat-score:${esc(compat.score)}%"><span></span></div>
         <div class="compat-copy">${esc(compat.line)} <a href="${pairUrl}">Open full pairing</a></div>
+      `;
+    }
+
+    function renderLookingFor(profile) {
+      const row = document.getElementById('looking-row');
+      const match = profile.match || {};
+      if (!row || !match.looking_for || match.looking_for === 'idle') {
+        if (row) row.classList.remove('visible');
+        return;
+      }
+
+      const handle = profile.user.gh_handle;
+      const contactHref = match.contact_url || `/match?goal=${encodeURIComponent(match.looking_for)}`;
+      const contactAttrs = contactHref.startsWith('/') ? '' : ' target="_blank" rel="noopener"';
+      row.classList.add('visible');
+      row.innerHTML = `
+        <span class="intent-pill">looking for ${esc(match.looking_for_label || match.looking_for)}</span>
+        <a class="signature-detail" href="${esc(contactHref)}"${contactAttrs}>Contact @${esc(handle)}</a>
       `;
     }
 
@@ -795,6 +835,7 @@
         <span class="signature-pill">${esc(signature.label)}</span>
         <span class="signature-detail">${esc(scarcityText(profile.rarity))}</span>
       ` : '';
+      renderLookingFor(profile);
       document.getElementById('card-name').textContent = arch.name;
       document.getElementById('score-value').textContent = `${score}%`;
       document.getElementById('card-note').innerHTML = `${pct ? `top ${esc(pct)}% signal` : 'primary archetype signal'}<br>${signature.label ? `${esc(signature.label)}<br>` : ''}${esc(m.days || 0)} days tracked`;

@@ -1,7 +1,14 @@
 import { clearSessionCookie, requireUser } from './_lib/auth.js';
 import { publicUser, sql } from './_lib/db.js';
 import { json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
-import { cleanDigestEmail, getProfileSettings, publicProfileSettings } from './_lib/profile-settings.js';
+import {
+  cleanContactUrl,
+  cleanDigestEmail,
+  cleanLookingFor,
+  getProfileSettings,
+  lookingForExpiry,
+  publicProfileSettings,
+} from './_lib/profile-settings.js';
 
 const PRIVACY_VALUES = new Set(['public', 'unlisted', 'private']);
 
@@ -77,7 +84,43 @@ export default async function handler(req, res) {
                 digest_email = excluded.digest_email,
                 email_consent_at = excluded.email_consent_at,
                 updated_at = now()
-          returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at, updated_at
+          returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at,
+            looking_for, looking_for_expires_at, contact_url, updated_at
+        `;
+        nextSettings = settingsRows[0];
+      }
+
+      if (Object.hasOwn(body, 'looking_for') || Object.hasOwn(body, 'contact_url')) {
+        const lookingFor = Object.hasOwn(body, 'looking_for')
+          ? cleanLookingFor(body.looking_for)
+          : cleanLookingFor(nextSettings.looking_for || 'idle');
+        const contactUrl = Object.hasOwn(body, 'contact_url')
+          ? cleanContactUrl(body.contact_url)
+          : (nextSettings.contact_url || null);
+        const expiresAt = lookingFor === 'idle' ? null : lookingForExpiry(7);
+
+        const settingsRows = await sql()`
+          insert into profile_settings (
+            user_id,
+            looking_for,
+            looking_for_expires_at,
+            contact_url,
+            updated_at
+          )
+          values (
+            ${user.id},
+            ${lookingFor},
+            ${expiresAt},
+            ${contactUrl},
+            now()
+          )
+          on conflict (user_id) do update
+            set looking_for = excluded.looking_for,
+                looking_for_expires_at = excluded.looking_for_expires_at,
+                contact_url = excluded.contact_url,
+                updated_at = now()
+          returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at,
+            looking_for, looking_for_expires_at, contact_url, updated_at
         `;
         nextSettings = settingsRows[0];
       }

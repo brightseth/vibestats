@@ -11,6 +11,7 @@
     { "source": "/u/:handle", "destination": "/api/profile?handle=:handle" },
     { "source": "/leaderboard/:archetype", "destination": "/leaderboard.html?archetype=:archetype" },
     { "source": "/leaderboard", "destination": "/leaderboard.html" },
+    { "source": "/match", "destination": "/match.html" },
     { "source": "/settings", "destination": "/settings.html" },
     { "source": "/card", "destination": "/api/card" }
   ],

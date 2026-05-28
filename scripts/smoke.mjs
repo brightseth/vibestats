@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret';
 
-const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html', 'leaderboard.html'];
+const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html', 'leaderboard.html', 'match.html'];
 const apiModules = [
   '../api/profile.js',
   '../api/auth/github/start.js',
@@ -19,6 +19,7 @@ const apiModules = [
   '../api/_lib/signatures.js',
   '../api/_lib/digest.js',
   '../api/leaderboard.js',
+  '../api/match.js',
   '../api/stats.js',
   '../api/card.js',
   '../api/badge.js',
@@ -70,6 +71,10 @@ async function assertRoutes() {
   assert(
     rewrites.some((rewrite) => rewrite.source === '/leaderboard/:archetype' && rewrite.destination === '/leaderboard.html?archetype=:archetype'),
     'archetype leaderboard route should rewrite to leaderboard page',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/match' && rewrite.destination === '/match.html'),
+    'match route should rewrite to match page',
   );
   const globalHeaders = (config.headers || []).find((entry) => entry.source === '/(.*)')?.headers || [];
   const headerKeys = new Set(globalHeaders.map((header) => header.key.toLowerCase()));
@@ -185,7 +190,7 @@ async function assertReadJsonLimit() {
 }
 
 async function assertProfileSettingsHelpers() {
-  const { cleanDigestEmail, publicProfileSettings } = await import('../api/_lib/profile-settings.js');
+  const { cleanContactUrl, cleanDigestEmail, cleanLookingFor, publicMatchSettings, publicProfileSettings } = await import('../api/_lib/profile-settings.js');
   assert(cleanDigestEmail('  SETH@EXAMPLE.COM ') === 'seth@example.com', 'digest email should normalize');
   assert(cleanDigestEmail('') === null, 'empty digest email should clear');
   let rejected = false;
@@ -196,6 +201,25 @@ async function assertProfileSettingsHelpers() {
   }
   assert(rejected, 'invalid digest email should be rejected');
   assert(publicProfileSettings({ weekly_digest_opt_in: true }).weekly_digest_opt_in === true, 'digest opt-in should serialize');
+  assert(cleanLookingFor('pair-coding') === 'pair-coding', 'looking_for should accept valid values');
+  assert(cleanContactUrl('https://x.com/brightseth') === 'https://x.com/brightseth', 'contact URL should normalize valid URL');
+  let badLookingForRejected = false;
+  try {
+    cleanLookingFor('swiping');
+  } catch (err) {
+    badLookingForRejected = err.statusCode === 400;
+  }
+  assert(badLookingForRejected, 'invalid looking_for should be rejected');
+  assert(publicMatchSettings({
+    looking_for: 'pair-coding',
+    looking_for_expires_at: new Date(Date.now() + 10000).toISOString(),
+    contact_url: 'https://x.com/brightseth',
+  }).looking_for === 'pair-coding', 'active match settings should serialize');
+  assert(publicMatchSettings({
+    looking_for: 'pair-coding',
+    looking_for_expires_at: new Date(Date.now() - 10000).toISOString(),
+    contact_url: 'https://x.com/brightseth',
+  }).looking_for === 'idle', 'expired match settings should not serialize as active');
   console.log('ok profile settings helpers');
 }
 
@@ -407,6 +431,41 @@ async function assertLeaderboardFallback() {
   }
 }
 
+async function assertMatchFallback() {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const { default: handler } = await import('../api/match.js');
+    let statusCode = 0;
+    let body = '';
+    const req = {
+      method: 'GET',
+      query: { goal: 'mentor' },
+      headers: { host: 'localhost:3000' },
+    };
+    const res = {
+      setHeader() {},
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      json(value) {
+        body = JSON.stringify(value);
+      },
+    };
+
+    await handler(req, res);
+    const parsed = JSON.parse(body);
+    assert(statusCode === 200, 'match fallback should render HTTP 200 when DB is absent');
+    assert(parsed.goal === 'mentor', 'match fallback should preserve goal');
+    assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'match fallback should return empty entries');
+    assert(parsed.unavailable === true, 'match fallback should mark DB unavailable');
+    console.log('ok match fallback keeps match page usable without DB');
+  } finally {
+    console.error = originalError;
+  }
+}
+
 async function assertDigestCronAuth() {
   const { default: handler } = await import('../api/cron/weekly-digest.js');
   const previousSecret = process.env.CRON_SECRET;
@@ -462,6 +521,7 @@ await assertProfileFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();
 await assertLeaderboardFallback();
+await assertMatchFallback();
 await assertDigestCronAuth();
 
 console.log('smoke checks passed');

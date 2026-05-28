@@ -93,7 +93,7 @@
       font-size: 12px;
       line-height: 1.5;
     }
-    select, input[type="email"] {
+    select, input[type="email"], input[type="url"] {
       min-height: 42px;
       min-width: 150px;
       border-radius: 8px;
@@ -104,12 +104,20 @@
       padding: 0 12px;
     }
     input[type="email"] { width: min(260px, 100%); }
+    input[type="url"] { width: 100%; }
     .digest-controls {
       display: flex;
       align-items: center;
       justify-content: flex-end;
       gap: 10px;
       flex-wrap: wrap;
+    }
+    .intent-controls {
+      display: grid;
+      grid-template-columns: minmax(150px, 190px) minmax(220px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      width: min(560px, 100%);
     }
     .check-row {
       display: inline-flex;
@@ -180,6 +188,7 @@
       .btn, select { width: 100%; }
       .digest-controls { justify-content: stretch; }
       .digest-controls .btn, .digest-controls input[type="email"] { width: 100%; }
+      .intent-controls { grid-template-columns: 1fr; width: 100%; }
     }
   </style>
 </head>
@@ -234,6 +243,24 @@
             </label>
             <input type="email" id="digest-email" placeholder="you@example.com" autocomplete="email">
             <button class="btn" id="save-digest">Save</button>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Looking for</div>
+            <div class="hint">Short-lived matchmaker intent. Active states expire after 7 days and only public profiles appear in /match.</div>
+          </div>
+          <div class="intent-controls">
+            <select id="looking-for">
+              <option value="idle">Idle</option>
+              <option value="pair-coding">Pair coding</option>
+              <option value="co-founder">Co-founder</option>
+              <option value="hire">Hiring</option>
+              <option value="mentor">Mentor</option>
+              <option value="mentee">Mentee</option>
+            </select>
+            <input type="url" id="contact-url" placeholder="https://x.com/you" autocomplete="url">
+            <button class="btn" id="save-intent">Save</button>
           </div>
         </div>
       </div>
@@ -307,6 +334,8 @@
       document.getElementById('profile-link').href = `/u/${encodeURIComponent(user.gh_handle)}`;
       document.getElementById('weekly-digest').checked = Boolean(settings?.weekly_digest_opt_in);
       document.getElementById('digest-email').value = settings?.digest_email || '';
+      document.getElementById('looking-for').value = settings?.looking_for || 'idle';
+      document.getElementById('contact-url').value = settings?.contact_url || '';
 
       document.getElementById('privacy').addEventListener('change', async (event) => {
         try {
@@ -334,6 +363,25 @@
           document.getElementById('weekly-digest').checked = Boolean(body.settings?.weekly_digest_opt_in);
           document.getElementById('digest-email').value = body.settings?.digest_email || '';
           showMessage(body.settings?.weekly_digest_opt_in ? 'Weekly digest saved.' : 'Weekly digest off.');
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('save-intent').addEventListener('click', async () => {
+        const lookingFor = document.getElementById('looking-for').value;
+        const contactUrl = document.getElementById('contact-url').value;
+        try {
+          const body = await api('/api/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({
+              looking_for: lookingFor,
+              contact_url: contactUrl,
+            }),
+          });
+          document.getElementById('looking-for').value = body.settings?.looking_for || 'idle';
+          document.getElementById('contact-url').value = body.settings?.contact_url || '';
+          showMessage(body.settings?.looking_for === 'idle' ? 'Match intent cleared.' : 'Match intent active for 7 days.');
         } catch (err) {
           showMessage(err.message, true);
         }
