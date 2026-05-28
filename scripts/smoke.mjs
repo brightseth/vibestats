@@ -14,6 +14,7 @@ const apiModules = [
   '../api/settings.js',
   '../api/settings/export.js',
   '../api/_lib/profile-settings.js',
+  '../api/_lib/signatures.js',
   '../api/stats.js',
   '../api/card.js',
   '../api/badge.js',
@@ -62,6 +63,7 @@ async function assertUploadSanitizer() {
       source: 'browser',
       signature: 'high-velocity Builder',
       signatureCombo: 'shipper+builder',
+      signatureFingerprint: 'builder+shipper+orchestrator:90s',
       secondaryArchetype: 'shipper',
       rawJson: { should: 'drop' },
     },
@@ -72,6 +74,7 @@ async function assertUploadSanitizer() {
   assert(payload.metrics.languages === 4, 'derived languages metric should persist');
   assert(!('raw' in payload.metrics), 'raw metric payload must be dropped');
   assert(payload.raw_meta.signature === 'high-velocity Builder', 'signature metadata should persist');
+  assert(payload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'signature fingerprint should persist');
   assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should persist');
   assert(!('rawJson' in payload.raw_meta), 'raw_meta allowlist must drop unknown fields');
   console.log('ok upload sanitizer preserves privacy boundary');
@@ -137,6 +140,21 @@ async function assertProfileSettingsHelpers() {
   assert(rejected, 'invalid digest email should be rejected');
   assert(publicProfileSettings({ weekly_digest_opt_in: true }).weekly_digest_opt_in === true, 'digest opt-in should serialize');
   console.log('ok profile settings helpers');
+}
+
+async function assertSignatureHelpers() {
+  const { rarityTier, signatureFingerprint, signatureFromUpload } = await import('../api/_lib/signatures.js');
+  const upload = {
+    archetype: 'builder',
+    scores: { builder: 92, shipper: 82, orchestrator: 61, architect: 20 },
+    raw_meta: {},
+  };
+  const signature = signatureFromUpload(upload);
+  assert(signature.label === 'high-velocity Builder', 'signature helper should infer label');
+  assert(signature.fingerprint === 'builder+shipper+orchestrator:90s', 'signature helper should fingerprint top scores');
+  assert(signatureFingerprint(upload.scores, 'builder') === signature.fingerprint, 'fingerprint helper should match upload helper');
+  assert(rarityTier(8) === 'rare' && rarityTier(40) === 'uncommon' && rarityTier(90) === 'common', 'rarity tiers should classify counts');
+  console.log('ok signature rarity helpers');
 }
 
 async function assertProfileFallback() {
@@ -218,6 +236,7 @@ await assertUploadSanitizer();
 await assertSessionRoundTrip();
 await assertSameOriginGuard();
 await assertProfileSettingsHelpers();
+await assertSignatureHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
 

@@ -1,7 +1,6 @@
-export const ARCHETYPE_KEYS = [
-  'orchestrator', 'shipper', 'architect', 'debugger',
-  'polyglot', 'sprinter', 'deepdiver', 'builder',
-];
+import { ARCHETYPE_KEYS } from './signatures.js';
+
+export { ARCHETYPE_KEYS };
 
 const NUMERIC_METRICS = {
   commitsPerDay: 500,
@@ -62,7 +61,7 @@ export function sanitizeUploadPayload(body = {}) {
 
   const rawMeta = {};
   const sourceMeta = body.raw_meta && typeof body.raw_meta === 'object' ? body.raw_meta : {};
-  for (const key of ['dateRange', 'source', 'version', 'signature', 'signatureCombo']) {
+  for (const key of ['dateRange', 'source', 'version', 'signature', 'signatureCombo', 'signatureFingerprint']) {
     const value = cleanText(sourceMeta[key], key === 'dateRange' ? 80 : 40);
     if (value) rawMeta[key] = value;
   }

@@ -11,7 +11,7 @@ Live: [vibestats.io](https://vibestats.io)
 A single-page personality engine for Claude Code users. The user runs `/insights` inside CC, downloads the JSON, drops it on vibestats.io, and gets:
 
 - **An archetype** (1 of 8: Orchestrator, Shipper, Architect, Debugger, Polyglot, Sprinter, Deep Diver, Builder).
-- **A derived signature combo** (top archetype + secondary signal, 56 possible combos, no 9th archetype).
+- **A derived signature combo** (top archetype + secondary signal, plus anonymous monthly rarity counts; no 9th archetype).
 - **A scored breakdown** across all 8 (sigmoid + power-law normalized).
 - **A Spotify-Wrapped-style tap-through** (`/wrapped`).
 - **A shareable card** with dynamic OG image (`/card?a=…`) → Twitter intent prefilled.

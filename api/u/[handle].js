@@ -1,6 +1,7 @@
 import { readSession } from '../_lib/auth.js';
 import { publicUser, sql } from '../_lib/db.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
+import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
 
 function getHandle(req) {
   const raw = req.query?.handle;
@@ -39,11 +40,34 @@ export default async function handler(req, res) {
       order by uploaded_at desc
       limit 50
     `;
+    const latestSignature = signatureFromUpload(uploads[0]);
+    let rarity = null;
+    if (latestSignature?.fingerprint) {
+      const rarityRows = await sql()`
+        with latest_uploads as (
+          select distinct on (user_id) user_id, raw_meta, uploaded_at
+          from uploads
+          order by user_id, uploaded_at desc
+        )
+        select count(*)::int as count
+        from latest_uploads
+        where raw_meta->>'signatureFingerprint' = ${latestSignature.fingerprint}
+          and uploaded_at > now() - interval '30 days'
+      `;
+      const count = rarityRows[0]?.count || 1;
+      rarity = {
+        fingerprint: latestSignature.fingerprint,
+        count,
+        tier: rarityTier(count),
+        window_days: 30,
+      };
+    }
 
     json(res, 200, {
       user: publicUser(user, { includePrivacy: isOwner }),
       is_owner: Boolean(isOwner),
       uploads,
+      rarity,
     }, {
       'Cache-Control': 'no-store',
     });

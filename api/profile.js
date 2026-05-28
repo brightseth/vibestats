@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { readSession, originForRequest } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
+import { signatureFromUpload } from './_lib/signatures.js';
 
 const PROFILE_HTML = readFileSync(new URL('../u.html', import.meta.url), 'utf8');
 
@@ -15,28 +16,6 @@ const ARCHETYPES = {
   builder: { name: 'THE BUILDER', tagline: "You build things that didn't exist before." },
 };
 
-const SUB_PREFIXES = {
-  orchestrator: 'parallel',
-  shipper: 'high-velocity',
-  architect: 'methodical',
-  debugger: 'investigative',
-  polyglot: 'multi-stack',
-  sprinter: 'rapid-fire',
-  deepdiver: 'deep-session',
-  builder: 'prolific',
-};
-
-const ARCHETYPE_SHORT_NAMES = {
-  orchestrator: 'Orchestrator',
-  shipper: 'Shipper',
-  architect: 'Architect',
-  debugger: 'Debugger',
-  polyglot: 'Polyglot',
-  sprinter: 'Sprinter',
-  deepdiver: 'Deep Diver',
-  builder: 'Builder',
-};
-
 function esc(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -48,20 +27,6 @@ function esc(value) {
 function getHandle(req) {
   const raw = req.query?.handle;
   return String(Array.isArray(raw) ? raw[0] : raw || '').trim();
-}
-
-function fallbackSignature(upload) {
-  const primary = upload.archetype;
-  const sorted = Object.entries(upload.scores || {})
-    .filter(([key]) => key !== primary && !key.startsWith('_') && ARCHETYPES[key])
-    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
-  if (!sorted.length) return '';
-  const secondary = sorted[0][0];
-  return `${SUB_PREFIXES[secondary] || secondary} ${ARCHETYPE_SHORT_NAMES[primary] || primary}`;
-}
-
-function uploadSignature(upload) {
-  return upload.raw_meta?.signature || fallbackSignature(upload);
 }
 
 function injectProfileMeta(html, meta) {
@@ -134,7 +99,7 @@ export default async function handler(req, res) {
     const arch = ARCHETYPES[latest.archetype] || ARCHETYPES.builder;
     const metrics = latest.metrics || {};
     const percentiles = latest.scores?._percentiles || {};
-    const signature = uploadSignature(latest);
+    const signature = signatureFromUpload(latest)?.label || '';
     const origin = originForRequest(req);
     const imageParams = new URLSearchParams({
       a: latest.archetype,

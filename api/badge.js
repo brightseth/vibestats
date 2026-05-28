@@ -1,5 +1,6 @@
 import { readSession } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
+import { signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
   orchestrator: { name: 'ORCHESTRATOR', color: '#6B8FFF' },
@@ -96,7 +97,7 @@ export default async function handler(req, res) {
     `;
     const latest = uploads[0];
     const arch = ARCHETYPES[latest?.archetype] || null;
-    const label = latest?.raw_meta?.signature || (arch ? arch.name : 'vibestats profile');
+    const label = signatureFromUpload(latest)?.label || (arch ? arch.name : 'vibestats profile');
 
     return sendSvg(res, 200, badgeSvg({
       handle: user.gh_handle,

@@ -471,6 +471,12 @@
       };
     }
 
+    function scarcityText(rarity) {
+      if (!rarity?.count) return '1 of 56 Claude Code signature combos';
+      const plural = rarity.count === 1 ? 'profile' : 'profiles';
+      return `${rarity.tier} combo: 1 of ${fmt(rarity.count)} saved ${plural} this month`;
+    }
+
     function uploadStreak(uploads) {
       const sorted = [...uploads]
         .map((upload) => new Date(upload.uploaded_at))
@@ -689,7 +695,7 @@
       document.getElementById('tagline').textContent = arch.tagline;
       document.getElementById('signature-row').innerHTML = signature.label ? `
         <span class="signature-pill">${esc(signature.label)}</span>
-        <span class="signature-detail">1 of 56 Claude Code signature combos</span>
+        <span class="signature-detail">${esc(scarcityText(profile.rarity))}</span>
       ` : '';
       document.getElementById('card-name').textContent = arch.name;
       document.getElementById('score-value').textContent = `${score}%`;
