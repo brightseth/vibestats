@@ -25,6 +25,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A public directory** (`/browse`) that filters opt-in profiles by archetype and active intent, showing only coarse derived activity.
 - **Public metric controls** so exact activity counts and language count stay hidden from visitors unless the owner opts in.
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
+- **A local sync CLI** (`npx vibestats sync`) that reads `~/.claude/usage-data/agent-insights.json`, computes derived metrics locally, and posts them with a signed sync token.
 
 **Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default.
 
@@ -61,6 +62,8 @@ vibestats/
 │   ├── auth/          # GitHub OAuth start/callback/logout
 │   ├── me.js          # current session
 │   ├── uploads.js     # authenticated derived-metric uploads
+│   ├── sync.js        # CLI sync endpoint for derived metrics
+│   ├── sync-token.js  # signed token generator for local CLI sync
 │   ├── settings.js    # privacy/digest/delete account
 │   ├── settings/      # export endpoint
 │   ├── u/[handle].js  # profile JSON
@@ -74,6 +77,7 @@ vibestats/
 │   └── card.js        # share landing page (`/card?a=…`)
 ├── db/migrations/     # plain SQL migrations
 ├── scripts/migrate.mjs
+├── bin/vibestats.js   # `npx vibestats sync`
 ├── lib/               # html2canvas + shared browser helpers
 ├── fonts/             # self-hosted Inter + JetBrains Mono
 └── vercel.json        # cleanUrls, CSP, headers
@@ -114,6 +118,14 @@ npm run migrate
 ```
 
 Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured.
+
+Generate a local sync command from `/settings` after signing in:
+
+```bash
+npx vibestats sync --token "$VIBESTATS_SYNC_TOKEN"
+```
+
+By default the CLI reads `~/.claude/usage-data/agent-insights.json`. It computes archetype, scores, and the saved metric payload locally, then posts only derived fields to `/api/sync`.
 
 Run local smoke checks:
 

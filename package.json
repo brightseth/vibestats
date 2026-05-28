@@ -1,5 +1,10 @@
 {
+  "name": "vibestats",
+  "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "vibestats": "./bin/vibestats.js"
+  },
   "scripts": {
     "test": "node scripts/smoke.mjs",
     "doctor:identity": "node scripts/identity-doctor.mjs",

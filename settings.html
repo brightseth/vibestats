@@ -99,7 +99,7 @@
       font-size: 12px;
       line-height: 1.5;
     }
-    select, input[type="email"], input[type="url"] {
+    select, input[type="email"], input[type="url"], textarea {
       min-height: 42px;
       min-width: 150px;
       border-radius: 8px;
@@ -132,6 +132,19 @@
       gap: 10px;
       align-items: center;
       width: min(560px, 100%);
+    }
+    .cli-controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      width: min(560px, 100%);
+    }
+    textarea {
+      width: 100%;
+      min-height: 84px;
+      padding: 10px 12px;
+      line-height: 1.5;
+      resize: vertical;
     }
     .check-row {
       display: inline-flex;
@@ -206,7 +219,7 @@
       .visibility-controls { grid-template-columns: 1fr; justify-content: stretch; }
       .digest-controls { justify-content: stretch; }
       .digest-controls .btn, .digest-controls input[type="email"] { width: 100%; }
-      .intent-controls { grid-template-columns: 1fr; width: 100%; }
+      .intent-controls, .cli-controls { grid-template-columns: 1fr; width: 100%; }
     }
   </style>
 </head>
@@ -299,6 +312,16 @@
             </select>
             <input type="url" id="contact-url" placeholder="https://x.com/you" autocomplete="url">
             <button class="btn" id="save-intent">Save</button>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">CLI sync</div>
+            <div class="hint">Generate a signed token for `npx vibestats sync`. The CLI reads insights locally and sends only derived metrics.</div>
+          </div>
+          <div class="cli-controls">
+            <textarea id="sync-command" readonly placeholder="Generate a sync command"></textarea>
+            <button class="btn" id="generate-sync-token">Generate</button>
           </div>
         </div>
       </div>
@@ -443,6 +466,26 @@
           showMessage(body.settings?.looking_for === 'idle' ? 'Match intent cleared.' : 'Match intent active for 7 days.');
         } catch (err) {
           showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('generate-sync-token').addEventListener('click', async () => {
+        const command = document.getElementById('sync-command');
+        const button = document.getElementById('generate-sync-token');
+        try {
+          button.textContent = 'Generating...';
+          const body = await api('/api/sync-token', { method: 'POST' });
+          command.value = body.command || '';
+          try {
+            await navigator.clipboard.writeText(command.value);
+            showMessage(`CLI sync command copied. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
+          } catch {
+            showMessage(`CLI sync command generated. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
+          }
+          button.textContent = 'Regenerate';
+        } catch (err) {
+          showMessage(err.message, true);
+          button.textContent = 'Generate';
         }
       });
 

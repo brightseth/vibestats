@@ -4,6 +4,7 @@ import { getUserById } from './db.js';
 export const SESSION_COOKIE = 'vibestats_auth';
 export const OAUTH_STATE_COOKIE = 'vibestats_oauth_state';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
+const SYNC_TOKEN_MAX_AGE = 60 * 60 * 24 * 180;
 
 function base64url(input) {
   return Buffer.from(input)
@@ -52,6 +53,25 @@ export function createSessionToken(user) {
   return `${data}.${sign(data)}`;
 }
 
+export function createSyncToken(user) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = base64url(JSON.stringify({
+    sub: user.id,
+    gh_handle: user.gh_handle,
+    scope: 'sync',
+    typ: 'vibestats_sync',
+    iat: now,
+    exp: now + SYNC_TOKEN_MAX_AGE,
+  }));
+  const data = `${header}.${payload}`;
+  return `${data}.${sign(data)}`;
+}
+
+export function syncTokenExpiresAt() {
+  return new Date((Math.floor(Date.now() / 1000) + SYNC_TOKEN_MAX_AGE) * 1000).toISOString();
+}
+
 export function verifySessionToken(token) {
   if (!token || typeof token !== 'string') return null;
   const parts = token.split('.');
@@ -73,6 +93,18 @@ export function verifySessionToken(token) {
   } catch {
     return null;
   }
+}
+
+export function verifySyncToken(token) {
+  const payload = verifySessionToken(token);
+  if (!payload || payload.typ !== 'vibestats_sync' || payload.scope !== 'sync') return null;
+  return payload;
+}
+
+export function readBearerToken(req) {
+  const header = req.headers?.authorization || req.headers?.Authorization || '';
+  const match = String(header).match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : null;
 }
 
 export function getCookie(req, name) {
@@ -141,6 +173,12 @@ export async function requireUser(req) {
   return getUserById(session.sub);
 }
 
+export async function requireSyncUser(req) {
+  const session = verifySyncToken(readBearerToken(req));
+  if (!session?.sub) return null;
+  return getUserById(session.sub);
+}
+
 export function originForRequest(req) {
   if (process.env.VIBESTATS_URL) return process.env.VIBESTATS_URL.replace(/\/$/, '');
   const host = req.headers?.host || 'localhost:3000';
@@ -161,4 +199,3 @@ export function decodeStatePayload(value) {
     return null;
   }
 }
-

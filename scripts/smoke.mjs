@@ -11,6 +11,8 @@ const apiModules = [
   '../api/auth/logout.js',
   '../api/me.js',
   '../api/uploads.js',
+  '../api/sync.js',
+  '../api/sync-token.js',
   '../api/u/[handle].js',
   '../api/settings.js',
   '../api/settings/export.js',
@@ -72,6 +74,9 @@ async function assertRoutes() {
   const embedApi = await readFile('api/embed.js', 'utf8');
   const badgeApi = await readFile('api/badge.js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
+  const settingsHtml = await readFile('settings.html', 'utf8');
+  const syncApi = await readFile('api/sync.js', 'utf8');
+  const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const rewrites = config.rewrites || [];
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/compare?a=:other&b=:handle'),
@@ -116,6 +121,10 @@ async function assertRoutes() {
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
   assert(embedApi.includes("'private, no-store'"), 'private owner profile embed must not be publicly cacheable');
   assert(badgeApi.includes("'private, no-store'"), 'private owner profile badge must not be publicly cacheable');
+  assert(syncApi.includes('requireSyncUser'), 'sync API should require signed CLI sync tokens');
+  assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
+  assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
+  assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
@@ -210,6 +219,29 @@ async function assertUploadSanitizer() {
   console.log('ok upload sanitizer preserves privacy boundary');
 }
 
+async function assertCliDerivedPayload() {
+  const { derivedUploadPayloadFromInsights } = await import('../lib/insights-derived.js');
+  const payload = derivedUploadPayloadFromInsights({
+    meta: { user: 'Alex Chen', date_range: '2025-12-01 to 2026-01-15' },
+    metrics: {
+      total_sessions: 280,
+      total_messages: 3360,
+      commits: 980,
+      satisfaction_rate: 0.85,
+      multi_clauding_rate: 0.03,
+      buggy_code_events: 8,
+      tool_usage: { bash: 6000, read: 4000, edit: 5500, write: 4200, grep: 300 },
+      language_usage: { typescript: 45000, javascript: 8000, css: 2000 },
+    },
+  });
+  assert(payload.archetype === 'shipper', 'CLI derived scoring should match browser shipper fixture');
+  assert(payload.metrics.sessions === 280, 'CLI derived payload should include derived session count');
+  assert(payload.raw_meta.source === 'cli', 'CLI derived payload should mark source as cli');
+  assert(payload.raw_meta.signatureFingerprint, 'CLI derived payload should include rarity fingerprint');
+  assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
+  console.log('ok CLI sync derives browser-compatible private payload');
+}
+
 async function assertSessionRoundTrip() {
   const { createSessionToken, verifySessionToken } = await import('../api/_lib/auth.js');
   const token = createSessionToken({
@@ -222,6 +254,19 @@ async function assertSessionRoundTrip() {
   assert(session?.sub === '11111111-1111-1111-1111-111111111111', 'session sub should round-trip');
   assert(session?.gh_handle === 'brightseth', 'session handle should round-trip');
   console.log('ok signed session round-trip');
+}
+
+async function assertSyncTokenRoundTrip() {
+  const { createSyncToken, verifySyncToken } = await import('../api/_lib/auth.js');
+  const token = createSyncToken({
+    id: '11111111-1111-1111-1111-111111111111',
+    gh_handle: 'brightseth',
+  });
+  const session = verifySyncToken(token);
+  assert(session?.sub === '11111111-1111-1111-1111-111111111111', 'sync token sub should round-trip');
+  assert(session?.scope === 'sync', 'sync token should carry sync scope');
+  assert(session?.typ === 'vibestats_sync', 'sync token should carry sync token type');
+  console.log('ok signed CLI sync token round-trip');
 }
 
 async function assertSameOriginGuard() {
@@ -692,7 +737,9 @@ await assertRoutes();
 await assertProfileShareLoop();
 await assertMatchmakingHelpers();
 await assertUploadSanitizer();
+await assertCliDerivedPayload();
 await assertSessionRoundTrip();
+await assertSyncTokenRoundTrip();
 await assertSameOriginGuard();
 await assertReadJsonLimit();
 await assertProfileSettingsHelpers();
