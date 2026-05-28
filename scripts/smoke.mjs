@@ -19,6 +19,7 @@ const apiModules = [
   '../api/_lib/profile-settings.js',
   '../api/_lib/public-profile.js',
   '../api/_lib/signatures.js',
+  '../api/_lib/matchmaking.js',
   '../api/_lib/leaderboard-rank.js',
   '../api/_lib/digest.js',
   '../api/leaderboard.js',
@@ -98,9 +99,12 @@ async function assertRoutes() {
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
   assert(!leaderboardApi.includes('languages:'), 'leaderboard API should not expose public language counts');
   assert(!matchApi.includes('languages:'), 'match API should not expose public language counts');
+  assert(matchApi.includes('seeker_archetype'), 'match API should preserve visitor archetype for goal-aware scoring');
+  assert(matchApi.includes('goalFit({'), 'match API should use shared goal fit scoring');
   assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
   assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
+  assert((await readFile('match.html', 'utf8')).includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
@@ -125,6 +129,36 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('weekly_digest_opt_in: true'), 'inline digest opt-in should use settings API');
   assert(indexHtml.includes('<a class="auth-pill" href="/browse">Browse</a>'), 'upload page should expose public browse loop');
   console.log('ok profile share loop returns visitors to comparison');
+}
+
+async function assertMatchmakingHelpers() {
+  const { cleanSeekerArchetype, goalFit } = await import('../api/_lib/matchmaking.js');
+  assert(cleanSeekerArchetype('builder') === 'builder', 'match seeker archetype should normalize valid archetypes');
+  assert(cleanSeekerArchetype('any') === null, 'match seeker archetype should allow unselected style');
+  let rejected = false;
+  try {
+    cleanSeekerArchetype('growth-hacker');
+  } catch (err) {
+    rejected = err.statusCode === 400;
+  }
+  assert(rejected, 'invalid match seeker archetype should be rejected');
+  const strong = goalFit({
+    goal: 'pair-coding',
+    lookingFor: 'pair-coding',
+    candidateArchetype: 'shipper',
+    seekerArchetype: 'builder',
+    signal: 93,
+  });
+  const loose = goalFit({
+    goal: 'pair-coding',
+    lookingFor: 'mentor',
+    candidateArchetype: 'deepdiver',
+    seekerArchetype: 'sprinter',
+    signal: 60,
+  });
+  assert(strong.score > loose.score, 'goal fit should reward matching intent and complementary archetypes');
+  assert(strong.reason.includes('Builder + Shipper'), 'goal fit reason should name the visitor/candidate pairing');
+  console.log('ok goal-driven matchmaking helpers');
 }
 
 async function assertUploadSanitizer() {
@@ -647,6 +681,7 @@ await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
 await assertProfileShareLoop();
+await assertMatchmakingHelpers();
 await assertUploadSanitizer();
 await assertSessionRoundTrip();
 await assertSameOriginGuard();

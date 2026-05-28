@@ -3,15 +3,7 @@ import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings
 import { publicActivity } from './_lib/public-profile.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
-
-const GOAL_LABELS = {
-  'pair-coding': 'Pair coding',
-  'co-founder': 'Co-founder',
-  hire: 'Hiring',
-  mentor: 'Mentor',
-  mentee: 'Mentee',
-  idle: 'Idle',
-};
+import { ARCHETYPE_LABELS, GOAL_LABELS, cleanSeekerArchetype, goalFit } from './_lib/matchmaking.js';
 
 function getGoal(req) {
   const raw = req.query?.goal;
@@ -29,16 +21,7 @@ function safeNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function goalFit(goal, lookingFor, archetype) {
-  if (goal === lookingFor) return 94;
-  if (goal === 'mentor' && lookingFor === 'mentee') return 88;
-  if (goal === 'mentee' && lookingFor === 'mentor') return 92;
-  if (goal === 'pair-coding' && ['builder', 'shipper', 'debugger'].includes(archetype)) return 82;
-  if (goal === 'co-founder' && ['architect', 'orchestrator', 'builder'].includes(archetype)) return 80;
-  return 68;
-}
-
-function entry(row, goal) {
+function entry(row, goal, seekerArchetype) {
   const upload = {
     archetype: row.archetype,
     scores: row.scores || {},
@@ -47,6 +30,14 @@ function entry(row, goal) {
   };
   const signature = signatureFromUpload(upload);
   const match = publicMatchSettings(row);
+  const score = Math.round(safeNumber(row.scores?.[row.archetype]));
+  const fit = goalFit({
+    goal,
+    lookingFor: match.looking_for,
+    candidateArchetype: row.archetype,
+    seekerArchetype,
+    signal: score,
+  });
 
   return {
     user: {
@@ -54,9 +45,12 @@ function entry(row, goal) {
       avatar_url: row.avatar_url,
     },
     match,
-    fit_score: goalFit(goal, match.looking_for, row.archetype),
+    fit_score: fit.score,
+    fit_level: fit.level,
+    fit_reason: fit.reason,
     archetype: row.archetype,
-    score: Math.round(safeNumber(row.scores?.[row.archetype])),
+    archetype_label: ARCHETYPE_LABELS[row.archetype] || row.archetype,
+    score,
     signature: signature ? {
       label: signature.label,
       combo: signature.combo,
@@ -71,8 +65,10 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
 
   let goal = null;
+  let seekerArchetype = null;
   try {
     goal = getGoal(req);
+    seekerArchetype = cleanSeekerArchetype(req.query?.archetype);
     const rows = await sql()`
       with latest_uploads as (
         select distinct on (u.id)
@@ -103,12 +99,14 @@ export default async function handler(req, res) {
       limit 50
     `;
 
-    const entries = rows.map((row) => entry(row, goal))
+    const entries = rows.map((row) => entry(row, goal, seekerArchetype))
       .sort((a, b) => b.fit_score - a.fit_score || new Date(b.uploaded_at) - new Date(a.uploaded_at));
 
     return json(res, 200, {
       goal,
       goal_label: GOAL_LABELS[goal],
+      seeker_archetype: seekerArchetype,
+      seeker_archetype_label: seekerArchetype ? ARCHETYPE_LABELS[seekerArchetype] : null,
       entries,
     }, {
       'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
@@ -120,6 +118,8 @@ export default async function handler(req, res) {
     return json(res, status === 400 ? 400 : 200, {
       goal: fallbackGoal,
       goal_label: fallbackGoal ? GOAL_LABELS[fallbackGoal] : null,
+      seeker_archetype: status === 400 ? null : seekerArchetype,
+      seeker_archetype_label: status !== 400 && seekerArchetype ? ARCHETYPE_LABELS[seekerArchetype] : null,
       entries: [],
       unavailable: status !== 400,
       error: err.message || 'Match failed',
