@@ -66,7 +66,7 @@ vibestats/
 │   └── card.js        # share landing page (`/card?a=…`)
 ├── db/migrations/     # plain SQL migrations
 ├── scripts/migrate.mjs
-├── lib/               # html2canvas (save card as image)
+├── lib/               # html2canvas + shared browser helpers
 ├── fonts/             # self-hosted Inter + JetBrains Mono
 └── vercel.json        # cleanUrls, CSP, headers
 ```
@@ -127,6 +127,7 @@ CI runs the smoke harness on pull requests and pushes to `main`.
 - **Branch discipline:** feature branches → PR → merge to main. Don't push to main directly.
 - **Pre-push hygiene:** scan diff for secrets, transcripts, internal notes before pushing. `.env.local` is git-ignored — keep it that way.
 - **All scoring math lives in `index.html`** for now (single-page tradition). When duplicated in `api/*.js`, keep the duplicate in sync until Wave 1 lifts it to `lib/scoring.js`.
+- **Compatibility math lives in `lib/compat.js`.** Keep `/compare` and profile inline pairing on the shared helper.
 - **8 archetypes are canonical.** Adding a 9th is a breaking change (touches scoring, OG, share URL params, community aggregates, compatibility math). See ROADMAP Wave 3 for sub-archetypes — those are additive.
 - **Framing policy:** non-embed pages stay unframeable through CSP `frame-ancestors 'none'`. Do not restore a global `X-Frame-Options: DENY`; it would break `/u/<handle>/embed`.
 

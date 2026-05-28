@@ -40,6 +40,16 @@ async function assertHtmlScriptsParse() {
   console.log(`ok html scripts parse (${htmlFiles.length})`);
 }
 
+async function assertCompatBrowserModule() {
+  const window = {};
+  const compatSource = await readFile('lib/compat.js', 'utf8');
+  const compat = new Function('window', `${compatSource}\nreturn window.VibeCompat;`)(window);
+  assert(compat.getPairing('builder', 'shipper').name === 'Feature Factory', 'compat module should expose pair names');
+  assert(compat.getPairing('shipper', 'builder').name === 'Feature Factory', 'compat module should normalize pair keys');
+  assert(compat.profileCompatibility('builder', 'shipper', 'brightseth').score >= 90, 'profile compatibility should expose a strong score');
+  console.log('ok shared compatibility browser module');
+}
+
 async function assertApiImports() {
   await Promise.all(apiModules.map((modulePath) => import(modulePath)));
   console.log(`ok api imports (${apiModules.length})`);
@@ -438,6 +448,7 @@ async function assertDigestCronAuth() {
 }
 
 await assertHtmlScriptsParse();
+await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
 await assertUploadSanitizer();

@@ -469,6 +469,7 @@
     </section>
   </main>
 
+  <script src="/lib/compat.js"></script>
   <script>
     const ARCHETYPES = {
       orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)', borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #a78bfa, transparent)' },
@@ -494,22 +495,6 @@
       orchestrator: 'Orchestrator', shipper: 'Shipper', architect: 'Architect',
       debugger: 'Debugger', polyglot: 'Polyglot', sprinter: 'Sprinter',
       deepdiver: 'Deep Diver', builder: 'Builder',
-    };
-
-    const ARCHETYPE_STRENGTHS = {
-      orchestrator: 'parallel execution', shipper: 'shipping velocity', architect: 'system design',
-      debugger: 'investigation', polyglot: 'stack range', sprinter: 'raw speed',
-      deepdiver: 'deep focus', builder: 'creation energy',
-    };
-
-    const COMPAT_OVERRIDES = {
-      'architect:builder': { score: 94, line: 'You turn plans into product. This is a high-output build pair.' },
-      'builder:shipper': { score: 95, line: 'One creates, both ship. This pairing moves ideas into production fast.' },
-      'debugger:shipper': { score: 90, line: 'Problems get found, fixed, and shipped before momentum fades.' },
-      'debugger:deepdiver': { score: 93, line: 'Deep focus plus investigation makes root causes hard to hide.' },
-      'deepdiver:orchestrator': { score: 92, line: 'One sees the whole board while the other goes through it.' },
-      'architect:sprinter': { score: 86, line: 'Fast movement with a map. Strategy keeps velocity pointed somewhere useful.' },
-      'orchestrator:shipper': { score: 88, line: 'Coordination plus delivery makes a strong scaled-shipping pair.' },
     };
 
     function handleFromLocation() {
@@ -562,30 +547,6 @@
       return streak;
     }
 
-    function compatKey(a, b) {
-      return [a, b].sort().join(':');
-    }
-
-    function compatibilityFor(visitorType, hostType, hostHandle) {
-      if (visitorType === hostType) {
-        const short = ARCHETYPE_SHORT_NAMES[hostType] || hostType;
-        return {
-          score: 76,
-          line: `You are both ${short}s. Expect strong shared instincts, plus a need to divide roles clearly.`,
-        };
-      }
-
-      const override = COMPAT_OVERRIDES[compatKey(visitorType, hostType)];
-      if (override) return override;
-
-      const visitorStrength = ARCHETYPE_STRENGTHS[visitorType] || 'momentum';
-      const hostStrength = ARCHETYPE_STRENGTHS[hostType] || 'judgment';
-      return {
-        score: 78,
-        line: `You bring ${visitorStrength}; @${hostHandle} brings ${hostStrength}. This is a complementary Claude Code pair.`,
-      };
-    }
-
     function renderCompatibilityPanel(me, myLatest, profile, hostLatest) {
       const panel = document.getElementById('compat-panel');
       if (!panel || !myLatest?.archetype || !hostLatest?.archetype) return;
@@ -595,7 +556,7 @@
       const hostType = hostLatest.archetype;
       const visitorArch = ARCHETYPES[visitorType] || ARCHETYPES.builder;
       const hostArch = ARCHETYPES[hostType] || ARCHETYPES.builder;
-      const compat = compatibilityFor(visitorType, hostType, hostHandle);
+      const compat = window.VibeCompat.profileCompatibility(visitorType, hostType, hostHandle);
       const pairUrl = `/u/${encodeURIComponent(hostHandle)}/pair/${encodeURIComponent(me.gh_handle)}`;
 
       panel.classList.add('visible');
