@@ -114,6 +114,9 @@ async function assertProfileShareLoop() {
   const indexHtml = await readFile('index.html', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   assert(profileHtml.includes('compareTo=${encodeURIComponent(handle)}'), 'profile compare CTA should seed upload-to-compare');
+  assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl)'), 'profile copy action should use asymmetric invite text');
+  assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');
+  assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
   assert(indexHtml.includes('Only derived profile data is persisted here. Raw insights JSON is never stored.'), 'pending auth save must document derived-only storage');
   assert(indexHtml.includes('resumePendingProfileSave'), 'upload page should resume pending profile save after auth');

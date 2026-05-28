@@ -471,7 +471,8 @@
           <div class="looking-row" id="looking-row"></div>
           <div class="viral-actions">
             <a class="btn primary" id="compare-cta" href="/">Compare with this profile</a>
-            <button class="btn" id="copy-profile" type="button">Copy profile</button>
+            <button class="btn" id="copy-profile" type="button">Copy invite</button>
+            <a class="btn" id="share-x" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener">Share on X</a>
             <button class="btn" id="copy-badge" type="button">Copy badge</button>
             <button class="btn" id="copy-embed" type="button">Copy embed</button>
             <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
@@ -569,6 +570,15 @@
       if (!rarity?.count) return '1 of 56 Claude Code signature combos';
       const plural = rarity.count === 1 ? 'profile' : 'profiles';
       return `${rarity.tier} combo: 1 of ${fmt(rarity.count)} saved ${plural} this month`;
+    }
+
+    function shareLabel(upload) {
+      const signature = vibeSignature(upload || {});
+      return signature.label || ARCHETYPE_SHORT_NAMES[upload?.archetype] || 'Claude Code profile';
+    }
+
+    function profileInviteText(handle, latest, profileUrl) {
+      return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:\n${profileUrl}`;
     }
 
     function leaderboardText(leaderboard) {
@@ -685,6 +695,7 @@
     async function renderViralActions(me, profile, latest) {
       const compareCta = document.getElementById('compare-cta');
       const copyBtn = document.getElementById('copy-profile');
+      const shareX = document.getElementById('share-x');
       const copyBadgeBtn = document.getElementById('copy-badge');
       const copyEmbedBtn = document.getElementById('copy-embed');
       const leaderboardCta = document.getElementById('leaderboard-cta');
@@ -693,6 +704,9 @@
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
       const profilePath = `/u/${encodeURIComponent(handle)}`;
+      const profileUrl = `${location.origin}${profilePath}`;
+      const inviteText = profileInviteText(handle, latest, profileUrl);
+      const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.`;
       const badgePath = `${profilePath}/badge.svg`;
       const embedPath = `${profilePath}/embed`;
       const uploadCompareUrl = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
@@ -703,6 +717,7 @@
       leaderboardCta.textContent = `${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'Archetype'} board`;
       browseCta.href = `/browse?archetype=${encodeURIComponent(hostArchetype)}`;
       browseCta.textContent = `Browse ${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'similar'}`;
+      shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(profileUrl)}`;
       note.textContent = 'Upload yours once and vibestats will show your pairing with this profile.';
 
       if (me && me.gh_handle !== handle) {
@@ -721,17 +736,17 @@
 
       copyBtn.addEventListener('click', async () => {
         try {
-          await navigator.clipboard.writeText(`${location.origin}${profilePath}`);
-          copyBtn.textContent = 'Copied!';
-          setTimeout(() => { copyBtn.textContent = 'Copy profile'; }, 1500);
+          await navigator.clipboard.writeText(inviteText);
+          copyBtn.textContent = 'Invite copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy invite'; }, 1500);
         } catch {
           copyBtn.textContent = 'Copy failed';
-          setTimeout(() => { copyBtn.textContent = 'Copy profile'; }, 1500);
+          setTimeout(() => { copyBtn.textContent = 'Copy invite'; }, 1500);
         }
       });
 
       copyBadgeBtn.addEventListener('click', async () => {
-        const markdown = `[![vibestats: @${handle}](${location.origin}${badgePath})](${location.origin}${profilePath})`;
+        const markdown = `[![vibestats: @${handle}](${location.origin}${badgePath})](${profileUrl})`;
         try {
           await navigator.clipboard.writeText(markdown);
           copyBadgeBtn.textContent = 'Badge copied!';
