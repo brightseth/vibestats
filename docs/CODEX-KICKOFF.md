@@ -78,6 +78,15 @@ create table uploads (
   uploaded_at timestamptz default now()
 );
 
+create table profile_settings (
+  user_id uuid primary key references users(id) on delete cascade,
+  weekly_digest_opt_in boolean not null default false,
+  digest_email text,
+  email_consent_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create index uploads_user_time_idx on uploads(user_id, uploaded_at desc);
 create index users_handle_idx on users(gh_handle);
 ```

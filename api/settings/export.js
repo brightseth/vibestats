@@ -1,6 +1,7 @@
 import { requireUser } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
+import { getProfileSettings, publicProfileSettings } from '../_lib/profile-settings.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
@@ -15,6 +16,7 @@ export default async function handler(req, res) {
       where user_id = ${user.id}
       order by uploaded_at desc
     `;
+    const settings = await getProfileSettings(user.id);
 
     res.setHeader('Content-Disposition', 'attachment; filename="vibestats-export.json"');
     json(res, 200, {
@@ -25,6 +27,7 @@ export default async function handler(req, res) {
         privacy: user.privacy,
         created_at: user.created_at,
       },
+      settings: publicProfileSettings(settings),
       uploads,
     }, {
       'Cache-Control': 'no-store',
@@ -34,4 +37,3 @@ export default async function handler(req, res) {
     json(res, err.statusCode || 500, { error: err.message || 'Export failed' });
   }
 }
-

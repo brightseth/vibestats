@@ -13,6 +13,7 @@ const apiModules = [
   '../api/u/[handle].js',
   '../api/settings.js',
   '../api/settings/export.js',
+  '../api/_lib/profile-settings.js',
   '../api/stats.js',
   '../api/card.js',
   '../api/badge.js',
@@ -123,6 +124,21 @@ async function assertSameOriginGuard() {
   console.log('ok same-origin mutation guard');
 }
 
+async function assertProfileSettingsHelpers() {
+  const { cleanDigestEmail, publicProfileSettings } = await import('../api/_lib/profile-settings.js');
+  assert(cleanDigestEmail('  SETH@EXAMPLE.COM ') === 'seth@example.com', 'digest email should normalize');
+  assert(cleanDigestEmail('') === null, 'empty digest email should clear');
+  let rejected = false;
+  try {
+    cleanDigestEmail('not-an-email');
+  } catch (err) {
+    rejected = err.statusCode === 400;
+  }
+  assert(rejected, 'invalid digest email should be rejected');
+  assert(publicProfileSettings({ weekly_digest_opt_in: true }).weekly_digest_opt_in === true, 'digest opt-in should serialize');
+  console.log('ok profile settings helpers');
+}
+
 async function assertProfileFallback() {
   const originalError = console.error;
   console.error = () => {};
@@ -201,6 +217,7 @@ await assertApiImports();
 await assertUploadSanitizer();
 await assertSessionRoundTrip();
 await assertSameOriginGuard();
+await assertProfileSettingsHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
 

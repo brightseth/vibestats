@@ -51,7 +51,7 @@ vibestats/
 │   ├── auth/          # GitHub OAuth start/callback/logout
 │   ├── me.js          # current session
 │   ├── uploads.js     # authenticated derived-metric uploads
-│   ├── settings.js    # privacy/delete account
+│   ├── settings.js    # privacy/digest/delete account
 │   ├── settings/      # export endpoint
 │   ├── u/[handle].js  # profile JSON
 │   ├── stats.js       # POST aggregate, GET community averages

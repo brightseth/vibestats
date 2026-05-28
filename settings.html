@@ -93,7 +93,7 @@
       font-size: 12px;
       line-height: 1.5;
     }
-    select {
+    select, input[type="email"] {
       min-height: 42px;
       min-width: 150px;
       border-radius: 8px;
@@ -102,6 +102,27 @@
       color: var(--text);
       font-family: var(--mono);
       padding: 0 12px;
+    }
+    input[type="email"] { width: min(260px, 100%); }
+    .digest-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .check-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
     }
     .btn {
       display: inline-flex;
@@ -157,6 +178,8 @@
     @media (max-width: 620px) {
       .row { align-items: stretch; flex-direction: column; }
       .btn, select { width: 100%; }
+      .digest-controls { justify-content: stretch; }
+      .digest-controls .btn, .digest-controls input[type="email"] { width: 100%; }
     }
   </style>
 </head>
@@ -198,6 +221,20 @@
             <div class="hint" id="profile-url"></div>
           </div>
           <a class="btn" id="profile-link" href="#">Open profile</a>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Weekly digest</div>
+            <div class="hint">Optional email summary of your evolution, streak, and future leaderboard movement.</div>
+          </div>
+          <div class="digest-controls">
+            <label class="check-row">
+              <input type="checkbox" id="weekly-digest">
+              <span>Opt in</span>
+            </label>
+            <input type="email" id="digest-email" placeholder="you@example.com" autocomplete="email">
+            <button class="btn" id="save-digest">Save</button>
+          </div>
         </div>
       </div>
 
@@ -255,19 +292,21 @@
     }
 
     async function init() {
-      const res = await fetch('/api/me');
+      const res = await fetch('/api/settings');
       document.getElementById('loading').style.display = 'none';
       if (!res.ok) {
         document.getElementById('signed-out').style.display = 'grid';
         return;
       }
 
-      const { user } = await res.json();
+      const { user, settings } = await res.json();
       document.getElementById('settings').style.display = 'block';
       document.getElementById('account-line').innerHTML = `Signed in as <strong>@${esc(user.gh_handle)}</strong>`;
       document.getElementById('privacy').value = user.privacy || 'unlisted';
       document.getElementById('profile-url').textContent = `/u/${user.gh_handle}`;
       document.getElementById('profile-link').href = `/u/${encodeURIComponent(user.gh_handle)}`;
+      document.getElementById('weekly-digest').checked = Boolean(settings?.weekly_digest_opt_in);
+      document.getElementById('digest-email').value = settings?.digest_email || '';
 
       document.getElementById('privacy').addEventListener('change', async (event) => {
         try {
@@ -276,6 +315,25 @@
             body: JSON.stringify({ privacy: event.target.value }),
           });
           showMessage('Visibility saved.');
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('save-digest').addEventListener('click', async () => {
+        const optIn = document.getElementById('weekly-digest').checked;
+        const email = document.getElementById('digest-email').value;
+        try {
+          const body = await api('/api/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({
+              weekly_digest_opt_in: optIn,
+              digest_email: email,
+            }),
+          });
+          document.getElementById('weekly-digest').checked = Boolean(body.settings?.weekly_digest_opt_in);
+          document.getElementById('digest-email').value = body.settings?.digest_email || '';
+          showMessage(body.settings?.weekly_digest_opt_in ? 'Weekly digest saved.' : 'Weekly digest off.');
         } catch (err) {
           showMessage(err.message, true);
         }
@@ -304,4 +362,3 @@
   </script>
 </body>
 </html>
-
