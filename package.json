@@ -1,6 +1,8 @@
 {
   "type": "module",
   "scripts": {
+    "test": "node scripts/smoke.mjs",
+    "doctor:identity": "node scripts/identity-doctor.mjs",
     "serve": "npx serve .",
     "migrate": "node scripts/migrate.mjs"
   },

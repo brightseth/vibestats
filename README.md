@@ -95,6 +95,13 @@ Run database migrations:
 npm run migrate
 ```
 
+Run local smoke checks:
+
+```bash
+npm test
+npm run doctor:identity
+```
+
 ## Deploy
 
 ```bash
