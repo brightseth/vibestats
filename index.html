@@ -449,7 +449,8 @@
     }
     .profile-save-status {
       display: none;
-      width: min(480px, 88vw);
+      width: 100%;
+      max-width: min(480px, 88vw);
       margin-top: 14px;
       padding: 12px 14px;
       border-radius: 10px;
@@ -461,7 +462,7 @@
       line-height: 1.5;
       text-align: center;
     }
-    .profile-save-status a { color: #fff; text-decoration: none; }
+    .profile-save-status a { color: #fff; text-decoration: none; word-break: break-word; }
     .profile-save-status.muted {
       color: var(--text-dim);
       border-color: rgba(255,255,255,0.08);
@@ -471,6 +472,43 @@
       color: #ff9a9a;
       border-color: rgba(239,68,68,0.3);
       background: rgba(239,68,68,0.08);
+    }
+    .digest-inline {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 10px;
+      text-align: left;
+    }
+    .digest-inline input {
+      min-height: 38px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      background: rgba(6,6,10,0.72);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 0 10px;
+      min-width: 0;
+    }
+    .digest-inline button {
+      min-height: 38px;
+      width: 100%;
+      border: 1px solid rgba(107,143,255,0.35);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.12);
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .digest-inline-note {
+      grid-column: 1 / -1;
+      color: var(--text-dim);
+      font-size: 10px;
+      line-height: 1.5;
+      text-align: center;
     }
 
     /* Enhanced /vibe footer */
@@ -1828,6 +1866,54 @@
       el.innerHTML = html;
     }
 
+    function safeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function renderSavedProfileStatus(profileUrl) {
+      const safeProfileUrl = safeHtml(profileUrl || `/u/${currentUser?.gh_handle || ''}`);
+      updateProfileSaveStatus(`
+        Saved to your profile &rarr; <a href="${safeProfileUrl}">${safeProfileUrl}</a>
+        <div class="digest-inline">
+          <input type="email" id="digest-email-inline" placeholder="you@example.com" autocomplete="email" aria-label="Weekly digest email">
+          <button type="button" id="digest-opt-in-inline">Get weekly digest</button>
+          <div class="digest-inline-note">Monday email with evolution, rarity, and leaderboard movement. Raw insights JSON never leaves your browser.</div>
+        </div>
+      `);
+      const button = document.getElementById('digest-opt-in-inline');
+      const input = document.getElementById('digest-email-inline');
+      if (!button || !input) return;
+      button.addEventListener('click', async () => {
+        const email = input.value.trim();
+        if (!email) {
+          button.textContent = 'Email required';
+          setTimeout(() => { button.textContent = 'Get weekly digest'; }, 1400);
+          input.focus();
+          return;
+        }
+        button.disabled = true;
+        button.textContent = 'Saving...';
+        try {
+          const res = await fetch('/api/settings', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              weekly_digest_opt_in: true,
+              digest_email: email,
+            }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.error || 'Digest opt-in failed');
+          button.textContent = 'Digest on';
+          input.value = body.settings?.digest_email || email;
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = 'Try again';
+          updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${safeProfileUrl}">${safeProfileUrl}</a><br>${safeHtml(err.message)}`, 'error');
+        }
+      });
+    }
+
     function comparisonDestination(archetype, user = currentUser) {
       const intent = comparisonIntent();
       if (!intent) return '';
@@ -1952,7 +2038,7 @@
           setTimeout(() => { location.href = compareUrl; }, 650);
           return;
         }
-        updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${body.profile_url}">${body.profile_url}</a>`);
+        renderSavedProfileStatus(body.profile_url);
       } catch (err) {
         updateProfileSaveStatus(err.message, 'error');
       }

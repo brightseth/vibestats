@@ -103,6 +103,8 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('Only derived profile data is persisted here. Raw insights JSON is never stored.'), 'pending auth save must document derived-only storage');
   assert(indexHtml.includes('resumePendingProfileSave'), 'upload page should resume pending profile save after auth');
   assert(indexHtml.includes('/pair/${encodeURIComponent'), 'upload-to-compare should route to handle-backed pairing');
+  assert(indexHtml.includes('digest-email-inline'), 'post-save profile flow should offer weekly digest opt-in');
+  assert(indexHtml.includes('weekly_digest_opt_in: true'), 'inline digest opt-in should use settings API');
   console.log('ok profile share loop returns visitors to comparison');
 }
 
