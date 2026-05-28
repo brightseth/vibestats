@@ -90,6 +90,39 @@ async function assertSessionRoundTrip() {
   console.log('ok signed session round-trip');
 }
 
+async function assertSameOriginGuard() {
+  const { requireSameOrigin } = await import('../api/_lib/http.js');
+  const sameOriginReq = {
+    headers: {
+      host: 'localhost:3000',
+      origin: 'http://localhost:3000',
+    },
+  };
+  const missingOriginReq = {
+    headers: {
+      host: 'localhost:3000',
+    },
+  };
+  const crossOriginReq = {
+    headers: {
+      host: 'localhost:3000',
+      origin: 'https://attacker.example',
+    },
+  };
+
+  requireSameOrigin(sameOriginReq);
+  requireSameOrigin(missingOriginReq);
+
+  let blocked = false;
+  try {
+    requireSameOrigin(crossOriginReq);
+  } catch (err) {
+    blocked = err.statusCode === 403;
+  }
+  assert(blocked, 'cross-origin browser mutations should be blocked');
+  console.log('ok same-origin mutation guard');
+}
+
 async function assertProfileFallback() {
   const originalError = console.error;
   console.error = () => {};
@@ -167,6 +200,7 @@ await assertHtmlScriptsParse();
 await assertApiImports();
 await assertUploadSanitizer();
 await assertSessionRoundTrip();
+await assertSameOriginGuard();
 await assertProfileFallback();
 await assertBadgeFallback();
 

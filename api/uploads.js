@@ -1,12 +1,13 @@
 import { requireUser } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
-import { json, methodNotAllowed, readJson } from './_lib/http.js';
+import { json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
 import { sanitizeUploadPayload } from './_lib/uploads.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
 
   try {
+    requireSameOrigin(req);
     const user = await requireUser(req);
     if (!user) return json(res, 401, { error: 'Not authenticated' });
 
@@ -44,4 +45,3 @@ export default async function handler(req, res) {
     json(res, err.statusCode || 500, { error: err.message || 'Upload failed' });
   }
 }
-

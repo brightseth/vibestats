@@ -2,6 +2,8 @@
 // Set env vars: KV_REST_API_URL + KV_REST_API_TOKEN (Vercel KV)
 // or: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
 
+import { requireSameOrigin } from './_lib/http.js';
+
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -45,6 +47,11 @@ export default async function handler(req, res) {
   const hasRedis = REDIS_URL && REDIS_TOKEN;
 
   if (req.method === 'POST') {
+    try {
+      requireSameOrigin(req);
+    } catch (err) {
+      return res.status(err.statusCode || 403).json({ error: err.message || 'Stats mutation blocked' });
+    }
     if (!hasRedis) return res.status(200).json({ ok: true, stored: false });
 
     try {

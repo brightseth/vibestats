@@ -35,6 +35,7 @@ export default function handler(req, res) {
     client_id: clientId,
     redirect_uri: `${origin}/api/auth/github/callback`,
     state,
+    scope: '',
     allow_signup: 'true',
   });
 
