@@ -431,6 +431,7 @@
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
     const shortDate = (value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const dayMs = 24 * 60 * 60 * 1000;
     const SUB_PREFIXES = {
       orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
       debugger: 'investigative', polyglot: 'multi-stack', sprinter: 'rapid-fire',
@@ -468,6 +469,22 @@
         combo: upload.raw_meta?.signatureCombo || fallback?.combo || '',
         secondary: upload.raw_meta?.secondaryArchetype || fallback?.secondary || '',
       };
+    }
+
+    function uploadStreak(uploads) {
+      const sorted = [...uploads]
+        .map((upload) => new Date(upload.uploaded_at))
+        .filter((date) => !Number.isNaN(date.getTime()))
+        .sort((a, b) => b - a);
+      if (!sorted.length) return 0;
+
+      let streak = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        const gapDays = Math.round((sorted[i - 1] - sorted[i]) / dayMs);
+        if (gapDays > 7) break;
+        streak += 1;
+      }
+      return streak;
     }
 
     async function fetchMe() {
@@ -647,6 +664,7 @@
       const m = latest.metrics || {};
       const avg = stats?.averages || {};
       const signature = vibeSignature(latest);
+      const streak = uploadStreak(profile.uploads);
 
       document.title = `@${profile.user.gh_handle} is ${signature.label || arch.name} | vibestats`;
       document.documentElement.style.setProperty('--card-color', arch.color);
@@ -660,6 +678,7 @@
       document.getElementById('handle-meta').innerHTML = `
         <span>${profile.uploads.length} upload${profile.uploads.length === 1 ? '' : 's'}</span>
         <span>${shortDate(latest.uploaded_at)}</span>
+        ${streak > 1 ? `<span class="pill">${streak}-upload streak</span>` : ''}
         ${profile.is_owner && profile.user.privacy ? `<span class="pill">${esc(profile.user.privacy)}</span>` : ''}
       `;
       document.getElementById('archetype-line').style.background = arch.gradient;
