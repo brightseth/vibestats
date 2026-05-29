@@ -321,6 +321,7 @@ async function assertRoutes() {
   assert(identityDoctor.includes('--schema') && identityDoctor.includes('checkIdentitySchema'), 'identity doctor should expose an explicit DB schema readiness check');
   assert(identityDoctor.includes('information_schema.columns') && identityDoctor.includes('schema_migrations'), 'identity doctor schema check should verify columns and applied migrations');
   assert(identityDoctor.includes('users.privacy default unlisted and not null'), 'identity doctor schema check should verify the profile privacy default');
+  assert(identityDoctor.includes('uploads.user_id not null'), 'identity doctor schema check should verify uploads cannot be orphaned');
   assert(identityDoctor.includes('users_privacy_check'), 'identity doctor schema check should verify the profile privacy enum');
   assert(identityDoctor.includes('uploads_archetype_check'), 'identity doctor schema check should verify the saved upload archetype canon');
   assert(identityDoctor.includes('profile_settings_looking_for_check'), 'identity doctor schema check should verify match intent enum constraint');
@@ -361,10 +362,11 @@ async function assertRoutes() {
   assert((await readFile('db/migrations/0008_privacy_not_null.sql', 'utf8')).includes("alter column privacy set not null"), 'migrations should enforce non-null profile privacy');
   assert((await readFile('db/migrations/0009_upload_archetype_canon.sql', 'utf8')).includes('uploads_archetype_check'), 'migrations should enforce the eight-archetype upload canon');
   assert((await readFile('db/migrations/0010_validate_contact_url_constraint.sql', 'utf8')).includes('validate constraint profile_settings_contact_url_protocol'), 'migrations should validate the HTTPS contact URL constraint');
+  assert((await readFile('db/migrations/0011_upload_owner_not_null.sql', 'utf8')).includes('alter column user_id set not null'), 'migrations should prevent orphaned profile uploads');
   assert(authCallbackApi.includes('gh_handle, avatar_url, privacy, last_seen_at') && authCallbackApi.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(launchDoc.includes('vercel env ls') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
   assert(launchDoc.includes('npm run doctor:identity -- --schema'), 'launch checklist should require post-migration schema proof');
-  assert(launchDoc.includes('sync-token revocation column') && launchDoc.includes('unlisted-by-default privacy column') && launchDoc.includes('8-archetype upload canon') && launchDoc.includes('match-intent enum') && launchDoc.includes('validated contact URL length/HTTPS constraints'), 'launch checklist should name schema gates for privacy and sync hardening');
+  assert(launchDoc.includes('sync-token revocation column') && launchDoc.includes('non-null upload ownership') && launchDoc.includes('unlisted-by-default privacy column') && launchDoc.includes('8-archetype upload canon') && launchDoc.includes('match-intent enum') && launchDoc.includes('validated contact URL length/HTTPS constraints'), 'launch checklist should name schema gates for privacy and sync hardening');
   assert(launchDoc.includes('foreign-key delete cascades') && launchDoc.includes('cascading deletion of uploads/profile settings'), 'launch checklist should name schema gates for account deletion privacy');
   assert(launchDoc.includes('"commandForIgnoringBuildStep": null'), 'launch checklist should require Vercel ignored-build setting to be disabled');
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');

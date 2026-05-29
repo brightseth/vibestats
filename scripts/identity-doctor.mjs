@@ -142,6 +142,14 @@ const requiredColumnProperties = [
       return row?.is_nullable === 'NO' && String(row?.column_default || '').includes("'unlisted'");
     },
   },
+  {
+    table: 'uploads',
+    column: 'user_id',
+    label: 'schema column uploads.user_id not null',
+    check(row) {
+      return row?.is_nullable === 'NO';
+    },
+  },
 ];
 
 async function migrationFiles() {

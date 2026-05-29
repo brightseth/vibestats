@@ -15,7 +15,7 @@ create index if not exists users_handle_idx on users(gh_handle);
 
 create table if not exists uploads (
   id uuid primary key default uuid_generate_v4(),
-  user_id uuid references users(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
   archetype text not null,
   scores jsonb not null,
   metrics jsonb not null,
