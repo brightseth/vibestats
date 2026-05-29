@@ -887,6 +887,7 @@ async function assertUploadSanitizer() {
     archetype: 'builder',
     scores: {
       builder: 200,
+      shipper: 80,
       orchestrator: -10,
       _percentiles: { builder: 3 },
       rawJson: { should: 'drop' },
@@ -909,10 +910,10 @@ async function assertUploadSanitizer() {
     raw_meta: {
       dateRange: '2026-01-01 to 2026-01-09',
       source: 'browser',
-      signature: 'high-velocity Builder',
-      signatureCombo: 'shipper+builder',
-      signatureFingerprint: 'builder+shipper+orchestrator:90s',
-      secondaryArchetype: 'shipper',
+      signature: 'rawJson Builder',
+      signatureCombo: 'rawJson+builder',
+      signatureFingerprint: 'rawJson:90s',
+      secondaryArchetype: 'rawJson',
       rawJson: { should: 'drop' },
     },
   });
@@ -924,10 +925,12 @@ async function assertUploadSanitizer() {
   assert(!('raw' in payload.metrics), 'raw metric payload must be dropped');
   assert(!('topLang' in payload.metrics), 'profile saves should not persist language detail');
   assert(!('messages' in payload.metrics), 'profile saves should not persist extended private counters');
-  assert(payload.raw_meta.signature === 'high-velocity Builder', 'signature metadata should persist');
-  assert(payload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'signature fingerprint should persist');
-  assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should persist');
+  assert(payload.raw_meta.signature === 'high-velocity Builder', 'signature metadata should be derived from sanitized scores');
+  assert(payload.raw_meta.signatureCombo === 'shipper+builder', 'signature combo should be derived from sanitized scores');
+  assert(payload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'signature fingerprint should be derived from sanitized scores');
+  assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should be derived from sanitized scores');
   assert(!('rawJson' in payload.raw_meta), 'raw_meta allowlist must drop unknown fields');
+  assert(!JSON.stringify(payload.raw_meta).includes('rawJson'), 'upload sanitizer must not trust client-supplied signature metadata');
   console.log('ok upload sanitizer preserves privacy boundary');
 }
 

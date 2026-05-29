@@ -1,4 +1,4 @@
-import { ARCHETYPE_KEYS } from './signatures.js';
+import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
 
 export { ARCHETYPE_KEYS };
 
@@ -53,13 +53,16 @@ export function sanitizeUploadPayload(body = {}) {
 
   const rawMeta = {};
   const sourceMeta = body.raw_meta && typeof body.raw_meta === 'object' ? body.raw_meta : {};
-  for (const key of ['dateRange', 'source', 'version', 'signature', 'signatureCombo', 'signatureFingerprint']) {
+  for (const key of ['dateRange', 'source', 'version']) {
     const value = cleanText(sourceMeta[key], key === 'dateRange' ? 80 : 40);
     if (value) rawMeta[key] = value;
   }
-  const secondaryArchetype = cleanText(sourceMeta.secondaryArchetype, 32);
-  if (ARCHETYPE_KEYS.includes(secondaryArchetype) && secondaryArchetype !== archetype) {
-    rawMeta.secondaryArchetype = secondaryArchetype;
+  const signature = signatureFromUpload({ archetype, scores, raw_meta: {} });
+  if (signature?.label) rawMeta.signature = signature.label;
+  if (signature?.combo) rawMeta.signatureCombo = signature.combo;
+  if (signature?.fingerprint) rawMeta.signatureFingerprint = signature.fingerprint;
+  if (ARCHETYPE_KEYS.includes(signature?.secondary) && signature.secondary !== archetype) {
+    rawMeta.secondaryArchetype = signature.secondary;
   }
 
   return { archetype, scores, metrics, raw_meta: rawMeta };
