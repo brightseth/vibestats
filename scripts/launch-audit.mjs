@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 const DEFAULT_HANDLE = 'brightseth';
 const DEFAULT_ARCHETYPE = 'builder';
@@ -22,18 +26,32 @@ function parseArgs(argv = process.argv.slice(2)) {
     archetype: DEFAULT_ARCHETYPE,
     expectReady: false,
     expectDigest: false,
+    vercelDeployment: process.env.VERCEL_DEPLOYMENT_URL || '',
+    vercelScope: process.env.VERCEL_SCOPE || 'lets-vibe',
   };
+  let originProvided = false;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--origin') options.origin = argv[++i];
-    else if (arg.startsWith('--origin=')) options.origin = arg.slice('--origin='.length);
+    if (arg === '--origin') {
+      options.origin = argv[++i];
+      originProvided = true;
+    } else if (arg.startsWith('--origin=')) {
+      options.origin = arg.slice('--origin='.length);
+      originProvided = true;
+    }
     else if (arg === '--handle') options.handle = argv[++i];
     else if (arg.startsWith('--handle=')) options.handle = arg.slice('--handle='.length);
     else if (arg === '--archetype') options.archetype = argv[++i];
     else if (arg.startsWith('--archetype=')) options.archetype = arg.slice('--archetype='.length);
     else if (arg === '--expect-ready') options.expectReady = true;
     else if (arg === '--expect-digest') options.expectDigest = true;
+    else if (arg === '--vercel-deployment' || arg === '--deployment') options.vercelDeployment = argv[++i];
+    else if (arg.startsWith('--vercel-deployment=')) options.vercelDeployment = arg.slice('--vercel-deployment='.length);
+    else if (arg.startsWith('--deployment=')) options.vercelDeployment = arg.slice('--deployment='.length);
+    else if (arg === '--vercel-scope' || arg === '--scope') options.vercelScope = argv[++i];
+    else if (arg.startsWith('--vercel-scope=')) options.vercelScope = arg.slice('--vercel-scope='.length);
+    else if (arg.startsWith('--scope=')) options.vercelScope = arg.slice('--scope='.length);
     else if (arg === '--help' || arg === '-h') {
       options.help = true;
     } else {
@@ -41,7 +59,11 @@ function parseArgs(argv = process.argv.slice(2)) {
     }
   }
 
+  options.vercelDeployment = String(options.vercelDeployment || '').trim();
+  if (options.vercelDeployment && !originProvided) options.origin = options.vercelDeployment;
   options.origin = normalizeOrigin(options.origin);
+  if (options.vercelDeployment) options.vercelDeployment = normalizeOrigin(options.vercelDeployment);
+  options.vercelScope = String(options.vercelScope || '').trim();
   options.handle = String(options.handle || '').trim().replace(/^@/, '');
   options.archetype = String(options.archetype || '').trim().toLowerCase();
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(options.handle)) {
@@ -60,6 +82,7 @@ function normalizeOrigin(value) {
 
 function usage() {
   return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-digest]
+       npm run audit:launch -- --deployment https://preview.vercel.app --scope lets-vibe --handle brightseth
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
@@ -92,8 +115,55 @@ function readinessSummary(identity) {
   });
 }
 
-async function fetchText(origin, path) {
+function responseFromHeaders(status, headers) {
+  return {
+    status,
+    headers: {
+      get(name) {
+        return headers.get(String(name || '').toLowerCase()) || null;
+      },
+    },
+  };
+}
+
+function parseVercelCurlResponse(output) {
+  const start = String(output || '').search(/^HTTP\//m);
+  if (start === -1) throw new Error('vercel curl did not return HTTP headers');
+
+  const raw = String(output).slice(start).replace(/\r\n/g, '\n');
+  const split = raw.indexOf('\n\n');
+  const headerText = split === -1 ? raw : raw.slice(0, split);
+  const body = split === -1 ? '' : raw.slice(split + 2);
+  const lines = headerText.split('\n').filter(Boolean);
+  const status = Number(lines[0]?.match(/\s(\d{3})(?:\s|$)/)?.[1] || 0);
+  const headers = new Map();
+
+  for (const line of lines.slice(1)) {
+    const index = line.indexOf(':');
+    if (index === -1) continue;
+    headers.set(line.slice(0, index).trim().toLowerCase(), line.slice(index + 1).trim());
+  }
+
+  if (!status) throw new Error('vercel curl returned an invalid HTTP status');
+  return { response: responseFromHeaders(status, headers), body };
+}
+
+async function fetchViaVercelCurl(options, path, url) {
+  const args = ['curl', path, '--deployment', options.vercelDeployment];
+  if (options.vercelScope) args.push('--scope', options.vercelScope);
+  args.push('--', '-s', '-i');
+  const { stdout } = await execFileAsync('vercel', args, { maxBuffer: 5 * 1024 * 1024 });
+  const parsed = parseVercelCurlResponse(stdout);
+  return { url: url.toString(), ...parsed };
+}
+
+async function fetchText(options, path) {
+  const { origin } = options;
   const url = new URL(path, origin);
+  if (options.vercelDeployment) {
+    return fetchViaVercelCurl(options, path, url);
+  }
+
   const response = await fetch(url, {
     headers: { Accept: 'text/html,application/json,image/svg+xml,*/*' },
     redirect: 'manual',
@@ -127,7 +197,7 @@ async function auditLaunch(options) {
 
   let identity = null;
   try {
-    const status = await fetchText(origin, '/api/identity-status');
+    const status = await fetchText(options, '/api/identity-status');
     identity = JSON.parse(status.body);
     const cache = status.response.headers.get('cache-control') || '';
     recorder.check(status.response.status === 200, 'identity status returns 200', status.url);
@@ -221,7 +291,7 @@ async function auditLaunch(options) {
 
   for (const item of paths) {
     try {
-      const result = await fetchText(origin, item.path);
+      const result = await fetchText(options, item.path);
       const cache = result.response.headers.get('cache-control') || '';
       const type = result.response.headers.get('content-type') || '';
       recorder.check(item.allowStatuses.includes(result.response.status), `${item.label} status`, `${result.response.status} ${result.url}`);
@@ -246,6 +316,7 @@ async function auditLaunch(options) {
   return {
     ok: recorder.results.every((item) => item.ok),
     origin,
+    vercelDeployment: options.vercelDeployment || '',
     identity,
     results: recorder.results,
   };
@@ -253,6 +324,7 @@ async function auditLaunch(options) {
 
 function printReport(report) {
   console.log(`Launch audit: ${report.origin}`);
+  if (report.vercelDeployment) console.log(`deployment=${report.vercelDeployment}`);
   if (report.identity) {
     console.log(`profile_save_available=${report.identity.profile_save_available}`);
     console.log(`weekly_digest_available=${report.identity.weekly_digest_available}`);
@@ -290,4 +362,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { auditLaunch, parseArgs };
+export { auditLaunch, parseArgs, parseVercelCurlResponse };

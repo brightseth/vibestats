@@ -47,6 +47,12 @@ If preview protection is enabled, verify runtime endpoints through Vercel instea
 vercel curl /api/identity-status --deployment <preview-url> --scope lets-vibe
 ```
 
+The launch audit can also run through Vercel auth for protected previews:
+
+```bash
+npm run audit:launch -- --deployment <preview-url> --scope lets-vibe --handle <saved-gh-handle>
+```
+
 As of the latest audit, the canonical project ignored-build setting has been cleared and the latest preview is Ready. The identity readiness probe still reports unavailable profile saves until the database, GitHub OAuth, and session secret env vars are configured.
 
 ## 3. Local Env Doctor

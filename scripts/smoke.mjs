@@ -305,6 +305,8 @@ async function assertRoutes() {
   assert(identityDoctor.includes('sync_token_invalidated_at'), 'identity doctor schema check should verify sync-token revocation schema');
   assert(!identityDoctor.includes("{ label: 'app origin', any: ['VIBESTATS_URL'] }"), 'identity doctor should not hard-require VIBESTATS_URL when runtime can infer host origin');
   assert(launchAudit.includes('/api/identity-status') && launchAudit.includes('profile_save_available') && launchAudit.includes('weekly_digest_available'), 'launch audit should verify deployed identity readiness');
+  assert(launchAudit.includes('--vercel-deployment') && launchAudit.includes('vercel curl'), 'launch audit should support protected Vercel preview verification');
+  assert(launchAudit.includes("args.push('--', '-s', '-i')"), 'launch audit should collect status and headers through vercel curl');
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
   assert(launchAudit.includes("RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage']"), 'launch audit should scan public surfaces for raw-field markers');
@@ -322,6 +324,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('"commandForIgnoringBuildStep": null'), 'launch checklist should require Vercel ignored-build setting to be disabled');
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');
   assert(launchDoc.includes('vercel curl /api/identity-status --deployment <preview-url> --scope lets-vibe'), 'launch checklist should document protected-preview runtime proof');
+  assert(launchDoc.includes('npm run audit:launch -- --deployment <preview-url> --scope lets-vibe --handle <saved-gh-handle>'), 'launch checklist should document protected-preview launch audit');
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
@@ -335,6 +338,21 @@ async function assertRoutes() {
   assert(profileHtml.includes("historyVisible ? `${uploads.length} total` : 'latest only'"), 'profile UI should label visitor timeline as latest-only');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   console.log('ok route rewrites');
+}
+
+async function assertLaunchAuditHelpers() {
+  const { parseArgs, parseVercelCurlResponse } = await import('../scripts/launch-audit.mjs');
+  const parsed = parseArgs(['--deployment', 'https://preview.vercel.app', '--scope', 'lets-vibe', '--handle', '@brightseth']);
+  assert(parsed.origin === 'https://preview.vercel.app', 'launch audit should default origin to the protected deployment URL');
+  assert(parsed.vercelDeployment === 'https://preview.vercel.app', 'launch audit should normalize vercel deployment URL');
+  assert(parsed.vercelScope === 'lets-vibe', 'launch audit should parse vercel scope');
+  assert(parsed.handle === 'brightseth', 'launch audit should normalize handle while parsing deployment mode');
+
+  const parsedCurl = parseVercelCurlResponse(`Retrieving project...\nHTTP/2 200\r\ncache-control: no-store\r\ncontent-type: application/json; charset=utf-8\r\n\r\n{"ok":true}`);
+  assert(parsedCurl.response.status === 200, 'vercel curl parser should read HTTP status');
+  assert(parsedCurl.response.headers.get('cache-control') === 'no-store', 'vercel curl parser should expose response headers');
+  assert(parsedCurl.body === '{"ok":true}', 'vercel curl parser should isolate the response body');
+  console.log('ok launch audit supports protected Vercel previews');
 }
 
 async function assertIdentityReadiness() {
@@ -1765,6 +1783,7 @@ await assertHtmlScriptsParse();
 await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
+await assertLaunchAuditHelpers();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
 await assertProfileShareLoop();

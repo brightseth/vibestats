@@ -142,6 +142,12 @@ After deploying, audit the live viral and identity surfaces without printing sec
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
 ```
 
+For protected Vercel previews, run the same audit through `vercel curl`:
+
+```bash
+npm run audit:launch -- --deployment <preview-url> --scope lets-vibe --handle <saved-gh-handle>
+```
+
 ## Deploy
 
 ```bash
