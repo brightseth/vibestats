@@ -57,7 +57,7 @@ Pull or provide env locally, then run:
 npm run doctor:identity
 ```
 
-The doctor should pass before running migrations or dogfooding the profile save flow.
+The default doctor should pass before running migrations. It checks required env without printing secret values.
 
 The deployed app also exposes a non-secret readiness probe:
 
@@ -76,6 +76,14 @@ npm run migrate
 ```
 
 Expected result after first run: every `db/migrations/*.sql` file is applied once. Expected result after a repeat run: every migration is skipped.
+
+Then verify the live schema shape before dogfooding profile saves:
+
+```bash
+npm run doctor:identity -- --schema
+```
+
+The schema doctor checks the required tables, columns, indexes, constraints, and `schema_migrations` rows, including the sync-token revocation column and HTTPS contact URL constraint.
 
 ## 5. Production Flow Proof
 
