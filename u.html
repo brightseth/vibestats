@@ -812,8 +812,13 @@
       return 'near average';
     }
 
-    function renderSparkline(uploads, archetype, color) {
+    function renderSparkline(uploads, archetype, color, { historyVisible = true } = {}) {
       const svg = document.getElementById('sparkline');
+      if (!historyVisible) {
+        document.getElementById('spark-meta').textContent = 'history private';
+        svg.innerHTML = '<text x="320" y="92" text-anchor="middle" fill="rgba(224,224,224,0.45)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">owner history private</text>';
+        return;
+      }
       const pointsData = uploads.slice(0, 12).reverse().map((upload) => ({
         score: Number(upload.scores?.[archetype] || 0),
         label: shortDate(upload.uploaded_at),
@@ -843,8 +848,8 @@
       `;
     }
 
-    function renderTimeline(uploads, color) {
-      document.getElementById('timeline-count').textContent = `${uploads.length} total`;
+    function renderTimeline(uploads, color, { historyVisible = true } = {}) {
+      document.getElementById('timeline-count').textContent = historyVisible ? `${uploads.length} total` : 'latest only';
       document.getElementById('timeline').innerHTML = uploads.slice(0, 8).map((upload) => {
         const arch = ARCHETYPES[upload.archetype] || ARCHETYPES.builder;
         const score = Number(upload.scores?.[upload.archetype] || 0);
@@ -961,8 +966,8 @@
         </div>
       `).join('');
 
-      renderSparkline(profile.uploads, latest.archetype, arch.color);
-      renderTimeline(profile.uploads, arch.color);
+      renderSparkline(profile.uploads, latest.archetype, arch.color, { historyVisible });
+      renderTimeline(profile.uploads, arch.color, { historyVisible });
       renderViralActions(me, profile, latest);
 
       document.getElementById('loading').style.display = 'none';
