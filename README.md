@@ -136,6 +136,12 @@ npm run doctor:identity
 npm run doctor:identity -- --schema
 ```
 
+After deploying, audit the live viral and identity surfaces without printing secrets:
+
+```bash
+npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
+```
+
 ## Deploy
 
 ```bash

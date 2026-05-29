@@ -67,6 +67,18 @@ curl https://vibestats.io/api/identity-status
 
 Before OAuth proof, it should return `"profile_save_available": true`. If it is false, the upload flow remains local and does not show a dead-end GitHub sign-in button.
 
+Run the full launch audit against the public origin after a saved profile exists:
+
+```bash
+npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
+```
+
+This checks identity readiness, no-store fallback headers, profile/embed/badge/card share surfaces, compare-first routes, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
+
+```bash
+npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest
+```
+
 ## 4. Database Migrations
 
 Run migrations against the intended Neon database:
