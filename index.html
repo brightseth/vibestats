@@ -1741,7 +1741,12 @@
     const PENDING_UPLOAD_KEY = 'vibestats_pending_upload';
     const PENDING_UPLOAD_TTL_MS = 30 * 60 * 1000;
     let currentUser = null;
-    let identityStatus = { identity_available: false, profile_save_available: false, missing: [] };
+    let identityStatus = {
+      identity_available: false,
+      profile_save_available: false,
+      weekly_digest_available: false,
+      missing: [],
+    };
     let authReady = initAuth();
     renderComparisonIntent();
 
@@ -1868,10 +1873,16 @@
         identityStatus = {
           identity_available: body.identity_available === true,
           profile_save_available: body.profile_save_available === true,
+          weekly_digest_available: body.weekly_digest_available === true,
           missing: Array.isArray(body.missing) ? body.missing : [],
         };
       } catch (e) {
-        identityStatus = { identity_available: false, profile_save_available: false, missing: ['identity_status'] };
+        identityStatus = {
+          identity_available: false,
+          profile_save_available: false,
+          weekly_digest_available: false,
+          missing: ['identity_status'],
+        };
       }
       return identityStatus;
     }

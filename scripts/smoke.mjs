@@ -247,6 +247,7 @@ async function assertRoutes() {
   assert(indexHtml.includes("fetch('/api/identity-status'"), 'upload page should check identity readiness before fetching session state');
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
+  assert(indexHtml.includes('weekly_digest_available: body.weekly_digest_available === true'), 'upload page should preserve digest delivery readiness from identity status');
   assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should only show inline digest opt-in when delivery is configured');
   assert(indexHtml.includes('Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.'), 'upload page should explain pending digest delivery without offering a dead opt-in');
   assert(profileHtml.includes("fetch('/api/identity-status'"), 'profile page should check identity readiness before showing sign-in');
