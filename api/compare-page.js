@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { readSession, originForRequest } from './_lib/auth.js';
+import { originForRequest } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
@@ -103,6 +103,10 @@ export function compareMetadataForSubjects(aSubject, bSubject, origin = 'https:/
   };
 }
 
+export function canExposeCompareMetadata(user) {
+  return Boolean(user) && user.privacy !== 'private';
+}
+
 function injectCompareMeta(html, meta) {
   const twitterTags = `
   <meta name="twitter:card" content="summary_large_image">
@@ -139,11 +143,7 @@ async function resolveCompareSubject(req, value) {
     limit 1
   `;
   const user = users[0];
-  if (!user) return null;
-
-  const session = readSession(req);
-  const isOwner = session?.sub === user.id;
-  if (user.privacy === 'private' && !isOwner) return null;
+  if (!canExposeCompareMetadata(user)) return null;
 
   const uploads = await sql()`
     select archetype, scores, metrics, raw_meta, uploaded_at

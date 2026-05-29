@@ -136,6 +136,8 @@ async function assertRoutes() {
   assert(profileHtmlApi.includes('rarityForSignature(signature)'), 'profile HTML OG metadata should include signature scarcity proof');
   assert(profileHtmlApi.includes('profileDescription({'), 'profile HTML OG metadata should centralize comparison-oriented share copy');
   assert(comparePageApi.includes('compareMetadataForSubjects'), 'compare page API should expose dynamic comparison metadata helpers');
+  assert(!comparePageApi.includes('readSession'), 'compare page metadata must not personalize public cached previews by session');
+  assert(comparePageApi.includes("user.privacy !== 'private'"), 'compare page metadata must not expose private profiles');
   assert(comparePageApi.includes('profileShareProof({ rarity: subject.rarity, leaderboard: subject.leaderboard })'), 'compare page metadata should include profile social proof');
   assert(comparePageApi.includes('Open the pairing, then claim yours'), 'compare page metadata should drive recipients to claim their profile');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
@@ -678,7 +680,7 @@ async function assertProfileMetadataHelpers() {
 }
 
 async function assertCompareMetadataHelpers() {
-  const { default: handler, compareMetadataForSubjects } = await import('../api/compare-page.js');
+  const { default: handler, canExposeCompareMetadata, compareMetadataForSubjects } = await import('../api/compare-page.js');
   const metadata = compareMetadataForSubjects(
     {
       type: 'builder',
@@ -703,6 +705,9 @@ async function assertCompareMetadataHelpers() {
     'https://vibestats.io',
   );
   assert(profilePair.url === 'https://vibestats.io/u/bob/pair/alice', 'compare metadata should preserve pretty profile pair URLs');
+  assert(canExposeCompareMetadata({ privacy: 'public' }) === true, 'compare metadata should expose public profiles');
+  assert(canExposeCompareMetadata({ privacy: 'unlisted' }) === true, 'compare metadata should expose unlisted share profiles');
+  assert(canExposeCompareMetadata({ privacy: 'private' }) === false, 'compare metadata must not expose private profiles');
 
   let statusCode = 0;
   let contentType = '';
