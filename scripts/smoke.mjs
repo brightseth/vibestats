@@ -335,6 +335,12 @@ async function assertRoutes() {
     launchAudit.includes("path: `/api/browse?") && launchAudit.includes("path: `/api/match?") && launchAudit.includes("path: `/api/leaderboard?"),
     'launch audit should cover public discovery JSON APIs',
   );
+  assert(
+    /label: 'browse API'[\s\S]*?requireNoStore: true/.test(launchAudit)
+      && /label: 'match API'[\s\S]*?requireNoStore: true/.test(launchAudit)
+      && /label: 'leaderboard API'[\s\S]*?requireNoStore: true/.test(launchAudit),
+    'launch audit should verify discovery API cache policy',
+  );
   assert(launchAudit.includes('checkRawLeaks: false'), 'launch audit should not fail the upload page for local raw-parser field names');
   assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');

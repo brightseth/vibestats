@@ -88,6 +88,7 @@ Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
 - profile shell, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, compare-first upload route, pair preview route, browse, match, and leaderboard surfaces
+- no-store headers on profile-derived JSON discovery APIs
 - obvious raw-insights field leaks in public profile/share HTML/SVG responses`;
 }
 
@@ -300,6 +301,7 @@ async function auditLaunch(options) {
       expectedType: 'application/json',
       allowStatuses: [200],
       mustInclude: '"entries"',
+      requireNoStore: true,
     },
     {
       label: 'match page',
@@ -314,6 +316,7 @@ async function auditLaunch(options) {
       expectedType: 'application/json',
       allowStatuses: [200],
       mustInclude: '"entries"',
+      requireNoStore: true,
     },
     {
       label: 'leaderboard page',
@@ -328,6 +331,7 @@ async function auditLaunch(options) {
       expectedType: 'application/json',
       allowStatuses: [200],
       mustInclude: '"entries"',
+      requireNoStore: true,
     },
   ];
 
