@@ -159,6 +159,7 @@ async function assertRoutes() {
   const launchAudit = await readFile('scripts/launch-audit.mjs', 'utf8');
   const launchDoc = await readFile('docs/LAUNCH.md', 'utf8');
   const envExample = await readFile('.env.example', 'utf8');
+  const npmIgnore = await readFile('.npmignore', 'utf8');
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const rewrites = config.rewrites || [];
   assert(
@@ -348,6 +349,7 @@ async function assertRoutes() {
   assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
+  assert(npmIgnore.includes('!bin/vibestats.js') && npmIgnore.includes('!lib/claude-insights-extractor.js') && npmIgnore.includes('!lib/insights-derived.js') && npmIgnore.includes('!api/_lib/signatures.js'), 'npm package allowlist should include the CLI and derived scoring helpers');
   assert(packageJson.scripts?.['audit:launch'] === 'node scripts/launch-audit.mjs', 'package should expose launch audit script');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
   assert(identityDoctor.includes('AUTH_SECRET') && identityDoctor.includes('NEXTAUTH_SECRET'), 'identity doctor should accept session secret aliases used by runtime');
