@@ -1550,9 +1550,9 @@
             `This is how I build with Claude Code: ${signature ? signature.label : a.name}\n\nHow do you compare?\n${profileShareUrl}\n\nvia @slashvibe #vibestats`,
           ]
         : [
-            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nWhat's YOUR personality?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
-            `${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nFind yours: vibestats.io — a /vibe project\n\n#vibestats #claudecode`,
-            `My vibecoding signature: ${signature ? signature.label : a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nWhat's yours?\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nSee how you'd pair with this archetype:\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+            `${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nCompare with this archetype:\n${cardShareUrl}\n\n#vibestats #claudecode`,
+            `My vibecoding signature: ${signature ? signature.label : a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nSee how you'd pair:\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
           ];
       const tweetText = tweetVariants[Math.floor(Math.random() * tweetVariants.length)];
 
