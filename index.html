@@ -1982,7 +1982,8 @@
     function pathFromSaveUrl(url, fallback = '/') {
       if (url) {
         try {
-          return new URL(url, location.origin).pathname;
+          const parsed = new URL(url, location.origin);
+          return `${parsed.pathname}${parsed.search}${parsed.hash}`;
         } catch (e) { /* fall through */ }
       }
       return fallback;
