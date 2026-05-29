@@ -67,6 +67,10 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
   const score = hasLatest ? Math.max(0, Math.min(100, Math.round(Number(latest?.scores?.[latest?.archetype]) || 0))) : 0;
   const signature = hasLatest ? signatureFromUpload(latest || {})?.label || arch.short : 'Waiting for an upload';
   const profileUrl = `${origin}/u/${encodeURIComponent(user.gh_handle)}`;
+  const compareUrl = hasLatest
+    ? `${origin}/?compareTo=${encodeURIComponent(user.gh_handle)}&compareArchetype=${encodeURIComponent(latest.archetype)}`
+    : profileUrl;
+  const actionLabel = hasLatest ? `Compare with @${user.gh_handle}` : `Open @${user.gh_handle} on vibestats`;
   const avatar = user.avatar_url
     ? `<img class="avatar" src="${esc(user.avatar_url)}" alt="@${esc(user.gh_handle)}">`
     : '<div class="avatar fallback" aria-hidden="true">VS</div>';
@@ -272,7 +276,7 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
   </style>
 </head>
 <body>
-  <a class="card" href="${esc(profileUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Open @${esc(user.gh_handle)} on vibestats">
+  <a class="card" href="${esc(compareUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(actionLabel)}">
     <div class="head">
       <div class="identity">
         ${avatar}

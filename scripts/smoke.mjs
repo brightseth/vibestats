@@ -119,6 +119,8 @@ async function assertRoutes() {
   assert(profileHtmlApi.includes("'private, no-store'"), 'private owner profile HTML must not be publicly cacheable');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
+  assert(embedApi.includes('compareTo=${encodeURIComponent(user.gh_handle)}'), 'profile embed should click through to upload-to-compare when an archetype exists');
+  assert(embedApi.includes('Compare with @${user.gh_handle}'), 'profile embed should expose a comparison-oriented accessible action');
   assert(embedApi.includes("'private, no-store'"), 'private owner profile embed must not be publicly cacheable');
   assert(badgeApi.includes("'private, no-store'"), 'private owner profile badge must not be publicly cacheable');
   assert(syncApi.includes('requireSyncUser'), 'sync API should require signed CLI sync tokens');
