@@ -14,6 +14,17 @@ function getHandle(req) {
   return raw || '';
 }
 
+export function profileRarityPayload(signature, count, { isOwner = false } = {}) {
+  if (!signature?.fingerprint) return null;
+  const safeCount = Number(count) || 1;
+  return {
+    ...(isOwner ? { fingerprint: signature.fingerprint } : {}),
+    count: safeCount,
+    tier: rarityTier(safeCount),
+    window_days: 30,
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
 
@@ -70,12 +81,7 @@ export default async function handler(req, res) {
           and uploaded_at > now() - interval '30 days'
       `;
       const count = rarityRows[0]?.count || 1;
-      rarity = {
-        fingerprint: latestSignature.fingerprint,
-        count,
-        tier: rarityTier(count),
-        window_days: 30,
-      };
+      rarity = profileRarityPayload(latestSignature, count, { isOwner });
     }
 
     json(res, 200, {

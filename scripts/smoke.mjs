@@ -1215,6 +1215,7 @@ async function assertPublicProfileHelpers() {
   assert(Object.keys(privateView.metrics).length === 0, 'visitor upload payload should hide exact metrics by default');
   assert(privateView.activity.cadence === 'high-velocity cadence', 'visitor upload payload should include coarse activity');
   assert(privateView.raw_meta.signature === 'high-velocity Builder', 'visitor upload payload should keep signature metadata');
+  assert(!('signatureFingerprint' in privateView.raw_meta), 'visitor upload payload should hide internal rarity fingerprint');
   assert(!Object.hasOwn(privateView, 'uploaded_at'), 'visitor upload payload must not expose exact upload timestamp');
   assert(privateView.updated.label === 'updated this week', 'visitor upload payload should expose bucketed freshness');
   assert(!('dateRange' in privateView.raw_meta), 'visitor upload payload should omit raw date metadata');
@@ -1228,6 +1229,7 @@ async function assertPublicProfileHelpers() {
   assert(!JSON.stringify(ownerView.scores).includes('rawJson'), 'owner upload payload must not echo unknown score fields');
   assert(ownerView.uploaded_at === recentUploadAt, 'owner upload payload should retain exact upload timestamp');
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
+  assert(ownerView.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'owner upload payload should retain internal rarity fingerprint');
   assert(ownerView.raw_meta.source === 'browser' && ownerView.raw_meta.version === 'wave-1', 'owner upload payload should retain derived source metadata');
   assert(!JSON.stringify(ownerView).includes('tool_usage'), 'owner upload payload must not echo raw tool usage from stored metadata');
   assert(!JSON.stringify(ownerView).includes('language_usage'), 'owner upload payload must not echo raw language usage from stored metadata');
@@ -1256,6 +1258,17 @@ async function assertPublicUserSerializer() {
   assert(owner.created_at === user.created_at, 'owner user serializer should expose account creation timestamp');
   assert(owner.last_seen_at === user.last_seen_at, 'owner user serializer should expose last seen timestamp');
   console.log('ok user serializer keeps activity timestamps owner-only');
+}
+
+async function assertProfileApiPayloadHelpers() {
+  const { profileRarityPayload } = await import('../api/u/[handle].js');
+  const signature = { fingerprint: 'builder+shipper+orchestrator:90s' };
+  const visitorRarity = profileRarityPayload(signature, 8);
+  const ownerRarity = profileRarityPayload(signature, 8, { isOwner: true });
+  assert(visitorRarity.count === 8 && visitorRarity.tier === 'rare', 'visitor profile rarity should retain public scarcity proof');
+  assert(!Object.hasOwn(visitorRarity, 'fingerprint'), 'visitor profile rarity must not expose internal signature fingerprint');
+  assert(ownerRarity.fingerprint === 'builder+shipper+orchestrator:90s', 'owner profile rarity can retain internal signature fingerprint');
+  console.log('ok profile API payload helpers keep rarity fingerprints owner-only');
 }
 
 async function assertSignatureHelpers() {
@@ -2145,6 +2158,7 @@ await assertReadJsonLimit();
 await assertProfileSettingsHelpers();
 await assertPublicProfileHelpers();
 await assertPublicUserSerializer();
+await assertProfileApiPayloadHelpers();
 await assertSignatureHelpers();
 await assertEvolutionHelpers();
 await assertDigestHelpers();

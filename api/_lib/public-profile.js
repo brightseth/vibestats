@@ -3,12 +3,12 @@ import { ARCHETYPE_KEYS } from './signatures.js';
 const PUBLIC_RAW_META_KEYS = [
   'signature',
   'signatureCombo',
-  'signatureFingerprint',
 ];
 const OWNER_RAW_META_KEYS = [
   'dateRange',
   'source',
   'version',
+  'signatureFingerprint',
   ...PUBLIC_RAW_META_KEYS,
 ];
 
