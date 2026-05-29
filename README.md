@@ -123,9 +123,10 @@ Generate a local sync command from `/settings` after signing in. Sync tokens are
 
 ```bash
 npx vibestats sync --token "$VIBESTATS_SYNC_TOKEN"
+npx vibestats sync --dry-run
 ```
 
-By default the CLI reads `~/.claude/usage-data/agent-insights.json`. It computes archetype, scores, and the saved metric payload locally, then posts only derived fields to `/api/sync`.
+By default the CLI reads `~/.claude/usage-data/agent-insights.json`. It computes archetype, scores, and the saved metric payload locally, then posts only derived fields to `/api/sync`. Use `--dry-run` to inspect the derived payload locally without a token or network request.
 
 Run local smoke checks:
 

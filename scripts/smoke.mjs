@@ -1,4 +1,6 @@
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret-with-at-least-32-bytes';
@@ -249,6 +251,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
+  assert(settingsHtml.includes('npx vibestats sync --dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
   assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
   assert(settingsApi.includes('sync_token_invalidated_at'), 'authenticated settings API should preserve sync token revocation metadata');
@@ -738,7 +741,7 @@ async function assertExportUploadSanitizer() {
 
 async function assertCliDerivedPayload() {
   const { derivedUploadPayloadFromInsights } = await import('../lib/insights-derived.js');
-  const payload = derivedUploadPayloadFromInsights({
+  const insights = {
     meta: { user: 'Alex Chen', date_range: '2025-12-01 to 2026-01-15' },
     metrics: {
       total_sessions: 280,
@@ -750,13 +753,37 @@ async function assertCliDerivedPayload() {
       tool_usage: { bash: 6000, read: 4000, edit: 5500, write: 4200, grep: 300 },
       language_usage: { typescript: 45000, javascript: 8000, css: 2000 },
     },
-  });
+  };
+  const payload = derivedUploadPayloadFromInsights(insights);
   assert(payload.archetype === 'shipper', 'CLI derived scoring should match browser shipper fixture');
   assert(payload.metrics.sessions === 280, 'CLI derived payload should include derived session count');
   assert(payload.raw_meta.source === 'cli', 'CLI derived payload should mark source as cli');
   assert(payload.raw_meta.signatureFingerprint, 'CLI derived payload should include rarity fingerprint');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
-  console.log('ok CLI sync derives browser-compatible private payload');
+
+  const { parseArgs, sync } = await import('../bin/vibestats.js');
+  const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
+  assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
+
+  const dir = await mkdtemp(join(tmpdir(), 'vibestats-cli-'));
+  const file = join(dir, 'agent-insights.json');
+  const originalWrite = process.stdout.write;
+  const output = [];
+  process.stdout.write = (chunk) => {
+    output.push(String(chunk));
+    return true;
+  };
+  try {
+    await writeFile(file, JSON.stringify(insights), 'utf8');
+    const result = await sync({ file, host: 'https://example.invalid', token: '', dryRun: true });
+    assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
+    assert(output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should print derived payload JSON');
+    assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
+  } finally {
+    process.stdout.write = originalWrite;
+    await rm(dir, { recursive: true, force: true });
+  }
+  console.log('ok CLI sync derives browser-compatible private payload with local dry-run');
 }
 
 async function assertSessionRoundTrip() {

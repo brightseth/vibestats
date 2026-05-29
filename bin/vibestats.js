@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
 
 const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data', 'agent-insights.json');
@@ -9,22 +10,24 @@ const DEFAULT_HOST = 'https://vibestats.io';
 
 function usage() {
   return `Usage:
-  vibestats sync [--file PATH] [--host URL] [--token TOKEN]
+  vibestats sync [--file PATH] [--host URL] [--token TOKEN] [--dry-run]
 
 Environment:
   VIBESTATS_SYNC_TOKEN  signed sync token from vibestats settings
   VIBESTATS_URL         alternate host, defaults to ${DEFAULT_HOST}
 
-The CLI reads Claude Code insights locally and sends only derived metrics.`;
+The CLI reads Claude Code insights locally and sends only derived metrics.
+Use --dry-run to print the derived payload without sending it.`;
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = argv.slice(2);
   const command = args.shift();
   const options = {
     file: DEFAULT_INSIGHTS_PATH,
     host: process.env.VIBESTATS_URL || DEFAULT_HOST,
     token: process.env.VIBESTATS_SYNC_TOKEN || '',
+    dryRun: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -33,14 +36,15 @@ function parseArgs(argv) {
     if (arg === '--file') options.file = args[++i] || '';
     else if (arg === '--host') options.host = args[++i] || '';
     else if (arg === '--token') options.token = args[++i] || '';
+    else if (arg === '--dry-run' || arg === '--dryRun') options.dryRun = true;
     else throw new Error(`Unknown option: ${arg}`);
   }
 
   return { command, options };
 }
 
-async function sync(options) {
-  if (!options.token) {
+export async function sync(options) {
+  if (!options.dryRun && !options.token) {
     throw new Error('Missing sync token. Generate one from vibestats Settings, or set VIBESTATS_SYNC_TOKEN.');
   }
   if (!options.file) throw new Error('Missing insights file path.');
@@ -48,6 +52,12 @@ async function sync(options) {
   const raw = await readFile(options.file, 'utf8');
   const insights = JSON.parse(raw);
   const payload = derivedUploadPayloadFromInsights(insights, { source: 'cli' });
+
+  if (options.dryRun) {
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+    return { dry_run: true, payload };
+  }
+
   const host = String(options.host || DEFAULT_HOST).replace(/\/+$/, '');
 
   const res = await fetch(`${host}/api/sync`, {
@@ -66,9 +76,10 @@ async function sync(options) {
     ? body.profile_url
     : `${host}${body.profile_url || ''}`;
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
+  return body;
 }
 
-async function main() {
+export async function main() {
   const { command, options } = parseArgs(process.argv);
   if (!command || command === 'help' || command === '--help' || command === '-h') {
     process.stdout.write(`${usage()}\n`);
@@ -78,8 +89,10 @@ async function main() {
   await sync(options);
 }
 
-main().catch((err) => {
-  process.stderr.write(`${err.message}\n`);
-  process.stderr.write(`\n${usage()}\n`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    process.stderr.write(`${err.message}\n`);
+    process.stderr.write(`\n${usage()}\n`);
+    process.exitCode = 1;
+  });
+}
