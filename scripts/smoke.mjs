@@ -224,6 +224,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
+  assert(settingsApi.includes('includeActivity: true'), 'authenticated settings API should retain owner activity timestamps');
   assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(weeklyDigestApi.includes('createDigestUnsubscribeToken'), 'weekly digest should include one-click unsubscribe tokens');
@@ -741,6 +742,26 @@ async function assertPublicProfileHelpers() {
   assert(ownerView.id === 'upload-1', 'owner upload payload should retain upload id');
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
   console.log('ok public profile helpers hide visitor metrics by default');
+}
+
+async function assertPublicUserSerializer() {
+  const { publicUser } = await import('../api/_lib/db.js');
+  const user = {
+    gh_handle: 'brightseth',
+    avatar_url: 'https://example.com/avatar.png',
+    privacy: 'unlisted',
+    created_at: '2026-05-01T00:00:00.000Z',
+    last_seen_at: '2026-05-29T00:00:00.000Z',
+  };
+  const visitor = publicUser(user);
+  assert(visitor.gh_handle === 'brightseth', 'public user serializer should expose handle');
+  assert(!Object.hasOwn(visitor, 'created_at'), 'visitor user serializer must not expose account creation timestamp');
+  assert(!Object.hasOwn(visitor, 'last_seen_at'), 'visitor user serializer must not expose last seen timestamp');
+  const owner = publicUser(user, { includePrivacy: true, includeActivity: true });
+  assert(owner.privacy === 'unlisted', 'owner user serializer should expose privacy');
+  assert(owner.created_at === user.created_at, 'owner user serializer should expose account creation timestamp');
+  assert(owner.last_seen_at === user.last_seen_at, 'owner user serializer should expose last seen timestamp');
+  console.log('ok user serializer keeps activity timestamps owner-only');
 }
 
 async function assertSignatureHelpers() {
@@ -1337,6 +1358,7 @@ await assertSameOriginGuard();
 await assertReadJsonLimit();
 await assertProfileSettingsHelpers();
 await assertPublicProfileHelpers();
+await assertPublicUserSerializer();
 await assertSignatureHelpers();
 await assertEvolutionHelpers();
 await assertDigestHelpers();

@@ -41,15 +41,16 @@ export async function getUserById(id) {
   return rows[0] || null;
 }
 
-export function publicUser(user, { includePrivacy = false } = {}) {
+export function publicUser(user, { includePrivacy = false, includeActivity = false } = {}) {
   if (!user) return null;
   const out = {
     gh_handle: user.gh_handle,
     avatar_url: user.avatar_url,
-    created_at: user.created_at,
-    last_seen_at: user.last_seen_at,
   };
+  if (includeActivity) {
+    out.created_at = user.created_at;
+    out.last_seen_at = user.last_seen_at;
+  }
   if (includePrivacy) out.privacy = user.privacy;
   return out;
 }
-

@@ -79,7 +79,7 @@ export default async function handler(req, res) {
     }
 
     json(res, 200, {
-      user: publicUser(user, { includePrivacy: isOwner }),
+      user: publicUser(user, { includePrivacy: isOwner, includeActivity: isOwner }),
       is_owner: Boolean(isOwner),
       metric_visibility: visibility,
       match: publicMatchSettings(settings),

@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const settings = await getProfileSettings(user.id);
       return json(res, 200, {
-        user: publicUser(user, { includePrivacy: true }),
+        user: publicUser(user, { includePrivacy: true, includeActivity: true }),
         settings: ownerProfileSettings(settings),
       }, NO_STORE_HEADERS);
     }
@@ -155,7 +155,7 @@ export default async function handler(req, res) {
       }
 
       return json(res, 200, {
-        user: publicUser(nextUser, { includePrivacy: true }),
+        user: publicUser(nextUser, { includePrivacy: true, includeActivity: true }),
         settings: ownerProfileSettings(nextSettings),
       }, NO_STORE_HEADERS);
     }

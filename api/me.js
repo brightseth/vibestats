@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       return json(res, 401, { error: 'Not authenticated' }, NO_STORE_HEADERS);
     }
 
-    json(res, 200, { user: publicUser(user, { includePrivacy: true }) }, NO_STORE_HEADERS);
+    json(res, 200, { user: publicUser(user, { includePrivacy: true, includeActivity: true }) }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('GET /api/me error:', err);
     json(res, err.statusCode || 500, { error: err.message || 'Session failed' }, NO_STORE_HEADERS);
