@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { readSession, originForRequest } from './_lib/auth.js';
-import { profileShareCacheControl } from './_lib/cache.js';
+import { profileShareCacheControl, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
     const session = readSession(req);
     const isOwner = session?.sub === user.id;
     if (user.privacy === 'private' && !isOwner) {
-      return res.status(404).send('Not found');
+      return sendPrivateNotFound(res);
     }
 
     const uploads = await sql()`

@@ -1,5 +1,5 @@
 import { readSession } from './_lib/auth.js';
-import { profileShareCacheControl } from './_lib/cache.js';
+import { profileShareCacheControl, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     const session = readSession(req);
     const isOwner = session?.sub === user.id;
     if (user.privacy === 'private' && !isOwner) {
-      return res.status(404).send('Not found');
+      return sendPrivateNotFound(res);
     }
 
     const uploads = await sql()`

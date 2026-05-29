@@ -134,8 +134,10 @@ async function assertRoutes() {
   assert((await readFile('match.html', 'utf8')).includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
+  assert(profileApi.includes("'Cache-Control': PRIVATE_PROFILE_CACHE"), 'profile JSON private 404 should not be cacheable');
   assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
   assert(profileHtmlApi.includes('profileShareCacheControl(user)'), 'profile HTML OG metadata should use shared profile cache policy');
+  assert(profileHtmlApi.includes('sendPrivateNotFound(res)'), 'profile HTML private 404 should not be cacheable');
   assert(profileHtmlApi.includes('weeklyLeaderboardRank(user, latest)'), 'profile HTML OG metadata should include public leaderboard proof');
   assert(profileHtmlApi.includes('rarityForSignature(signature)'), 'profile HTML OG metadata should include signature scarcity proof');
   assert(profileHtmlApi.includes('profileDescription({'), 'profile HTML OG metadata should centralize comparison-oriented share copy');
@@ -152,6 +154,8 @@ async function assertRoutes() {
   assert(embedApi.includes('Compare with @${user.gh_handle}'), 'profile embed should expose a comparison-oriented accessible action');
   assert(embedApi.includes('profileShareCacheControl(user)'), 'profile embed should use shared profile cache policy');
   assert(badgeApi.includes('profileShareCacheControl(user)'), 'profile badge should use shared profile cache policy');
+  assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
+  assert(badgeApi.includes('sendPrivateNotFound(res)'), 'profile badge private 404 should not be cacheable');
   assert(syncApi.includes('requireSyncUser'), 'sync API should require signed CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
@@ -730,11 +734,30 @@ async function assertProfileMetadataHelpers() {
 }
 
 async function assertProfileCacheHelpers() {
-  const { profileShareCacheControl } = await import('../api/_lib/cache.js');
+  const { profileShareCacheControl, sendPrivateNotFound } = await import('../api/_lib/cache.js');
   assert(profileShareCacheControl({ privacy: 'public' }).includes('s-maxage=300'), 'public profiles should allow short shared cache');
   assert(profileShareCacheControl({ privacy: 'unlisted' }) === 'private, no-store', 'unlisted profile share surfaces should not be publicly cached');
   assert(profileShareCacheControl({ privacy: 'private' }) === 'private, no-store', 'private profile share surfaces should not be publicly cached');
   assert(profileShareCacheControl(null) === 'private, no-store', 'unknown profile share surfaces should not be publicly cached');
+  const res = {
+    headers: {},
+    statusCode: 0,
+    body: '',
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    send(value) {
+      this.body = value;
+      return this;
+    },
+  };
+  sendPrivateNotFound(res);
+  assert(res.statusCode === 404, 'private not found helper should return 404');
+  assert(res.headers['Cache-Control'] === 'private, no-store', 'private not found helper should disable caching');
   console.log('ok profile share cache helper keeps unlisted/private surfaces uncacheable');
 }
 

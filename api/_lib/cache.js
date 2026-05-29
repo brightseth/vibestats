@@ -6,3 +6,8 @@ export function profileShareCacheControl(user) {
     ? PUBLIC_PROFILE_CACHE
     : PRIVATE_PROFILE_CACHE;
 }
+
+export function sendPrivateNotFound(res, body = 'Not found') {
+  res.setHeader('Cache-Control', PRIVATE_PROFILE_CACHE);
+  return res.status(404).send(body);
+}

@@ -1,4 +1,5 @@
 import { readSession } from '../_lib/auth.js';
+import { PRIVATE_PROFILE_CACHE } from '../_lib/cache.js';
 import { publicUser, sql } from '../_lib/db.js';
 import { profileEvolution } from '../_lib/evolution.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
@@ -34,7 +35,7 @@ export default async function handler(req, res) {
     const session = readSession(req);
     const isOwner = session?.sub === user.id;
     if (user.privacy === 'private' && !isOwner) {
-      return json(res, 404, { error: 'Profile not found' });
+      return json(res, 404, { error: 'Profile not found' }, { 'Cache-Control': PRIVATE_PROFILE_CACHE });
     }
 
     const uploads = await sql()`
