@@ -360,7 +360,7 @@
     function comparePath(entry, seekerArchetype) {
       const handle = entry.user?.gh_handle || 'unknown';
       if (seekerArchetype && seekerArchetype !== 'any') {
-        return `/compare?a=${encodeURIComponent(seekerArchetype)}&b=${encodeURIComponent(entry.archetype)}`;
+        return `/compare?a=${encodeURIComponent(seekerArchetype)}&b=${encodeURIComponent(handle)}`;
       }
       return `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`;
     }
