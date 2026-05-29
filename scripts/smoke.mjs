@@ -268,7 +268,7 @@ async function assertRoutes() {
   assert(badgeApi.includes('publicScores(latest.scores || {})[latest.archetype]'), 'profile badge should render the derived primary score');
   assert(badgeApi.includes('select archetype, scores, raw_meta'), 'profile badge should fetch only derived badge fields');
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
-  assert(badgeApi.includes('sendPrivateNotFound(res)'), 'profile badge private 404 should not be cacheable');
+  assert(badgeApi.includes('function sendBadgeNotFound') && badgeApi.includes('profileShareCacheControl(null)'), 'profile badge private 404 should not be cacheable');
   assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype'), 'profile links helper should expose compare-first URLs');
   assert(uploadsApi.includes('profileLinks(user, payload.archetype)'), 'browser profile saves should return compare-first profile links');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
@@ -411,6 +411,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('day-based streak') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
   assert(launchDoc.includes('Profile JSON includes evolution, day-based streak, rarity, and leaderboard fields.'), 'launch checklist should require profile return-loop JSON proof');
   assert(launchDoc.includes('Profile embed and badge show comparison-oriented scored credential proof.'), 'launch checklist should require scored portable credential proof');
+  assert(badgeApi.includes('return sendSvg(res, 404, badgeSvg({'), 'badge endpoint should return SVG for missing/private profile badges');
   assert(launchDoc.includes('Identity is not production-ready until GitHub OAuth is added') && launchDoc.includes('preview identity audits will still fail until a strong session secret is also added to Preview'), 'launch checklist should record current identity env blockers');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   assert((await readFile('README.md', 'utf8')).includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');

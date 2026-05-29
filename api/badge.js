@@ -1,5 +1,5 @@
 import { readSession } from './_lib/auth.js';
-import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } from './_lib/cache.js';
+import { profileShareCacheControl, sendPrivateMethodNotAllowed } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { publicScores } from './_lib/public-profile.js';
 import { signatureFromUpload } from './_lib/signatures.js';
@@ -74,12 +74,19 @@ function sendSvg(res, status, svg, cache = 'public, s-maxage=300, stale-while-re
   res.status(status).send(svg);
 }
 
+function sendBadgeNotFound(res, handle) {
+  return sendSvg(res, 404, badgeSvg({
+    handle,
+    label: 'profile not found',
+  }), profileShareCacheControl(null));
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return sendPrivateMethodNotAllowed(res);
 
   const handle = getHandle(req);
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(handle)) {
-    return sendPrivateNotFound(res);
+    return sendBadgeNotFound(res, 'vibestats');
   }
 
   try {
@@ -90,12 +97,12 @@ export default async function handler(req, res) {
       limit 1
     `;
     const user = users[0];
-    if (!user) return sendPrivateNotFound(res);
+    if (!user) return sendBadgeNotFound(res, handle);
 
     const session = readSession(req);
     const isOwner = session?.sub === user.id;
     if (user.privacy === 'private' && !isOwner) {
-      return sendPrivateNotFound(res);
+      return sendBadgeNotFound(res, handle);
     }
 
     const uploads = await sql()`
