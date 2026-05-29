@@ -391,6 +391,8 @@ async function assertRoutes() {
   assert((await readFile('db/migrations/0010_validate_contact_url_constraint.sql', 'utf8')).includes('validate constraint profile_settings_contact_url_protocol'), 'migrations should validate the HTTPS contact URL constraint');
   assert((await readFile('db/migrations/0011_upload_owner_not_null.sql', 'utf8')).includes('alter column user_id set not null'), 'migrations should prevent orphaned profile uploads');
   assert(authCallbackApi.includes('gh_handle, avatar_url, privacy, last_seen_at') && authCallbackApi.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
+  assert(authCallbackApi.includes('identityReadiness, identityUnavailableMessage'), 'GitHub OAuth callback should use the shared identity readiness gate');
+  assert(authCallbackApi.indexOf('identityReadiness().available') < authCallbackApi.indexOf('const statePayload = decodeStatePayload'), 'GitHub OAuth callback should fail closed before reading signed state when identity is unavailable');
   assert(launchDoc.includes('vercel env ls') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
   assert(launchDoc.includes('npm run doctor:identity -- --schema'), 'launch checklist should require post-migration schema proof');
   assert(launchDoc.includes('sync-token revocation column') && launchDoc.includes('non-null upload ownership') && launchDoc.includes('unlisted-by-default privacy column') && launchDoc.includes('8-archetype upload canon') && launchDoc.includes('match-intent enum') && launchDoc.includes('validated contact URL length/HTTPS constraints'), 'launch checklist should name schema gates for privacy and sync hardening');
@@ -527,7 +529,8 @@ async function assertIdentityReadiness() {
 }
 
 async function assertOAuthReturnHandling() {
-  const { default: handler, returnToFromRequest } = await import('../api/auth/github/start.js');
+  const { default: startHandler, returnToFromRequest } = await import('../api/auth/github/start.js');
+  const { default: callbackHandler } = await import('../api/auth/github/callback.js');
   const { OAUTH_STATE_COOKIE, decodeStatePayload } = await import('../api/_lib/auth.js');
   assert(returnToFromRequest({
     query: { returnTo: '/u/brightseth?from=card' },
@@ -563,7 +566,7 @@ async function assertOAuthReturnHandling() {
     process.env.GITHUB_CLIENT_SECRET = 'github-client-secret';
     process.env.AUTH_SECRET = 'smoke-test-secret-with-at-least-32-bytes';
     const res = mockRes();
-    handler({
+    startHandler({
       method: 'GET',
       query: {},
       headers: {
@@ -581,6 +584,16 @@ async function assertOAuthReturnHandling() {
     assert(statePayload?.returnTo === '/?compareTo=brightseth&compareArchetype=builder', 'OAuth start handler should persist comparison returnTo in state cookie');
     assert(decodeStatePayload(decodeURIComponent(encodedValue).replace(/\.[^.]+$/, '.tampered')) === null, 'OAuth state cookie should reject signature tampering');
     assert(decodeStatePayload(Buffer.from(JSON.stringify({ state: 'fake', returnTo: '/settings' })).toString('base64url')) === null, 'OAuth state cookie should reject unsigned legacy payloads');
+
+    const callbackRes = mockRes();
+    await callbackHandler({
+      method: 'GET',
+      query: { code: 'oauth-code', state: 'mismatched-state' },
+      headers: { host: 'localhost:3000' },
+    }, callbackRes);
+    assert(callbackRes.statusCode === 400, 'OAuth callback should reject invalid state when identity env is ready');
+    assert(callbackRes.body === 'Invalid GitHub OAuth state', 'OAuth callback should keep invalid-state failures generic');
+    assertNoStore(callbackRes, 'OAuth callback invalid state');
   } finally {
     for (const key of keys) {
       if (previous[key] == null) {
@@ -2085,10 +2098,12 @@ async function assertPrivateApiNoStore() {
         status: 503,
       },
       {
-        label: '/api/auth/github/callback invalid state',
+        label: '/api/auth/github/callback unavailable',
         module: '../api/auth/github/callback.js',
         req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
-        status: 400,
+        status: 503,
+        body: 'Profile saves are not configured on this deployment yet.',
+        noInternal: true,
       },
       {
         label: '/api/auth/github/callback method guard',
@@ -2123,6 +2138,12 @@ async function assertPrivateApiNoStore() {
       await handler(endpoint.req, res);
       assert(res.statusCode === endpoint.status, `${endpoint.label} should return HTTP ${endpoint.status}`);
       assertNoStore(res, endpoint.label);
+      if (endpoint.body) {
+        assert(res.body === endpoint.body, `${endpoint.label} should return stable public failure copy`);
+      }
+      if (endpoint.noInternal) {
+        assertNoInternalConfigMarkers(res.body, endpoint.label);
+      }
       if (endpoint.allow) {
         assert(res.headers.Allow === endpoint.allow, `${endpoint.label} should advertise allowed methods`);
       }
