@@ -24,6 +24,32 @@ function copyNumber(out, source, key) {
   if (Number.isFinite(n)) out[key] = n;
 }
 
+function boundedNumber(value, { min = 0, max = 100, round = true } = {}) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const bounded = Math.min(Math.max(n, min), max);
+  return round ? Math.round(bounded) : bounded;
+}
+
+export function publicScores(scores = {}) {
+  const out = {};
+  for (const key of ARCHETYPE_KEYS) {
+    const value = boundedNumber(scores?.[key]);
+    if (value != null) out[key] = value;
+  }
+
+  if (scores?._percentiles && typeof scores._percentiles === 'object') {
+    const percentiles = {};
+    for (const key of ARCHETYPE_KEYS) {
+      const value = boundedNumber(scores._percentiles[key], { min: 1, max: 100 });
+      if (value != null) percentiles[key] = value;
+    }
+    if (Object.keys(percentiles).length) out._percentiles = percentiles;
+  }
+
+  return out;
+}
+
 function bucketDays(days) {
   if (days >= 120) return '120+ days tracked';
   if (days >= 30) return '30-119 days tracked';
@@ -106,7 +132,7 @@ export function publicRawMeta(rawMeta = {}, { isOwner = false } = {}) {
 export function publicUpload(upload = {}, visibility = {}, { isOwner = false } = {}) {
   const out = {
     archetype: upload.archetype,
-    scores: upload.scores || {},
+    scores: publicScores(upload.scores || {}),
     metrics: visibleMetrics(upload.metrics || {}, visibility),
     activity: publicActivity(upload.metrics || {}),
     updated: uploadRecency(upload.uploaded_at),

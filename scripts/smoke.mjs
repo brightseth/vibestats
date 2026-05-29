@@ -1181,12 +1181,17 @@ async function assertProfileSettingsHelpers() {
 }
 
 async function assertPublicProfileHelpers() {
-  const { metricVisibility, publicUpload, uploadRecency } = await import('../api/_lib/public-profile.js');
+  const { metricVisibility, publicScores, publicUpload, uploadRecency } = await import('../api/_lib/public-profile.js');
   const recentUploadAt = new Date().toISOString();
   const upload = {
     id: 'upload-1',
     archetype: 'builder',
-    scores: { builder: 92, shipper: 80 },
+    scores: {
+      builder: 192,
+      shipper: 80,
+      rawJson: { should: 'drop' },
+      _percentiles: { builder: 4, rawJson: 1 },
+    },
     metrics: { days: 31, commitsPerDay: 12.4, sessions: 88, languages: 6, msgsPerSession: 9 },
     raw_meta: {
       signature: 'high-velocity Builder',
@@ -1204,6 +1209,9 @@ async function assertPublicProfileHelpers() {
   };
   const privateView = publicUpload(upload, metricVisibility({}), { isOwner: false });
   assert(!privateView.id, 'visitor upload payload should not expose upload id');
+  assert(privateView.scores.builder === 100, 'visitor upload payload should clamp public archetype scores');
+  assert(privateView.scores._percentiles.builder === 4, 'visitor upload payload should retain canonical percentiles');
+  assert(!JSON.stringify(privateView.scores).includes('rawJson'), 'visitor upload payload must not echo unknown score fields');
   assert(Object.keys(privateView.metrics).length === 0, 'visitor upload payload should hide exact metrics by default');
   assert(privateView.activity.cadence === 'high-velocity cadence', 'visitor upload payload should include coarse activity');
   assert(privateView.raw_meta.signature === 'high-velocity Builder', 'visitor upload payload should keep signature metadata');
@@ -1217,12 +1225,14 @@ async function assertPublicProfileHelpers() {
   assert(countsView.metrics.languages === 6, 'opt-in public view should expose language count');
   const ownerView = publicUpload(upload, metricVisibility({}, { isOwner: true }), { isOwner: true });
   assert(ownerView.id === 'upload-1', 'owner upload payload should retain upload id');
+  assert(!JSON.stringify(ownerView.scores).includes('rawJson'), 'owner upload payload must not echo unknown score fields');
   assert(ownerView.uploaded_at === recentUploadAt, 'owner upload payload should retain exact upload timestamp');
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
   assert(ownerView.raw_meta.source === 'browser' && ownerView.raw_meta.version === 'wave-1', 'owner upload payload should retain derived source metadata');
   assert(!JSON.stringify(ownerView).includes('tool_usage'), 'owner upload payload must not echo raw tool usage from stored metadata');
   assert(!JSON.stringify(ownerView).includes('language_usage'), 'owner upload payload must not echo raw language usage from stored metadata');
   assert(!JSON.stringify(ownerView).includes('rawJson'), 'owner upload payload must not echo raw JSON fields from stored metadata');
+  assert(Object.keys(publicScores({ growth: 99, rawJson: 1 })).length === 0, 'public score serializer should keep the eight-archetype canon');
   assert(uploadRecency(null).bucket === 'unknown', 'public upload recency should tolerate missing timestamps');
   assert(uploadRecency('2026-04-28T10:00:00.000Z', new Date('2026-05-28T10:00:00.000Z')).bucket === 'this-quarter', 'public upload recency should bucket older timestamps');
   console.log('ok public profile helpers hide visitor metrics by default');
