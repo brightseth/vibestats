@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 
-process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret';
+process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret-with-at-least-32-bytes';
 
 const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare-template.html', 'leaderboard.html', 'match.html', 'browse.html'];
 const apiModules = [
@@ -261,6 +261,8 @@ async function assertRoutes() {
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
   assert(identityDoctor.includes('AUTH_SECRET') && identityDoctor.includes('NEXTAUTH_SECRET'), 'identity doctor should accept session secret aliases used by runtime');
+  assert(identityDoctor.includes('MIN_SESSION_SECRET_BYTES = 32'), 'identity doctor should require a strong session secret');
+  assert(identityDoctor.includes('weak ${group.label}'), 'identity doctor should fail weak session secrets without printing values');
   assert(identityDoctor.includes('UPSTASH_REDIS_REST_URL') && identityDoctor.includes('UPSTASH_REDIS_REST_TOKEN'), 'identity doctor should report Redis env aliases');
   assert(identityDoctor.includes('CRON_SECRET') && identityDoctor.includes('RESEND_API_KEY') && identityDoctor.includes('DIGEST_FROM_EMAIL'), 'identity doctor should report weekly digest env readiness');
   assert(identityDoctor.includes('--schema') && identityDoctor.includes('checkIdentitySchema'), 'identity doctor should expose an explicit DB schema readiness check');
@@ -301,7 +303,7 @@ async function assertIdentityReadiness() {
     'NEXTAUTH_SECRET',
   ];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
-  const { identityReadiness } = await import('../api/_lib/identity-readiness.js');
+  const { identityReadiness, hasStrongSessionSecret } = await import('../api/_lib/identity-readiness.js');
   const { default: handler } = await import('../api/identity-status.js');
 
   function restoreEnv() {
@@ -352,6 +354,11 @@ async function assertIdentityReadiness() {
     process.env.GITHUB_CLIENT_ID = 'client-id';
     process.env.GITHUB_CLIENT_SECRET = 'secret-value';
     process.env.AUTH_SECRET = 'session-secret';
+    assert(hasStrongSessionSecret() === false, 'identity readiness should reject short session secrets');
+    response = callStatusEndpoint();
+    assert(response.body.profile_save_available === false, 'identity status endpoint should stay unavailable with a weak session secret');
+
+    process.env.AUTH_SECRET = 'session-secret-with-at-least-32-bytes';
     response = callStatusEndpoint();
     assert(response.body.profile_save_available === true, 'identity status endpoint should report available profile saves with required env');
     assert(response.body.message === null, 'identity status endpoint should not show unavailable copy when ready');
@@ -396,7 +403,7 @@ async function assertOAuthReturnHandling() {
     process.env.POSTGRES_URL = 'postgres://user:password@example.invalid/db';
     process.env.GITHUB_CLIENT_ID = 'github-client-id';
     process.env.GITHUB_CLIENT_SECRET = 'github-client-secret';
-    process.env.AUTH_SECRET = 'smoke-test-secret';
+    process.env.AUTH_SECRET = 'smoke-test-secret-with-at-least-32-bytes';
     const res = mockRes();
     handler({
       method: 'GET',

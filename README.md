@@ -100,7 +100,7 @@ Copy `.env.example` to `.env.local`. You'll need:
 - `KV_REST_API_URL` + `KV_REST_API_TOKEN` or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` for aggregate community stats.
 - `DATABASE_URL`, `POSTGRES_URL`, or `NEON_DATABASE_URL` for Neon-backed profiles.
 - `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` for OAuth.
-- `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET` for the signed session cookie.
+- `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET` for the signed session cookie. Use at least 32 bytes.
 - `VIBESTATS_URL` for a stable OAuth callback origin when request-host inference is not enough.
 - `CRON_SECRET`, `RESEND_API_KEY`, and `DIGEST_FROM_EMAIL` for the opt-in weekly digest cron.
 

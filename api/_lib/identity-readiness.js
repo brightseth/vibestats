@@ -1,19 +1,25 @@
 import { hasDatabase } from './db.js';
 
 const IDENTITY_UNAVAILABLE_MESSAGE = 'Profile saves are not configured on this deployment yet.';
+export const MIN_SESSION_SECRET_BYTES = 32;
 
 function hasGitHubOAuth() {
   return Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
 }
 
-function hasSessionSecret() {
-  return Boolean(process.env.VIBE_SESSION_SECRET || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET);
+export function sessionSecretValue() {
+  const value = process.env.VIBE_SESSION_SECRET || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '';
+  return String(value).trim();
+}
+
+export function hasStrongSessionSecret() {
+  return Buffer.byteLength(sessionSecretValue(), 'utf8') >= MIN_SESSION_SECRET_BYTES;
 }
 
 export function identityReadiness() {
   const database = hasDatabase();
   const githubOAuth = hasGitHubOAuth();
-  const sessionSecret = hasSessionSecret();
+  const sessionSecret = hasStrongSessionSecret();
   const missing = [];
 
   if (!database) missing.push('database');

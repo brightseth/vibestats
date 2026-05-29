@@ -15,7 +15,7 @@ Required for GitHub-backed profiles:
 - One database URL: `DATABASE_URL`, `POSTGRES_URL`, or `NEON_DATABASE_URL`
 - `GITHUB_CLIENT_ID`
 - `GITHUB_CLIENT_SECRET`
-- One session secret: `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET`
+- One session secret: `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET` with at least 32 bytes
 
 Optional but launch-relevant:
 
@@ -57,7 +57,7 @@ Pull or provide env locally, then run:
 npm run doctor:identity
 ```
 
-The default doctor should pass before running migrations. It checks required env without printing secret values.
+The default doctor should pass before running migrations. It checks required env, rejects short session secrets, and does not print secret values.
 
 The deployed app also exposes a non-secret readiness probe:
 

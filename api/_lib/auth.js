@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { getUserById } from './db.js';
+import { MIN_SESSION_SECRET_BYTES, sessionSecretValue } from './identity-readiness.js';
 
 export const SESSION_COOKIE = 'vibestats_auth';
 export const OAUTH_STATE_COOKIE = 'vibestats_oauth_state';
@@ -24,9 +25,14 @@ function fromBase64url(input) {
 }
 
 function secret() {
-  const value = process.env.VIBE_SESSION_SECRET || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  const value = sessionSecretValue();
   if (!value) {
     const err = new Error('VIBE_SESSION_SECRET is not configured');
+    err.statusCode = 500;
+    throw err;
+  }
+  if (Buffer.byteLength(value, 'utf8') < MIN_SESSION_SECRET_BYTES) {
+    const err = new Error(`VIBE_SESSION_SECRET must be at least ${MIN_SESSION_SECRET_BYTES} bytes`);
     err.statusCode = 500;
     throw err;
   }

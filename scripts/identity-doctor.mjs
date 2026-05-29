@@ -9,11 +9,16 @@ const migrationsDir = join(root, 'db', 'migrations');
 const args = new Set(process.argv.slice(2));
 const checkSchema = args.has('--schema') || args.has('--check-schema');
 const envFiles = ['.env.local', '.vercel/.env.preview.local'];
+const MIN_SESSION_SECRET_BYTES = 32;
 const requiredGroups = [
   { label: 'database URL', any: ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL'] },
   { label: 'GitHub OAuth client ID', any: ['GITHUB_CLIENT_ID'] },
   { label: 'GitHub OAuth client secret', any: ['GITHUB_CLIENT_SECRET'] },
-  { label: 'session secret', any: ['VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET'] },
+  {
+    label: 'session secret',
+    any: ['VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET'],
+    minBytes: MIN_SESSION_SECRET_BYTES,
+  },
 ];
 const optionalGroups = [
   {
@@ -68,7 +73,7 @@ for (const [key, value] of Object.entries(process.env)) {
 }
 
 function firstPresent(keys) {
-  return keys.find((key) => loaded[key]);
+  return keys.find((key) => String(loaded[key] || '').trim());
 }
 
 function completeAlternative(alternatives) {
@@ -199,10 +204,16 @@ async function checkIdentitySchema(databaseUrl) {
 
 const present = [];
 const missing = [];
+const weak = [];
 for (const group of requiredGroups) {
   const key = firstPresent(group.any);
-  if (key) present.push({ ...group, key });
-  else missing.push(group);
+  if (key && (!group.minBytes || Buffer.byteLength(String(loaded[key]).trim(), 'utf8') >= group.minBytes)) {
+    present.push({ ...group, key });
+  } else if (key && group.minBytes) {
+    weak.push({ ...group, key });
+  } else {
+    missing.push(group);
+  }
 }
 
 const optional = optionalGroups.map((group) => ({
@@ -215,6 +226,7 @@ console.log('Identity launch doctor');
 console.log('');
 for (const group of present) console.log(`ok ${group.label} (${group.key})`);
 for (const group of missing) console.log(`missing ${group.label} (${group.any.join(' or ')})`);
+for (const group of weak) console.log(`weak ${group.label} (${group.key} must be at least ${group.minBytes} bytes)`);
 for (const group of optional) {
   if (group.complete) {
     console.log(`ok optional ${group.label} (${group.complete.join(', ')})`);
@@ -225,9 +237,9 @@ for (const group of optional) {
   }
 }
 
-if (missing.length) {
+if (missing.length || weak.length) {
   console.log('');
-  console.log('Wave 1 identity is not launch-ready until the missing env vars are configured on lets-vibe/vibestats.');
+  console.log('Wave 1 identity is not launch-ready until the missing or weak env vars are fixed on lets-vibe/vibestats.');
   process.exit(1);
 }
 
