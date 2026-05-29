@@ -525,7 +525,35 @@ async function assertShareCardCta() {
 }
 
 async function assertOgFallback() {
-  const { sendFallbackOg } = await import('../api/og.js');
+  const { sanitizeOgQuery, sendFallbackOg } = await import('../api/og.js');
+  const archetype = sanitizeOgQuery({
+    mode: '<script>',
+    a: 'growth-hacker',
+    n: '<script>\nAlexAlexAlexAlexAlexAlexAlexAlexAlexAlexAlex',
+    d: '9000',
+    c: 'not-a-number',
+    l: '201',
+    s: '100001',
+  });
+  assert(archetype.mode === 'archetype', 'OG sanitizer should ignore unknown modes');
+  assert(archetype.aKey === 'builder', 'OG sanitizer should default unknown archetypes to the canon');
+  assert(archetype.name.length <= 42 && !archetype.name.includes('<'), 'OG sanitizer should bound and clean names');
+  assert(archetype.days === '5000', 'OG sanitizer should clamp day counts');
+  assert(archetype.commits === '?', 'OG sanitizer should reject invalid commit metrics');
+  assert(archetype.langs === '200', 'OG sanitizer should clamp language counts');
+  assert(archetype.sessions === '100000', 'OG sanitizer should clamp session counts');
+  const pair = sanitizeOgQuery({
+    mode: 'pair',
+    a: 'builder',
+    b: 'growth-hacker',
+    an: '<img src=x onerror=alert(1)>',
+    bn: '',
+  });
+  assert(pair.mode === 'pair', 'OG sanitizer should preserve pair mode');
+  assert(pair.aKey === 'builder' && pair.bKey === 'shipper', 'OG sanitizer should default invalid pair archetypes');
+  assert(!pair.aLabel.includes('<') && !pair.aLabel.includes('>'), 'OG sanitizer should clean pair labels');
+  assert(pair.bLabel === 'SHIPPER', 'OG sanitizer should use archetype fallback labels for blank pair labels');
+
   let statusCode = 0;
   let contentType = '';
   let cacheControl = '';
@@ -554,7 +582,7 @@ async function assertOgFallback() {
   assert(contentType === 'image/png', 'OG fallback should return PNG content');
   assert(cacheControl.includes('s-maxage=60'), 'OG fallback should use short cache');
   assert(Buffer.isBuffer(body) && body.length > 1000, 'OG fallback should send the static share image');
-  console.log('ok OG image failures fall back without stack traces');
+  console.log('ok OG image inputs are bounded and failures fall back without stack traces');
 }
 
 async function assertWrappedShareLoop() {

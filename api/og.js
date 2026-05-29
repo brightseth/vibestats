@@ -32,16 +32,52 @@ async function loadFont() {
 }
 
 function firstParam(value) {
-  return String(Array.isArray(value) ? value[0] : value || '').trim();
+  return String(Array.isArray(value) ? value[0] : value ?? '').trim();
 }
 
-function labelParam(value, fallback) {
-  const label = firstParam(value).slice(0, 42);
+function labelParam(value, fallback, max = 42) {
+  const label = firstParam(value)
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/[<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .slice(0, max)
+    .trim();
   return label || fallback;
+}
+
+function numberParam(value, fallback, { min = 0, max = 100, decimals = 0 } = {}) {
+  const raw = firstParam(value);
+  if (!raw) return fallback;
+  const n = Number(raw.replace(/,/g, ''));
+  if (!Number.isFinite(n)) return fallback;
+  const bounded = Math.min(Math.max(n, min), max);
+  if (decimals === 0) return String(Math.round(bounded));
+  return String(Number(bounded.toFixed(decimals))).replace(/\.0$/, '');
 }
 
 function shortName(key) {
   return (ARCHETYPES[key]?.name || 'VIBECODER').replace(/^THE /, '');
+}
+
+export function sanitizeOgQuery(query = {}) {
+  const aRaw = firstParam(query.a);
+  const bRaw = firstParam(query.b);
+  const aKey = ARCHETYPES[aRaw] ? aRaw : 'builder';
+  const bKey = ARCHETYPES[bRaw] ? bRaw : 'shipper';
+
+  return {
+    mode: firstParam(query.mode) === 'pair' ? 'pair' : 'archetype',
+    aKey,
+    bKey,
+    arch: ARCHETYPES[aKey],
+    name: labelParam(query.n, 'Vibecoder'),
+    days: numberParam(query.d, '?', { max: 5000 }),
+    commits: numberParam(query.c, '?', { max: 500, decimals: 1 }),
+    langs: numberParam(query.l, '?', { max: 200 }),
+    sessions: numberParam(query.s, '?', { max: 100000 }),
+    aLabel: labelParam(query.an, shortName(aKey)),
+    bLabel: labelParam(query.bn, shortName(bKey)),
+  };
 }
 
 export function sendFallbackOg(res) {
@@ -52,19 +88,12 @@ export function sendFallbackOg(res) {
 
 export default async function handler(req, res) {
   try {
-    const mode = firstParam(req.query.mode);
-    const key = firstParam(req.query.a);
-    const arch = ARCHETYPES[key] || ARCHETYPES.builder;
-    const name = labelParam(req.query.n, 'Vibecoder');
-    const days = firstParam(req.query.d) || '?';
-    const commits = firstParam(req.query.c) || '?';
-    const langs = firstParam(req.query.l) || '?';
-    const sessions = firstParam(req.query.s) || '?';
+    const sanitized = sanitizeOgQuery(req.query);
 
     const fontData = await loadFont();
-    const card = mode === 'pair'
-      ? pairCard(req.query)
-      : archetypeCard({ arch, name, days, commits, langs, sessions });
+    const card = sanitized.mode === 'pair'
+      ? pairCard(sanitized)
+      : archetypeCard(sanitized);
 
     const svg = await satori(
       card,
@@ -173,14 +202,15 @@ function archetypeCard({ arch, name, days, commits, langs, sessions }) {
   ]);
 }
 
-function pairCard(query = {}) {
-  const aKey = ARCHETYPES[firstParam(query.a)] ? firstParam(query.a) : 'builder';
-  const bKey = ARCHETYPES[firstParam(query.b)] ? firstParam(query.b) : 'shipper';
+function pairCard({
+  aKey = 'builder',
+  bKey = 'shipper',
+  aLabel = shortName(aKey),
+  bLabel = shortName(bKey),
+} = {}) {
   const a = ARCHETYPES[aKey];
   const b = ARCHETYPES[bKey];
   const pairing = VibeCompat.getPairing(aKey, bKey);
-  const aLabel = labelParam(query.an, shortName(aKey));
-  const bLabel = labelParam(query.bn, shortName(bKey));
 
   return page([
     {
