@@ -1,5 +1,6 @@
 import { requireUser } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
+import { exportableUpload } from '../_lib/export-upload.js';
 import { json, methodNotAllowed } from '../_lib/http.js';
 import { getProfileSettings, publicProfileSettings } from '../_lib/profile-settings.js';
 
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
         created_at: user.created_at,
       },
       settings: publicProfileSettings(settings),
-      uploads,
+      uploads: uploads.map(exportableUpload),
     }, {
       'Cache-Control': 'no-store',
     });

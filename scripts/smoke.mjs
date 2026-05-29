@@ -20,6 +20,7 @@ const apiModules = [
   '../api/settings/export.js',
   '../api/cron/weekly-digest.js',
   '../api/_lib/evolution.js',
+  '../api/_lib/export-upload.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/public-profile.js',
   '../api/_lib/social-proof.js',
@@ -79,6 +80,7 @@ async function assertRoutes() {
   const badgeApi = await readFile('api/badge.js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   const settingsHtml = await readFile('settings.html', 'utf8');
+  const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
   const identityStatusApi = await readFile('api/identity-status.js', 'utf8');
@@ -162,6 +164,7 @@ async function assertRoutes() {
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
+  assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
   assert(identityDoctor.includes('AUTH_SECRET') && identityDoctor.includes('NEXTAUTH_SECRET'), 'identity doctor should accept session secret aliases used by runtime');
@@ -406,6 +409,49 @@ async function assertUploadSanitizer() {
   assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should persist');
   assert(!('rawJson' in payload.raw_meta), 'raw_meta allowlist must drop unknown fields');
   console.log('ok upload sanitizer preserves privacy boundary');
+}
+
+async function assertExportUploadSanitizer() {
+  const { exportableUpload } = await import('../api/_lib/export-upload.js');
+  const upload = exportableUpload({
+    id: 'upload-1',
+    archetype: 'builder',
+    scores: {
+      builder: 92,
+      shipper: 81,
+      rawJson: { should: 'drop' },
+      _percentiles: { builder: 4, rawJson: 1 },
+    },
+    metrics: {
+      days: 31,
+      commitsPerDay: 12.4,
+      sessions: 88,
+      topLang: ' typescript ',
+      raw: { should: 'drop' },
+      tool_usage: { bash: 9000 },
+    },
+    raw_meta: {
+      dateRange: '2026-05-01 to 2026-05-28',
+      source: 'browser',
+      signature: 'high-velocity Builder',
+      signatureCombo: 'shipper+builder',
+      signatureFingerprint: 'builder+shipper+orchestrator:90s',
+      secondaryArchetype: 'shipper',
+      rawJson: { should: 'drop' },
+      language_usage: { typescript: 9000 },
+    },
+    uploaded_at: '2026-05-28T10:00:00.000Z',
+  });
+
+  assert(upload.id === 'upload-1', 'export upload should retain upload id for the owner archive');
+  assert(upload.scores.builder === 92, 'export upload should retain derived archetype scores');
+  assert(upload.scores._percentiles.builder === 4, 'export upload should retain derived percentiles');
+  assert(upload.metrics.topLang === 'typescript', 'export upload should retain sanitized derived top language');
+  assert(upload.raw_meta.signature === 'high-velocity Builder', 'export upload should retain signature metadata');
+  assert(!JSON.stringify(upload).includes('tool_usage'), 'export upload must not include raw tool usage');
+  assert(!JSON.stringify(upload).includes('language_usage'), 'export upload must not include raw language usage');
+  assert(!JSON.stringify(upload).includes('rawJson'), 'export upload must not include raw JSON fields');
+  console.log('ok settings export upload sanitizer preserves derived-only archive');
 }
 
 async function assertCliDerivedPayload() {
@@ -1008,6 +1054,7 @@ await assertShareCardCta();
 await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
 await assertUploadSanitizer();
+await assertExportUploadSanitizer();
 await assertCliDerivedPayload();
 await assertSessionRoundTrip();
 await assertSyncTokenRoundTrip();
