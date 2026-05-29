@@ -25,7 +25,31 @@ Optional but launch-relevant:
 
 As of the latest audit, `lets-vibe/vibestats` only had the Redis/KV variables configured. Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.
 
-## 2. Local Env Doctor
+## 2. Vercel Deployment Gate
+
+Green GitHub checks are not enough if Vercel skips the preview build. Confirm the canonical `lets-vibe/vibestats` project is not configured with an ignored-build command:
+
+```bash
+vercel api /v9/projects/<project-id> --scope lets-vibe --raw
+```
+
+Expected project state: `"commandForIgnoringBuildStep": null`.
+
+Then confirm the current branch preview is Ready, not Canceled:
+
+```bash
+vercel ls vibestats --scope lets-vibe
+```
+
+If preview protection is enabled, verify runtime endpoints through Vercel instead of direct `curl`:
+
+```bash
+vercel curl /api/identity-status --deployment <preview-url> --scope lets-vibe
+```
+
+As of the latest audit, the canonical project ignored-build setting has been cleared and the latest preview is Ready. The identity readiness probe still reports unavailable profile saves until the database, GitHub OAuth, and session secret env vars are configured.
+
+## 3. Local Env Doctor
 
 Pull or provide env locally, then run:
 
@@ -43,7 +67,7 @@ curl https://vibestats.io/api/identity-status
 
 Before OAuth proof, it should return `"profile_save_available": true`. If it is false, the upload flow remains local and does not show a dead-end GitHub sign-in button.
 
-## 3. Database Migrations
+## 4. Database Migrations
 
 Run migrations against the intended Neon database:
 
@@ -53,7 +77,7 @@ npm run migrate
 
 Expected result after first run: every `db/migrations/*.sql` file is applied once. Expected result after a repeat run: every migration is skipped.
 
-## 4. Production Flow Proof
+## 5. Production Flow Proof
 
 Before undrafting or merging the PR, prove these paths on the deployed app:
 
@@ -65,7 +89,7 @@ Before undrafting or merging the PR, prove these paths on the deployed app:
 - Settings export contains derived uploads and settings, not raw insights JSON.
 - Public profile, embed, badge, browse, match, and leaderboard surfaces hide exact metrics unless the owner opted in.
 
-## 5. Weekly Digest Proof
+## 6. Weekly Digest Proof
 
 With digest env configured, run a dry run first:
 

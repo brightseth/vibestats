@@ -155,6 +155,9 @@ async function assertRoutes() {
   assert(!identityDoctor.includes("{ label: 'app origin', any: ['VIBESTATS_URL'] }"), 'identity doctor should not hard-require VIBESTATS_URL when runtime can infer host origin');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');
   assert(launchDoc.includes('vercel env ls') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
+  assert(launchDoc.includes('"commandForIgnoringBuildStep": null'), 'launch checklist should require Vercel ignored-build setting to be disabled');
+  assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');
+  assert(launchDoc.includes('vercel curl /api/identity-status --deployment <preview-url> --scope lets-vibe'), 'launch checklist should document protected-preview runtime proof');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
