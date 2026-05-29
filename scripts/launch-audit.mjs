@@ -87,7 +87,7 @@ function usage() {
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
 - profile shell, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
-- card, wrapped, dashboard, compare-first upload route, and pair preview route
+- card, wrapped, dashboard, compare-first upload route, pair preview route, browse, match, and leaderboard surfaces
 - obvious raw-insights field leaks in public profile/share HTML/SVG responses`;
 }
 
@@ -286,6 +286,48 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: [200],
       mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?'],
+    },
+    {
+      label: 'browse page',
+      path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'compareTo=${encodeURIComponent(handle)}'],
+    },
+    {
+      label: 'browse API',
+      path: `/api/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
+      expectedType: 'application/json',
+      allowStatuses: [200],
+      mustInclude: '"entries"',
+    },
+    {
+      label: 'match page',
+      path: `/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`,
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)'],
+    },
+    {
+      label: 'match API',
+      path: `/api/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`,
+      expectedType: 'application/json',
+      allowStatuses: [200],
+      mustInclude: '"entries"',
+    },
+    {
+      label: 'leaderboard page',
+      path: `/leaderboard/${encodeURIComponent(archetype)}`,
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: ['public leaderboard', 'Copy invite', "See how you'd pair"],
+    },
+    {
+      label: 'leaderboard API',
+      path: `/api/leaderboard?archetype=${encodeURIComponent(archetype)}`,
+      expectedType: 'application/json',
+      allowStatuses: [200],
+      mustInclude: '"entries"',
     },
   ];
 

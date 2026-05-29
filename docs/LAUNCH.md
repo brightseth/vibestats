@@ -79,7 +79,7 @@ Run the full launch audit against the public origin after a saved profile exists
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
 ```
 
-This checks identity readiness, no-store fallback headers, profile/embed/badge/card share surfaces, compare-first routes, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
+This checks identity readiness, no-store fallback headers, profile/embed/badge/card share surfaces, compare-first routes, browse/match/leaderboard surfaces, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
 
 ```bash
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest

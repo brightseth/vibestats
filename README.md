@@ -136,7 +136,7 @@ npm run doctor:identity
 npm run doctor:identity -- --schema
 ```
 
-After deploying, audit the live viral and identity surfaces without printing secrets:
+After deploying, audit the live viral and identity surfaces without printing secrets. The audit covers identity readiness, profile/embed/badge/card share paths, compare-first routes, browse/match/leaderboard surfaces, and public raw-field leak markers:
 
 ```bash
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
