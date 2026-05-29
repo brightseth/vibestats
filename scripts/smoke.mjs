@@ -25,6 +25,7 @@ const apiModules = [
   '../api/_lib/cache.js',
   '../api/_lib/evolution.js',
   '../api/_lib/export-upload.js',
+  '../api/_lib/profile-links.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/public-profile.js',
   '../api/_lib/social-proof.js',
@@ -130,9 +131,12 @@ async function assertRoutes() {
   const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
   const weeklyDigestApi = await readFile('api/cron/weekly-digest.js', 'utf8');
   const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
+  const uploadsApi = await readFile('api/uploads.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
+  const profileLinksHelper = await readFile('api/_lib/profile-links.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
+  const cliBin = await readFile('bin/vibestats.js', 'utf8');
   const identityStatusApi = await readFile('api/identity-status.js', 'utf8');
   const identityReadiness = await readFile('api/_lib/identity-readiness.js', 'utf8');
   const indexHtml = await readFile('index.html', 'utf8');
@@ -231,9 +235,13 @@ async function assertRoutes() {
   assert(badgeApi.includes('profileShareCacheControl(user)'), 'profile badge should use shared profile cache policy');
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
   assert(badgeApi.includes('sendPrivateNotFound(res)'), 'profile badge private 404 should not be cacheable');
+  assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype'), 'profile links helper should expose compare-first URLs');
+  assert(uploadsApi.includes('profileLinks(user, payload.archetype)'), 'browser profile saves should return compare-first profile links');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
+  assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
+  assert(cliBin.includes('Invite people to compare:'), 'CLI sync success output should surface compare-first invite URL');
   assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
   assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
   assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
@@ -318,6 +326,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
+  assert((await readFile('README.md', 'utf8')).includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
@@ -820,6 +829,7 @@ async function assertCliDerivedPayload() {
   const dir = await mkdtemp(join(tmpdir(), 'vibestats-cli-'));
   const file = join(dir, 'agent-insights.json');
   const originalWrite = process.stdout.write;
+  const originalFetch = globalThis.fetch;
   const output = [];
   process.stdout.write = (chunk) => {
     output.push(String(chunk));
@@ -831,11 +841,34 @@ async function assertCliDerivedPayload() {
     assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
     assert(output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should print derived payload JSON');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
+
+    output.length = 0;
+    let postedBody = '';
+    globalThis.fetch = async (url, options = {}) => {
+      postedBody = String(options.body || '');
+      assert(url === 'https://vibestats.example/api/sync', 'CLI sync should post to the selected host');
+      assert(options.headers?.Authorization === 'Bearer sync-token', 'CLI sync should send bearer token auth');
+      return {
+        ok: true,
+        async json() {
+          return {
+            ok: true,
+            profile_url: '/u/alex',
+            compare_url: '/?compareTo=alex&compareArchetype=shipper',
+          };
+        },
+      };
+    };
+    const syncResult = await sync({ file, host: 'https://vibestats.example', token: 'sync-token', dryRun: false });
+    assert(syncResult.compare_url.includes('compareTo=alex'), 'CLI sync should receive compare-first URL from API');
+    assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
+    assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI sync request must not post raw usage maps');
   } finally {
     process.stdout.write = originalWrite;
+    globalThis.fetch = originalFetch;
     await rm(dir, { recursive: true, force: true });
   }
-  console.log('ok CLI sync derives browser-compatible private payload with local dry-run');
+  console.log('ok CLI sync derives browser-compatible private payload and prints compare invite');
 }
 
 async function assertSessionRoundTrip() {

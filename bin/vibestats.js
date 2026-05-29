@@ -75,7 +75,11 @@ export async function sync(options) {
   const profileUrl = body.profile_url?.startsWith('http')
     ? body.profile_url
     : `${host}${body.profile_url || ''}`;
+  const compareUrl = body.compare_url
+    ? (body.compare_url.startsWith('http') ? body.compare_url : `${host}${body.compare_url}`)
+    : `${host}/?compareArchetype=${encodeURIComponent(payload.archetype)}`;
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
+  process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
   return body;
 }
 

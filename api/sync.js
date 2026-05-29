@@ -1,6 +1,7 @@
 import { readSyncSession, syncTokenIsRevoked } from './_lib/auth.js';
 import { getUserById, sql } from './_lib/db.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, readJson } from './_lib/http.js';
+import { profileLinks } from './_lib/profile-links.js';
 import { sanitizeUploadPayload } from './_lib/uploads.js';
 
 export default async function handler(req, res) {
@@ -47,7 +48,7 @@ export default async function handler(req, res) {
 
     return json(res, 201, {
       ok: true,
-      profile_url: `/u/${user.gh_handle}`,
+      ...profileLinks(user, payload.archetype),
       upload: rows[0],
     }, NO_STORE_HEADERS);
   } catch (err) {

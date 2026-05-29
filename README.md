@@ -126,7 +126,7 @@ npx vibestats sync --token "$VIBESTATS_SYNC_TOKEN"
 npx vibestats sync --dry-run
 ```
 
-By default the CLI reads `~/.claude/usage-data/agent-insights.json`. It computes archetype, scores, and the saved metric payload locally, then posts only derived fields to `/api/sync`. Use `--dry-run` to inspect the derived payload locally without a token or network request.
+By default the CLI reads `~/.claude/usage-data/agent-insights.json`. It computes archetype, scores, and the saved metric payload locally, then posts only derived fields to `/api/sync`. Use `--dry-run` to inspect the derived payload locally without a token or network request. A successful sync prints both the profile URL and a compare-first invite URL.
 
 Run local smoke checks:
 
