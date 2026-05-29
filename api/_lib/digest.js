@@ -76,6 +76,14 @@ function profileUrl(origin, handle) {
   return `${origin}/u/${encodeURIComponent(handle)}`;
 }
 
+function compareUrl(origin, handle, archetype) {
+  const params = new URLSearchParams({
+    compareTo: handle,
+    compareArchetype: archetype,
+  });
+  return `${origin}/?${params.toString()}`;
+}
+
 function leaderboardUrl(origin, archetype) {
   return `${origin}/leaderboard/${encodeURIComponent(archetype)}`;
 }
@@ -94,6 +102,11 @@ function settingsUrl(origin) {
 
 function digestUnsubscribeUrl(origin, token) {
   return token ? `${origin}/api/digest/unsubscribe?token=${encodeURIComponent(token)}` : null;
+}
+
+function xShareUrl(shareUrl, text) {
+  const params = new URLSearchParams({ text, url: shareUrl });
+  return `https://twitter.com/intent/tweet?${params.toString()}`;
 }
 
 function ogUrl(origin, user, latest) {
@@ -135,6 +148,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
   const score = primaryScore(latest);
   const streak = uploadStreak(uploads);
   const profile = profileUrl(origin, user.gh_handle);
+  const share = compareUrl(origin, user.gh_handle, latest.archetype);
   const board = leaderboardUrl(origin, latest.archetype);
   const match = matchUrl(origin, latest.archetype);
   const settings = settingsUrl(origin);
@@ -154,6 +168,8 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
 
   const subject = `your vibecoding evolution - week ${isoWeek(now)}`;
   const signatureLine = signature?.label || arch.short;
+  const shareText = `See how you'd pair with @${user.gh_handle}, a ${signatureLine}`;
+  const xShare = xShareUrl(share, shareText);
 
   const text = [
     `@${user.gh_handle}, your vibecoding evolution for week ${isoWeek(now)}`,
@@ -167,6 +183,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     `Commits/day: ${fmt(metrics.commitsPerDay)}`,
     '',
     `Open profile: ${profile}`,
+    `Share invite: ${share}`,
     `Leaderboard: ${board}`,
     `Find matches: ${match}`,
     `Manage digest: ${settings}`,
@@ -197,6 +214,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     <p style="font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#8888a0;">${esc(rareLine)}. ${esc(streak)} upload${streak === 1 ? '' : 's'} in your active streak.</p>
     <p style="margin:24px 0 0;">
       <a href="${esc(profile)}" style="display:inline-block;padding:12px 15px;border-radius:8px;background:#1b2443;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Open profile</a>
+      <a href="${esc(xShare)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#ffffff;color:#06060a;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Share invite</a>
       <a href="${esc(board)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#14141e;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">View leaderboard</a>
       <a href="${esc(match)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#162217;color:#c8facc;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Find matches</a>
     </p>
@@ -210,6 +228,8 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     text,
     html,
     profile_url: profile,
+    share_url: share,
+    x_share_url: xShare,
     leaderboard_url: board,
     match_url: match,
     settings_url: settings,
