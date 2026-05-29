@@ -950,6 +950,7 @@ async function assertExportUploadSanitizer() {
     scores: {
       builder: 92,
       shipper: 81,
+      orchestrator: 61,
       rawJson: { should: 'drop' },
       _percentiles: { builder: 4, rawJson: 1 },
     },
@@ -970,10 +971,10 @@ async function assertExportUploadSanitizer() {
     raw_meta: {
       dateRange: '2026-05-01 to 2026-05-28',
       source: 'browser',
-      signature: 'high-velocity Builder',
-      signatureCombo: 'shipper+builder',
-      signatureFingerprint: 'builder+shipper+orchestrator:90s',
-      secondaryArchetype: 'shipper',
+      signature: 'spoofed Builder',
+      signatureCombo: 'architect+builder',
+      signatureFingerprint: 'architect+builder+shipper:90s',
+      secondaryArchetype: 'architect',
       rawJson: { should: 'drop' },
       language_usage: { typescript: 9000 },
     },
@@ -985,7 +986,11 @@ async function assertExportUploadSanitizer() {
   assert(upload.scores._percentiles.builder === 4, 'export upload should retain derived percentiles');
   assert(!('topLang' in upload.metrics), 'export upload should not include language detail');
   assert(!('messages' in upload.metrics), 'export upload should not include extended private counters');
-  assert(upload.raw_meta.signature === 'high-velocity Builder', 'export upload should retain signature metadata');
+  assert(upload.raw_meta.signature === 'high-velocity Builder', 'export upload should derive signature metadata from scores');
+  assert(upload.raw_meta.signatureCombo === 'shipper+builder', 'export upload should derive signature combos from scores');
+  assert(upload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'export upload should derive signature fingerprints from scores');
+  assert(upload.raw_meta.secondaryArchetype === 'shipper', 'export upload should derive secondary archetype from scores');
+  assert(!JSON.stringify(upload).includes('spoofed'), 'export upload must not echo stored spoofed signature text');
   assert(!JSON.stringify(upload).includes('tool_usage'), 'export upload must not include raw tool usage');
   assert(!JSON.stringify(upload).includes('language_usage'), 'export upload must not include raw language usage');
   assert(!JSON.stringify(upload).includes('rawJson'), 'export upload must not include raw JSON fields');

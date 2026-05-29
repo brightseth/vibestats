@@ -1,4 +1,4 @@
-import { ARCHETYPE_KEYS } from './signatures.js';
+import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
 
 const METRIC_KEYS = [
   'commitsPerDay',
@@ -11,10 +11,6 @@ const RAW_META_KEYS = [
   'dateRange',
   'source',
   'version',
-  'signature',
-  'signatureCombo',
-  'signatureFingerprint',
-  'secondaryArchetype',
 ];
 
 function copyFiniteNumbers(source = {}, keys = Object.keys(source)) {
@@ -41,22 +37,29 @@ function exportMetrics(metrics = {}) {
   return copyFiniteNumbers(metrics, METRIC_KEYS);
 }
 
-function exportRawMeta(rawMeta = {}) {
+function exportRawMeta(rawMeta = {}, signature = null) {
   const out = {};
   for (const key of RAW_META_KEYS) {
     const value = rawMeta?.[key];
     if (typeof value === 'string' && value.trim()) out[key] = value.trim();
   }
+  if (signature?.label) out.signature = signature.label;
+  if (signature?.combo) out.signatureCombo = signature.combo;
+  if (signature?.fingerprint) out.signatureFingerprint = signature.fingerprint;
+  if (ARCHETYPE_KEYS.includes(signature?.secondary)) out.secondaryArchetype = signature.secondary;
   return out;
 }
 
 export function exportableUpload(upload = {}) {
+  const archetype = ARCHETYPE_KEYS.includes(upload.archetype) ? upload.archetype : null;
+  const scores = exportScores(upload.scores || {});
+  const signature = signatureFromUpload({ archetype, scores });
   return {
     id: upload.id,
-    archetype: ARCHETYPE_KEYS.includes(upload.archetype) ? upload.archetype : null,
-    scores: exportScores(upload.scores || {}),
+    archetype,
+    scores,
     metrics: exportMetrics(upload.metrics || {}),
-    raw_meta: exportRawMeta(upload.raw_meta || {}),
+    raw_meta: exportRawMeta(upload.raw_meta || {}, signature),
     uploaded_at: upload.uploaded_at,
   };
 }
