@@ -84,10 +84,12 @@ export function compareMetadataForSubjects(aSubject, bSubject, origin = 'https:/
   const bLabel = subjectLabel(bSubject);
   const aProof = subjectProof(aSubject);
   const bProof = subjectProof(bSubject);
-  const primaryImageSubject = aSubject.handle ? aSubject : bSubject.handle ? bSubject : aSubject;
   const params = new URLSearchParams({
-    a: primaryImageSubject.type,
-    n: subjectLabel(primaryImageSubject),
+    mode: 'pair',
+    a: aSubject.type,
+    b: bSubject.type,
+    an: aLabel,
+    bn: bLabel,
   });
 
   return {

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 
@@ -12,6 +14,11 @@ const ARCHETYPES = {
   builder:      { name: 'THE BUILDER',       tagline: "You build things that didn't exist before.", color: '#22c55e' },
 };
 
+const COMPAT_SOURCE = readFileSync(new URL('../lib/compat.js', import.meta.url), 'utf8');
+const compatContext = { window: {} };
+runInNewContext(COMPAT_SOURCE, compatContext);
+const VibeCompat = compatContext.window.VibeCompat;
+
 let fontCache = null;
 
 async function loadFont() {
@@ -23,119 +30,37 @@ async function loadFont() {
   return fontCache;
 }
 
+function firstParam(value) {
+  return String(Array.isArray(value) ? value[0] : value || '').trim();
+}
+
+function labelParam(value, fallback) {
+  const label = firstParam(value).slice(0, 42);
+  return label || fallback;
+}
+
+function shortName(key) {
+  return (ARCHETYPES[key]?.name || 'VIBECODER').replace(/^THE /, '');
+}
+
 export default async function handler(req, res) {
   try {
-    const { a: key, n, d, c, l, s } = req.query;
+    const mode = firstParam(req.query.mode);
+    const key = firstParam(req.query.a);
     const arch = ARCHETYPES[key] || ARCHETYPES.builder;
-    const name = n || 'Vibecoder';
-    const days = d || '?';
-    const commits = c || '?';
-    const langs = l || '?';
-    const sessions = s || '?';
+    const name = labelParam(req.query.n, 'Vibecoder');
+    const days = firstParam(req.query.d) || '?';
+    const commits = firstParam(req.query.c) || '?';
+    const langs = firstParam(req.query.l) || '?';
+    const sessions = firstParam(req.query.s) || '?';
 
     const fontData = await loadFont();
+    const card = mode === 'pair'
+      ? pairCard(req.query)
+      : archetypeCard({ arch, name, days, commits, langs, sessions });
 
     const svg = await satori(
-      {
-        type: 'div',
-        props: {
-          style: {
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#06060a',
-            padding: '60px 80px',
-            fontFamily: 'Inter',
-          },
-          children: [
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: '14px',
-                  color: '#555568',
-                  letterSpacing: '0.25em',
-                  textTransform: 'uppercase',
-                  marginBottom: '20px',
-                },
-                children: 'VIBECODING PERSONALITY',
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: '72px',
-                  fontWeight: 900,
-                  color: arch.color,
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1.1,
-                  marginBottom: '16px',
-                },
-                children: arch.name,
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: '20px',
-                  color: '#8888a0',
-                  fontStyle: 'italic',
-                  marginBottom: '48px',
-                  textAlign: 'center',
-                },
-                children: `"${arch.tagline}"`,
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  gap: '24px',
-                  marginBottom: '40px',
-                },
-                children: [
-                  sb(sessions, 'SESSIONS'),
-                  sb(`${commits}/day`, 'COMMITS'),
-                  sb(langs, 'LANGUAGES'),
-                  sb(`${days}d`, 'VIBECODING'),
-                ],
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                },
-                children: [
-                  {
-                    type: 'div',
-                    props: {
-                      style: { fontSize: '22px', fontWeight: 900, color: '#ffffff' },
-                      children: name,
-                    },
-                  },
-                  {
-                    type: 'div',
-                    props: {
-                      style: { fontSize: '14px', color: '#6B8FFF', letterSpacing: '0.1em', marginTop: '12px' },
-                      children: 'vibestats.io',
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
+      card,
       {
         width: 1200,
         height: 630,
@@ -156,6 +81,239 @@ export default async function handler(req, res) {
   } catch (e) {
     res.status(500).send(`OG Error: ${e.message}\n${e.stack}`);
   }
+}
+
+function page(children) {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#06060a',
+        padding: '60px 80px',
+        fontFamily: 'Inter',
+      },
+      children,
+    },
+  };
+}
+
+function archetypeCard({ arch, name, days, commits, langs, sessions }) {
+  return page([
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '14px',
+          color: '#555568',
+          letterSpacing: '0.25em',
+          textTransform: 'uppercase',
+          marginBottom: '20px',
+        },
+        children: 'VIBECODING PERSONALITY',
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '72px',
+          fontWeight: 900,
+          color: arch.color,
+          letterSpacing: '-0.03em',
+          lineHeight: 1.1,
+          marginBottom: '16px',
+        },
+        children: arch.name,
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '20px',
+          color: '#8888a0',
+          fontStyle: 'italic',
+          marginBottom: '48px',
+          textAlign: 'center',
+        },
+        children: `"${arch.tagline}"`,
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          display: 'flex',
+          gap: '24px',
+          marginBottom: '40px',
+        },
+        children: [
+          sb(sessions, 'SESSIONS'),
+          sb(`${commits}/day`, 'COMMITS'),
+          sb(langs, 'LANGUAGES'),
+          sb(`${days}d`, 'VIBECODING'),
+        ],
+      },
+    },
+    brandBlock(name),
+  ]);
+}
+
+function pairCard(query = {}) {
+  const aKey = ARCHETYPES[firstParam(query.a)] ? firstParam(query.a) : 'builder';
+  const bKey = ARCHETYPES[firstParam(query.b)] ? firstParam(query.b) : 'shipper';
+  const a = ARCHETYPES[aKey];
+  const b = ARCHETYPES[bKey];
+  const pairing = VibeCompat.getPairing(aKey, bKey);
+  const aLabel = labelParam(query.an, shortName(aKey));
+  const bLabel = labelParam(query.bn, shortName(bKey));
+
+  return page([
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '14px',
+          color: '#555568',
+          letterSpacing: '0.25em',
+          textTransform: 'uppercase',
+          marginBottom: '26px',
+        },
+        children: 'CLAUDE CODE PAIRING',
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '22px',
+          marginBottom: '28px',
+        },
+        children: [
+          pairPerson(aLabel, shortName(aKey), a.color),
+          {
+            type: 'div',
+            props: {
+              style: { fontSize: '26px', color: '#555568', fontWeight: 900 },
+              children: '+',
+            },
+          },
+          pairPerson(bLabel, shortName(bKey), b.color),
+        ],
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '70px',
+          fontWeight: 900,
+          color: '#ffffff',
+          textAlign: 'center',
+          lineHeight: 1.05,
+          marginBottom: '18px',
+        },
+        children: pairing.name,
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '22px',
+          color: '#8888a0',
+          textAlign: 'center',
+          lineHeight: 1.4,
+          maxWidth: '860px',
+          marginBottom: '34px',
+        },
+        children: pairing.vibe,
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: { display: 'flex', gap: '20px', marginBottom: '34px' },
+        children: [
+          sb(`${pairing.chemistry}/5`, 'CHEMISTRY'),
+          sb('CLAIM YOURS', 'NEXT MOVE'),
+        ],
+      },
+    },
+    brandBlock('See how you pair'),
+  ]);
+}
+
+function pairPerson(label, type, color) {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '320px',
+        padding: '22px 26px',
+        backgroundColor: '#111118',
+        borderRadius: '18px',
+        border: `2px solid ${color}`,
+      },
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '30px', fontWeight: 900, color, textAlign: 'center' },
+            children: label,
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '12px', color: '#8888a0', letterSpacing: '0.12em', marginTop: '10px' },
+            children: type,
+          },
+        },
+      ],
+    },
+  };
+}
+
+function brandBlock(name) {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      },
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '22px', fontWeight: 900, color: '#ffffff' },
+            children: name,
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '14px', color: '#6B8FFF', letterSpacing: '0.1em', marginTop: '12px' },
+            children: 'vibestats.io',
+          },
+        },
+      ],
+    },
+  };
 }
 
 function sb(value, label) {

@@ -111,6 +111,7 @@ async function assertRoutes() {
   const matchApi = await readFile('api/match.js', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
+  const ogApi = await readFile('api/og.js', 'utf8');
   const cacheHelper = await readFile('api/_lib/cache.js', 'utf8');
   const profileHtmlApi = await readFile('api/profile.js', 'utf8');
   const embedApi = await readFile('api/embed.js', 'utf8');
@@ -182,6 +183,8 @@ async function assertRoutes() {
   assert(comparePageApi.includes('profileShareProof({ rarity: subject.rarity, leaderboard: subject.leaderboard })'), 'compare page metadata should include profile social proof');
   assert(comparePageApi.includes('Open the pairing, then claim yours'), 'compare page metadata should drive recipients to claim their profile');
   assert(comparePageApi.includes("res.setHeader('Cache-Control', 'private, no-store')"), 'compare page metadata should not be publicly cached');
+  assert(ogApi.includes("mode === 'pair'"), 'OG API should support pair-specific share images');
+  assert(ogApi.includes('CLAUDE CODE PAIRING'), 'pair OG image should frame shared comparisons as Claude Code pairings');
   assert(cacheHelper.includes("user?.privacy === 'public'"), 'profile cache helper should cache only explicit public profiles');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
@@ -817,7 +820,8 @@ async function assertCompareMetadataHelpers() {
   assert(metadata.description.includes('high-velocity Builder'), 'compare metadata should include profile signature proof');
   assert(metadata.description.includes('rare combo: 1 of 8 saved profiles this month'), 'compare metadata should include scarcity proof');
   assert(metadata.description.includes('Open the pairing, then claim yours'), 'compare metadata should drive profile claiming');
-  assert(metadata.image.includes('/api/og?'), 'compare metadata should reuse dynamic OG cards');
+  assert(metadata.image.includes('/api/og?mode=pair'), 'compare metadata should use pair-specific dynamic OG cards');
+  assert(metadata.image.includes('an=%40brightseth') && metadata.image.includes('bn=Shipper'), 'compare metadata should pass pair labels into the OG image');
   assert(!metadata.description.includes('rawJson'), 'compare metadata must not leak raw JSON fields');
   const profilePair = compareMetadataForSubjects(
     { type: 'builder', handle: 'alice' },
