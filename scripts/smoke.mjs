@@ -86,6 +86,13 @@ function assertNoStore(res, label) {
   assert(res.headers['Cache-Control'] === 'no-store', `${label} should disable response caching`);
 }
 
+function assertNoInternalConfigMarkers(value, label) {
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  for (const marker of ['VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET', 'DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL']) {
+    assert(!text.includes(marker), `${label} should not expose ${marker}`);
+  }
+}
+
 async function assertHtmlScriptsParse() {
   for (const file of htmlFiles) {
     const html = await readFile(file, 'utf8');
@@ -1926,6 +1933,95 @@ async function assertPrivateApiNoStore() {
   }
 }
 
+async function assertPublicApiErrorsHideInternalConfig() {
+  const originalError = console.error;
+  const secretKeys = ['VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET'];
+  const previous = Object.fromEntries(secretKeys.map((key) => [key, process.env[key]]));
+  console.error = () => {};
+  for (const key of secretKeys) delete process.env[key];
+
+  try {
+    const cookie = 'vibestats_auth=a.b.c';
+    const endpoints = [
+      {
+        label: '/api/me secret failure',
+        module: '../api/me.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000', cookie } },
+        status: 500,
+        error: 'Session failed',
+      },
+      {
+        label: '/api/uploads secret failure',
+        module: '../api/uploads.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000', cookie } },
+        status: 500,
+        error: 'Upload failed',
+      },
+      {
+        label: '/api/settings secret failure',
+        module: '../api/settings.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000', cookie } },
+        status: 500,
+        error: 'Settings failed',
+      },
+      {
+        label: '/api/settings/export secret failure',
+        module: '../api/settings/export.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000', cookie } },
+        status: 500,
+        error: 'Export failed',
+      },
+      {
+        label: '/api/sync-token secret failure',
+        module: '../api/sync-token.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000', cookie } },
+        status: 500,
+        error: 'Sync token failed',
+      },
+      {
+        label: '/api/sync secret failure',
+        module: '../api/sync.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000', authorization: 'Bearer a.b.c' } },
+        status: 500,
+        error: 'Sync failed',
+      },
+    ];
+
+    for (const endpoint of endpoints) {
+      const { default: handler } = await import(endpoint.module);
+      const res = mockRes();
+      await handler(endpoint.req, res);
+      assert(res.statusCode === endpoint.status, `${endpoint.label} should return HTTP ${endpoint.status}`);
+      assert(res.body?.error === endpoint.error, `${endpoint.label} should return generic error copy`);
+      assertNoInternalConfigMarkers(res.body, endpoint.label);
+      assertNoStore(res, endpoint.label);
+    }
+
+    const { default: unsubscribeHandler } = await import('../api/digest/unsubscribe.js');
+    const unsubscribeRes = mockRes();
+    await unsubscribeHandler({
+      method: 'GET',
+      query: { token: 'a.b.c' },
+      headers: { host: 'localhost:3000' },
+    }, unsubscribeRes);
+    assert(unsubscribeRes.statusCode === 500, 'digest unsubscribe secret failure should return HTTP 500');
+    assert(String(unsubscribeRes.body).includes('Digest unsubscribe failed.'), 'digest unsubscribe should show generic failure copy');
+    assertNoInternalConfigMarkers(unsubscribeRes.body, 'digest unsubscribe secret failure');
+    assertNoStore(unsubscribeRes, 'digest unsubscribe secret failure');
+
+    console.log('ok public API failures hide internal config names');
+  } finally {
+    console.error = originalError;
+    for (const key of secretKeys) {
+      if (previous[key] == null) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous[key];
+      }
+    }
+  }
+}
+
 async function assertDigestCronAuth() {
   const { default: handler } = await import('../api/cron/weekly-digest.js');
   const previousSecret = process.env.CRON_SECRET;
@@ -2007,6 +2103,7 @@ await assertLeaderboardFallback();
 await assertMatchFallback();
 await assertBrowseFallback();
 await assertPrivateApiNoStore();
+await assertPublicApiErrorsHideInternalConfig();
 await assertDigestCronAuth();
 
 console.log('smoke checks passed');

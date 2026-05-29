@@ -36,7 +36,7 @@ export default function handler(req, res) {
 
   const clientId = process.env.GITHUB_CLIENT_ID;
   if (!clientId) {
-    return res.status(500).send('GITHUB_CLIENT_ID is not configured');
+    return res.status(500).send('GitHub sign-in is not configured');
   }
 
   const state = randomToken();

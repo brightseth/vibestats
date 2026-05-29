@@ -1,6 +1,6 @@
 import { requireUser } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
-import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin, safeErrorMessage } from './_lib/http.js';
 import { profileLinks } from './_lib/profile-links.js';
 import { sanitizeUploadPayload } from './_lib/uploads.js';
 
@@ -43,6 +43,6 @@ export default async function handler(req, res) {
     }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('POST /api/uploads error:', err);
-    json(res, err.statusCode || 500, { error: err.message || 'Upload failed' }, NO_STORE_HEADERS);
+    json(res, err.statusCode || 500, { error: safeErrorMessage(err, 'Upload failed') }, NO_STORE_HEADERS);
   }
 }

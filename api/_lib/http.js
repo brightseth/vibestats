@@ -16,6 +16,12 @@ export function methodNotAllowed(res, allowed, headers = {}) {
   json(res, 405, { error: 'Method not allowed' }, headers);
 }
 
+export function safeErrorMessage(err, fallback) {
+  const status = err?.statusCode || 500;
+  if (status >= 500) return fallback;
+  return err?.message || fallback;
+}
+
 const DEFAULT_MAX_JSON_BYTES = 64 * 1024;
 
 function payloadTooLarge() {

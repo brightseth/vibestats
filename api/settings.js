@@ -1,6 +1,6 @@
 import { clearSessionCookie, requireUser } from './_lib/auth.js';
 import { publicUser, sql } from './_lib/db.js';
-import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin, safeErrorMessage } from './_lib/http.js';
 import { publicIdentityReadiness } from './_lib/identity-readiness.js';
 import {
   cleanContactUrl,
@@ -176,6 +176,6 @@ export default async function handler(req, res) {
     return json(res, 200, { ok: true }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('/api/settings error:', err);
-    json(res, err.statusCode || 500, { error: err.message || 'Settings failed' }, NO_STORE_HEADERS);
+    json(res, err.statusCode || 500, { error: safeErrorMessage(err, 'Settings failed') }, NO_STORE_HEADERS);
   }
 }

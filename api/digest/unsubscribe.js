@@ -1,6 +1,6 @@
 import { verifyDigestUnsubscribeToken } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
-import { NO_STORE_HEADERS, methodNotAllowed } from '../_lib/http.js';
+import { NO_STORE_HEADERS, methodNotAllowed, safeErrorMessage } from '../_lib/http.js';
 
 function esc(value) {
   return String(value || '')
@@ -67,6 +67,6 @@ export default async function handler(req, res) {
     return sendHtml(res, 200, 'Weekly digest is off', 'You will not receive weekly vibestats digest emails.');
   } catch (err) {
     console.error('digest unsubscribe error:', err);
-    return sendHtml(res, err.statusCode || 500, 'Unsubscribe failed', err.message || 'Digest unsubscribe failed.');
+    return sendHtml(res, err.statusCode || 500, 'Unsubscribe failed', safeErrorMessage(err, 'Digest unsubscribe failed.'));
   }
 }

@@ -1,6 +1,6 @@
 import { createSyncToken, originForRequest, requireUser, syncTokenExpiresAt } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
-import { NO_STORE_HEADERS, json, methodNotAllowed, requireSameOrigin } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, requireSameOrigin, safeErrorMessage } from './_lib/http.js';
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
@@ -39,6 +39,6 @@ export default async function handler(req, res) {
     }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('POST /api/sync-token error:', err);
-    return json(res, err.statusCode || 500, { error: err.message || 'Sync token failed' }, NO_STORE_HEADERS);
+    return json(res, err.statusCode || 500, { error: safeErrorMessage(err, 'Sync token failed') }, NO_STORE_HEADERS);
   }
 }

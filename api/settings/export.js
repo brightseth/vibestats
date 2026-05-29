@@ -1,7 +1,7 @@
 import { requireUser } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
 import { exportableUpload } from '../_lib/export-upload.js';
-import { NO_STORE_HEADERS, json, methodNotAllowed } from '../_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, safeErrorMessage } from '../_lib/http.js';
 import { getProfileSettings, ownerProfileSettings } from '../_lib/profile-settings.js';
 
 export default async function handler(req, res) {
@@ -33,6 +33,6 @@ export default async function handler(req, res) {
     }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('GET /api/settings/export error:', err);
-    json(res, err.statusCode || 500, { error: err.message || 'Export failed' }, NO_STORE_HEADERS);
+    json(res, err.statusCode || 500, { error: safeErrorMessage(err, 'Export failed') }, NO_STORE_HEADERS);
   }
 }
