@@ -383,11 +383,13 @@
       return `@${handle} is #${entry.rank} on the weekly ${arch.name} board with ${entry.score}% ${signature} signal. See how you'd pair:\n${compareUrl}\n${profileUrl}`;
     }
 
-    function renderEntries(entries) {
+    function renderEntries(entries, unavailable = false) {
       const list = document.getElementById('list');
       const archetype = archetypeFromLocation();
       if (!entries.length) {
-        list.innerHTML = '<div class="empty">No public profiles in this archetype yet.<br>Set your profile to public from Settings to join the board.</div>';
+        list.innerHTML = unavailable
+          ? '<div class="empty">Leaderboard database unavailable.<br>Public rankings will appear once identity is configured.</div>'
+          : '<div class="empty">No public profiles in this archetype yet.<br>Set your profile to public from Settings to join the board.</div>';
         return;
       }
 
@@ -445,7 +447,7 @@
         if (!res.ok) throw new Error(data.error || 'Leaderboard unavailable');
         document.getElementById('total').textContent = fmt(data.total);
         document.getElementById('total-label').textContent = data.unavailable ? 'database unavailable' : 'public profiles this week';
-        renderEntries(data.entries || []);
+        renderEntries(data.entries || [], Boolean(data.unavailable));
       } catch (err) {
         document.getElementById('list').innerHTML = `<div class="empty">Leaderboard unavailable.<br>${esc(err.message)}</div>`;
       }

@@ -401,10 +401,12 @@
       setTimeout(() => { button.textContent = resetLabel; }, 1500);
     }
 
-    function renderEntries(entries, goalLabel, seekerArchetype) {
+    function renderEntries(entries, goalLabel, seekerArchetype, unavailable = false) {
       const list = document.getElementById('list');
       if (!entries.length) {
-        list.innerHTML = '<div class="empty">No active public matches for this goal yet.<br>Set your intent from Settings and make your profile public to appear here.</div>';
+        list.innerHTML = unavailable
+          ? '<div class="empty">Match database unavailable.<br>Goal-aware matches will appear once identity is configured.</div>'
+          : '<div class="empty">No active public matches for this goal yet.<br>Set your intent from Settings and make your profile public to appear here.</div>';
         return;
       }
 
@@ -468,7 +470,7 @@
         const res = await fetch(`/api/match?${params.toString()}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Match unavailable');
-        renderEntries(data.entries || [], data.goal_label || label, data.seeker_archetype || state.archetype);
+        renderEntries(data.entries || [], data.goal_label || label, data.seeker_archetype || state.archetype, Boolean(data.unavailable));
       } catch (err) {
         document.getElementById('list').innerHTML = `<div class="empty">Match unavailable.<br>${esc(err.message)}</div>`;
       }
