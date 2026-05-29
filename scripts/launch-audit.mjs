@@ -86,6 +86,7 @@ function usage() {
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
+- public auth/sync failure responses do not expose internal config names
 - profile shell, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, compare-first upload route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
@@ -149,24 +150,36 @@ function parseVercelCurlResponse(output) {
   return { response: responseFromHeaders(status, headers), body };
 }
 
-async function fetchViaVercelCurl(options, path, url) {
+async function fetchViaVercelCurl(options, path, url, requestOptions = {}) {
   const args = ['curl', path, '--deployment', options.vercelDeployment];
   if (options.vercelScope) args.push('--scope', options.vercelScope);
   args.push('--', '-s', '-i');
+  if (requestOptions.method && requestOptions.method !== 'GET') {
+    args.push('-X', requestOptions.method);
+  }
+  for (const [key, value] of Object.entries(requestOptions.headers || {})) {
+    args.push('-H', `${key}: ${value}`);
+  }
+  if (requestOptions.body != null) args.push('--data', requestOptions.body);
   const { stdout } = await execFileAsync('vercel', args, { maxBuffer: 5 * 1024 * 1024 });
   const parsed = parseVercelCurlResponse(stdout);
   return { url: url.toString(), ...parsed };
 }
 
-async function fetchText(options, path) {
+async function fetchText(options, path, requestOptions = {}) {
   const { origin } = options;
   const url = new URL(path, origin);
   if (options.vercelDeployment) {
-    return fetchViaVercelCurl(options, path, url);
+    return fetchViaVercelCurl(options, path, url, requestOptions);
   }
 
   const response = await fetch(url, {
-    headers: { Accept: 'text/html,application/json,image/svg+xml,*/*' },
+    method: requestOptions.method || 'GET',
+    headers: {
+      Accept: 'text/html,application/json,image/svg+xml,*/*',
+      ...(requestOptions.headers || {}),
+    },
+    body: requestOptions.body,
     redirect: 'manual',
   });
   const body = await response.text();
@@ -216,6 +229,46 @@ async function auditLaunch(options) {
     }
   } catch (err) {
     recorder.fail('identity status fetch failed', err.message);
+  }
+
+  const failurePaths = [
+    {
+      label: 'session failure response',
+      path: '/api/me',
+      options: {
+        headers: { Cookie: 'vibestats_auth=a.b.c' },
+      },
+      allowStatuses: [401, 500],
+      expectedType: 'application/json',
+    },
+    {
+      label: 'sync failure response',
+      path: '/api/sync',
+      options: {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer a.b.c',
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      },
+      allowStatuses: [401, 500],
+      expectedType: 'application/json',
+    },
+  ];
+
+  for (const item of failurePaths) {
+    try {
+      const result = await fetchText(options, item.path, item.options);
+      const cache = result.response.headers.get('cache-control') || '';
+      const type = result.response.headers.get('content-type') || '';
+      recorder.check(item.allowStatuses.includes(result.response.status), `${item.label} status`, `${result.response.status} ${result.url}`);
+      recorder.check(type.includes(item.expectedType), `${item.label} content type`, type || '(none)');
+      recorder.check(cache.includes('no-store'), `${item.label} disables public caching`, cache || '(none)');
+      recorder.check(!hasSecretName(result.body), `${item.label} does not expose secret env names`);
+    } catch (err) {
+      recorder.fail(`${item.label} fetch failed`, err.message);
+    }
   }
 
   const paths = [

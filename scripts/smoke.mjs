@@ -381,6 +381,7 @@ async function assertRoutes() {
 
 async function assertLaunchAuditHelpers() {
   const { parseArgs, parseVercelCurlResponse } = await import('../scripts/launch-audit.mjs');
+  const launchAuditSource = await readFile('scripts/launch-audit.mjs', 'utf8');
   const parsed = parseArgs(['--deployment', 'https://preview.vercel.app', '--scope', 'lets-vibe', '--handle', '@brightseth']);
   assert(parsed.origin === 'https://preview.vercel.app', 'launch audit should default origin to the protected deployment URL');
   assert(parsed.vercelDeployment === 'https://preview.vercel.app', 'launch audit should normalize vercel deployment URL');
@@ -391,6 +392,8 @@ async function assertLaunchAuditHelpers() {
   assert(parsedCurl.response.status === 200, 'vercel curl parser should read HTTP status');
   assert(parsedCurl.response.headers.get('cache-control') === 'no-store', 'vercel curl parser should expose response headers');
   assert(parsedCurl.body === '{"ok":true}', 'vercel curl parser should isolate the response body');
+  assert(launchAuditSource.includes("path: '/api/sync'") && launchAuditSource.includes("Authorization: 'Bearer a.b.c'"), 'launch audit should probe public sync failure without exposing env names');
+  assert(launchAuditSource.includes("path: '/api/me'") && launchAuditSource.includes("Cookie: 'vibestats_auth=a.b.c'"), 'launch audit should probe session failure without exposing env names');
   console.log('ok launch audit supports protected Vercel previews');
 }
 
