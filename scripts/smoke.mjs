@@ -265,6 +265,9 @@ async function assertCompareShareLoop() {
   const compareHtml = await readFile('compare.html', 'utf8');
   assert(compareHtml.includes('comparisonClaimAction(aSubject, bSubject)'), 'compare result should compute a profile-backed claim CTA');
   assert(compareHtml.includes('compareTo=${encodeURIComponent(profileSubject.handle)}'), 'compare result CTA should seed upload-to-profile comparison');
+  assert(compareHtml.includes('compareArchetype=${encodeURIComponent(archetypeSubject.type)}'), 'anonymous compare result CTA should seed upload-to-archetype comparison');
+  assert(compareHtml.includes('Compare with The ${archetypeInviteLabel(archetypeSubject)}'), 'anonymous compare result CTA should name the shared archetype');
+  assert(!compareHtml.includes("href: '/', label: \"What's YOUR archetype?\""), 'anonymous compare result should not fall back to generic homepage upload');
   assert(compareHtml.includes("See how you'd pair with @${profileSubject.handle}:"), 'profile-backed compare shares should use asymmetric invite copy');
   assert(compareHtml.includes('${esc(claimAction.label)} &rarr;'), 'compare result should render the computed claim CTA label');
   console.log('ok compare share loop claims profile-backed comparisons');

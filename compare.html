@@ -495,9 +495,23 @@
       return null;
     }
 
+    function archetypeInviteLabel(subject) {
+      const arch = ARCHETYPES[subject?.type] || ARCHETYPES.builder;
+      return arch.name
+        .replace(/^THE /, '')
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
     function comparisonClaimAction(aSubject, bSubject) {
       const profileSubject = primaryProfileSubject(aSubject, bSubject);
-      if (!profileSubject) return { href: '/', label: "What's YOUR archetype?" };
+      if (!profileSubject) {
+        const archetypeSubject = aSubject?.type ? aSubject : bSubject;
+        return {
+          href: `/?compareArchetype=${encodeURIComponent(archetypeSubject.type)}`,
+          label: `Compare with The ${archetypeInviteLabel(archetypeSubject)}`,
+        };
+      }
       return {
         href: `/?compareTo=${encodeURIComponent(profileSubject.handle)}&compareArchetype=${encodeURIComponent(profileSubject.type)}`,
         label: `Compare with @${profileSubject.handle}`,
