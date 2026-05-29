@@ -1382,6 +1382,11 @@ async function assertEvolutionHelpers() {
     { archetype: 'builder', scores: { builder: 89, orchestrator: 72 }, uploaded_at: '2026-05-21T10:00:00.000Z' },
   ]);
   assert(shifted.label === 'Builder -> Orchestrator shift', 'evolution helper should surface archetype shifts');
+  const bounded = profileEvolution([
+    { archetype: 'builder', scores: { builder: 999 }, uploaded_at: '2026-05-28T10:00:00.000Z' },
+    { archetype: 'builder', scores: { builder: -10 }, uploaded_at: '2026-05-21T10:00:00.000Z' },
+  ]);
+  assert(bounded.label === '+100 Builder points', 'evolution helper should clamp impossible stored scores');
   console.log('ok profile evolution helpers');
 }
 
@@ -1438,6 +1443,17 @@ async function assertDigestHelpers() {
   assert(digest.x_share_url.includes('twitter.com/intent/tweet') && decodeURIComponent(digest.x_share_url).includes('compareTo=brightseth'), 'digest payload should expose X share URL');
   assert(digest.settings_url === 'https://vibestats.io/settings', 'digest payload should expose settings URL');
   assert(digest.unsubscribe_url === 'https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token', 'digest payload should expose unsubscribe URL');
+  const boundedDigest = buildWeeklyDigest({
+    user: { gh_handle: 'brightseth' },
+    uploads: [
+      { archetype: 'builder', scores: { builder: 999, _percentiles: { builder: 0 } }, metrics: {}, raw_meta: {}, uploaded_at: '2026-05-28T10:00:00.000Z' },
+      { archetype: 'builder', scores: { builder: -10 }, metrics: {}, raw_meta: {}, uploaded_at: '2026-05-21T10:00:00.000Z' },
+    ],
+    origin: 'https://vibestats.io',
+  });
+  assert(boundedDigest.score === 100, 'digest helper should clamp impossible stored scores');
+  assert(boundedDigest.delta === 100, 'digest helper should compute deltas from clamped scores');
+  assert(boundedDigest.text.includes('Current signal: 100%'), 'digest text should not show impossible signal scores');
   const resendPayload = resendDigestPayload({ to: 'seth@example.com', digest });
   assert(resendPayload.headers['List-Unsubscribe'] === '<https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token>', 'digest email should include List-Unsubscribe header');
   assert(resendPayload.headers['List-Unsubscribe-Post'] === 'List-Unsubscribe=One-Click', 'digest email should include one-click unsubscribe header');

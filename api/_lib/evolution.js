@@ -1,3 +1,5 @@
+import { publicScores } from './public-profile.js';
+
 const ARCHETYPE_LABELS = {
   orchestrator: 'Orchestrator',
   shipper: 'Shipper',
@@ -15,12 +17,11 @@ function labelFor(archetype) {
 
 function primaryScore(upload) {
   if (!upload?.archetype) return 0;
-  const value = Number(upload.scores?.[upload.archetype]);
-  return Number.isFinite(value) ? Math.round(value) : 0;
+  return publicScores(upload.scores || {})[upload.archetype] || 0;
 }
 
 function topScoreKeys(upload) {
-  return Object.entries(upload?.scores || {})
+  return Object.entries(publicScores(upload?.scores || {}))
     .filter(([key]) => !key.startsWith('_') && ARCHETYPE_LABELS[key])
     .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
     .slice(0, 3)
@@ -46,7 +47,7 @@ export function profileEvolution(uploads = [], { isOwner = true } = {}) {
   const latestScore = primaryScore(latest);
   const previousScore = previous.archetype === latest.archetype
     ? primaryScore(previous)
-    : Number(previous.scores?.[latest.archetype] || 0);
+    : (publicScores(previous.scores || {})[latest.archetype] || 0);
   const delta = latestScore - Math.round(Number(previousScore) || 0);
   const previousTop = new Set(topScoreKeys(previous));
   const newTopSignal = topScoreKeys(latest).find((key) => !previousTop.has(key));

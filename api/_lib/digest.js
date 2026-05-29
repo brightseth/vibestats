@@ -1,3 +1,4 @@
+import { publicScores } from './public-profile.js';
 import { signatureFromUpload } from './signatures.js';
 
 const ARCHETYPES = {
@@ -58,7 +59,7 @@ export function uploadStreak(uploads = []) {
 }
 
 function primaryScore(upload) {
-  return Math.round(safeNumber(upload?.scores?.[upload?.archetype]));
+  return publicScores(upload?.scores || {})[upload?.archetype] || 0;
 }
 
 function scoreDelta(latest, previous) {
@@ -114,7 +115,7 @@ function xShareUrl(shareUrl, text) {
 
 function ogUrl(origin, user, latest) {
   const metrics = latest.metrics || {};
-  const percentiles = latest.scores?._percentiles || {};
+  const percentiles = publicScores(latest.scores || {})._percentiles || {};
   const params = new URLSearchParams({
     a: latest.archetype,
     n: `@${user.gh_handle}`,
