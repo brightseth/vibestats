@@ -5,6 +5,7 @@ process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret';
 
 const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html', 'leaderboard.html', 'match.html', 'browse.html'];
 const apiModules = [
+  '../api/compare-page.js',
   '../api/profile.js',
   '../api/auth/github/start.js',
   '../api/auth/github/callback.js',
@@ -21,6 +22,7 @@ const apiModules = [
   '../api/_lib/evolution.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/public-profile.js',
+  '../api/_lib/social-proof.js',
   '../api/_lib/signatures.js',
   '../api/_lib/matchmaking.js',
   '../api/_lib/leaderboard-rank.js',
@@ -71,6 +73,7 @@ async function assertRoutes() {
   const browseHtml = await readFile('browse.html', 'utf8');
   const matchApi = await readFile('api/match.js', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
+  const comparePageApi = await readFile('api/compare-page.js', 'utf8');
   const profileHtmlApi = await readFile('api/profile.js', 'utf8');
   const embedApi = await readFile('api/embed.js', 'utf8');
   const badgeApi = await readFile('api/badge.js', 'utf8');
@@ -87,8 +90,12 @@ async function assertRoutes() {
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const rewrites = config.rewrites || [];
   assert(
-    rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/compare?a=:other&b=:handle'),
-    'person-backed pair route should rewrite to compare',
+    rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/api/compare-page?a=:other&b=:handle'),
+    'person-backed pair route should rewrite to dynamic compare page',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/compare' && rewrite.destination === '/api/compare-page'),
+    'compare route should rewrite to dynamic compare page',
   );
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/embed' && rewrite.destination === '/api/embed?handle=:handle'),
@@ -128,6 +135,9 @@ async function assertRoutes() {
   assert(profileHtmlApi.includes('weeklyLeaderboardRank(user, latest)'), 'profile HTML OG metadata should include public leaderboard proof');
   assert(profileHtmlApi.includes('rarityForSignature(signature)'), 'profile HTML OG metadata should include signature scarcity proof');
   assert(profileHtmlApi.includes('profileDescription({'), 'profile HTML OG metadata should centralize comparison-oriented share copy');
+  assert(comparePageApi.includes('compareMetadataForSubjects'), 'compare page API should expose dynamic comparison metadata helpers');
+  assert(comparePageApi.includes('profileShareProof({ rarity: subject.rarity, leaderboard: subject.leaderboard })'), 'compare page metadata should include profile social proof');
+  assert(comparePageApi.includes('Open the pairing, then claim yours'), 'compare page metadata should drive recipients to claim their profile');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
   assert(embedApi.includes('compareTo=${encodeURIComponent(user.gh_handle)}'), 'profile embed should click through to upload-to-compare when an archetype exists');
@@ -270,6 +280,7 @@ async function assertProfileShareLoop() {
 
 async function assertCompareShareLoop() {
   const compareHtml = await readFile('compare.html', 'utf8');
+  assert(compareHtml.includes('comparisonParamsFromLocation()'), 'compare page should parse pretty /u/host/pair/visitor links');
   assert(compareHtml.includes('comparisonClaimAction(aSubject, bSubject)'), 'compare result should compute a profile-backed claim CTA');
   assert(compareHtml.includes('compareTo=${encodeURIComponent(profileSubject.handle)}'), 'compare result CTA should seed upload-to-profile comparison');
   assert(compareHtml.includes('compareArchetype=${encodeURIComponent(archetypeSubject.type)}'), 'anonymous compare result CTA should seed upload-to-archetype comparison');
@@ -645,7 +656,8 @@ async function assertDigestHelpers() {
 }
 
 async function assertProfileMetadataHelpers() {
-  const { profileDescription, profileShareProof } = await import('../api/profile.js');
+  const { profileDescription } = await import('../api/profile.js');
+  const { profileShareProof } = await import('../api/_lib/social-proof.js');
   const rarity = { count: 8, tier: 'rare' };
   const leaderboard = { rank: 4, total: 25, label: 'builder' };
   const proof = profileShareProof({ rarity, leaderboard });
@@ -663,6 +675,59 @@ async function assertProfileMetadataHelpers() {
   assert(description.includes("Compare your vibecoding personality with @brightseth."), 'profile metadata should preserve comparison CTA');
   assert(!description.includes('rawJson'), 'profile metadata must not leak raw JSON fields');
   console.log('ok profile metadata helpers include social proof without raw JSON');
+}
+
+async function assertCompareMetadataHelpers() {
+  const { default: handler, compareMetadataForSubjects } = await import('../api/compare-page.js');
+  const metadata = compareMetadataForSubjects(
+    {
+      type: 'builder',
+      handle: 'brightseth',
+      signature: 'high-velocity Builder',
+      rarity: { count: 8, tier: 'rare' },
+      leaderboard: { rank: 4, total: 25, label: 'builder' },
+    },
+    { type: 'shipper', param: 'shipper' },
+    'https://vibestats.io',
+  );
+
+  assert(metadata.title.includes('@brightseth + Shipper = Feature Factory'), 'compare metadata should name the resolved pairing');
+  assert(metadata.description.includes('high-velocity Builder'), 'compare metadata should include profile signature proof');
+  assert(metadata.description.includes('rare combo: 1 of 8 saved profiles this month'), 'compare metadata should include scarcity proof');
+  assert(metadata.description.includes('Open the pairing, then claim yours'), 'compare metadata should drive profile claiming');
+  assert(metadata.image.includes('/api/og?'), 'compare metadata should reuse dynamic OG cards');
+  assert(!metadata.description.includes('rawJson'), 'compare metadata must not leak raw JSON fields');
+  const profilePair = compareMetadataForSubjects(
+    { type: 'builder', handle: 'alice' },
+    { type: 'shipper', handle: 'bob' },
+    'https://vibestats.io',
+  );
+  assert(profilePair.url === 'https://vibestats.io/u/bob/pair/alice', 'compare metadata should preserve pretty profile pair URLs');
+
+  let statusCode = 0;
+  let contentType = '';
+  let body = '';
+  await handler({
+    method: 'GET',
+    query: { a: 'builder', b: 'shipper' },
+    headers: { host: 'localhost:3000' },
+  }, {
+    setHeader(name, value) {
+      if (name.toLowerCase() === 'content-type') contentType = value;
+    },
+    status(code) {
+      statusCode = code;
+      return this;
+    },
+    send(value) {
+      body = String(value);
+    },
+  });
+  assert(statusCode === 200, 'compare page API should render HTTP 200');
+  assert(contentType.includes('text/html'), 'compare page API should return HTML');
+  assert(body.includes('@brightseth + Shipper = Feature Factory') || body.includes('Builder + Shipper = Feature Factory'), 'compare page API should inject dynamic pairing title');
+  assert(body.includes('Open the pairing, then claim yours'), 'compare page API should inject claim-oriented metadata');
+  console.log('ok compare metadata helpers render dynamic pair previews');
 }
 
 async function assertProfileFallback() {
@@ -949,6 +1014,7 @@ await assertSignatureHelpers();
 await assertEvolutionHelpers();
 await assertDigestHelpers();
 await assertProfileMetadataHelpers();
+await assertCompareMetadataHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();

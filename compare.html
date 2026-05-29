@@ -401,8 +401,20 @@
       }
     }
 
-    async function routeCompare() {
+    function comparisonParamsFromLocation() {
       const params = new URLSearchParams(window.location.search);
+      if (params.get('a') || params.get('b') || params.get('me')) return params;
+
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      if (parts[0] === 'u' && parts[2] === 'pair' && parts[1] && parts[3]) {
+        params.set('a', parts[3]);
+        params.set('b', parts[1]);
+      }
+      return params;
+    }
+
+    async function routeCompare() {
+      const params = comparisonParamsFromLocation();
       const aParam = params.get('a');
       const bParam = params.get('b');
       const meParam = params.get('me') || aParam;

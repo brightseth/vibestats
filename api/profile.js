@@ -3,7 +3,8 @@ import { readSession, originForRequest } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
-import { rarityTier, signatureFromUpload } from './_lib/signatures.js';
+import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
+import { signatureFromUpload } from './_lib/signatures.js';
 
 const PROFILE_HTML = readFileSync(new URL('../u.html', import.meta.url), 'utf8');
 
@@ -69,30 +70,6 @@ function profileCacheControl(user) {
     : 'public, s-maxage=300, stale-while-revalidate=3600';
 }
 
-function fmt(value) {
-  return Number(value || 0).toLocaleString('en-US');
-}
-
-export function rarityProof(rarity) {
-  if (!rarity?.count) return '';
-  const plural = rarity.count === 1 ? 'profile' : 'profiles';
-  return `${rarity.tier} combo: 1 of ${fmt(rarity.count)} saved ${plural} this month`;
-}
-
-export function leaderboardProof(leaderboard) {
-  if (!leaderboard?.rank) return '';
-  const label = ARCHETYPES[leaderboard.label]?.short || leaderboard.label || 'archetype';
-  const total = leaderboard.total ? ` of ${fmt(leaderboard.total)}` : '';
-  return `#${fmt(leaderboard.rank)}${total} on weekly ${label} board`;
-}
-
-export function profileShareProof({ rarity = null, leaderboard = null } = {}) {
-  return [
-    rarityProof(rarity),
-    leaderboardProof(leaderboard),
-  ].filter(Boolean).join(' / ');
-}
-
 export function profileDescription({ signature = '', arch, metrics = {}, handle, rarity = null, leaderboard = null } = {}) {
   const proof = profileShareProof({ rarity, leaderboard });
   return [
@@ -102,28 +79,6 @@ export function profileDescription({ signature = '', arch, metrics = {}, handle,
     proof ? `${proof}.` : '',
     `Compare your vibecoding personality with @${handle}.`,
   ].filter(Boolean).join(' ');
-}
-
-async function rarityForSignature(signature) {
-  if (!signature?.fingerprint) return null;
-  const rows = await sql()`
-    with latest_uploads as (
-      select distinct on (user_id) user_id, raw_meta, uploaded_at
-      from uploads
-      order by user_id, uploaded_at desc
-    )
-    select count(*)::int as count
-    from latest_uploads
-    where raw_meta->>'signatureFingerprint' = ${signature.fingerprint}
-      and uploaded_at > now() - interval '30 days'
-  `;
-  const count = rows[0]?.count || 1;
-  return {
-    fingerprint: signature.fingerprint,
-    count,
-    tier: rarityTier(count),
-    window_days: 30,
-  };
 }
 
 export default async function handler(req, res) {

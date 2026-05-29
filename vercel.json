@@ -7,8 +7,9 @@
   "rewrites": [
     { "source": "/u/:handle/badge.svg", "destination": "/api/badge?handle=:handle" },
     { "source": "/u/:handle/embed", "destination": "/api/embed?handle=:handle" },
-    { "source": "/u/:handle/pair/:other", "destination": "/compare?a=:other&b=:handle" },
+    { "source": "/u/:handle/pair/:other", "destination": "/api/compare-page?a=:other&b=:handle" },
     { "source": "/u/:handle", "destination": "/api/profile?handle=:handle" },
+    { "source": "/compare", "destination": "/api/compare-page" },
     { "source": "/browse", "destination": "/browse.html" },
     { "source": "/leaderboard/:archetype", "destination": "/leaderboard.html?archetype=:archetype" },
     { "source": "/leaderboard", "destination": "/leaderboard.html" },
