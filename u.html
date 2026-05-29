@@ -908,13 +908,13 @@
       const embedPath = `${profilePath}/embed`;
 
       compareCta.href = uploadComparePath;
-      compareCta.textContent = `Compare with @${handle}`;
+      compareCta.textContent = `Reveal yours vs @${handle}`;
       leaderboardCta.href = `/leaderboard/${encodeURIComponent(hostArchetype)}`;
       leaderboardCta.textContent = `${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'Archetype'} board`;
       browseCta.href = `/browse?archetype=${encodeURIComponent(hostArchetype)}`;
       browseCta.textContent = `Browse ${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'similar'}`;
       shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(uploadCompareUrl)}`;
-      note.textContent = 'Upload yours once and vibestats will show your pairing with this profile.';
+      note.textContent = `@${handle} is ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} What are you? Run /insights, then npx vibestats sync.`;
 
       if (me && me.gh_handle !== handle) {
         const myLatest = await latestForHandle(me.gh_handle);

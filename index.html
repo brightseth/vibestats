@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Find Your Vibecoding Personality | vibestats</title>
-  <meta name="description" content="Upload your Claude Code insights and discover your vibecoding personality. 8 archetypes. Your stats, narrated. Everything stays in your browser.">
+  <title>Reveal Your Vibecoding Personality | vibestats</title>
+  <meta name="description" content="Claude Code already knows how you build. Run /insights, reveal your vibecoding personality, and compare with other Claude Code users.">
   <meta property="og:title" content="What's your vibecoding personality? | vibestats">
-  <meta property="og:description" content="Upload your Claude Code insights and discover your archetype. The Orchestrator, The Shipper, The Architect, The Debugger...">
+  <meta property="og:description" content="Claude Code already knows how you build. Reveal your archetype: The Orchestrator, The Shipper, The Architect, The Debugger...">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vibestats.io">
   <meta property="og:image" content="https://vibestats.io/og-card.png">
@@ -115,6 +115,63 @@
       position: absolute; inset: 0; opacity: 0; cursor: pointer;
     }
 
+    .reveal-steps {
+      width: min(560px, 92vw);
+      display: grid;
+      gap: 10px;
+      margin: -14px 0 24px;
+      text-align: left;
+    }
+    .reveal-step {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid rgba(107,143,255,0.18);
+      border-radius: 10px;
+      background: rgba(107,143,255,0.06);
+    }
+    .reveal-step-num {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .reveal-step-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .reveal-step code {
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 13px;
+      word-break: break-word;
+    }
+    .copy-command {
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .copy-command:hover { border-color: var(--accent); color: #fff; }
+
     .file-path {
       margin-top: 32px; padding: 14px 20px;
       background: var(--surface-2); border: 1px solid var(--border);
@@ -127,6 +184,14 @@
     .file-path .label {
       display: block; font-size: 10px; color: var(--text-dim);
       text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+    }
+    .file-path .subcopy {
+      display: block;
+      margin-top: 6px;
+      color: var(--text-dim);
+      font-size: 10px;
+      line-height: 1.5;
+      letter-spacing: 0;
     }
     .file-path code { color: var(--accent); }
 
@@ -679,6 +744,8 @@
       .share-btn { justify-content: center; }
       .upload-page { padding: 24px; }
       .drop-zone { padding: 36px 20px; }
+      .reveal-step { grid-template-columns: 30px minmax(0, 1fr); }
+      .copy-command { grid-column: 2; justify-self: start; }
     }
   </style>
 </head>
@@ -688,13 +755,31 @@
   <!-- UPLOAD STATE -->
   <div class="upload-page" id="upload-page">
     <div class="upload-logo">vibestats</div>
-    <h1 class="upload-title">What's your vibecoding personality?</h1>
+    <h1 class="upload-title">What kind of coder are you? Claude Code already knows.</h1>
     <p class="upload-sub">
-      Upload your Claude Code insights file and discover your archetype.
-      Your raw insights file stays in your browser.
+      You already took the test by coding. Reveal your archetype from Claude Code `/insights`; raw session data stays on your machine.
     </p>
     <div class="privacy-note">
       Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
+    </div>
+
+    <div class="reveal-steps" aria-label="Reveal your vibestats profile">
+      <div class="reveal-step">
+        <span class="reveal-step-num">1</span>
+        <span>
+          <span class="reveal-step-label">In Claude Code</span>
+          <code>/insights</code>
+        </span>
+        <button class="copy-command" type="button" onclick="copyCommand('/insights', this)">Copy</button>
+      </div>
+      <div class="reveal-step">
+        <span class="reveal-step-num">2</span>
+        <span>
+          <span class="reveal-step-label">In your terminal</span>
+          <code>npx vibestats sync</code>
+        </span>
+        <button class="copy-command" type="button" onclick="copyCommand('npx vibestats sync', this)">Copy</button>
+      </div>
     </div>
 
     <div class="save-toggle" id="save-toggle-row">
@@ -706,15 +791,15 @@
 
     <div class="drop-zone" id="drop-zone">
       <div class="drop-zone-icon">&#x1F4C4;</div>
-      <div class="drop-zone-text">Drop your insights file here</div>
-      <div class="drop-zone-hint">or click to browse</div>
+      <div class="drop-zone-text">Drop a legacy insights JSON here</div>
+      <div class="drop-zone-hint">or click to browse and reveal locally</div>
       <input type="file" accept=".json" id="file-input">
     </div>
 
     <div class="file-path" onclick="copyPath()">
-      <span class="label">How to find your file</span>
-      <code>~/.claude/usage-data/agent-insights.json</code>
-      <span style="display:block;font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0">Click to copy path &middot; Open in Finder or terminal</span>
+      <span class="label">No file hunting</span>
+      <code>npx vibestats sync</code>
+      <span class="subcopy">Click to copy. The CLI reads the real ~/.claude/usage-data/ output and uploads only derived metrics.</span>
     </div>
 
     <div class="upload-error" id="upload-error"></div>
@@ -1824,17 +1909,17 @@
       if (!intent) return;
       if (intent.kind === 'profile') {
         document.querySelector('.upload-title').textContent = `Compare with @${intent.handle}`;
-        document.querySelector('.upload-sub').textContent = `Upload your Claude Code insights to see your pairing with @${intent.handle}. Your raw file stays in your browser.`;
-        document.querySelector('.drop-zone-text').textContent = `Drop insights to compare with @${intent.handle}`;
-        document.querySelector('.drop-zone-hint').textContent = 'then save a derived profile to unlock the pairing';
+        document.querySelector('.upload-sub').textContent = `Claude Code already has your build fingerprint. Run /insights, then npx vibestats sync to reveal your pairing with @${intent.handle}.`;
+        document.querySelector('.drop-zone-text').textContent = `Drop legacy insights JSON to compare with @${intent.handle}`;
+        document.querySelector('.drop-zone-hint').textContent = 'or use the npx command above for the real /insights directory';
         return;
       }
 
       const label = archetypeDisplayName(intent.archetype);
       document.querySelector('.upload-title').textContent = `Compare with The ${label}`;
-      document.querySelector('.upload-sub').textContent = `Upload your Claude Code insights to see how you pair with this ${label} archetype. Your raw file stays in your browser.`;
-      document.querySelector('.drop-zone-text').textContent = `Drop insights to compare with The ${label}`;
-      document.querySelector('.drop-zone-hint').textContent = 'then get an instant archetype pairing';
+      document.querySelector('.upload-sub').textContent = `Claude Code already knows your pattern. Run /insights, then npx vibestats sync to reveal how you pair with this ${label} archetype.`;
+      document.querySelector('.drop-zone-text').textContent = `Drop legacy insights JSON to compare with The ${label}`;
+      document.querySelector('.drop-zone-hint').textContent = 'or use the npx command above for the real /insights directory';
     }
 
     // ========================================
@@ -2456,8 +2541,16 @@
     }
 
     function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function copyCommand(command, button) {
+      copyText(command).then(() => {
+        const orig = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = orig; }, 1500);
+      }).catch(() => {});
+    }
+
     function copyPath() {
-      copyText('~/.claude/usage-data/agent-insights.json').then(() => {
+      copyText('npx vibestats sync').then(() => {
         const el = document.querySelector('.file-path code');
         const orig = el.textContent;
         el.textContent = 'Copied!';

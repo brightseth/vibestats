@@ -1,6 +1,6 @@
 # vibestats
 
-**Find your vibecoding personality.** Upload a Claude Code `/insights` JSON, get an archetype + a shareable card.
+**Find your vibecoding personality.** Upload Claude Code `/insights` data or run `npx vibestats sync`, get an archetype + a shareable card.
 
 Live: [vibestats.io](https://vibestats.io)
 
@@ -8,7 +8,7 @@ Live: [vibestats.io](https://vibestats.io)
 
 ## What it is today (May 2026)
 
-A single-page personality engine for Claude Code users. The user runs `/insights` inside CC, downloads the JSON, drops it on vibestats.io, and gets:
+A single-page personality engine for Claude Code users. The user runs `/insights` inside CC, uploads locally in the browser or runs `npx vibestats sync`, and gets:
 
 - **An archetype** (1 of 8: Orchestrator, Shipper, Architect, Debugger, Polyglot, Sprinter, Deep Diver, Builder).
 - **A derived signature combo** (top archetype + secondary signal, plus anonymous monthly rarity counts; no 9th archetype).
@@ -121,11 +121,17 @@ npm run migrate
 
 Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured.
 
-Generate a local sync command from `/settings` after signing in. Sync tokens are revocable from Settings:
+Run one-command local sync after signing in. The CLI opens a browser approval flow against your GitHub-backed vibestats session and creates a revocable token automatically:
+
+```bash
+npx vibestats sync
+npx vibestats sync --dry-run
+```
+
+Settings still exposes a manual token command as a fallback. Sync tokens are revocable from Settings:
 
 ```bash
 npx vibestats sync --token "$VIBESTATS_SYNC_TOKEN"
-npx vibestats sync --dry-run
 ```
 
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to inspect the derived payload locally without a token or network request, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints both the profile URL and a compare-first invite URL.

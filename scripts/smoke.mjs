@@ -17,6 +17,7 @@ const apiModules = [
   '../api/uploads.js',
   '../api/sync.js',
   '../api/sync-token.js',
+  '../api/cli/local-token.js',
   '../api/u/[handle].js',
   '../api/settings.js',
   '../api/settings/export.js',
@@ -146,6 +147,7 @@ async function assertRoutes() {
   const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
+  const cliLocalTokenApi = await readFile('api/cli/local-token.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const profileLinksHelper = await readFile('api/_lib/profile-links.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
@@ -277,8 +279,15 @@ async function assertRoutes() {
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
   assert(cliBin.includes('Invite people to compare:'), 'CLI sync success output should surface compare-first invite URL');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
+  assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when no token is supplied');
+  assert(cliBin.includes('--no-open') && cliBin.includes('Opening browser to authorize vibestats CLI sync'), 'CLI sync should support manual browser auth fallback');
   assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
   assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
+  assert(cliLocalTokenApi.includes("if (!['GET', 'POST'].includes(req.method))"), 'CLI browser auth endpoint should support approval page and token redirect');
+  assert(cliLocalTokenApi.includes('allowedLocalCallback') && cliLocalTokenApi.includes('127.0.0.1') && cliLocalTokenApi.includes('localhost'), 'CLI browser auth endpoint should allow only local callbacks');
+  assert(cliLocalTokenApi.includes('Authorize CLI sync') && cliLocalTokenApi.includes('requireSameOrigin(req)'), 'CLI browser auth endpoint should require same-origin browser approval before minting a token');
+  assert(cliLocalTokenApi.includes('createSyncToken(user)') && cliLocalTokenApi.includes('syncTokenExpiresAt()'), 'CLI browser auth endpoint should mint expiring revocable sync tokens');
+  assert(cliLocalTokenApi.includes('Raw Claude Code') && cliLocalTokenApi.includes('data stays on your machine'), 'CLI browser auth page should preserve the privacy promise');
   assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
   assert(
     statsApi.indexOf('readJson(req, { maxBytes: 16 * 1024 })') < statsApi.indexOf('const ip ='),
@@ -293,6 +302,9 @@ async function assertRoutes() {
   assert(indexHtml.includes("fetch('/api/identity-status'"), 'upload page should check identity readiness before fetching session state');
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
+  assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
+  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx vibestats sync'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
+  assert(indexHtml.includes('No file hunting') && indexHtml.includes('real ~/.claude/usage-data/ output'), 'upload page should steer cold users away from manual file hunting');
   assert(indexHtml.includes('weekly_digest_available: body.weekly_digest_available === true'), 'upload page should preserve digest delivery readiness from identity status');
   assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should only show inline digest opt-in when delivery is configured');
   assert(indexHtml.includes('Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.'), 'upload page should explain pending digest delivery without offering a dead opt-in');
@@ -301,6 +313,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('sameHandle(me?.gh_handle, handle)') && profileHtml.includes("isOwner ? 'Upload insights' : 'Mint yours'"), 'empty profile state should use owner-aware minting actions');
   assert(profileHtml.includes('Raw insights stay in your browser; only derived metrics save.') && profileHtml.includes('Copy pending profile'), 'empty profile state should preserve the privacy promise and copyable profile loop');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
+  assert(profileHtml.includes('Reveal yours vs @${handle}') && profileHtml.includes('What are you? Run /insights, then npx vibestats sync'), 'profile pages should act as share-recipient landing pages with the reveal command');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
@@ -545,6 +558,7 @@ async function assertOAuthReturnHandling() {
   const { default: startHandler, returnToFromRequest } = await import('../api/auth/github/start.js');
   const { default: callbackHandler } = await import('../api/auth/github/callback.js');
   const { OAUTH_STATE_COOKIE, decodeStatePayload } = await import('../api/_lib/auth.js');
+  const { safeReturnTo } = await import('../api/_lib/http.js');
   assert(returnToFromRequest({
     query: { returnTo: '/u/brightseth?from=card' },
     headers: { host: 'localhost:3000' },
@@ -570,6 +584,11 @@ async function assertOAuthReturnHandling() {
       referer: 'http://localhost:3000/settings',
     },
   }) === '/settings', 'OAuth start should reject unsafe explicit returnTo and fall back to same-origin referer');
+  assert(safeReturnTo('/api/me', '/') === '/', 'OAuth return handling should still reject generic API return targets');
+  assert(
+    safeReturnTo('/api/cli/local-token?callback=http%3A%2F%2F127.0.0.1%3A49152%2Fcallback&nonce=abcdefghijklmnopqrstuvwxyz', '/') === '/api/cli/local-token?callback=http%3A%2F%2F127.0.0.1%3A49152%2Fcallback&nonce=abcdefghijklmnopqrstuvwxyz',
+    'OAuth return handling should allow the CLI local-token approval endpoint',
+  );
 
   const keys = ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET'];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
@@ -617,6 +636,71 @@ async function assertOAuthReturnHandling() {
     }
   }
   console.log('ok OAuth return handling preserves viral intent safely');
+}
+
+async function assertCliLocalTokenEndpoint() {
+  const {
+    default: handler,
+    allowedLocalCallback,
+    isValidCliNonce,
+    localTokenPath,
+    localTokenRedirectUrl,
+  } = await import('../api/cli/local-token.js');
+  const callback = 'http://127.0.0.1:49152/callback';
+  const nonce = 'abcdefghijklmnopqrstuvwxyz';
+
+  assert(allowedLocalCallback(callback)?.hostname === '127.0.0.1', 'CLI local token endpoint should accept 127.0.0.1 callbacks');
+  assert(allowedLocalCallback('http://localhost:49152/callback')?.hostname === 'localhost', 'CLI local token endpoint should accept localhost callbacks');
+  assert(!allowedLocalCallback('https://127.0.0.1:49152/callback'), 'CLI local token endpoint should reject https callbacks because the CLI server is local http');
+  assert(!allowedLocalCallback('http://attacker.example:49152/callback'), 'CLI local token endpoint should reject non-local callbacks');
+  assert(!allowedLocalCallback('http://127.0.0.1:49152/other'), 'CLI local token endpoint should reject unexpected callback paths');
+  assert(!allowedLocalCallback('http://127.0.0.1:49152/callback?next=https://attacker.example'), 'CLI local token endpoint should reject prefilled callback query strings');
+  assert(isValidCliNonce(nonce) && !isValidCliNonce('short'), 'CLI local token endpoint should require high-entropy nonce shape');
+
+  const returnPath = localTokenPath(callback, nonce);
+  assert(returnPath.startsWith('/api/cli/local-token?'), 'CLI local token return path should stay same-origin');
+  assert(returnPath.includes('callback=http%3A%2F%2F127.0.0.1%3A49152%2Fcallback'), 'CLI local token return path should preserve callback URL');
+  const redirect = new URL(localTokenRedirectUrl({
+    callback,
+    token: 'sync-token',
+    host: 'https://vibestats.io',
+    expiresAt: '2026-06-01T00:00:00.000Z',
+    handle: 'brightseth',
+    nonce,
+  }));
+  assert(redirect.origin === 'http://127.0.0.1:49152', 'CLI token redirect should return to the local callback origin');
+  assert(redirect.searchParams.get('token') === 'sync-token', 'CLI token redirect should carry the sync token only to localhost');
+  assert(redirect.searchParams.get('host') === 'https://vibestats.io', 'CLI token redirect should tell the CLI which vibestats host minted the token');
+  assert(redirect.searchParams.get('nonce') === nonce, 'CLI token redirect should echo the nonce');
+
+  const invalidRes = mockRes();
+  await handler({
+    method: 'GET',
+    query: { callback: 'https://attacker.example/callback', nonce },
+    headers: { host: 'localhost:3000' },
+  }, invalidRes);
+  assert(invalidRes.statusCode === 400, 'CLI local token endpoint should reject invalid callbacks before auth');
+  assertNoStore(invalidRes, 'CLI local token invalid callback');
+
+  const unauthRes = mockRes();
+  await handler({
+    method: 'GET',
+    query: { callback, nonce },
+    headers: { host: 'localhost:3000' },
+  }, unauthRes);
+  assert(unauthRes.statusCode === 302, 'CLI local token endpoint should route unauthenticated users to GitHub OAuth');
+  assert(String(unauthRes.body).startsWith('/api/auth/github/start?returnTo='), 'CLI local token OAuth redirect should preserve the local approval return path');
+  assertNoStore(unauthRes, 'CLI local token unauthenticated redirect');
+
+  const methodRes = mockRes();
+  await handler({
+    method: 'PUT',
+    query: { callback, nonce },
+    headers: { host: 'localhost:3000' },
+  }, methodRes);
+  assert(methodRes.statusCode === 405 && methodRes.headers.Allow === 'GET, POST', 'CLI local token endpoint should guard unsupported methods');
+  assertNoStore(methodRes, 'CLI local token method guard');
+  console.log('ok CLI browser auth endpoint guards local token minting');
 }
 
 async function assertProfileShareLoop() {
@@ -1032,10 +1116,15 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.signatureFingerprint, 'CLI derived payload should include rarity fingerprint');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { parseArgs, sync } = await import('../bin/vibestats.js');
+  const { authUrlForLocalCallback, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
+  const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
+  assert(parsedNoOpen.options.openBrowser === false && parsedNoOpen.options.authTimeoutMs === 1000, 'CLI sync should parse manual browser auth options');
+  assert(normalizeHost('https://vibestats.example/path?q=1#x') === 'https://vibestats.example', 'CLI sync should normalize host URLs before auth and sync');
+  const localAuthUrl = authUrlForLocalCallback('https://vibestats.example/', 'http://127.0.0.1:49152/callback', 'abcdefghijklmnopqrstuvwxyz');
+  assert(localAuthUrl === 'https://vibestats.example/api/cli/local-token?callback=http%3A%2F%2F127.0.0.1%3A49152%2Fcallback&nonce=abcdefghijklmnopqrstuvwxyz', 'CLI sync should build browser auth URLs for localhost callbacks');
 
   const dir = await mkdtemp(join(tmpdir(), 'vibestats-cli-'));
   const file = join(dir, 'agent-insights.json');
@@ -1103,12 +1192,45 @@ async function assertCliDerivedPayload() {
     assert(usageResult.payload.metrics.sessions === 2, 'CLI dry-run should parse real /insights directories');
     assert(!output.join('').includes('tool_usage') && !output.join('').includes('underlying_goal'), 'CLI dry-run from /insights directory must not print raw usage maps or facet details');
 
+    const authOutput = [];
+    const authPromise = requestSyncToken({
+      host: 'https://vibestats.example',
+      openBrowser: false,
+      timeoutMs: 5000,
+      stdout: {
+        write(chunk) {
+          authOutput.push(String(chunk));
+          return true;
+        },
+      },
+    });
+    for (let i = 0; i < 20 && !authOutput.join('').includes('Authorize here: '); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    const authUrlText = authOutput.join('').match(/Authorize here: (https?:\/\/\S+)/)?.[1] || '';
+    assert(authUrlText, 'CLI browser auth should print a manual authorization URL');
+    const parsedAuthUrl = new URL(authUrlText);
+    const callbackUrl = new URL(parsedAuthUrl.searchParams.get('callback'));
+    const nonce = parsedAuthUrl.searchParams.get('nonce');
+    const callbackParams = new URLSearchParams({
+      token: 'browser-sync-token',
+      host: 'https://vibestats.example',
+      expires_at: '2026-06-01T00:00:00.000Z',
+      handle: 'alex',
+      nonce,
+    });
+    const callbackRes = await fetch(`${callbackUrl.toString()}?${callbackParams.toString()}`);
+    assert(callbackRes.ok, 'CLI local callback should accept the matching nonce from browser auth');
+    const authResult = await authPromise;
+    assert(authResult.token === 'browser-sync-token' && authResult.handle === 'alex', 'CLI browser auth should resolve the sync token without printing it');
+    assert(!authOutput.join('').includes('browser-sync-token'), 'CLI browser auth output must not print the sync token');
+
     output.length = 0;
     let postedBody = '';
     globalThis.fetch = async (url, options = {}) => {
       postedBody = String(options.body || '');
       assert(url === 'https://vibestats.example/api/sync', 'CLI sync should post to the selected host');
-      assert(options.headers?.Authorization === 'Bearer sync-token', 'CLI sync should send bearer token auth');
+      assert(['Bearer sync-token', 'Bearer browser-token'].includes(options.headers?.Authorization), 'CLI sync should send bearer token auth');
       return {
         ok: true,
         async json() {
@@ -1124,6 +1246,18 @@ async function assertCliDerivedPayload() {
     assert(syncResult.compare_url.includes('compareTo=alex'), 'CLI sync should receive compare-first URL from API');
     assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
     assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI sync request must not post raw usage maps');
+
+    output.length = 0;
+    const browserAuthSyncResult = await sync({
+      file,
+      host: 'https://vibestats.example',
+      token: '',
+      dryRun: false,
+      openBrowser: false,
+      requestToken: async ({ host }) => ({ token: 'browser-token', host, handle: 'alex' }),
+    });
+    assert(browserAuthSyncResult.ok === true, 'CLI sync should use browser authorization when no token is supplied');
+    assert(output.join('').includes('Authorized CLI sync as @alex.'), 'CLI sync should confirm browser-authorized handle without printing the token');
   } finally {
     process.stdout.write = originalWrite;
     globalThis.fetch = originalFetch;

@@ -92,6 +92,6 @@ export function requireSameOrigin(req) {
 export function safeReturnTo(value, fallback = '/') {
   if (typeof value !== 'string') return fallback;
   if (!value.startsWith('/') || value.startsWith('//')) return fallback;
-  if (value.startsWith('/api/')) return fallback;
+  if (value.startsWith('/api/') && !value.startsWith('/api/cli/local-token?')) return fallback;
   return value;
 }

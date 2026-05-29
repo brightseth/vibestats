@@ -327,11 +327,11 @@
         <div class="row" id="cli-sync">
           <div>
             <div class="label">CLI sync</div>
-            <div class="hint">Generate a signed token for `npx vibestats sync`. It reads the local Claude Code `/insights` directory, keeps raw session data on disk, and `npx vibestats sync --dry-run` previews the derived payload before anything is sent.</div>
+            <div class="hint">Run `npx vibestats sync` to approve in your browser. It reads the local Claude Code `/insights` directory, keeps raw session data on disk, and `npx vibestats sync --dry-run` previews the derived payload before anything is sent. Manual token commands are a fallback.</div>
           </div>
           <div class="cli-controls">
-            <textarea id="sync-command" readonly placeholder="Generate a sync command"></textarea>
-            <button class="btn" id="generate-sync-token">Generate</button>
+            <textarea id="sync-command" readonly placeholder="npx vibestats sync"></textarea>
+            <button class="btn" id="generate-sync-token">Copy fallback</button>
             <button class="btn danger" id="revoke-sync-tokens">Revoke</button>
           </div>
         </div>
@@ -562,14 +562,14 @@
           command.value = body.command || '';
           try {
             await copyText(command.value);
-            showMessage(`CLI sync command copied. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
+            showMessage(`Fallback CLI sync command copied. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
           } catch {
-            showMessage(`CLI sync command generated. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
+            showMessage(`Fallback CLI sync command generated. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
           }
-          button.textContent = 'Regenerate';
+          button.textContent = 'Refresh fallback';
         } catch (err) {
           showMessage(err.message, true);
-          button.textContent = 'Generate';
+          button.textContent = 'Copy fallback';
         }
       });
 

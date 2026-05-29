@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,18 +10,20 @@ import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
 
 const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
 const DEFAULT_HOST = 'https://vibestats.io';
+const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 
 function usage() {
   return `Usage:
-  vibestats sync [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--dry-run]
+  vibestats sync [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
 
 Environment:
-  VIBESTATS_SYNC_TOKEN  signed sync token from vibestats settings
+  VIBESTATS_SYNC_TOKEN  optional signed sync token from vibestats settings
   VIBESTATS_URL         alternate host, defaults to ${DEFAULT_HOST}
 
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
-Use --dry-run to print the derived payload without sending it.`;
+Without --token it opens a browser approval flow against your GitHub-backed vibestats session.
+Use --dry-run to print the derived payload without signing in or sending it.`;
 }
 
 export function parseArgs(argv) {
@@ -29,6 +34,8 @@ export function parseArgs(argv) {
     host: process.env.VIBESTATS_URL || DEFAULT_HOST,
     token: process.env.VIBESTATS_SYNC_TOKEN || '',
     dryRun: false,
+    openBrowser: true,
+    authTimeoutMs: DEFAULT_AUTH_TIMEOUT_MS,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -38,6 +45,8 @@ export function parseArgs(argv) {
     else if (arg === '--dir') options.file = args[++i] || '';
     else if (arg === '--host') options.host = args[++i] || '';
     else if (arg === '--token') options.token = args[++i] || '';
+    else if (arg === '--no-open') options.openBrowser = false;
+    else if (arg === '--auth-timeout-ms') options.authTimeoutMs = Number(args[++i] || 0);
     else if (arg === '--dry-run' || arg === '--dryRun') options.dryRun = true;
     else throw new Error(`Unknown option: ${arg}`);
   }
@@ -45,10 +54,143 @@ export function parseArgs(argv) {
   return { command, options };
 }
 
-export async function sync(options) {
-  if (!options.dryRun && !options.token) {
-    throw new Error('Missing sync token. Generate one from vibestats Settings, or set VIBESTATS_SYNC_TOKEN.');
+export function normalizeHost(host) {
+  const url = new URL(host || DEFAULT_HOST);
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Host must be an http(s) URL.');
+  url.pathname = '';
+  url.hash = '';
+  url.search = '';
+  return url.toString().replace(/\/+$/, '');
+}
+
+function randomNonce() {
+  return randomBytes(24)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function htmlEsc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]));
+}
+
+function successHtml(handle) {
+  const label = handle ? `@${htmlEsc(handle)}` : 'your profile';
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>vibestats CLI authorized</title></head><body><h1>vibestats CLI authorized</h1><p>You can return to the terminal. Sync will continue as ${label}.</p></body></html>`;
+}
+
+export function authUrlForLocalCallback(host, callback, nonce) {
+  const params = new URLSearchParams({ callback, nonce });
+  return `${normalizeHost(host)}/api/cli/local-token?${params.toString()}`;
+}
+
+export function openBrowser(url) {
+  const commands = {
+    darwin: ['open', [url]],
+    win32: ['cmd', ['/c', 'start', '', url]],
+    linux: ['xdg-open', [url]],
+  };
+  const [command, args] = commands[process.platform] || commands.linux;
+  try {
+    const child = spawn(command, args, { detached: true, stdio: 'ignore' });
+    child.unref();
+    return true;
+  } catch {
+    return false;
   }
+}
+
+export async function requestSyncToken({
+  host = DEFAULT_HOST,
+  open = openBrowser,
+  openBrowser: shouldOpenBrowser = true,
+  timeoutMs = DEFAULT_AUTH_TIMEOUT_MS,
+  stdout = process.stdout,
+} = {}) {
+  const nonce = randomNonce();
+  const normalizedHost = normalizeHost(host);
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timer = null;
+    const server = createServer((req, res) => {
+      const url = new URL(req.url || '/', 'http://127.0.0.1');
+      if (url.pathname !== '/callback') {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end('Not found');
+        return;
+      }
+      if (url.searchParams.get('nonce') !== nonce) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end('Invalid vibestats CLI authorization response.');
+        return;
+      }
+      if (url.searchParams.get('error')) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end('vibestats CLI authorization failed.');
+        finish(new Error(url.searchParams.get('error') || 'CLI authorization failed'));
+        return;
+      }
+
+      const token = url.searchParams.get('token') || '';
+      if (!token) {
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end('Missing vibestats sync token.');
+        finish(new Error('CLI authorization failed: missing sync token'));
+        return;
+      }
+
+      const responseHost = url.searchParams.get('host') || normalizedHost;
+      const expiresAt = url.searchParams.get('expires_at') || '';
+      const handle = url.searchParams.get('handle') || '';
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(successHtml(handle));
+      finish(null, { token, host: responseHost, expires_at: expiresAt, handle });
+    });
+
+    function finish(err, value) {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      try {
+        server.close();
+      } catch {
+        // The listen error path can reach cleanup before the server is fully open.
+      }
+      if (err) reject(err);
+      else resolve(value);
+    }
+
+    server.on('error', (err) => finish(err));
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const callback = `http://127.0.0.1:${address.port}/callback`;
+      const url = authUrlForLocalCallback(normalizedHost, callback, nonce);
+      if (shouldOpenBrowser) {
+        stdout.write('Opening browser to authorize vibestats CLI sync.\n');
+        const opened = open(url);
+        if (!opened) stdout.write('Browser did not open automatically.\n');
+      } else {
+        stdout.write('Browser opening skipped.\n');
+      }
+      stdout.write(`Authorize here: ${url}\n`);
+    });
+
+    timer = setTimeout(() => {
+      finish(new Error('Timed out waiting for browser authorization. Run again with --no-open to copy the URL manually.'));
+    }, Number(timeoutMs) > 0 ? Number(timeoutMs) : DEFAULT_AUTH_TIMEOUT_MS);
+    timer.unref?.();
+  });
+}
+
+export async function sync(options) {
   if (!options.file) throw new Error('Missing insights file path.');
 
   const insights = await readInsightsInput(options.file);
@@ -59,12 +201,24 @@ export async function sync(options) {
     return { dry_run: true, payload };
   }
 
-  const host = String(options.host || DEFAULT_HOST).replace(/\/+$/, '');
+  let host = normalizeHost(options.host || DEFAULT_HOST);
+  let token = options.token || '';
+  if (!token) {
+    const requestToken = options.requestToken || requestSyncToken;
+    const auth = await requestToken({
+      host,
+      openBrowser: options.openBrowser !== false,
+      timeoutMs: options.authTimeoutMs,
+    });
+    token = auth.token;
+    if (auth.host) host = normalizeHost(auth.host);
+    if (auth.handle) process.stdout.write(`Authorized CLI sync as @${auth.handle}.\n`);
+  }
 
   const res = await fetch(`${host}/api/sync`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${options.token}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
       'User-Agent': 'vibestats-cli',
     },

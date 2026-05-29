@@ -167,7 +167,7 @@ create index on uploads(user_id, uploaded_at desc);
    - Reads the real Claude Code `/insights` output in `~/.claude/usage-data/`: `session-meta/*.json`, `facets/*.json`, and `report.html`.
    - Computes metrics locally.
    - Keeps prompts, summaries, project paths, session ids, raw tool maps, and raw language maps on disk.
-   - POSTs to `/api/sync` with a signed token (GitHub auth required).
+   - Opens browser approval against the user's GitHub-backed vibestats session, then POSTs to `/api/sync` with a revocable signed token. Manual Settings tokens remain a fallback.
    - Updates profile silently. **This unlocks weekly upload cadence without manual download/upload.**
 6. **Cross-link with Anthropic's `/insights`.** Detect when CC users run /insights and surface a one-line CTA: "Push to vibestats." (Coordinate with Anthropic if they'll embed a CTA. Otherwise just ship the CLI and let users discover it.)
 
