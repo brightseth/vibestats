@@ -1,4 +1,4 @@
-import { json, methodNotAllowed } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
 import { publicActivity, uploadRecency } from './_lib/public-profile.js';
 import { sql } from './_lib/db.js';
@@ -62,7 +62,7 @@ function entry(row, goal, seekerArchetype) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
 
   let goal = null;
   let seekerArchetype = null;
@@ -112,9 +112,7 @@ export default async function handler(req, res) {
       seeker_archetype: seekerArchetype,
       seeker_archetype_label: seekerArchetype ? ARCHETYPE_LABELS[seekerArchetype] : null,
       entries,
-    }, {
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-    });
+    }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('GET /api/match error:', err);
     const status = err.statusCode || 500;
@@ -127,8 +125,6 @@ export default async function handler(req, res) {
       entries: [],
       unavailable: status !== 400,
       error: status === 400 ? (err.message || 'Match failed') : 'Match unavailable',
-    }, {
-      'Cache-Control': 'public, s-maxage=60',
-    });
+    }, NO_STORE_HEADERS);
   }
 }

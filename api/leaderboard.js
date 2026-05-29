@@ -1,4 +1,4 @@
-import { json, methodNotAllowed } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
 import { publicActivity, uploadRecency } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
@@ -52,11 +52,11 @@ function leaderboardEntry(row, index) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
 
   const archetype = getArchetype(req) || 'builder';
   if (!ARCHETYPE_KEYS.includes(archetype)) {
-    return json(res, 400, { error: 'Invalid archetype' });
+    return json(res, 400, { error: 'Invalid archetype' }, NO_STORE_HEADERS);
   }
 
   try {
@@ -93,9 +93,7 @@ export default async function handler(req, res) {
       week_start: rows[0]?.week_start || null,
       total: rows[0]?.total || 0,
       entries: rows.map(leaderboardEntry),
-    }, {
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-    });
+    }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('GET /api/leaderboard error:', err);
     return json(res, 200, {
@@ -105,8 +103,6 @@ export default async function handler(req, res) {
       total: 0,
       entries: [],
       unavailable: true,
-    }, {
-      'Cache-Control': 'public, s-maxage=60',
-    });
+    }, NO_STORE_HEADERS);
   }
 }

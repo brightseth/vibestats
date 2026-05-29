@@ -1,4 +1,4 @@
-import { json, methodNotAllowed } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
 import { publicActivity, uploadRecency } from './_lib/public-profile.js';
@@ -91,7 +91,7 @@ function browseEntry(row) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
 
   let archetype = 'all';
   let intent = 'any';
@@ -163,9 +163,7 @@ export default async function handler(req, res) {
       },
       total: rows[0]?.total || 0,
       entries: rows.map(browseEntry),
-    }, {
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-    });
+    }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('GET /api/browse error:', err);
     const status = err.statusCode || 500;
@@ -181,8 +179,6 @@ export default async function handler(req, res) {
       entries: [],
       unavailable: status !== 400,
       error: status === 400 ? (err.message || 'Browse failed') : 'Browse unavailable',
-    }, {
-      'Cache-Control': 'public, s-maxage=60',
-    });
+    }, NO_STORE_HEADERS);
   }
 }

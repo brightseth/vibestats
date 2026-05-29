@@ -183,6 +183,9 @@ async function assertRoutes() {
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
   assert(!leaderboardApi.includes('languages:'), 'leaderboard API should not expose public language counts');
   assert(leaderboardApi.includes('updated: uploadRecency(row.uploaded_at)'), 'leaderboard API should bucket public upload freshness');
+  assert(leaderboardApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'leaderboard API method errors should not be cached');
+  assert(leaderboardApi.includes("json(res, 400, { error: 'Invalid archetype' }, NO_STORE_HEADERS)"), 'leaderboard API invalid filters should not be cached');
+  assert(!leaderboardApi.includes('s-maxage='), 'leaderboard API profile lists should not be publicly cached');
   assert(leaderboardHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}'), 'leaderboard rows should route discovery into upload-to-compare');
   assert(leaderboardHtml.includes('data-invite="${esc(inviteText(entry, archetype))}"'), 'leaderboard rows should expose copyable rank invite text');
   assert(leaderboardHtml.includes("document.execCommand('copy')"), 'leaderboard copy actions should fall back when Clipboard API is unavailable');
@@ -192,9 +195,13 @@ async function assertRoutes() {
   assert(matchApi.includes('updated: uploadRecency(row.uploaded_at)'), 'match API should bucket public upload freshness');
   assert(matchApi.includes('seeker_archetype'), 'match API should preserve visitor archetype for goal-aware scoring');
   assert(matchApi.includes('goalFit({'), 'match API should use shared goal fit scoring');
+  assert(matchApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'match API method errors should not be cached');
+  assert(!matchApi.includes('s-maxage='), 'match API profile lists should not be publicly cached');
   assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
   assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
   assert(browseApi.includes('updated: uploadRecency(row.uploaded_at)'), 'browse API should bucket public upload freshness');
+  assert(browseApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'browse API method errors should not be cached');
+  assert(!browseApi.includes('s-maxage='), 'browse API profile lists should not be publicly cached');
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
   assert(browseHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}'), 'browse share copy should drive recipients into upload-to-compare');
   assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');
@@ -1664,33 +1671,20 @@ async function assertLeaderboardFallback() {
   console.error = () => {};
   try {
     const { default: handler } = await import('../api/leaderboard.js');
-    let statusCode = 0;
-    let body = '';
     const req = {
       method: 'GET',
       query: { archetype: 'builder' },
       headers: { host: 'localhost:3000' },
     };
-    const res = {
-      setHeader() {},
-      status(code) {
-        statusCode = code;
-        return this;
-      },
-      json(value) {
-        body = JSON.stringify(value);
-      },
-      send(value) {
-        body = String(value);
-      },
-    };
+    const res = mockRes();
 
     await handler(req, res);
-    const parsed = JSON.parse(body);
-    assert(statusCode === 200, 'leaderboard fallback should render HTTP 200 when DB is absent');
+    const parsed = res.body;
+    assert(res.statusCode === 200, 'leaderboard fallback should render HTTP 200 when DB is absent');
     assert(parsed.archetype === 'builder', 'leaderboard fallback should preserve archetype');
     assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'leaderboard fallback should return empty entries');
     assert(parsed.unavailable === true, 'leaderboard fallback should mark DB unavailable');
+    assertNoStore(res, 'leaderboard fallback');
     console.log('ok leaderboard fallback keeps public board shell usable without DB');
   } finally {
     console.error = originalError;
@@ -1702,31 +1696,21 @@ async function assertMatchFallback() {
   console.error = () => {};
   try {
     const { default: handler } = await import('../api/match.js');
-    let statusCode = 0;
-    let body = '';
     const req = {
       method: 'GET',
       query: { goal: 'mentor' },
       headers: { host: 'localhost:3000' },
     };
-    const res = {
-      setHeader() {},
-      status(code) {
-        statusCode = code;
-        return this;
-      },
-      json(value) {
-        body = JSON.stringify(value);
-      },
-    };
+    const res = mockRes();
 
     await handler(req, res);
-    const parsed = JSON.parse(body);
-    assert(statusCode === 200, 'match fallback should render HTTP 200 when DB is absent');
+    const parsed = res.body;
+    assert(res.statusCode === 200, 'match fallback should render HTTP 200 when DB is absent');
     assert(parsed.goal === 'mentor', 'match fallback should preserve goal');
     assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'match fallback should return empty entries');
     assert(parsed.unavailable === true, 'match fallback should mark DB unavailable');
     assert(parsed.error === 'Match unavailable', 'match fallback should not leak DB internals');
+    assertNoStore(res, 'match fallback');
     console.log('ok match fallback keeps match page usable without DB');
   } finally {
     console.error = originalError;
@@ -1738,33 +1722,86 @@ async function assertBrowseFallback() {
   console.error = () => {};
   try {
     const { default: handler } = await import('../api/browse.js');
-    let statusCode = 0;
-    let body = '';
     const req = {
       method: 'GET',
       query: { archetype: 'builder', intent: 'active' },
       headers: { host: 'localhost:3000' },
     };
-    const res = {
-      setHeader() {},
-      status(code) {
-        statusCode = code;
-        return this;
-      },
-      json(value) {
-        body = JSON.stringify(value);
-      },
-    };
+    const res = mockRes();
 
     await handler(req, res);
-    const parsed = JSON.parse(body);
-    assert(statusCode === 200, 'browse fallback should render HTTP 200 when DB is absent');
+    const parsed = res.body;
+    assert(res.statusCode === 200, 'browse fallback should render HTTP 200 when DB is absent');
     assert(parsed.filters.archetype === 'builder', 'browse fallback should preserve archetype filter');
     assert(parsed.filters.intent === 'active', 'browse fallback should preserve intent filter');
     assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'browse fallback should return empty entries');
     assert(parsed.unavailable === true, 'browse fallback should mark DB unavailable');
     assert(parsed.error === 'Browse unavailable', 'browse fallback should not leak DB internals');
+    assertNoStore(res, 'browse fallback');
     console.log('ok browse fallback keeps public directory shell usable without DB');
+  } finally {
+    console.error = originalError;
+  }
+}
+
+async function assertDiscoveryApiNoStoreGuards() {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const cases = [
+      {
+        label: 'browse method guard',
+        module: '../api/browse.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'GET',
+      },
+      {
+        label: 'browse invalid filter',
+        module: '../api/browse.js',
+        req: { method: 'GET', query: { archetype: 'bad' }, headers: { host: 'localhost:3000' } },
+        status: 400,
+      },
+      {
+        label: 'match method guard',
+        module: '../api/match.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'GET',
+      },
+      {
+        label: 'match invalid goal',
+        module: '../api/match.js',
+        req: { method: 'GET', query: { goal: 'idle' }, headers: { host: 'localhost:3000' } },
+        status: 400,
+      },
+      {
+        label: 'leaderboard method guard',
+        module: '../api/leaderboard.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'GET',
+      },
+      {
+        label: 'leaderboard invalid filter',
+        module: '../api/leaderboard.js',
+        req: { method: 'GET', query: { archetype: 'bad' }, headers: { host: 'localhost:3000' } },
+        status: 400,
+      },
+    ];
+
+    for (const testCase of cases) {
+      const { default: handler } = await import(testCase.module);
+      const res = mockRes();
+      await handler(testCase.req, res);
+      assert(res.statusCode === testCase.status, `${testCase.label} should return HTTP ${testCase.status}`);
+      assertNoStore(res, testCase.label);
+      if (testCase.allow) {
+        assert(res.headers.Allow === testCase.allow, `${testCase.label} should advertise allowed methods`);
+      }
+    }
+
+    console.log('ok discovery API guards disable caching');
   } finally {
     console.error = originalError;
   }
@@ -1953,6 +1990,7 @@ await assertProfileJsonFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();
 await assertProfileShareSurfaceGuards();
+await assertDiscoveryApiNoStoreGuards();
 await assertLeaderboardFallback();
 await assertMatchFallback();
 await assertBrowseFallback();
