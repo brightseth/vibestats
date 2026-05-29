@@ -489,6 +489,28 @@
       return `https://vibestats.io/compare?a=${encodeURIComponent(subjectParam(aSubject))}&b=${encodeURIComponent(subjectParam(bSubject))}`;
     }
 
+    function primaryProfileSubject(aSubject, bSubject) {
+      if (bSubject?.handle) return bSubject;
+      if (aSubject?.handle) return aSubject;
+      return null;
+    }
+
+    function comparisonClaimAction(aSubject, bSubject) {
+      const profileSubject = primaryProfileSubject(aSubject, bSubject);
+      if (!profileSubject) return { href: '/', label: "What's YOUR archetype?" };
+      return {
+        href: `/?compareTo=${encodeURIComponent(profileSubject.handle)}&compareArchetype=${encodeURIComponent(profileSubject.type)}`,
+        label: `Compare with @${profileSubject.handle}`,
+      };
+    }
+
+    function comparisonSharePrompt(aSubject, bSubject) {
+      const profileSubject = primaryProfileSubject(aSubject, bSubject);
+      return profileSubject
+        ? `See how you'd pair with @${profileSubject.handle}:`
+        : 'Compare your vibecoding personality:';
+    }
+
     function showResult(aSubjectInput, bSubjectInput) {
       const aSubject = normalizeSubject(aSubjectInput);
       const bSubject = normalizeSubject(bSubjectInput);
@@ -542,7 +564,8 @@
 
       // Share URL
       const shareUrl = canonicalShareUrl(aSubject, bSubject);
-      const tweetText = `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\nCompare your vibecoding personality:\n${shareUrl}\n\n#vibestats #vibecoding`;
+      const claimAction = comparisonClaimAction(aSubject, bSubject);
+      const tweetText = `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\n${comparisonSharePrompt(aSubject, bSubject)}\n${shareUrl}\n\n#vibestats #vibecoding`;
 
       document.getElementById('result-actions').innerHTML = `
         <a class="action-btn action-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" rel="noopener">
@@ -552,8 +575,8 @@
         <button class="action-btn action-btn-copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
           Copy link
         </button>
-        <a class="action-btn action-btn-cta" href="/" style="text-decoration:none">
-          What's YOUR archetype? &rarr;
+        <a class="action-btn action-btn-cta" href="${esc(claimAction.href)}" style="text-decoration:none">
+          ${esc(claimAction.label)} &rarr;
         </a>
         <a class="action-btn action-btn-vibe" href="https://www.slashvibe.dev/join?ref=vibestats_compare&archetype=${aType}&vsid=${getAnonId()}" target="_blank" rel="noopener" onclick="trackVibeReferral('compare_pairing', '${aType}')">
           Find this pairing on /vibe &rarr;

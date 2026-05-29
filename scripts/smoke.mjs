@@ -150,6 +150,15 @@ async function assertProfileShareLoop() {
   console.log('ok profile share loop returns visitors to comparison');
 }
 
+async function assertCompareShareLoop() {
+  const compareHtml = await readFile('compare.html', 'utf8');
+  assert(compareHtml.includes('comparisonClaimAction(aSubject, bSubject)'), 'compare result should compute a profile-backed claim CTA');
+  assert(compareHtml.includes('compareTo=${encodeURIComponent(profileSubject.handle)}'), 'compare result CTA should seed upload-to-profile comparison');
+  assert(compareHtml.includes("See how you'd pair with @${profileSubject.handle}:"), 'profile-backed compare shares should use asymmetric invite copy');
+  assert(compareHtml.includes('${esc(claimAction.label)} &rarr;'), 'compare result should render the computed claim CTA label');
+  console.log('ok compare share loop claims profile-backed comparisons');
+}
+
 async function assertMatchmakingHelpers() {
   const { cleanSeekerArchetype, goalFit } = await import('../api/_lib/matchmaking.js');
   assert(cleanSeekerArchetype('builder') === 'builder', 'match seeker archetype should normalize valid archetypes');
@@ -736,6 +745,7 @@ await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
 await assertProfileShareLoop();
+await assertCompareShareLoop();
 await assertMatchmakingHelpers();
 await assertUploadSanitizer();
 await assertCliDerivedPayload();
