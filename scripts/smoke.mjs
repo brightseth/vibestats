@@ -317,6 +317,10 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('/pair/${encodeURIComponent'), 'upload-to-compare should route to handle-backed pairing');
   assert(indexHtml.includes('digest-email-inline'), 'post-save profile flow should offer weekly digest opt-in');
   assert(indexHtml.includes('weekly_digest_opt_in: true'), 'inline digest opt-in should use settings API');
+  assert(indexHtml.includes('postSaveInviteText(profilePath, archetype, scores)'), 'post-save save state should copy asymmetric profile invite text');
+  assert(indexHtml.includes('id="copy-saved-badge"'), 'post-save save state should expose portable badge copy');
+  assert(indexHtml.includes('id="copy-saved-embed"'), 'post-save save state should expose portable embed copy');
+  assert(indexHtml.includes('Create pairing link'), 'post-save save state should prompt owners to create pairing links');
   assert(indexHtml.includes('<a class="auth-pill" href="/browse">Browse</a>'), 'upload page should expose public browse loop');
   assert(indexHtml.includes("See how you'd pair with this archetype:"), 'ephemeral share copy should drive card recipients into comparison');
   assert(indexHtml.includes('Compare with this archetype:'), 'ephemeral share variants should avoid passive homepage discovery copy');

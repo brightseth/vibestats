@@ -468,6 +468,34 @@
       text-align: center;
     }
     .profile-save-status a { color: #fff; text-decoration: none; word-break: break-word; }
+    .post-save-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .post-save-actions a,
+    .post-save-actions button {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(107,143,255,0.35);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.12);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 0 10px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .post-save-actions button.secondary,
+    .post-save-actions a.secondary {
+      border-color: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-muted);
+    }
     .profile-save-status.muted {
       color: var(--text-dim);
       border-color: rgba(255,255,255,0.08);
@@ -1930,16 +1958,73 @@
       return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
-    function renderSavedProfileStatus(profileUrl) {
-      const safeProfileUrl = safeHtml(profileUrl || `/u/${currentUser?.gh_handle || ''}`);
+    function canonicalProfileUrl(profilePath) {
+      return `https://vibestats.io${profilePath}`;
+    }
+
+    function profilePathFromSave(profileUrl) {
+      if (profileUrl) {
+        try {
+          return new URL(profileUrl, location.origin).pathname;
+        } catch (e) { /* fall through */ }
+      }
+      return `/u/${encodeURIComponent(currentUser?.gh_handle || '')}`;
+    }
+
+    function postSaveInviteText(profilePath, archetype, scores) {
+      const signature = buildVibeSignature(scores || {}, archetype);
+      const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
+      const handle = currentUser?.gh_handle || 'me';
+      const label = signature?.label || arch.name;
+      return `See how you'd pair with @${handle}, a ${label}:\n${canonicalProfileUrl(profilePath)}`;
+    }
+
+    async function copyWithButton(button, text, doneLabel, idleLabel) {
+      if (!button) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = doneLabel;
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = idleLabel; }, 1500);
+    }
+
+    function wirePostSaveActions(profilePath, archetype, scores) {
+      const handle = currentUser?.gh_handle || '';
+      const canonicalUrl = canonicalProfileUrl(profilePath);
+      const badgeMarkdown = `[![vibestats: @${handle}](${canonicalUrl}/badge.svg)](${canonicalUrl})`;
+      const embedHtml = `<iframe src="${canonicalUrl}/embed" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
+      document.getElementById('copy-saved-invite')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, postSaveInviteText(profilePath, archetype, scores), 'Invite copied!', 'Copy invite');
+      });
+      document.getElementById('copy-saved-badge')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, badgeMarkdown, 'Badge copied!', 'Copy badge');
+      });
+      document.getElementById('copy-saved-embed')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, embedHtml, 'Embed copied!', 'Copy embed');
+      });
+    }
+
+    function renderSavedProfileStatus(profileUrl, archetype, scores) {
+      const profilePath = profilePathFromSave(profileUrl);
+      const safeProfilePath = safeHtml(profilePath);
+      const safeCompareUrl = safeHtml(`/compare?me=${encodeURIComponent(currentUser?.gh_handle || '')}`);
       updateProfileSaveStatus(`
-        Saved to your profile &rarr; <a href="${safeProfileUrl}">${safeProfileUrl}</a>
+        Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a>
+        <div class="post-save-actions">
+          <button type="button" id="copy-saved-invite">Copy invite</button>
+          <a href="${safeCompareUrl}">Create pairing link</a>
+          <button type="button" class="secondary" id="copy-saved-badge">Copy badge</button>
+          <button type="button" class="secondary" id="copy-saved-embed">Copy embed</button>
+        </div>
         <div class="digest-inline">
           <input type="email" id="digest-email-inline" placeholder="you@example.com" autocomplete="email" aria-label="Weekly digest email">
           <button type="button" id="digest-opt-in-inline">Get weekly digest</button>
           <div class="digest-inline-note">Monday email with evolution, rarity, and leaderboard movement. Raw insights JSON never leaves your browser.</div>
         </div>
       `);
+      wirePostSaveActions(profilePath, archetype, scores);
       const button = document.getElementById('digest-opt-in-inline');
       const input = document.getElementById('digest-email-inline');
       if (!button || !input) return;
@@ -1969,7 +2054,7 @@
         } catch (err) {
           button.disabled = false;
           button.textContent = 'Try again';
-          updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${safeProfileUrl}">${safeProfileUrl}</a><br>${safeHtml(err.message)}`, 'error');
+          updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a><br>${safeHtml(err.message)}`, 'error');
         }
       });
     }
@@ -2119,7 +2204,7 @@
           setTimeout(() => { location.href = compareUrl; }, 650);
           return;
         }
-        renderSavedProfileStatus(body.profile_url);
+        renderSavedProfileStatus(body.profile_url, archetype, scores);
       } catch (err) {
         updateProfileSaveStatus(err.message, 'error');
       }
