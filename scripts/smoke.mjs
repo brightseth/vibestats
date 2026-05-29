@@ -252,6 +252,7 @@ async function assertRoutes() {
   assert(!identityDoctor.includes("{ label: 'app origin', any: ['VIBESTATS_URL'] }"), 'identity doctor should not hard-require VIBESTATS_URL when runtime can infer host origin');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');
   assert((await readFile('db/migrations/0006_sync_token_revocation.sql', 'utf8')).includes('sync_token_invalidated_at'), 'migrations should support CLI sync token revocation');
+  assert((await readFile('db/migrations/0007_https_contact_urls.sql', 'utf8')).includes("contact_url like 'https://%'"), 'migrations should enforce HTTPS public contact URLs for new rows');
   assert(launchDoc.includes('vercel env ls') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
   assert(launchDoc.includes('"commandForIgnoringBuildStep": null'), 'launch checklist should require Vercel ignored-build setting to be disabled');
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');
@@ -782,6 +783,13 @@ async function assertProfileSettingsHelpers() {
   assert(publicProfileSettings({ show_raw_counts: true, show_languages: true }).show_languages === true, 'metric visibility should serialize');
   assert(cleanLookingFor('pair-coding') === 'pair-coding', 'looking_for should accept valid values');
   assert(cleanContactUrl('https://x.com/brightseth') === 'https://x.com/brightseth', 'contact URL should normalize valid URL');
+  let insecureContactRejected = false;
+  try {
+    cleanContactUrl('http://x.com/brightseth');
+  } catch (err) {
+    insecureContactRejected = err.statusCode === 400;
+  }
+  assert(insecureContactRejected, 'public contact URL should require HTTPS');
   let badLookingForRejected = false;
   try {
     cleanLookingFor('swiping');
@@ -799,6 +807,11 @@ async function assertProfileSettingsHelpers() {
     looking_for_expires_at: new Date(Date.now() - 10000).toISOString(),
     contact_url: 'https://x.com/brightseth',
   }).looking_for === 'idle', 'expired match settings should not serialize as active');
+  assert(publicMatchSettings({
+    looking_for: 'pair-coding',
+    looking_for_expires_at: new Date(Date.now() + 10000).toISOString(),
+    contact_url: 'http://x.com/brightseth',
+  }).contact_url === null, 'public match settings should hide legacy insecure contact URLs');
   console.log('ok profile settings helpers');
 }
 

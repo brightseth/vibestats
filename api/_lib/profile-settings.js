@@ -11,6 +11,16 @@ const LOOKING_FOR_LABELS = {
   idle: 'Idle',
 };
 
+function publicContactUrl(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(String(value));
+    return url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function publicProfileSettings(row = {}) {
   return {
     show_raw_counts: Boolean(row.show_raw_counts),
@@ -46,7 +56,7 @@ export function publicMatchSettings(row = {}, { now = new Date() } = {}) {
     looking_for: active ? lookingFor : 'idle',
     looking_for_label: active ? LOOKING_FOR_LABELS[lookingFor] : LOOKING_FOR_LABELS.idle,
     looking_for_expires_at: active ? row.looking_for_expires_at : null,
-    contact_url: active ? row.contact_url || null : null,
+    contact_url: active ? publicContactUrl(row.contact_url) : null,
   };
 }
 
@@ -101,8 +111,8 @@ export function cleanContactUrl(value) {
     err.statusCode = 400;
     throw err;
   }
-  if (!['https:', 'http:'].includes(url.protocol)) {
-    const err = new Error('Contact URL must use http or https');
+  if (url.protocol !== 'https:') {
+    const err = new Error('Contact URL must use https');
     err.statusCode = 400;
     throw err;
   }
