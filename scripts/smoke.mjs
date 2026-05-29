@@ -296,6 +296,7 @@ async function assertRoutes() {
   assert(identityDoctor.includes('sync_token_invalidated_at'), 'identity doctor schema check should verify sync-token revocation schema');
   assert(!identityDoctor.includes("{ label: 'app origin', any: ['VIBESTATS_URL'] }"), 'identity doctor should not hard-require VIBESTATS_URL when runtime can infer host origin');
   assert(launchAudit.includes('/api/identity-status') && launchAudit.includes('profile_save_available') && launchAudit.includes('weekly_digest_available'), 'launch audit should verify deployed identity readiness');
+  assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
   assert(launchAudit.includes("RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage']"), 'launch audit should scan public surfaces for raw-field markers');
   assert(launchAudit.includes("path: '/wrapped'") && launchAudit.includes("path: '/dashboard'") && launchAudit.includes("path: `/card?a="), 'launch audit should cover static and dynamic share surfaces');

@@ -63,7 +63,7 @@ function usage() {
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
-- profile shell, unknown-profile fallback cache policy, embed, and badge surfaces
+- profile shell, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, compare-first upload route, and pair preview route
 - obvious raw-insights field leaks in public profile/share HTML/SVG responses`;
 }
@@ -148,6 +148,13 @@ async function auditLaunch(options) {
   }
 
   const paths = [
+    {
+      label: 'profile JSON miss',
+      path: `/api/u/${encodeURIComponent(missingHandle)}`,
+      expectedType: 'application/json',
+      allowStatuses: expectReady ? [404] : [404, 503],
+      requireNoStore: true,
+    },
     {
       label: 'profile page',
       path: `/u/${encodeURIComponent(handle)}`,
