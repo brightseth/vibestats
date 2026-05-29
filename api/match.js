@@ -1,6 +1,6 @@
 import { json, methodNotAllowed } from './_lib/http.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
-import { publicActivity } from './_lib/public-profile.js';
+import { publicActivity, uploadRecency } from './_lib/public-profile.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 import { ARCHETYPE_LABELS, GOAL_LABELS, cleanSeekerArchetype, goalFit } from './_lib/matchmaking.js';
@@ -57,7 +57,7 @@ function entry(row, goal, seekerArchetype) {
       secondary: signature.secondary,
     } : null,
     activity: publicActivity(row.metrics || {}),
-    uploaded_at: row.uploaded_at,
+    updated: uploadRecency(row.uploaded_at),
   };
 }
 
@@ -99,8 +99,12 @@ export default async function handler(req, res) {
       limit 50
     `;
 
-    const entries = rows.map((row) => entry(row, goal, seekerArchetype))
-      .sort((a, b) => b.fit_score - a.fit_score || new Date(b.uploaded_at) - new Date(a.uploaded_at));
+    const entries = rows.map((row) => ({
+      value: entry(row, goal, seekerArchetype),
+      uploadedAt: row.uploaded_at,
+    }))
+      .sort((a, b) => b.value.fit_score - a.value.fit_score || new Date(b.uploadedAt) - new Date(a.uploadedAt))
+      .map(({ value }) => value);
 
     return json(res, 200, {
       goal,

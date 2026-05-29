@@ -1,6 +1,6 @@
 import { json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
-import { publicActivity } from './_lib/public-profile.js';
+import { publicActivity, uploadRecency } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -47,7 +47,7 @@ function leaderboardEntry(row, index) {
       secondary: signature.secondary,
     } : null,
     activity: publicActivity(row.metrics || {}),
-    uploaded_at: row.uploaded_at,
+    updated: uploadRecency(row.uploaded_at),
   };
 }
 

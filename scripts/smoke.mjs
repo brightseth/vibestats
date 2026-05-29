@@ -114,6 +114,7 @@ async function assertRoutes() {
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
   const ogApi = await readFile('api/og.js', 'utf8');
   const cacheHelper = await readFile('api/_lib/cache.js', 'utf8');
+  const publicProfileHelper = await readFile('api/_lib/public-profile.js', 'utf8');
   const profileHtmlApi = await readFile('api/profile.js', 'utf8');
   const embedApi = await readFile('api/embed.js', 'utf8');
   const badgeApi = await readFile('api/badge.js', 'utf8');
@@ -165,11 +166,14 @@ async function assertRoutes() {
   assert(leaderboardApi.includes("date_trunc('week', now())"), 'leaderboard API should reset weekly');
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
   assert(!leaderboardApi.includes('languages:'), 'leaderboard API should not expose public language counts');
+  assert(leaderboardApi.includes('updated: uploadRecency(row.uploaded_at)'), 'leaderboard API should bucket public upload freshness');
   assert(!matchApi.includes('languages:'), 'match API should not expose public language counts');
+  assert(matchApi.includes('updated: uploadRecency(row.uploaded_at)'), 'match API should bucket public upload freshness');
   assert(matchApi.includes('seeker_archetype'), 'match API should preserve visitor archetype for goal-aware scoring');
   assert(matchApi.includes('goalFit({'), 'match API should use shared goal fit scoring');
   assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
   assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
+  assert(browseApi.includes('updated: uploadRecency(row.uploaded_at)'), 'browse API should bucket public upload freshness');
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
   assert((await readFile('match.html', 'utf8')).includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
@@ -195,6 +199,8 @@ async function assertRoutes() {
   assert(cacheHelper.includes("user?.privacy === 'public'"), 'profile cache helper should cache only explicit public profiles');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
+  assert(publicProfileHelper.includes('if (isOwner) out.uploaded_at = upload.uploaded_at'), 'profile upload serializer should keep exact upload timestamps owner-only');
+  assert(profileHtml.includes('uploadDateLabel(upload)'), 'profile UI should render bucketed visitor freshness labels');
   assert(embedApi.includes('compareTo=${encodeURIComponent(user.gh_handle)}'), 'profile embed should click through to upload-to-compare when an archetype exists');
   assert(embedApi.includes('Compare with @${user.gh_handle}'), 'profile embed should expose a comparison-oriented accessible action');
   assert(embedApi.includes('profileShareCacheControl(user)'), 'profile embed should use shared profile cache policy');
@@ -327,7 +333,8 @@ async function assertIdentityReadiness() {
 }
 
 async function assertOAuthReturnHandling() {
-  const { returnToFromRequest } = await import('../api/auth/github/start.js');
+  const { default: handler, returnToFromRequest } = await import('../api/auth/github/start.js');
+  const { OAUTH_STATE_COOKIE, decodeStatePayload } = await import('../api/_lib/auth.js');
   assert(returnToFromRequest({
     query: { returnTo: '/u/brightseth?from=card' },
     headers: { host: 'localhost:3000' },
@@ -353,6 +360,38 @@ async function assertOAuthReturnHandling() {
       referer: 'http://localhost:3000/settings',
     },
   }) === '/settings', 'OAuth start should reject unsafe explicit returnTo and fall back to same-origin referer');
+
+  const keys = ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET'];
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  try {
+    process.env.POSTGRES_URL = 'postgres://user:password@example.invalid/db';
+    process.env.GITHUB_CLIENT_ID = 'github-client-id';
+    process.env.GITHUB_CLIENT_SECRET = 'github-client-secret';
+    process.env.AUTH_SECRET = 'smoke-test-secret';
+    const res = mockRes();
+    handler({
+      method: 'GET',
+      query: {},
+      headers: {
+        host: 'localhost:3000',
+        referer: 'http://localhost:3000/?compareTo=brightseth&compareArchetype=builder',
+      },
+    }, res);
+    const cookie = Array.isArray(res.headers['Set-Cookie']) ? res.headers['Set-Cookie'][0] : res.headers['Set-Cookie'];
+    const encodedValue = String(cookie || '').match(new RegExp(`${OAUTH_STATE_COOKIE}=([^;]+)`))?.[1] || '';
+    const statePayload = decodeStatePayload(decodeURIComponent(encodedValue));
+    assert(res.statusCode === 302, 'OAuth start handler should redirect when identity env is ready');
+    assert(String(res.body).startsWith('https://github.com/login/oauth/authorize?'), 'OAuth start handler should redirect to GitHub');
+    assert(statePayload?.returnTo === '/?compareTo=brightseth&compareArchetype=builder', 'OAuth start handler should persist comparison returnTo in state cookie');
+  } finally {
+    for (const key of keys) {
+      if (previous[key] == null) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous[key];
+      }
+    }
+  }
   console.log('ok OAuth return handling preserves viral intent safely');
 }
 
@@ -746,7 +785,8 @@ async function assertProfileSettingsHelpers() {
 }
 
 async function assertPublicProfileHelpers() {
-  const { metricVisibility, publicUpload } = await import('../api/_lib/public-profile.js');
+  const { metricVisibility, publicUpload, uploadRecency } = await import('../api/_lib/public-profile.js');
+  const recentUploadAt = new Date().toISOString();
   const upload = {
     id: 'upload-1',
     archetype: 'builder',
@@ -759,20 +799,25 @@ async function assertPublicProfileHelpers() {
       secondaryArchetype: 'shipper',
       dateRange: 'private range',
     },
-    uploaded_at: '2026-05-28T10:00:00.000Z',
+    uploaded_at: recentUploadAt,
   };
   const privateView = publicUpload(upload, metricVisibility({}), { isOwner: false });
   assert(!privateView.id, 'visitor upload payload should not expose upload id');
   assert(Object.keys(privateView.metrics).length === 0, 'visitor upload payload should hide exact metrics by default');
   assert(privateView.activity.cadence === 'high-velocity cadence', 'visitor upload payload should include coarse activity');
   assert(privateView.raw_meta.signature === 'high-velocity Builder', 'visitor upload payload should keep signature metadata');
+  assert(!Object.hasOwn(privateView, 'uploaded_at'), 'visitor upload payload must not expose exact upload timestamp');
+  assert(privateView.updated.label === 'updated this week', 'visitor upload payload should expose bucketed freshness');
   assert(!('dateRange' in privateView.raw_meta), 'visitor upload payload should omit raw date metadata');
   const countsView = publicUpload(upload, metricVisibility({ show_raw_counts: true, show_languages: true }), { isOwner: false });
   assert(countsView.metrics.days === 31, 'opt-in public view should expose raw counts');
   assert(countsView.metrics.languages === 6, 'opt-in public view should expose language count');
   const ownerView = publicUpload(upload, metricVisibility({}, { isOwner: true }), { isOwner: true });
   assert(ownerView.id === 'upload-1', 'owner upload payload should retain upload id');
+  assert(ownerView.uploaded_at === recentUploadAt, 'owner upload payload should retain exact upload timestamp');
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
+  assert(uploadRecency(null).bucket === 'unknown', 'public upload recency should tolerate missing timestamps');
+  assert(uploadRecency('2026-04-28T10:00:00.000Z', new Date('2026-05-28T10:00:00.000Z')).bucket === 'this-quarter', 'public upload recency should bucket older timestamps');
   console.log('ok public profile helpers hide visitor metrics by default');
 }
 

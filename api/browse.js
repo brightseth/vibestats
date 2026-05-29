@@ -1,7 +1,7 @@
 import { json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
-import { publicActivity } from './_lib/public-profile.js';
+import { publicActivity, uploadRecency } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -86,7 +86,7 @@ function browseEntry(row) {
     } : null,
     activity: publicActivity(row.metrics),
     match: publicMatchSettings(row),
-    uploaded_at: row.uploaded_at,
+    updated: uploadRecency(row.uploaded_at),
   };
 }
 

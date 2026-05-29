@@ -536,6 +536,7 @@
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
     const shortDate = (value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const uploadDateLabel = (upload) => upload?.uploaded_at ? shortDate(upload.uploaded_at) : (upload?.updated?.label || 'recent result');
     const dayMs = 24 * 60 * 60 * 1000;
     const SUB_PREFIXES = {
       orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
@@ -821,7 +822,7 @@
       }
       const pointsData = uploads.slice(0, 12).reverse().map((upload) => ({
         score: Number(upload.scores?.[archetype] || 0),
-        label: shortDate(upload.uploaded_at),
+        label: uploadDateLabel(upload),
       }));
       document.getElementById('spark-meta').textContent = `${pointsData.length} upload${pointsData.length === 1 ? '' : 's'}`;
       if (pointsData.length === 0) {
@@ -855,7 +856,7 @@
         const score = Number(upload.scores?.[upload.archetype] || 0);
         return `
           <div class="timeline-row">
-            <span>${shortDate(upload.uploaded_at)}</span>
+            <span>${esc(uploadDateLabel(upload))}</span>
             <div class="bar" style="--card-color:${color}"><span style="--w:${score}%"></span></div>
             <span title="${esc(arch.name)}">${score}%</span>
           </div>
@@ -916,7 +917,7 @@
       const uploadCount = profile.history?.total_uploads ?? profile.uploads.length;
       document.getElementById('handle-meta').innerHTML = `
         <span>${historyVisible ? `${uploadCount} upload${uploadCount === 1 ? '' : 's'}` : 'latest public result'}</span>
-        <span>${shortDate(latest.uploaded_at)}</span>
+        <span>${esc(uploadDateLabel(latest))}</span>
         ${streak > 1 ? `<span class="pill">${streak}-upload streak</span>` : ''}
         ${profile.is_owner && profile.user.privacy ? `<span class="pill">${esc(profile.user.privacy)}</span>` : ''}
       `;
