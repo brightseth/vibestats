@@ -115,6 +115,8 @@ Before undrafting or merging the PR, prove these paths on the deployed app:
 - `/u/<gh-handle>` renders the saved profile.
 - Profile share CTA routes a new visitor to `/?compareTo=<handle>&compareArchetype=<type>`.
 - Upload-to-compare saves the visitor profile and lands on `/u/<host>/pair/<visitor>`.
+- Profile JSON includes evolution, day-based streak, rarity, and leaderboard fields.
+- Profile embed and badge show comparison-oriented scored credential proof.
 - Settings export contains derived uploads and settings, not raw insights JSON.
 - Settings delete removes the user and cascades profile uploads/settings rows.
 - Public profile, embed, badge, browse, match, and leaderboard surfaces hide exact metrics unless the owner opted in.

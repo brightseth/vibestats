@@ -355,7 +355,9 @@ async function assertRoutes() {
   assert(launchAudit.includes("args.push('--', '-s', '-i')"), 'launch audit should collect status and headers through vercel curl');
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
-  assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"'), 'launch audit should require saved profile JSON to include public profile loop fields');
+  assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
+  assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare with me') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof');
+  assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('Claude Code signal'), 'launch audit should require saved profile badges to expose scored credential proof');
   assert(launchAudit.includes("label: 'profile-backed pair route'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`'), 'launch audit should cover profile-backed pair URLs');
   assert(launchAudit.includes('Open the pairing, then claim yours') && launchAudit.includes('/?compareTo='), 'launch audit should verify dynamic pair metadata when identity is ready');
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
@@ -402,6 +404,8 @@ async function assertRoutes() {
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
   assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('day-based streak') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
+  assert(launchDoc.includes('Profile JSON includes evolution, day-based streak, rarity, and leaderboard fields.'), 'launch checklist should require profile return-loop JSON proof');
+  assert(launchDoc.includes('Profile embed and badge show comparison-oriented scored credential proof.'), 'launch checklist should require scored portable credential proof');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   assert((await readFile('README.md', 'utf8')).includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');

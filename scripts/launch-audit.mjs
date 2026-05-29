@@ -332,7 +332,7 @@ async function auditLaunch(options) {
       expectedType: 'application/json',
       allowStatuses: expectReady ? [200] : [200, 404, 503],
       requireNoStore: true,
-      mustInclude: expectReady ? ['"uploads"', '"metric_visibility"', '"history"', '"leaderboard"', '"evolution"'] : null,
+      mustInclude: expectReady ? ['"uploads"', '"metric_visibility"', '"history"', '"leaderboard"', '"evolution"', '"streak"'] : null,
     },
     {
       label: 'profile page',
@@ -352,12 +352,14 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}/embed`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
+      mustInclude: expectReady ? ['Compare with me', '<span>signal</span>'] : null,
     },
     {
       label: 'profile badge',
       path: `/u/${encodeURIComponent(handle)}/badge.svg`,
       expectedType: 'image/svg+xml',
       allowStatuses: expectReady ? [200] : [200, 404],
+      mustInclude: expectReady ? 'Claude Code signal' : null,
     },
     {
       label: 'upload-to-compare route',
