@@ -577,8 +577,19 @@
       return signature.label || ARCHETYPE_SHORT_NAMES[upload?.archetype] || 'Claude Code profile';
     }
 
-    function profileInviteText(handle, latest, profileUrl) {
-      return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:\n${profileUrl}`;
+    function profileProofLine(profile) {
+      const rank = leaderboardText(profile?.leaderboard);
+      const rarity = profile?.rarity?.count ? scarcityText(profile.rarity) : '';
+      const fallbackRarity = !rank && !rarity ? scarcityText(profile?.rarity) : '';
+      return [
+        rarity || fallbackRarity,
+        rank,
+      ].filter(Boolean).join(' / ');
+    }
+
+    function profileInviteText(handle, latest, profileUrl, profile) {
+      const proof = profileProofLine(profile);
+      return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:${proof ? `\n${proof}` : ''}\n${profileUrl}`;
     }
 
     function leaderboardText(leaderboard) {
@@ -705,8 +716,9 @@
       const hostArchetype = latest.archetype;
       const profilePath = `/u/${encodeURIComponent(handle)}`;
       const profileUrl = `${location.origin}${profilePath}`;
-      const inviteText = profileInviteText(handle, latest, profileUrl);
-      const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.`;
+      const inviteText = profileInviteText(handle, latest, profileUrl, profile);
+      const proof = profileProofLine(profile);
+      const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''}`;
       const badgePath = `${profilePath}/badge.svg`;
       const embedPath = `${profilePath}/embed`;
       const uploadCompareUrl = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;

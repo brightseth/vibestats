@@ -318,6 +318,7 @@
     const starEmptySVG = `<svg class="chem-star empty" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
     const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = (n) => Number(n || 0).toLocaleString();
     let currentComparison = null;
 
     function renderStars(n) {
@@ -348,9 +349,31 @@
       return subject.handle ? `@${subject.handle}` : ARCHETYPES[subject.type].name;
     }
 
+    function rarityMeta(rarity) {
+      if (!rarity?.count) return '';
+      const plural = rarity.count === 1 ? 'profile' : 'profiles';
+      return `${rarity.tier} combo: 1 of ${fmt(rarity.count)} saved ${plural} this month`;
+    }
+
+    function leaderboardMeta(leaderboard) {
+      if (!leaderboard?.rank) return '';
+      const label = ARCHETYPES[leaderboard.label]?.short || leaderboard.label || 'archetype';
+      const total = leaderboard.total ? ` of ${fmt(leaderboard.total)}` : '';
+      return `#${fmt(leaderboard.rank)}${total} on weekly ${label} board`;
+    }
+
+    function subjectProofLine(subject) {
+      if (!subject?.handle) return '';
+      return [
+        subject.signature,
+        rarityMeta(subject.rarity),
+        leaderboardMeta(subject.leaderboard),
+      ].filter(Boolean).join(' / ');
+    }
+
     function subjectMeta(subject) {
       if (!subject.handle) return '';
-      return subject.signature || ARCHETYPES[subject.type].name;
+      return subjectProofLine(subject) || ARCHETYPES[subject.type].name;
     }
 
     async function resolveCompareSubject(value) {
@@ -369,6 +392,8 @@
           type: latest.archetype,
           handle: profile.user.gh_handle,
           signature: latest.raw_meta?.signature || '',
+          rarity: profile.rarity || null,
+          leaderboard: profile.leaderboard || null,
           param: profile.user.gh_handle,
         };
       } catch {
@@ -520,8 +545,9 @@
 
     function comparisonSharePrompt(aSubject, bSubject) {
       const profileSubject = primaryProfileSubject(aSubject, bSubject);
+      const proof = subjectProofLine(profileSubject);
       return profileSubject
-        ? `See how you'd pair with @${profileSubject.handle}:`
+        ? `${proof ? `${proof}. ` : ''}See how you'd pair with @${profileSubject.handle}:`
         : 'Compare your vibecoding personality:';
     }
 

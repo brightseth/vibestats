@@ -243,9 +243,10 @@ async function assertProfileShareLoop() {
   const indexHtml = await readFile('index.html', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   assert(profileHtml.includes('compareTo=${encodeURIComponent(handle)}'), 'profile compare CTA should seed upload-to-compare');
-  assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl)'), 'profile copy action should use asymmetric invite text');
+  assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl, profile)'), 'profile copy action should use asymmetric invite text');
   assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
+  assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
   assert(indexHtml.includes('Only derived profile data is persisted here. Raw insights JSON is never stored.'), 'pending auth save must document derived-only storage');
   assert(indexHtml.includes('resumePendingProfileSave'), 'upload page should resume pending profile save after auth');
@@ -270,6 +271,9 @@ async function assertCompareShareLoop() {
   assert(compareHtml.includes('compareTo=${encodeURIComponent(profileSubject.handle)}'), 'compare result CTA should seed upload-to-profile comparison');
   assert(compareHtml.includes('compareArchetype=${encodeURIComponent(archetypeSubject.type)}'), 'anonymous compare result CTA should seed upload-to-archetype comparison');
   assert(compareHtml.includes('Compare with The ${archetypeInviteLabel(archetypeSubject)}'), 'anonymous compare result CTA should name the shared archetype');
+  assert(compareHtml.includes('rarity: profile.rarity || null'), 'profile-backed compare should preserve scarcity proof from profile API');
+  assert(compareHtml.includes('leaderboard: profile.leaderboard || null'), 'profile-backed compare should preserve leaderboard proof from profile API');
+  assert(compareHtml.includes('subjectProofLine(profileSubject)'), 'profile-backed compare shares should include profile social proof');
   assert(!compareHtml.includes("href: '/', label: \"What's YOUR archetype?\""), 'anonymous compare result should not fall back to generic homepage upload');
   assert(compareHtml.includes("See how you'd pair with @${profileSubject.handle}:"), 'profile-backed compare shares should use asymmetric invite copy');
   assert(compareHtml.includes('${esc(claimAction.label)} &rarr;'), 'compare result should render the computed claim CTA label');
