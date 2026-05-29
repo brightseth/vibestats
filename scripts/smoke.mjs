@@ -271,6 +271,7 @@ async function assertRoutes() {
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
   assert(settingsApi.includes('sync_token_invalidated_at'), 'authenticated settings API should preserve sync token revocation metadata');
   assert(settingsApi.includes('includeActivity: true'), 'authenticated settings API should retain owner activity timestamps');
+  assert(settingsApi.includes('publicIdentityReadiness') && settingsApi.includes('Weekly digest delivery is not configured'), 'settings API should reject new digest opt-ins when delivery env is missing');
   assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(weeklyDigestApi.includes('createDigestUnsubscribeToken'), 'weekly digest should include one-click unsubscribe tokens');

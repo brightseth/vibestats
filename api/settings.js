@@ -1,6 +1,7 @@
 import { clearSessionCookie, requireUser } from './_lib/auth.js';
 import { publicUser, sql } from './_lib/db.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
+import { publicIdentityReadiness } from './_lib/identity-readiness.js';
 import {
   cleanContactUrl,
   cleanDigestEmail,
@@ -60,6 +61,9 @@ export default async function handler(req, res) {
 
         if (optIn && !email) {
           return json(res, 400, { error: 'Digest email required to opt in' }, NO_STORE_HEADERS);
+        }
+        if (optIn && publicIdentityReadiness().weekly_digest_available !== true) {
+          return json(res, 503, { error: 'Weekly digest delivery is not configured' }, NO_STORE_HEADERS);
         }
 
         const settingsRows = await sql()`
