@@ -2014,7 +2014,8 @@
     function wirePostSaveActions(profilePath, archetype, scores) {
       const handle = currentUser?.gh_handle || '';
       const canonicalUrl = canonicalProfileUrl(profilePath);
-      const badgeMarkdown = `[![vibestats: @${handle}](${canonicalUrl}/badge.svg)](${canonicalUrl})`;
+      const compareUrl = `https://vibestats.io/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
+      const badgeMarkdown = `[![vibestats: @${handle}](${canonicalUrl}/badge.svg)](${compareUrl})`;
       const embedHtml = `<iframe src="${canonicalUrl}/embed" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
       document.getElementById('copy-saved-invite')?.addEventListener('click', (event) => {
         copyWithButton(event.currentTarget, postSaveInviteText(profilePath, archetype, scores), 'Invite copied!', 'Copy invite');

@@ -115,8 +115,8 @@ create index on uploads(user_id, uploaded_at desc);
 2. **Compatibility math lifted out of `compare.html`** into `lib/compat.js`, callable from any page.
 3. **Embed card.** `<iframe src="vibestats.io/u/<handle>/embed">` for personal sites and GitHub READMEs. 600×320, lazy-loaded, link back to full profile.
 4. **GitHub README badge.** Markdown snippet:
-   `[![vibestats](https://vibestats.io/u/brightseth/badge.svg)](https://vibestats.io/u/brightseth)` →
-   tiny SVG with archetype + primary score. This is the credential surface.
+   `[![vibestats](https://vibestats.io/u/brightseth/badge.svg)](https://vibestats.io/?compareTo=brightseth&compareArchetype=builder)` →
+   tiny SVG with archetype + primary score. This is the credential surface; clicks should start comparison.
 5. **Tweak share copy.** Tweet variants currently say "What's YOUR personality?" — change to "See how you'd pair with me: vibestats.io/u/<handle>". Same vanity, asymmetric ask.
 
 **Non-goals:**

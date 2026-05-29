@@ -19,7 +19,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A community genome page** (`/genome`) — archetype distribution + community averages.
 - **A compatibility view** (`/compare`) — two pasted profiles side-by-side.
 - **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
-- **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites.
+- **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites; copied Markdown clicks through to compare.
 - **An embeddable profile card** (`/u/<handle>/embed`) for personal sites, with a link back to compare.
 - **Weekly public archetype leaderboards** (`/leaderboard/<archetype>`) from opt-in public profiles only, with rank shown on `/u/<handle>`.
 - **A public directory** (`/browse`) that filters opt-in profiles by archetype and active intent, showing only coarse derived activity.

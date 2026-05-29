@@ -798,7 +798,7 @@
       });
 
       copyBadgeBtn.addEventListener('click', async () => {
-        const markdown = `[![vibestats: @${handle}](${location.origin}${badgePath})](${profileUrl})`;
+        const markdown = `[![vibestats: @${handle}](${location.origin}${badgePath})](${uploadCompareUrl})`;
         try {
           await copyText(markdown);
           copyBadgeBtn.textContent = 'Badge copied!';

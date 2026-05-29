@@ -452,6 +452,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile X share should retain the profile as credential context');
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
+  assert(profileHtml.includes('](${uploadCompareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
@@ -466,6 +467,7 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes("document.execCommand('copy')"), 'upload/post-save copy actions should fall back when Clipboard API is unavailable');
   assert(indexHtml.includes("copyShareLink(this, '${shareUrl}')"), 'archetype result copy button should use resilient copy helper');
   assert(indexHtml.includes('id="copy-saved-badge"'), 'post-save save state should expose portable badge copy');
+  assert(indexHtml.includes('](${compareUrl})'), 'post-save badge markdown should click through to upload-to-compare');
   assert(indexHtml.includes('id="copy-saved-embed"'), 'post-save save state should expose portable embed copy');
   assert(indexHtml.includes('Create pairing link'), 'post-save save state should prompt owners to create pairing links');
   assert(indexHtml.includes('<a class="auth-pill" href="/browse">Browse</a>'), 'upload page should expose public browse loop');
