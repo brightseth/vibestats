@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { readSession, originForRequest } from './_lib/auth.js';
+import { profileShareCacheControl } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
@@ -64,12 +65,6 @@ function genericProfilePage(req, handle) {
   });
 }
 
-function profileCacheControl(user) {
-  return user?.privacy === 'private'
-    ? 'private, no-store'
-    : 'public, s-maxage=300, stale-while-revalidate=3600';
-}
-
 export function profileDescription({ signature = '', arch, metrics = {}, handle, rarity = null, leaderboard = null } = {}) {
   const proof = profileShareProof({ rarity, leaderboard });
   return [
@@ -113,7 +108,7 @@ export default async function handler(req, res) {
     const latest = uploads[0];
     if (!latest) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', profileCacheControl(user));
+      res.setHeader('Cache-Control', profileShareCacheControl(user));
       return res.status(200).send(genericProfilePage(req, user.gh_handle));
     }
 
@@ -159,7 +154,7 @@ export default async function handler(req, res) {
     });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', profileCacheControl(user));
+    res.setHeader('Cache-Control', profileShareCacheControl(user));
     res.status(200).send(html);
   } catch (err) {
     console.error('GET /api/profile error:', err);

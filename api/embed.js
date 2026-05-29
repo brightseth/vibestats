@@ -1,4 +1,5 @@
 import { readSession, originForRequest } from './_lib/auth.js';
+import { profileShareCacheControl } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { metricVisibility, publicUpload } from './_lib/public-profile.js';
 import { rarityTier, signatureFromUpload } from './_lib/signatures.js';
@@ -318,12 +319,6 @@ function sendHtml(res, status, html, cache = 'public, s-maxage=300, stale-while-
   res.status(status).send(html);
 }
 
-function profileAssetCacheControl(user) {
-  return user?.privacy === 'private'
-    ? 'private, no-store'
-    : 'public, s-maxage=300, stale-while-revalidate=3600';
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).send('Method not allowed');
 
@@ -370,7 +365,7 @@ export default async function handler(req, res) {
         latest: null,
         rarity: null,
         visibility,
-      }), profileAssetCacheControl(user));
+      }), profileShareCacheControl(user));
     }
 
     const latestSignature = signatureFromUpload(latest);
@@ -397,7 +392,7 @@ export default async function handler(req, res) {
       latest: publicUpload(latest, visibility, { isOwner: false }),
       rarity,
       visibility,
-    }), profileAssetCacheControl(user));
+    }), profileShareCacheControl(user));
   } catch (err) {
     console.error('GET /api/embed error:', err);
     return sendHtml(res, 200, genericEmbedPage(req, handle), 'public, s-maxage=60');

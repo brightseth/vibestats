@@ -19,6 +19,7 @@ const apiModules = [
   '../api/settings.js',
   '../api/settings/export.js',
   '../api/cron/weekly-digest.js',
+  '../api/_lib/cache.js',
   '../api/_lib/evolution.js',
   '../api/_lib/export-upload.js',
   '../api/_lib/profile-settings.js',
@@ -75,6 +76,7 @@ async function assertRoutes() {
   const matchApi = await readFile('api/match.js', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
+  const cacheHelper = await readFile('api/_lib/cache.js', 'utf8');
   const profileHtmlApi = await readFile('api/profile.js', 'utf8');
   const embedApi = await readFile('api/embed.js', 'utf8');
   const badgeApi = await readFile('api/badge.js', 'utf8');
@@ -133,7 +135,7 @@ async function assertRoutes() {
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
-  assert(profileHtmlApi.includes("'private, no-store'"), 'private owner profile HTML must not be publicly cacheable');
+  assert(profileHtmlApi.includes('profileShareCacheControl(user)'), 'profile HTML OG metadata should use shared profile cache policy');
   assert(profileHtmlApi.includes('weeklyLeaderboardRank(user, latest)'), 'profile HTML OG metadata should include public leaderboard proof');
   assert(profileHtmlApi.includes('rarityForSignature(signature)'), 'profile HTML OG metadata should include signature scarcity proof');
   assert(profileHtmlApi.includes('profileDescription({'), 'profile HTML OG metadata should centralize comparison-oriented share copy');
@@ -142,12 +144,14 @@ async function assertRoutes() {
   assert(comparePageApi.includes("user.privacy !== 'private'"), 'compare page metadata must not expose private profiles');
   assert(comparePageApi.includes('profileShareProof({ rarity: subject.rarity, leaderboard: subject.leaderboard })'), 'compare page metadata should include profile social proof');
   assert(comparePageApi.includes('Open the pairing, then claim yours'), 'compare page metadata should drive recipients to claim their profile');
+  assert(comparePageApi.includes("res.setHeader('Cache-Control', 'private, no-store')"), 'compare page metadata should not be publicly cached');
+  assert(cacheHelper.includes("user?.privacy === 'public'"), 'profile cache helper should cache only explicit public profiles');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
   assert(embedApi.includes('compareTo=${encodeURIComponent(user.gh_handle)}'), 'profile embed should click through to upload-to-compare when an archetype exists');
   assert(embedApi.includes('Compare with @${user.gh_handle}'), 'profile embed should expose a comparison-oriented accessible action');
-  assert(embedApi.includes("'private, no-store'"), 'private owner profile embed must not be publicly cacheable');
-  assert(badgeApi.includes("'private, no-store'"), 'private owner profile badge must not be publicly cacheable');
+  assert(embedApi.includes('profileShareCacheControl(user)'), 'profile embed should use shared profile cache policy');
+  assert(badgeApi.includes('profileShareCacheControl(user)'), 'profile badge should use shared profile cache policy');
   assert(syncApi.includes('requireSyncUser'), 'sync API should require signed CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
@@ -725,6 +729,15 @@ async function assertProfileMetadataHelpers() {
   console.log('ok profile metadata helpers include social proof without raw JSON');
 }
 
+async function assertProfileCacheHelpers() {
+  const { profileShareCacheControl } = await import('../api/_lib/cache.js');
+  assert(profileShareCacheControl({ privacy: 'public' }).includes('s-maxage=300'), 'public profiles should allow short shared cache');
+  assert(profileShareCacheControl({ privacy: 'unlisted' }) === 'private, no-store', 'unlisted profile share surfaces should not be publicly cached');
+  assert(profileShareCacheControl({ privacy: 'private' }) === 'private, no-store', 'private profile share surfaces should not be publicly cached');
+  assert(profileShareCacheControl(null) === 'private, no-store', 'unknown profile share surfaces should not be publicly cached');
+  console.log('ok profile share cache helper keeps unlisted/private surfaces uncacheable');
+}
+
 async function assertCompareMetadataHelpers() {
   const { default: handler, canExposeCompareMetadata, compareMetadataForSubjects } = await import('../api/compare-page.js');
   const metadata = compareMetadataForSubjects(
@@ -1066,6 +1079,7 @@ await assertSignatureHelpers();
 await assertEvolutionHelpers();
 await assertDigestHelpers();
 await assertProfileMetadataHelpers();
+await assertProfileCacheHelpers();
 await assertCompareMetadataHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();

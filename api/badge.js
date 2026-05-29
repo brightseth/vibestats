@@ -1,4 +1,5 @@
 import { readSession } from './_lib/auth.js';
+import { profileShareCacheControl } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
@@ -65,12 +66,6 @@ function sendSvg(res, status, svg, cache = 'public, s-maxage=300, stale-while-re
   res.status(status).send(svg);
 }
 
-function profileAssetCacheControl(user) {
-  return user?.privacy === 'private'
-    ? 'private, no-store'
-    : 'public, s-maxage=300, stale-while-revalidate=3600';
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).send('Method not allowed');
 
@@ -111,7 +106,7 @@ export default async function handler(req, res) {
       label,
       archetype: arch?.name || 'vibestats',
       color: arch?.color || '#6B8FFF',
-    }), profileAssetCacheControl(user));
+    }), profileShareCacheControl(user));
   } catch (err) {
     console.error('GET /api/badge error:', err);
     return sendSvg(res, 200, badgeSvg({ handle }), 'public, s-maxage=60');
