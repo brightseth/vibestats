@@ -111,11 +111,11 @@ const requiredIndexes = [
   'profile_settings_looking_for_idx',
 ];
 const requiredConstraints = [
-  'users_privacy_check',
-  'uploads_archetype_check',
-  'profile_settings_looking_for_check',
-  'profile_settings_contact_url_len',
-  'profile_settings_contact_url_protocol',
+  { name: 'users_privacy_check', validated: true },
+  { name: 'uploads_archetype_check', validated: true },
+  { name: 'profile_settings_looking_for_check', validated: true },
+  { name: 'profile_settings_contact_url_len', validated: true },
+  { name: 'profile_settings_contact_url_protocol', validated: true },
 ];
 const requiredForeignKeys = [
   {
@@ -206,15 +206,25 @@ async function checkIdentitySchema(databaseUrl) {
       else missing.push(`schema index ${index}`);
     }
 
+    const requiredConstraintNames = requiredConstraints.map((constraint) => constraint.name);
     const constraintRows = await sql`
-      select conname
-      from pg_constraint
-      where conname in ${sql(requiredConstraints)}
+      select con.conname, con.convalidated
+      from pg_constraint con
+      join pg_class table_name on table_name.oid = con.conrelid
+      join pg_namespace namespace on namespace.oid = table_name.relnamespace
+      where namespace.nspname = 'public'
+        and con.conname in ${sql(requiredConstraintNames)}
     `;
-    const constraints = new Set(constraintRows.map((row) => row.conname));
+    const constraints = new Map(constraintRows.map((row) => [row.conname, row]));
     for (const constraint of requiredConstraints) {
-      if (constraints.has(constraint)) ok.push(`schema constraint ${constraint}`);
-      else missing.push(`schema constraint ${constraint}`);
+      const row = constraints.get(constraint.name);
+      if (!row) {
+        missing.push(`schema constraint ${constraint.name}`);
+      } else if (constraint.validated && row.convalidated !== true) {
+        missing.push(`schema constraint ${constraint.name} validated`);
+      } else {
+        ok.push(`schema constraint ${constraint.name} validated`);
+      }
     }
 
     const foreignKeyRows = await sql`
