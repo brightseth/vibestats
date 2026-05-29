@@ -149,7 +149,7 @@ async function assertRoutes() {
     'profile embed route should rewrite to embed API',
   );
   assert(
-    rewrites.some((rewrite) => rewrite.source === '/leaderboard/:archetype' && rewrite.destination === '/leaderboard.html?archetype=:archetype'),
+    rewrites.some((rewrite) => rewrite.source === '/leaderboard/:archetype' && rewrite.destination === '/leaderboard?archetype=:archetype'),
     'archetype leaderboard route should rewrite to leaderboard page',
   );
   assert(

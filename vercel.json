@@ -12,7 +12,7 @@
     { "source": "/u/:handle", "destination": "/api/profile?handle=:handle" },
     { "source": "/compare", "destination": "/api/compare-page" },
     { "source": "/browse", "destination": "/browse.html" },
-    { "source": "/leaderboard/:archetype", "destination": "/leaderboard.html?archetype=:archetype" },
+    { "source": "/leaderboard/:archetype", "destination": "/leaderboard?archetype=:archetype" },
     { "source": "/leaderboard", "destination": "/leaderboard.html" },
     { "source": "/match", "destination": "/match.html" },
     { "source": "/settings", "destination": "/settings.html" },
