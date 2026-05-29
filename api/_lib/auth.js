@@ -232,12 +232,23 @@ export function originForRequest(req) {
 }
 
 export function encodeStatePayload(payload) {
-  return base64url(JSON.stringify(payload));
+  const encoded = base64url(JSON.stringify(payload));
+  return `${encoded}.${sign(encoded)}`;
 }
 
 export function decodeStatePayload(value) {
   try {
-    return JSON.parse(fromBase64url(value));
+    const token = String(value || '');
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const expected = sign(parts[0]);
+    const actual = parts[1];
+    const expectedBuffer = Buffer.from(expected);
+    const actualBuffer = Buffer.from(actual);
+    if (expectedBuffer.length !== actualBuffer.length || !timingSafeEqual(expectedBuffer, actualBuffer)) {
+      return null;
+    }
+    return JSON.parse(fromBase64url(parts[0]));
   } catch {
     return null;
   }

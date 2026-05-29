@@ -399,7 +399,11 @@ async function assertOAuthReturnHandling() {
     const statePayload = decodeStatePayload(decodeURIComponent(encodedValue));
     assert(res.statusCode === 302, 'OAuth start handler should redirect when identity env is ready');
     assert(String(res.body).startsWith('https://github.com/login/oauth/authorize?'), 'OAuth start handler should redirect to GitHub');
+    const redirectUrl = new URL(String(res.body));
+    assert(redirectUrl.searchParams.get('scope') === '', 'OAuth start should request identity-only GitHub access with no repo, email, or commit scopes');
     assert(statePayload?.returnTo === '/?compareTo=brightseth&compareArchetype=builder', 'OAuth start handler should persist comparison returnTo in state cookie');
+    assert(decodeStatePayload(decodeURIComponent(encodedValue).replace(/\.[^.]+$/, '.tampered')) === null, 'OAuth state cookie should reject signature tampering');
+    assert(decodeStatePayload(Buffer.from(JSON.stringify({ state: 'fake', returnTo: '/settings' })).toString('base64url')) === null, 'OAuth state cookie should reject unsigned legacy payloads');
   } finally {
     for (const key of keys) {
       if (previous[key] == null) {
