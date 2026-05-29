@@ -7,9 +7,14 @@ const requiredGroups = [
   { label: 'GitHub OAuth client ID', any: ['GITHUB_CLIENT_ID'] },
   { label: 'GitHub OAuth client secret', any: ['GITHUB_CLIENT_SECRET'] },
   { label: 'session secret', any: ['VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET'] },
-  { label: 'app origin', any: ['VIBESTATS_URL'] },
 ];
 const optionalGroups = [
+  {
+    label: 'stable app origin',
+    alternatives: [
+      ['VIBESTATS_URL'],
+    ],
+  },
   {
     label: 'community stats Redis',
     alternatives: [

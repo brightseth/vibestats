@@ -101,7 +101,7 @@ Copy `.env.example` to `.env.local`. You'll need:
 - `DATABASE_URL`, `POSTGRES_URL`, or `NEON_DATABASE_URL` for Neon-backed profiles.
 - `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` for OAuth.
 - `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET` for the signed session cookie.
-- `VIBESTATS_URL` for the OAuth callback origin (`http://localhost:3000` locally).
+- `VIBESTATS_URL` for a stable OAuth callback origin when request-host inference is not enough.
 - `CRON_SECRET`, `RESEND_API_KEY`, and `DIGEST_FROM_EMAIL` for the opt-in weekly digest cron.
 
 Pull shared Vercel env when available:
@@ -155,4 +155,5 @@ CI runs the smoke harness on pull requests and pushes to `main`.
 
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — strategic direction, 4 waves of execution, opinion on what's actually viral.
 - [`docs/GOAL.md`](docs/GOAL.md) — north star and viral loop guardrails.
+- [`docs/LAUNCH.md`](docs/LAUNCH.md) — production readiness gates for identity, privacy, and viral-loop launch.
 - [`docs/CODEX-KICKOFF.md`](docs/CODEX-KICKOFF.md) — paste-ready brief for the next developer picking this up.
