@@ -603,6 +603,22 @@
       return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:${proof ? `\n${proof}` : ''}\n${profileUrl}`;
     }
 
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
     function leaderboardText(leaderboard) {
       if (!leaderboard?.rank) return '';
       const label = ARCHETYPE_SHORT_NAMES[leaderboard.label] || leaderboard.label || 'archetype';
@@ -771,7 +787,7 @@
 
       copyBtn.addEventListener('click', async () => {
         try {
-          await navigator.clipboard.writeText(inviteText);
+          await copyText(inviteText);
           copyBtn.textContent = 'Invite copied!';
           setTimeout(() => { copyBtn.textContent = 'Copy invite'; }, 1500);
         } catch {
@@ -783,7 +799,7 @@
       copyBadgeBtn.addEventListener('click', async () => {
         const markdown = `[![vibestats: @${handle}](${location.origin}${badgePath})](${profileUrl})`;
         try {
-          await navigator.clipboard.writeText(markdown);
+          await copyText(markdown);
           copyBadgeBtn.textContent = 'Badge copied!';
           setTimeout(() => { copyBadgeBtn.textContent = 'Copy badge'; }, 1500);
         } catch {
@@ -795,7 +811,7 @@
       copyEmbedBtn.addEventListener('click', async () => {
         const iframe = `<iframe src="${location.origin}${embedPath}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
         try {
-          await navigator.clipboard.writeText(iframe);
+          await copyText(iframe);
           copyEmbedBtn.textContent = 'Embed copied!';
           setTimeout(() => { copyEmbedBtn.textContent = 'Copy embed'; }, 1500);
         } catch {

@@ -1636,7 +1636,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
               Save card
             </button>
-            <button class="share-btn share-btn-copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
+            <button class="share-btn share-btn-copy" onclick="copyShareLink(this, '${shareUrl}')">
               Copy link
             </button>
             <a class="share-btn share-btn-copy" href="${compareHref}" style="text-decoration:none">
@@ -1979,15 +1979,35 @@
       return `See how you'd pair with @${handle}, a ${label}:\n${canonicalProfileUrl(profilePath)}`;
     }
 
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
     async function copyWithButton(button, text, doneLabel, idleLabel) {
       if (!button) return;
       try {
-        await navigator.clipboard.writeText(text);
+        await copyText(text);
         button.textContent = doneLabel;
       } catch {
         button.textContent = 'Copy failed';
       }
       setTimeout(() => { button.textContent = idleLabel; }, 1500);
+    }
+
+    function copyShareLink(button, shareUrl) {
+      copyWithButton(button, shareUrl, 'Copied!', 'Copy link');
     }
 
     function wirePostSaveActions(profilePath, archetype, scores) {
@@ -2377,12 +2397,12 @@
 
     function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     function copyPath() {
-      navigator.clipboard.writeText('~/.claude/usage-data/agent-insights.json').then(() => {
+      copyText('~/.claude/usage-data/agent-insights.json').then(() => {
         const el = document.querySelector('.file-path code');
         const orig = el.textContent;
         el.textContent = 'Copied!';
         setTimeout(() => el.textContent = orig, 1500);
-      });
+      }).catch(() => {});
     }
 
     // ========================================
