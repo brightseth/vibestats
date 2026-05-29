@@ -353,6 +353,7 @@ async function assertRoutes() {
   assert(launchAudit.includes('/api/identity-status') && launchAudit.includes('profile_save_available') && launchAudit.includes('weekly_digest_available'), 'launch audit should verify deployed identity readiness');
   assert(launchAudit.includes('--vercel-deployment') && launchAudit.includes('vercel curl'), 'launch audit should support protected Vercel preview verification');
   assert(launchAudit.includes("args.push('--', '-s', '-i')"), 'launch audit should collect status and headers through vercel curl');
+  assert(launchAudit.includes("label: 'OAuth callback failure response'") && launchAudit.includes("path: '/api/auth/github/callback?code=a&state=b'"), 'launch audit should verify OAuth callback failure responses');
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');

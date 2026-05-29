@@ -89,7 +89,7 @@ function usage() {
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
-- public auth/sync failure responses do not expose internal config names
+- public auth/session/sync failure responses do not expose internal config names
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
@@ -264,6 +264,12 @@ async function auditLaunch(options) {
       path: '/api/cron/weekly-digest?dryRun=1',
       allowStatuses: [401, 503],
       expectedType: 'application/json',
+    },
+    {
+      label: 'OAuth callback failure response',
+      path: '/api/auth/github/callback?code=a&state=b',
+      allowStatuses: [400, 503],
+      expectedType: 'text/html',
     },
   ];
 
