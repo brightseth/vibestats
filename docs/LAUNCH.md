@@ -101,7 +101,7 @@ Then verify the live schema shape before dogfooding profile saves:
 npm run doctor:identity -- --schema
 ```
 
-The schema doctor checks the required tables, columns, indexes, constraints, foreign-key delete cascades, and `schema_migrations` rows, including the sync-token revocation column, the unlisted-by-default privacy column, HTTPS contact URL constraint, and cascading deletion of uploads/profile settings when an account is deleted.
+The schema doctor checks the required tables, columns, indexes, constraints, foreign-key delete cascades, and `schema_migrations` rows, including the sync-token revocation column, the unlisted-by-default privacy column, match-intent enum, contact URL length/HTTPS constraints, and cascading deletion of uploads/profile settings when an account is deleted.
 
 ## 5. Production Flow Proof
 

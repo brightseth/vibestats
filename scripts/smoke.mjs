@@ -321,6 +321,8 @@ async function assertRoutes() {
   assert(identityDoctor.includes('--schema') && identityDoctor.includes('checkIdentitySchema'), 'identity doctor should expose an explicit DB schema readiness check');
   assert(identityDoctor.includes('information_schema.columns') && identityDoctor.includes('schema_migrations'), 'identity doctor schema check should verify columns and applied migrations');
   assert(identityDoctor.includes('users.privacy default unlisted and not null'), 'identity doctor schema check should verify the profile privacy default');
+  assert(identityDoctor.includes('profile_settings_looking_for_check'), 'identity doctor schema check should verify match intent enum constraint');
+  assert(identityDoctor.includes('profile_settings_contact_url_len'), 'identity doctor schema check should verify contact URL length constraint');
   assert(identityDoctor.includes('profile_settings_contact_url_protocol'), 'identity doctor schema check should verify HTTPS contact URL constraint');
   assert(identityDoctor.includes('sync_token_invalidated_at'), 'identity doctor schema check should verify sync-token revocation schema');
   assert(identityDoctor.includes('schema foreign key uploads.user_id cascades to users'), 'identity doctor schema check should verify upload deletion cascades');
@@ -357,7 +359,7 @@ async function assertRoutes() {
   assert(authCallbackApi.includes('gh_handle, avatar_url, privacy, last_seen_at') && authCallbackApi.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(launchDoc.includes('vercel env ls') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
   assert(launchDoc.includes('npm run doctor:identity -- --schema'), 'launch checklist should require post-migration schema proof');
-  assert(launchDoc.includes('sync-token revocation column') && launchDoc.includes('unlisted-by-default privacy column') && launchDoc.includes('HTTPS contact URL constraint'), 'launch checklist should name schema gates for privacy and sync hardening');
+  assert(launchDoc.includes('sync-token revocation column') && launchDoc.includes('unlisted-by-default privacy column') && launchDoc.includes('match-intent enum') && launchDoc.includes('contact URL length/HTTPS constraints'), 'launch checklist should name schema gates for privacy and sync hardening');
   assert(launchDoc.includes('foreign-key delete cascades') && launchDoc.includes('cascading deletion of uploads/profile settings'), 'launch checklist should name schema gates for account deletion privacy');
   assert(launchDoc.includes('"commandForIgnoringBuildStep": null'), 'launch checklist should require Vercel ignored-build setting to be disabled');
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');

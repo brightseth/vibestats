@@ -110,7 +110,11 @@ const requiredIndexes = [
   'uploads_user_time_idx',
   'profile_settings_looking_for_idx',
 ];
-const requiredConstraints = ['profile_settings_contact_url_protocol'];
+const requiredConstraints = [
+  'profile_settings_looking_for_check',
+  'profile_settings_contact_url_len',
+  'profile_settings_contact_url_protocol',
+];
 const requiredForeignKeys = [
   {
     table: 'uploads',
