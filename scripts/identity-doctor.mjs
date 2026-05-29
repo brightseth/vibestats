@@ -2,16 +2,27 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
 const envFiles = ['.env.local', '.vercel/.env.preview.local'];
-const required = [
-  'DATABASE_URL',
-  'GITHUB_CLIENT_ID',
-  'GITHUB_CLIENT_SECRET',
-  'VIBE_SESSION_SECRET',
-  'VIBESTATS_URL',
+const requiredGroups = [
+  { label: 'database URL', any: ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL'] },
+  { label: 'GitHub OAuth client ID', any: ['GITHUB_CLIENT_ID'] },
+  { label: 'GitHub OAuth client secret', any: ['GITHUB_CLIENT_SECRET'] },
+  { label: 'session secret', any: ['VIBE_SESSION_SECRET', 'AUTH_SECRET', 'NEXTAUTH_SECRET'] },
+  { label: 'app origin', any: ['VIBESTATS_URL'] },
 ];
-const optionalExisting = [
-  'KV_REST_API_URL',
-  'KV_REST_API_TOKEN',
+const optionalGroups = [
+  {
+    label: 'community stats Redis',
+    alternatives: [
+      ['KV_REST_API_URL', 'KV_REST_API_TOKEN'],
+      ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'],
+    ],
+  },
+  {
+    label: 'weekly digest email',
+    alternatives: [
+      ['CRON_SECRET', 'RESEND_API_KEY', 'DIGEST_FROM_EMAIL'],
+    ],
+  },
 ];
 
 function parseEnv(contents) {
@@ -44,17 +55,45 @@ for (const [key, value] of Object.entries(process.env)) {
   if (loaded[key] == null) loaded[key] = value;
 }
 
-const missing = required.filter((key) => !loaded[key]);
-const present = required.filter((key) => !missing.includes(key));
-const optionalPresent = optionalExisting.filter((key) => loaded[key]);
-const optionalMissing = optionalExisting.filter((key) => !loaded[key]);
+function firstPresent(keys) {
+  return keys.find((key) => loaded[key]);
+}
+
+function completeAlternative(alternatives) {
+  return alternatives.find((keys) => keys.every((key) => loaded[key]));
+}
+
+function anyPresent(alternatives) {
+  return alternatives.flat().some((key) => loaded[key]);
+}
+
+const present = [];
+const missing = [];
+for (const group of requiredGroups) {
+  const key = firstPresent(group.any);
+  if (key) present.push({ ...group, key });
+  else missing.push(group);
+}
+
+const optional = optionalGroups.map((group) => ({
+  ...group,
+  complete: completeAlternative(group.alternatives),
+  partial: !completeAlternative(group.alternatives) && anyPresent(group.alternatives),
+}));
 
 console.log('Identity launch doctor');
 console.log('');
-for (const key of present) console.log(`ok ${key}`);
-for (const key of missing) console.log(`missing ${key}`);
-for (const key of optionalPresent) console.log(`ok ${key}`);
-for (const key of optionalMissing) console.log(`missing optional ${key}`);
+for (const group of present) console.log(`ok ${group.label} (${group.key})`);
+for (const group of missing) console.log(`missing ${group.label} (${group.any.join(' or ')})`);
+for (const group of optional) {
+  if (group.complete) {
+    console.log(`ok optional ${group.label} (${group.complete.join(', ')})`);
+  } else if (group.partial) {
+    console.log(`partial optional ${group.label}`);
+  } else {
+    console.log(`missing optional ${group.label}`);
+  }
+}
 
 if (missing.length) {
   console.log('');
