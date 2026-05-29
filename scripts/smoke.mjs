@@ -1930,36 +1930,32 @@ async function assertDigestCronAuth() {
   const { default: handler } = await import('../api/cron/weekly-digest.js');
   const previousSecret = process.env.CRON_SECRET;
   const originalError = console.error;
-  process.env.CRON_SECRET = 'smoke-cron-secret';
   console.error = () => {};
-  const req = {
-    method: 'GET',
-    query: { dryRun: '1' },
-    headers: { host: 'localhost:3000', authorization: 'Bearer wrong-secret' },
-  };
-  let statusCode = 0;
-  let body = '';
-  const res = {
-    headers: {},
-    setHeader(name, value) {
-      this.headers[name] = value;
-    },
-    status(code) {
-      statusCode = code;
-      return this;
-    },
-    json(value) {
-      body = JSON.stringify(value);
-    },
-  };
 
   try {
-    await handler(req, res);
-    const parsed = JSON.parse(body);
-    assert(statusCode === 401, 'weekly digest cron should reject invalid bearer token');
-    assert(parsed.error === 'Unauthorized', 'weekly digest cron should return unauthorized error');
-    assertNoStore(res, 'weekly digest cron unauthorized');
-    console.log('ok weekly digest cron requires bearer secret');
+    delete process.env.CRON_SECRET;
+    const missingRes = mockRes();
+    await handler({
+      method: 'GET',
+      query: { dryRun: '1' },
+      headers: { host: 'localhost:3000' },
+    }, missingRes);
+    assert(missingRes.statusCode === 503, 'weekly digest cron should reject missing bearer configuration');
+    assert(missingRes.body.error === 'Weekly digest delivery is not configured', 'weekly digest cron should not expose missing secret env names');
+    assert(!JSON.stringify(missingRes.body).includes('CRON_SECRET'), 'weekly digest cron missing config response should not name secret env vars');
+    assertNoStore(missingRes, 'weekly digest cron missing config');
+
+    process.env.CRON_SECRET = 'smoke-cron-secret';
+    const unauthorizedRes = mockRes();
+    await handler({
+      method: 'GET',
+      query: { dryRun: '1' },
+      headers: { host: 'localhost:3000', authorization: 'Bearer wrong-secret' },
+    }, unauthorizedRes);
+    assert(unauthorizedRes.statusCode === 401, 'weekly digest cron should reject invalid bearer token');
+    assert(unauthorizedRes.body.error === 'Unauthorized', 'weekly digest cron should return unauthorized error');
+    assertNoStore(unauthorizedRes, 'weekly digest cron unauthorized');
+    console.log('ok weekly digest cron requires bearer secret without leaking config');
   } finally {
     console.error = originalError;
     if (previousSecret == null) {

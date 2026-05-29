@@ -10,7 +10,7 @@ const MAX_DIGESTS_PER_RUN = 100;
 function authorized(req) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
-    const err = new Error('CRON_SECRET is not configured');
+    const err = new Error('Weekly digest delivery is not configured');
     err.statusCode = 503;
     throw err;
   }
@@ -53,7 +53,7 @@ export function resendDigestPayload({ to, digest }) {
 
 async function sendDigestEmail({ to, digest }) {
   if (!resendReady()) {
-    const err = new Error('RESEND_API_KEY and DIGEST_FROM_EMAIL are required');
+    const err = new Error('Weekly digest delivery is not configured');
     err.statusCode = 503;
     throw err;
   }
