@@ -758,7 +758,7 @@
       const uploadCompareUrl = `${location.origin}/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
       const inviteText = profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile);
       const proof = profileProofLine(profile);
-      const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''}`;
+      const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} Profile: ${profileUrl}`;
       const badgePath = `${profilePath}/badge.svg`;
       const embedPath = `${profilePath}/embed`;
       const uploadComparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
@@ -769,7 +769,7 @@
       leaderboardCta.textContent = `${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'Archetype'} board`;
       browseCta.href = `/browse?archetype=${encodeURIComponent(hostArchetype)}`;
       browseCta.textContent = `Browse ${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'similar'}`;
-      shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(profileUrl)}`;
+      shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(uploadCompareUrl)}`;
       note.textContent = 'Upload yours once and vibestats will show your pairing with this profile.';
 
       if (me && me.gh_handle !== handle) {

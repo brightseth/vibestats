@@ -449,6 +449,8 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile)'), 'profile copy action should use direct asymmetric compare invite text');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile invite copy should retain the profile as credential context');
   assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');
+  assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');
+  assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile X share should retain the profile as credential context');
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
