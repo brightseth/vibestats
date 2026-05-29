@@ -111,6 +111,8 @@ const requiredIndexes = [
   'profile_settings_looking_for_idx',
 ];
 const requiredConstraints = [
+  'users_privacy_check',
+  'uploads_archetype_check',
   'profile_settings_looking_for_check',
   'profile_settings_contact_url_len',
   'profile_settings_contact_url_protocol',
