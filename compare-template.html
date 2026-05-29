@@ -563,6 +563,24 @@
         : 'Compare your vibecoding personality:';
     }
 
+    function comparisonInviteText(aSubject, bSubject, compat, shareUrl) {
+      const a = ARCHETYPES[aSubject.type];
+      const b = ARCHETYPES[bSubject.type];
+      return `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\n${comparisonSharePrompt(aSubject, bSubject)}\n${shareUrl}`;
+    }
+
+    async function copyComparisonInvite(button) {
+      if (!currentComparison?.inviteText) return;
+      const original = button.textContent;
+      try {
+        await navigator.clipboard.writeText(currentComparison.inviteText);
+        button.textContent = 'Invite copied!';
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = original; }, 1800);
+    }
+
     function showResult(aSubjectInput, bSubjectInput) {
       const aSubject = normalizeSubject(aSubjectInput);
       const bSubject = normalizeSubject(bSubjectInput);
@@ -617,15 +635,17 @@
       // Share URL
       const shareUrl = canonicalShareUrl(aSubject, bSubject);
       const claimAction = comparisonClaimAction(aSubject, bSubject);
-      const tweetText = `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\n${comparisonSharePrompt(aSubject, bSubject)}\n${shareUrl}\n\n#vibestats #vibecoding`;
+      const inviteText = comparisonInviteText(aSubject, bSubject, compat, shareUrl);
+      currentComparison = { a: aSubject, b: bSubject, shareUrl, inviteText };
+      const tweetText = `${inviteText}\n\n#vibestats #vibecoding`;
 
       document.getElementById('result-actions').innerHTML = `
         <a class="action-btn action-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" rel="noopener">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
           Share
         </a>
-        <button class="action-btn action-btn-copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',2000)})">
-          Copy link
+        <button class="action-btn action-btn-copy" onclick="copyComparisonInvite(this)">
+          Copy invite
         </button>
         <a class="action-btn action-btn-cta" href="${esc(claimAction.href)}" style="text-decoration:none">
           ${esc(claimAction.label)} &rarr;
