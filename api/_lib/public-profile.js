@@ -1,3 +1,17 @@
+import { ARCHETYPE_KEYS } from './signatures.js';
+
+const PUBLIC_RAW_META_KEYS = [
+  'signature',
+  'signatureCombo',
+  'signatureFingerprint',
+];
+const OWNER_RAW_META_KEYS = [
+  'dateRange',
+  'source',
+  'version',
+  ...PUBLIC_RAW_META_KEYS,
+];
+
 function safeNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -77,13 +91,16 @@ export function visibleMetrics(metrics = {}, visibility = {}) {
 }
 
 export function publicRawMeta(rawMeta = {}, { isOwner = false } = {}) {
-  if (isOwner) return rawMeta || {};
-  return {
-    signature: rawMeta?.signature || undefined,
-    signatureCombo: rawMeta?.signatureCombo || undefined,
-    signatureFingerprint: rawMeta?.signatureFingerprint || undefined,
-    secondaryArchetype: rawMeta?.secondaryArchetype || undefined,
-  };
+  const out = {};
+  const keys = isOwner ? OWNER_RAW_META_KEYS : PUBLIC_RAW_META_KEYS;
+  for (const key of keys) {
+    const value = rawMeta?.[key];
+    if (typeof value === 'string' && value.trim()) out[key] = value.trim();
+  }
+  if (ARCHETYPE_KEYS.includes(rawMeta?.secondaryArchetype)) {
+    out.secondaryArchetype = rawMeta.secondaryArchetype;
+  }
+  return out;
 }
 
 export function publicUpload(upload = {}, visibility = {}, { isOwner = false } = {}) {

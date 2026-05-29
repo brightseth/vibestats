@@ -991,6 +991,11 @@ async function assertPublicProfileHelpers() {
       signatureFingerprint: 'builder+shipper+orchestrator:90s',
       secondaryArchetype: 'shipper',
       dateRange: 'private range',
+      source: 'browser',
+      version: 'wave-1',
+      rawJson: { should: 'drop' },
+      tool_usage: { bash: 9000 },
+      language_usage: { typescript: 5000 },
     },
     uploaded_at: recentUploadAt,
   };
@@ -1002,6 +1007,8 @@ async function assertPublicProfileHelpers() {
   assert(!Object.hasOwn(privateView, 'uploaded_at'), 'visitor upload payload must not expose exact upload timestamp');
   assert(privateView.updated.label === 'updated this week', 'visitor upload payload should expose bucketed freshness');
   assert(!('dateRange' in privateView.raw_meta), 'visitor upload payload should omit raw date metadata');
+  assert(!JSON.stringify(privateView).includes('tool_usage'), 'visitor upload payload must not expose raw tool usage');
+  assert(!JSON.stringify(privateView).includes('language_usage'), 'visitor upload payload must not expose raw language usage');
   const countsView = publicUpload(upload, metricVisibility({ show_raw_counts: true, show_languages: true }), { isOwner: false });
   assert(countsView.metrics.days === 31, 'opt-in public view should expose raw counts');
   assert(countsView.metrics.languages === 6, 'opt-in public view should expose language count');
@@ -1009,6 +1016,10 @@ async function assertPublicProfileHelpers() {
   assert(ownerView.id === 'upload-1', 'owner upload payload should retain upload id');
   assert(ownerView.uploaded_at === recentUploadAt, 'owner upload payload should retain exact upload timestamp');
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
+  assert(ownerView.raw_meta.source === 'browser' && ownerView.raw_meta.version === 'wave-1', 'owner upload payload should retain derived source metadata');
+  assert(!JSON.stringify(ownerView).includes('tool_usage'), 'owner upload payload must not echo raw tool usage from stored metadata');
+  assert(!JSON.stringify(ownerView).includes('language_usage'), 'owner upload payload must not echo raw language usage from stored metadata');
+  assert(!JSON.stringify(ownerView).includes('rawJson'), 'owner upload payload must not echo raw JSON fields from stored metadata');
   assert(uploadRecency(null).bucket === 'unknown', 'public upload recency should tolerate missing timestamps');
   assert(uploadRecency('2026-04-28T10:00:00.000Z', new Date('2026-05-28T10:00:00.000Z')).bucket === 'this-quarter', 'public upload recency should bucket older timestamps');
   console.log('ok public profile helpers hide visitor metrics by default');
