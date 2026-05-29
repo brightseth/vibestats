@@ -1206,6 +1206,36 @@ async function assertProfileFallback() {
   }
 }
 
+async function assertProfileJsonFallback() {
+  const { default: handler } = await import('../api/u/[handle].js');
+  const originalError = console.error;
+  const envKeys = ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL'];
+  const previous = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+  for (const key of envKeys) delete process.env[key];
+  console.error = () => {};
+  try {
+    const res = mockRes();
+    await handler({
+      method: 'GET',
+      query: { handle: 'brightseth' },
+      headers: { host: 'localhost:3000' },
+    }, res);
+    assert(res.statusCode === 503, 'profile JSON fallback should report unavailable when DB is absent');
+    assert(res.body.error === 'Profile unavailable', 'profile JSON fallback should not leak DB internals');
+    assertNoStore(res, 'profile JSON fallback');
+    console.log('ok profile JSON fallback hides internals without caching');
+  } finally {
+    console.error = originalError;
+    for (const key of envKeys) {
+      if (previous[key] == null) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous[key];
+      }
+    }
+  }
+}
+
 async function assertBadgeFallback() {
   const originalError = console.error;
   console.error = () => {};
@@ -1349,6 +1379,7 @@ async function assertMatchFallback() {
     assert(parsed.goal === 'mentor', 'match fallback should preserve goal');
     assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'match fallback should return empty entries');
     assert(parsed.unavailable === true, 'match fallback should mark DB unavailable');
+    assert(parsed.error === 'Match unavailable', 'match fallback should not leak DB internals');
     console.log('ok match fallback keeps match page usable without DB');
   } finally {
     console.error = originalError;
@@ -1385,6 +1416,7 @@ async function assertBrowseFallback() {
     assert(parsed.filters.intent === 'active', 'browse fallback should preserve intent filter');
     assert(Array.isArray(parsed.entries) && parsed.entries.length === 0, 'browse fallback should return empty entries');
     assert(parsed.unavailable === true, 'browse fallback should mark DB unavailable');
+    assert(parsed.error === 'Browse unavailable', 'browse fallback should not leak DB internals');
     console.log('ok browse fallback keeps public directory shell usable without DB');
   } finally {
     console.error = originalError;
@@ -1568,6 +1600,7 @@ await assertProfileMetadataHelpers();
 await assertProfileCacheHelpers();
 await assertCompareMetadataHelpers();
 await assertProfileFallback();
+await assertProfileJsonFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();
 await assertLeaderboardFallback();

@@ -2,7 +2,7 @@ import { readSession } from '../_lib/auth.js';
 import { PRIVATE_PROFILE_CACHE } from '../_lib/cache.js';
 import { publicUser, sql } from '../_lib/db.js';
 import { profileEvolution } from '../_lib/evolution.js';
-import { json, methodNotAllowed } from '../_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed } from '../_lib/http.js';
 import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
 import { publicMatchSettings } from '../_lib/profile-settings.js';
 import { metricVisibility, publicUpload } from '../_lib/public-profile.js';
@@ -96,6 +96,8 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('GET /api/u/[handle] error:', err);
-    json(res, err.statusCode || 500, { error: err.message || 'Profile failed' });
+    const status = err.statusCode || 500;
+    const message = status >= 500 ? 'Profile unavailable' : (err.message || 'Profile failed');
+    json(res, status, { error: message }, NO_STORE_HEADERS);
   }
 }

@@ -126,7 +126,7 @@ export default async function handler(req, res) {
       seeker_archetype_label: status !== 400 && seekerArchetype ? ARCHETYPE_LABELS[seekerArchetype] : null,
       entries: [],
       unavailable: status !== 400,
-      error: err.message || 'Match failed',
+      error: status === 400 ? (err.message || 'Match failed') : 'Match unavailable',
     }, {
       'Cache-Control': 'public, s-maxage=60',
     });

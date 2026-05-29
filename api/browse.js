@@ -180,7 +180,7 @@ export default async function handler(req, res) {
       total: 0,
       entries: [],
       unavailable: status !== 400,
-      error: err.message || 'Browse failed',
+      error: status === 400 ? (err.message || 'Browse failed') : 'Browse unavailable',
     }, {
       'Cache-Control': 'public, s-maxage=60',
     });
