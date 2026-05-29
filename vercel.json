@@ -2,7 +2,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/generate", "destination": "/", "permanent": true }
+    { "source": "/generate", "destination": "/", "permanent": true },
+    { "source": "/compare.html", "destination": "/compare", "permanent": true }
   ],
   "rewrites": [
     { "source": "/u/:handle/badge.svg", "destination": "/api/badge?handle=:handle" },

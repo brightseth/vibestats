@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret';
 
-const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare.html', 'leaderboard.html', 'match.html', 'browse.html'];
+const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare-template.html', 'leaderboard.html', 'match.html', 'browse.html'];
 const apiModules = [
   '../api/compare-page.js',
   '../api/profile.js',
@@ -279,7 +279,7 @@ async function assertProfileShareLoop() {
 }
 
 async function assertCompareShareLoop() {
-  const compareHtml = await readFile('compare.html', 'utf8');
+  const compareHtml = await readFile('compare-template.html', 'utf8');
   assert(compareHtml.includes('comparisonParamsFromLocation()'), 'compare page should parse pretty /u/host/pair/visitor links');
   assert(compareHtml.includes('comparisonClaimAction(aSubject, bSubject)'), 'compare result should compute a profile-backed claim CTA');
   assert(compareHtml.includes('compareTo=${encodeURIComponent(profileSubject.handle)}'), 'compare result CTA should seed upload-to-profile comparison');

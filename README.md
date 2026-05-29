@@ -51,7 +51,7 @@ vibestats/
 ├── index.html         # upload + archetype reveal (~88KB, all client-side)
 ├── wrapped.html       # Spotify-Wrapped tap-through
 ├── dashboard.html     # detailed metric view
-├── compare.html       # two-profile side-by-side
+├── compare-template.html # two-profile side-by-side, served through `/api/compare-page`
 ├── genome.html        # community genome page
 ├── leaderboard.html   # public archetype leaderboards
 ├── browse.html        # opt-in public profile directory

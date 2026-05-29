@@ -6,7 +6,7 @@ import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
-const COMPARE_HTML = readFileSync(new URL('../compare.html', import.meta.url), 'utf8');
+const COMPARE_HTML = readFileSync(new URL('../compare-template.html', import.meta.url), 'utf8');
 const COMPAT_SOURCE = readFileSync(new URL('../lib/compat.js', import.meta.url), 'utf8');
 const compatContext = { window: {} };
 runInNewContext(COMPAT_SOURCE, compatContext);
