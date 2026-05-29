@@ -34,7 +34,7 @@
       margin: 0 auto;
       padding: 24px 0 56px;
     }
-    .topbar, .hero, .entry, .entry-main, .tabs, .stats {
+    .topbar, .hero, .entry, .entry-main, .tabs, .stats, .actions {
       display: flex;
       align-items: center;
     }
@@ -251,6 +251,11 @@
       line-height: 1.2;
       overflow-wrap: anywhere;
     }
+    .actions {
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .empty {
       min-height: 280px;
       display: grid;
@@ -269,7 +274,7 @@
       }
       h1 { font-size: 36px; }
       .hero-stat { min-width: 0; }
-      .stats { justify-content: flex-start; }
+      .stats, .actions { justify-content: flex-start; }
       .score, .metric { text-align: left; }
     }
     @media (max-width: 520px) {
@@ -347,8 +352,40 @@
       `).join('');
     }
 
+    async function copyText(button, text, resetLabel) {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        button.textContent = 'Copied!';
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = resetLabel; }, 1500);
+    }
+
+    function inviteText(entry, archetype) {
+      const handle = entry.user?.gh_handle || 'this profile';
+      const arch = ARCHETYPES[entry.archetype || archetype] || ARCHETYPES[archetype] || ARCHETYPES.builder;
+      const signature = entry.signature?.label || arch.name;
+      const compareUrl = `${location.origin}/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}`;
+      const profileUrl = `${location.origin}/u/${encodeURIComponent(handle)}`;
+      return `@${handle} is #${entry.rank} on the weekly ${arch.name} board with ${entry.score}% ${signature} signal. See how you'd pair:\n${compareUrl}\n${profileUrl}`;
+    }
+
     function renderEntries(entries) {
       const list = document.getElementById('list');
+      const archetype = archetypeFromLocation();
       if (!entries.length) {
         list.innerHTML = '<div class="empty">No public profiles in this archetype yet.<br>Set your profile to public from Settings to join the board.</div>';
         return;
@@ -356,6 +393,8 @@
 
       list.innerHTML = entries.map((entry) => {
         const handle = entry.user?.gh_handle || 'unknown';
+        const profilePath = `/u/${encodeURIComponent(handle)}`;
+        const comparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}`;
         const activity = entry.activity || {};
         const avatar = entry.user?.avatar_url
           ? `<img class="avatar" src="${esc(entry.user.avatar_url)}" alt="@${esc(handle)}">`
@@ -366,7 +405,7 @@
               <div class="rank">#${esc(entry.rank)}</div>
               ${avatar}
               <div class="identity">
-                <a class="handle" href="/u/${encodeURIComponent(handle)}">@${esc(handle)}</a>
+                <a class="handle" href="${profilePath}">@${esc(handle)}</a>
                 <div class="signature">${esc(entry.signature?.label || ARCHETYPES[entry.archetype]?.name || entry.archetype)}</div>
                 <div class="meta">${esc(activity.days || 'fresh profile')}</div>
               </div>
@@ -376,9 +415,20 @@
               <div class="metric"><strong>${esc(activity.cadence || 'private')}</strong>cadence</div>
               <div class="metric"><strong>${esc(activity.depth || 'private')}</strong>history</div>
             </div>
+            <div class="actions">
+              <a class="btn primary" href="${comparePath}">Compare</a>
+              <a class="btn" href="${profilePath}">Profile</a>
+              <button class="btn" type="button" data-invite="${esc(inviteText(entry, archetype))}">Copy invite</button>
+            </div>
           </article>
         `;
       }).join('');
+
+      list.querySelectorAll('[data-invite]').forEach((button) => {
+        button.addEventListener('click', () => {
+          copyText(button, button.getAttribute('data-invite'), 'Copy invite');
+        });
+      });
     }
 
     async function renderLeaderboard() {

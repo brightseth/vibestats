@@ -107,6 +107,7 @@ async function assertApiImports() {
 async function assertRoutes() {
   const config = JSON.parse(await readFile('vercel.json', 'utf8'));
   const leaderboardApi = await readFile('api/leaderboard.js', 'utf8');
+  const leaderboardHtml = await readFile('leaderboard.html', 'utf8');
   const browseApi = await readFile('api/browse.js', 'utf8');
   const browseHtml = await readFile('browse.html', 'utf8');
   const matchApi = await readFile('api/match.js', 'utf8');
@@ -168,6 +169,10 @@ async function assertRoutes() {
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
   assert(!leaderboardApi.includes('languages:'), 'leaderboard API should not expose public language counts');
   assert(leaderboardApi.includes('updated: uploadRecency(row.uploaded_at)'), 'leaderboard API should bucket public upload freshness');
+  assert(leaderboardHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}'), 'leaderboard rows should route discovery into upload-to-compare');
+  assert(leaderboardHtml.includes('data-invite="${esc(inviteText(entry, archetype))}"'), 'leaderboard rows should expose copyable rank invite text');
+  assert(leaderboardHtml.includes("document.execCommand('copy')"), 'leaderboard copy actions should fall back when Clipboard API is unavailable');
+  assert(leaderboardHtml.includes("See how you'd pair:"), 'leaderboard invite text should drive recipients into comparison');
   assert(!matchApi.includes('languages:'), 'match API should not expose public language counts');
   assert(matchApi.includes('updated: uploadRecency(row.uploaded_at)'), 'match API should bucket public upload freshness');
   assert(matchApi.includes('seeker_archetype'), 'match API should preserve visitor archetype for goal-aware scoring');
