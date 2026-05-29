@@ -395,6 +395,6 @@ export default async function handler(req, res) {
     }), profileShareCacheControl(user));
   } catch (err) {
     console.error('GET /api/embed error:', err);
-    return sendHtml(res, 200, genericEmbedPage(req, handle), 'public, s-maxage=60');
+    return sendHtml(res, 200, genericEmbedPage(req, handle), profileShareCacheControl(null));
   }
 }

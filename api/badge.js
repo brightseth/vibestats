@@ -109,6 +109,6 @@ export default async function handler(req, res) {
     }), profileShareCacheControl(user));
   } catch (err) {
     console.error('GET /api/badge error:', err);
-    return sendSvg(res, 200, badgeSvg({ handle }), 'public, s-maxage=60');
+    return sendSvg(res, 200, badgeSvg({ handle }), profileShareCacheControl(null));
   }
 }

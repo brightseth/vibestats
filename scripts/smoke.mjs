@@ -1195,6 +1195,7 @@ async function assertProfileFallback() {
     const { default: handler } = await import('../api/profile.js');
     let statusCode = 0;
     let contentType = '';
+    let cache = '';
     let body = '';
     const req = {
       method: 'GET',
@@ -1204,6 +1205,7 @@ async function assertProfileFallback() {
     const res = {
       setHeader(name, value) {
         if (name.toLowerCase() === 'content-type') contentType = value;
+        if (name.toLowerCase() === 'cache-control') cache = value;
       },
       status(code) {
         statusCode = code;
@@ -1217,6 +1219,7 @@ async function assertProfileFallback() {
     await handler(req, res);
     assert(statusCode === 200, 'profile fallback should render HTTP 200 when DB is absent');
     assert(contentType.includes('text/html'), 'profile fallback should return HTML');
+    assert(cache === 'private, no-store', 'profile fallback should not publicly cache unknown privacy state');
     assert(body.includes('@brightseth on vibestats'), 'profile fallback should include handle metadata');
     assert(body.includes('og:image'), 'profile fallback should include share metadata');
     console.log('ok profile fallback renders shareable shell without DB');
@@ -1262,6 +1265,7 @@ async function assertBadgeFallback() {
     const { default: handler } = await import('../api/badge.js');
     let statusCode = 0;
     let contentType = '';
+    let cache = '';
     let body = '';
     const req = {
       method: 'GET',
@@ -1271,6 +1275,7 @@ async function assertBadgeFallback() {
     const res = {
       setHeader(name, value) {
         if (name.toLowerCase() === 'content-type') contentType = value;
+        if (name.toLowerCase() === 'cache-control') cache = value;
       },
       status(code) {
         statusCode = code;
@@ -1284,6 +1289,7 @@ async function assertBadgeFallback() {
     await handler(req, res);
     assert(statusCode === 200, 'badge fallback should render HTTP 200 when DB is absent');
     assert(contentType.includes('image/svg+xml'), 'badge fallback should return SVG');
+    assert(cache === 'private, no-store', 'badge fallback should not publicly cache unknown privacy state');
     assert(body.includes('@brightseth'), 'badge fallback should include handle');
     console.log('ok badge fallback renders portable SVG without DB');
   } finally {
@@ -1298,6 +1304,7 @@ async function assertEmbedFallback() {
     const { default: handler } = await import('../api/embed.js');
     let statusCode = 0;
     let contentType = '';
+    let cache = '';
     let csp = '';
     let body = '';
     const req = {
@@ -1308,6 +1315,7 @@ async function assertEmbedFallback() {
     const res = {
       setHeader(name, value) {
         if (name.toLowerCase() === 'content-type') contentType = value;
+        if (name.toLowerCase() === 'cache-control') cache = value;
         if (name.toLowerCase() === 'content-security-policy') csp = value;
       },
       status(code) {
@@ -1322,6 +1330,7 @@ async function assertEmbedFallback() {
     await handler(req, res);
     assert(statusCode === 200, 'embed fallback should render HTTP 200 when DB is absent');
     assert(contentType.includes('text/html'), 'embed fallback should return HTML');
+    assert(cache === 'private, no-store', 'embed fallback should not publicly cache unknown privacy state');
     assert(csp.includes('frame-ancestors https:'), 'embed CSP should allow HTTPS framing');
     assert(body.includes('@brightseth'), 'embed fallback should include handle');
     assert(body.includes('VIBESTATS PROFILE'), 'embed fallback should render a neutral profile card');

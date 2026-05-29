@@ -159,7 +159,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('GET /api/profile error:', err);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=60');
+    res.setHeader('Cache-Control', profileShareCacheControl(null));
     res.status(200).send(genericProfilePage(req, handle));
   }
 }
