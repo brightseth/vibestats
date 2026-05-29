@@ -1,4 +1,4 @@
-import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
+import { ARCHETYPE_KEYS, signatureFromUpload, topArchetype } from './signatures.js';
 
 export { ARCHETYPE_KEYS };
 
@@ -28,8 +28,8 @@ function uploadSource(value) {
 }
 
 export function sanitizeUploadPayload(body = {}, { source = 'browser' } = {}) {
-  const archetype = cleanText(body.archetype, 32);
-  if (!ARCHETYPE_KEYS.includes(archetype)) {
+  const requestedArchetype = cleanText(body.archetype, 32);
+  if (!ARCHETYPE_KEYS.includes(requestedArchetype)) {
     const err = new Error('valid archetype required');
     err.statusCode = 400;
     throw err;
@@ -47,6 +47,7 @@ export function sanitizeUploadPayload(body = {}, { source = 'browser' } = {}) {
       if (value != null) scores._percentiles[key] = Math.max(1, Math.round(value));
     }
   }
+  const archetype = topArchetype(scores, requestedArchetype);
 
   const metrics = {};
   const sourceMetrics = body.metrics && typeof body.metrics === 'object' ? body.metrics : {};

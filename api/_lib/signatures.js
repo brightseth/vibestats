@@ -3,6 +3,11 @@ export const ARCHETYPE_KEYS = [
   'polyglot', 'sprinter', 'deepdiver', 'builder',
 ];
 
+export const ARCHETYPE_PRIORITY = [
+  'orchestrator', 'deepdiver', 'polyglot', 'shipper',
+  'debugger', 'sprinter', 'architect', 'builder',
+];
+
 const SUB_PREFIXES = {
   orchestrator: 'parallel',
   shipper: 'high-velocity',
@@ -28,7 +33,10 @@ const ARCHETYPE_SHORT_NAMES = {
 function sortedScores(scores = {}) {
   return Object.entries(scores)
     .filter(([key, value]) => ARCHETYPE_KEYS.includes(key) && Number.isFinite(Number(value)))
-    .sort((a, b) => Number(b[1]) - Number(a[1]));
+    .sort((a, b) => {
+      if (Number(b[1]) !== Number(a[1])) return Number(b[1]) - Number(a[1]);
+      return ARCHETYPE_PRIORITY.indexOf(a[0]) - ARCHETYPE_PRIORITY.indexOf(b[0]);
+    });
 }
 
 function cleanText(value, max = 80) {
@@ -64,6 +72,11 @@ export function signatureFingerprint(scores = {}, primary) {
   const primaryScore = Math.max(0, Math.min(100, Math.round(Number(scores[primary]) || 0)));
   const bucket = Math.min(90, Math.floor(primaryScore / 10) * 10);
   return `${topThree.join('+')}:${bucket}s`;
+}
+
+export function topArchetype(scores = {}, fallback = 'builder') {
+  const top = sortedScores(scores)[0];
+  return top && Number(top[1]) > 0 ? top[0] : fallback;
 }
 
 export function signatureFromUpload(upload = {}) {

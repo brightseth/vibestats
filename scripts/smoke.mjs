@@ -884,7 +884,7 @@ async function assertMatchmakingHelpers() {
 async function assertUploadSanitizer() {
   const { sanitizeUploadPayload } = await import('../api/_lib/uploads.js');
   const payload = sanitizeUploadPayload({
-    archetype: 'builder',
+    archetype: 'architect',
     scores: {
       builder: 200,
       shipper: 80,
@@ -921,6 +921,7 @@ async function assertUploadSanitizer() {
 
   assert(payload.scores.builder === 100, 'scores should clamp to 100');
   assert(payload.scores.orchestrator === 0, 'scores should clamp to 0');
+  assert(payload.archetype === 'builder', 'profile save archetype should be derived from sanitized scores');
   assert(payload.metrics.languages === 4, 'derived languages metric should persist');
   assert(Object.keys(payload.metrics).sort().join(',') === 'commitsPerDay,days,languages,msgsPerSession,sessions', 'profile saves should persist only the five Wave 1 metrics');
   assert(!('raw' in payload.metrics), 'raw metric payload must be dropped');
@@ -937,6 +938,7 @@ async function assertUploadSanitizer() {
 
   const cliPayload = sanitizeUploadPayload({ ...payload, raw_meta: { source: 'browser' } }, { source: 'cli' });
   assert(cliPayload.raw_meta.source === 'cli', 'CLI upload source should be assigned by the sync endpoint sanitizer');
+  assert(cliPayload.archetype === 'builder', 'CLI upload archetype should use the same canonical score-derived primary');
   console.log('ok upload sanitizer preserves privacy boundary');
 }
 
