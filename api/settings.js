@@ -55,9 +55,9 @@ export default async function handler(req, res) {
         const optIn = Object.hasOwn(body, 'weekly_digest_opt_in')
           ? Boolean(body.weekly_digest_opt_in)
           : Boolean(nextSettings.weekly_digest_opt_in);
-        const email = Object.hasOwn(body, 'digest_email')
-          ? cleanDigestEmail(body.digest_email)
-          : (nextSettings.digest_email || null);
+        const email = optIn
+          ? (Object.hasOwn(body, 'digest_email') ? cleanDigestEmail(body.digest_email) : (nextSettings.digest_email || null))
+          : null;
 
         if (optIn && !email) {
           return json(res, 400, { error: 'Digest email required to opt in' }, NO_STORE_HEADERS);
