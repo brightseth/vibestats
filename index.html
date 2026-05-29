@@ -1971,67 +1971,64 @@
       return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
-    function canonicalProfileUrl(profilePath) {
-      return `https://vibestats.io${profilePath}`;
+    function canonicalVibestatsUrl(pathOrUrl) {
+      try {
+        return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();
+      } catch {
+        return 'https://vibestats.io/';
+      }
+    }
+
+    function pathFromSaveUrl(url, fallback = '/') {
+      if (url) {
+        try {
+          return new URL(url, location.origin).pathname;
+        } catch (e) { /* fall through */ }
+      }
+      return fallback;
     }
 
     function profilePathFromSave(profileUrl) {
-      if (profileUrl) {
-        try {
-          return new URL(profileUrl, location.origin).pathname;
-        } catch (e) { /* fall through */ }
-      }
-      return `/u/${encodeURIComponent(currentUser?.gh_handle || '')}`;
+      const fallback = `/u/${encodeURIComponent(currentUser?.gh_handle || '')}`;
+      return pathFromSaveUrl(profileUrl, fallback);
     }
 
-    function postSaveInviteText(profilePath, archetype, scores) {
+    function comparePathFromSave(compareUrl, archetype) {
+      if (compareUrl) return pathFromSaveUrl(compareUrl, compareUrl);
+      const handle = currentUser?.gh_handle || '';
+      if (!handle) return `/?compareArchetype=${encodeURIComponent(archetype)}`;
+      return `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
+    }
+
+    function badgePathFromSave(badgeUrl, profilePath) {
+      if (badgeUrl) return pathFromSaveUrl(badgeUrl, badgeUrl);
+      return `${profilePath}/badge.svg`;
+    }
+
+    function embedPathFromSave(embedUrl, profilePath) {
+      if (embedUrl) return pathFromSaveUrl(embedUrl, embedUrl);
+      return `${profilePath}/embed`;
+    }
+
+    function postSaveInviteText(profilePath, comparePath, archetype, scores) {
       const signature = buildVibeSignature(scores || {}, archetype);
       const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
       const handle = currentUser?.gh_handle || 'me';
       const label = signature?.label || arch.name;
-      const compareUrl = `https://vibestats.io/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
-      return `See how you'd pair with @${handle}, a ${label}:\n${compareUrl}\nProfile: ${canonicalProfileUrl(profilePath)}`;
+      return `See how you'd pair with @${handle}, a ${label}:\n${canonicalVibestatsUrl(comparePath)}\nProfile: ${canonicalVibestatsUrl(profilePath)}`;
     }
 
-    async function copyText(text) {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return;
-      }
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      textarea.remove();
-    }
-
-    async function copyWithButton(button, text, doneLabel, idleLabel) {
-      if (!button) return;
-      try {
-        await copyText(text);
-        button.textContent = doneLabel;
-      } catch {
-        button.textContent = 'Copy failed';
-      }
-      setTimeout(() => { button.textContent = idleLabel; }, 1500);
-    }
-
-    function copyShareLink(button, shareUrl) {
-      copyWithButton(button, shareUrl, 'Copied!', 'Copy link');
-    }
-
-    function wirePostSaveActions(profilePath, archetype, scores) {
+    function wirePostSaveActions({ profilePath, comparePath, badgePath, embedPath }, archetype, scores) {
       const handle = currentUser?.gh_handle || '';
-      const canonicalUrl = canonicalProfileUrl(profilePath);
-      const compareUrl = `https://vibestats.io/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
-      const badgeMarkdown = `[![vibestats: @${handle}](${canonicalUrl}/badge.svg)](${compareUrl})`;
-      const embedHtml = `<iframe src="${canonicalUrl}/embed" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
+      const canonicalProfile = canonicalVibestatsUrl(profilePath);
+      const canonicalCompare = canonicalVibestatsUrl(comparePath);
+      const badgeMarkdown = `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${canonicalCompare})`;
+      const embedHtml = `<iframe src="${canonicalVibestatsUrl(embedPath)}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
       document.getElementById('copy-saved-invite')?.addEventListener('click', (event) => {
-        copyWithButton(event.currentTarget, postSaveInviteText(profilePath, archetype, scores), 'Invite copied!', 'Copy invite');
+        copyWithButton(event.currentTarget, postSaveInviteText(profilePath, comparePath, archetype, scores), 'Invite copied!', 'Copy invite');
+      });
+      document.getElementById('copy-saved-profile')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, canonicalProfile, 'Profile copied!', 'Copy profile');
       });
       document.getElementById('copy-saved-badge')?.addEventListener('click', (event) => {
         copyWithButton(event.currentTarget, badgeMarkdown, 'Badge copied!', 'Copy badge');
@@ -2041,10 +2038,14 @@
       });
     }
 
-    function renderSavedProfileStatus(profileUrl, archetype, scores) {
-      const profilePath = profilePathFromSave(profileUrl);
+    function renderSavedProfileStatus(saveResult, archetype, scores) {
+      const result = typeof saveResult === 'string' ? { profile_url: saveResult } : (saveResult || {});
+      const profilePath = profilePathFromSave(result.profile_url);
+      const comparePath = comparePathFromSave(result.compare_url, archetype);
+      const badgePath = badgePathFromSave(result.badge_url, profilePath);
+      const embedPath = embedPathFromSave(result.embed_url, profilePath);
       const safeProfilePath = safeHtml(profilePath);
-      const safeCompareUrl = safeHtml(`/compare?me=${encodeURIComponent(currentUser?.gh_handle || '')}`);
+      const safePairingBuilderUrl = safeHtml(`/compare?me=${encodeURIComponent(currentUser?.gh_handle || '')}`);
       const digestInline = identityStatus.weekly_digest_available === true
         ? `
         <div class="digest-inline">
@@ -2057,13 +2058,14 @@
         Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a>
         <div class="post-save-actions">
           <button type="button" id="copy-saved-invite">Copy invite</button>
-          <a href="${safeCompareUrl}">Create pairing link</a>
+          <button type="button" class="secondary" id="copy-saved-profile">Copy profile</button>
+          <a href="${safePairingBuilderUrl}">Create pairing link</a>
           <button type="button" class="secondary" id="copy-saved-badge">Copy badge</button>
           <button type="button" class="secondary" id="copy-saved-embed">Copy embed</button>
         </div>
         ${digestInline}
       `);
-      wirePostSaveActions(profilePath, archetype, scores);
+      wirePostSaveActions({ profilePath, comparePath, badgePath, embedPath }, archetype, scores);
       const button = document.getElementById('digest-opt-in-inline');
       const input = document.getElementById('digest-email-inline');
       if (!button || !input) return;
@@ -2096,6 +2098,37 @@
           updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a><br>${safeHtml(err.message)}`, 'error');
         }
       });
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    async function copyWithButton(button, text, doneLabel, idleLabel) {
+      if (!button) return;
+      try {
+        await copyText(text);
+        button.textContent = doneLabel;
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = idleLabel; }, 1500);
+    }
+
+    function copyShareLink(button, shareUrl) {
+      copyWithButton(button, shareUrl, 'Copied!', 'Copy link');
     }
 
     function comparisonDestination(archetype, user = currentUser) {
@@ -2249,7 +2282,7 @@
           setTimeout(() => { location.href = compareUrl; }, 650);
           return;
         }
-        renderSavedProfileStatus(body.profile_url, archetype, scores);
+        renderSavedProfileStatus(body, archetype, scores);
       } catch (err) {
         updateProfileSaveStatus(err.message, 'error');
       }
