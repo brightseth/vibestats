@@ -1312,7 +1312,7 @@ async function assertEvolutionHelpers() {
 
 async function assertDigestHelpers() {
   const { buildWeeklyDigest, uploadStreak } = await import('../api/_lib/digest.js');
-  const { resendDigestPayload } = await import('../api/cron/weekly-digest.js');
+  const { digestCronResult, resendDigestPayload } = await import('../api/cron/weekly-digest.js');
   const uploads = [
     {
       archetype: 'builder',
@@ -1366,6 +1366,15 @@ async function assertDigestHelpers() {
   const resendPayload = resendDigestPayload({ to: 'seth@example.com', digest });
   assert(resendPayload.headers['List-Unsubscribe'] === '<https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token>', 'digest email should include List-Unsubscribe header');
   assert(resendPayload.headers['List-Unsubscribe-Post'] === 'List-Unsubscribe=One-Click', 'digest email should include one-click unsubscribe header');
+  const dryRunResult = digestCronResult({
+    user: { gh_handle: 'brightseth', digest_email: 'seth@example.com' },
+    digest,
+    dryRun: true,
+  });
+  assert(dryRunResult.digest_email_configured === true, 'digest cron result should report configured recipient without echoing it');
+  assert(!Object.hasOwn(dryRunResult, 'to'), 'digest cron result must not expose recipient email field');
+  assert(!JSON.stringify(dryRunResult).includes('seth@example.com'), 'digest cron result must not leak recipient email address');
+  assert(dryRunResult.sent === false && dryRunResult.dry_run === true, 'digest cron result should preserve delivery status');
   assert(!digest.html.includes('rawJson') && !digest.text.includes('rawJson'), 'digest must not leak raw metadata');
 
   const privateDigest = buildWeeklyDigest({

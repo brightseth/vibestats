@@ -51,6 +51,16 @@ export function resendDigestPayload({ to, digest }) {
   return payload;
 }
 
+export function digestCronResult({ user, digest, dryRun }) {
+  return {
+    handle: user.gh_handle,
+    digest_email_configured: Boolean(user.digest_email),
+    subject: digest.subject,
+    sent: !dryRun,
+    dry_run: dryRun,
+  };
+}
+
 async function sendDigestEmail({ to, digest }) {
   if (!resendReady()) {
     const err = new Error('Weekly digest delivery is not configured');
@@ -172,13 +182,7 @@ export default async function handler(req, res) {
         `;
       }
 
-      results.push({
-        handle: user.gh_handle,
-        to: user.digest_email,
-        subject: digest.subject,
-        sent: !dryRun,
-        dry_run: dryRun,
-      });
+      results.push(digestCronResult({ user, digest, dryRun }));
     }
 
     return json(res, 200, {
