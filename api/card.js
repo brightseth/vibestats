@@ -13,20 +13,76 @@ function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function firstParam(value) {
+  return String(Array.isArray(value) ? value[0] : value ?? '').trim();
+}
+
+function cleanTextParam(value, fallback, max = 42) {
+  const cleaned = firstParam(value)
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/\s+/g, ' ')
+    .slice(0, max)
+    .trim();
+  return cleaned || fallback;
+}
+
+function cleanNumberParam(value, fallback, { min = 0, max = 100, decimals = 0 } = {}) {
+  const raw = firstParam(value);
+  if (!raw) return fallback;
+  const n = Number(raw.replace(/,/g, ''));
+  if (!Number.isFinite(n)) return fallback;
+  const bounded = Math.min(Math.max(n, min), max);
+  if (decimals === 0) return String(Math.round(bounded));
+  return String(Number(bounded.toFixed(decimals))).replace(/\.0$/, '');
+}
+
+export function sanitizeCardQuery(query = {}) {
+  const requestedKey = firstParam(query.a);
+  const archetypeKey = ARCHETYPES[requestedKey] ? requestedKey : 'builder';
+  const name = cleanTextParam(query.n, 'Vibecoder');
+  const days = cleanNumberParam(query.d, '?', { max: 5000 });
+  const commits = cleanNumberParam(query.c, '?', { max: 500, decimals: 1 });
+  const langs = cleanNumberParam(query.l, '?', { max: 200 });
+  const sessions = cleanNumberParam(query.s, '?', { max: 100000 });
+  const satisfaction = cleanNumberParam(query.sat, null, { max: 100 });
+  const percentile = cleanNumberParam(query.p, null, { min: 1, max: 100 });
+
+  const params = new URLSearchParams();
+  params.set('a', archetypeKey);
+  params.set('n', name);
+  if (days !== '?') params.set('d', days);
+  if (commits !== '?') params.set('c', commits);
+  if (langs !== '?') params.set('l', langs);
+  if (sessions !== '?') params.set('s', sessions);
+  if (satisfaction) params.set('sat', satisfaction);
+  if (percentile) params.set('p', percentile);
+
+  return {
+    archetypeKey,
+    name,
+    days,
+    commits,
+    langs,
+    sessions,
+    satisfaction,
+    percentile,
+    queryString: params.toString(),
+  };
+}
+
 export default function handler(req, res) {
-  const { a: key, n, d, c, l, s, sat, p } = req.query;
-  const archetypeKey = ARCHETYPES[key] ? key : 'builder';
+  const card = sanitizeCardQuery(req.query);
+  const { archetypeKey, name, days, commits, langs, sessions, percentile } = card;
   const arch = ARCHETYPES[archetypeKey];
   const archLabel = esc(arch.name.replace('THE ', ''));
-  const name = esc(n || 'Vibecoder');
-  const days = esc(d || '?');
-  const commits = esc(c || '?');
-  const langs = esc(l || '?');
-  const sessions = esc(s || '?');
-  const satisfaction = sat ? esc(sat) + '%' : null;
-  const percentile = p ? esc(p) : null;
+  const displayName = esc(name);
+  const displayDays = esc(days);
+  const displayCommits = esc(commits);
+  const displayLangs = esc(langs);
+  const displaySessions = esc(sessions);
+  const satisfaction = card.satisfaction ? esc(card.satisfaction) + '%' : null;
 
-  const ogParams = new URLSearchParams(req.query).toString();
+  const ogParams = card.queryString;
   const ogImageUrl = `https://vibestats.io/api/og?${ogParams}`;
   const cardUrl = `https://vibestats.io/card?${ogParams}`;
 
@@ -35,18 +91,18 @@ export default function handler(req, res) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>${name} is ${esc(arch.name)} | vibestats</title>
-  <meta name="description" content="${name} — ${esc(arch.tagline)} ${days} days of vibecoding. See how you'd pair with this archetype.">
-  <meta property="og:title" content="${name} is ${esc(arch.name)} | vibestats">
-  <meta property="og:description" content="${esc(arch.tagline)} — ${commits} commits/day across ${langs} languages. ${days} days of vibecoding.">
+  <title>${displayName} is ${esc(arch.name)} | vibestats</title>
+  <meta name="description" content="${displayName} — ${esc(arch.tagline)} ${displayDays} days of vibecoding. See how you'd pair with this archetype.">
+  <meta property="og:title" content="${displayName} is ${esc(arch.name)} | vibestats">
+  <meta property="og:description" content="${esc(arch.tagline)} — ${displayCommits} commits/day across ${displayLangs} languages. ${displayDays} days of vibecoding.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${cardUrl}">
   <meta property="og:image" content="${ogImageUrl}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${name} is ${esc(arch.name)}">
-  <meta name="twitter:description" content="${esc(arch.tagline)} — ${days} days of vibecoding. See how you'd pair.">
+  <meta name="twitter:title" content="${displayName} is ${esc(arch.name)}">
+  <meta name="twitter:description" content="${esc(arch.tagline)} — ${displayDays} days of vibecoding. See how you'd pair.">
   <meta name="twitter:image" content="${ogImageUrl}">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
@@ -150,14 +206,14 @@ export default function handler(req, res) {
     <div class="name">${esc(arch.name)}</div>
     <div class="tagline">"${esc(arch.tagline)}"</div>
     <div class="stats">
-      <div class="stat"><div class="stat-val">${sessions}</div><div class="stat-label">sessions</div></div>
-      <div class="stat"><div class="stat-val">${commits}/day</div><div class="stat-label">commits</div></div>
-      <div class="stat"><div class="stat-val">${langs}</div><div class="stat-label">languages</div></div>
+      <div class="stat"><div class="stat-val">${displaySessions}</div><div class="stat-label">sessions</div></div>
+      <div class="stat"><div class="stat-val">${displayCommits}/day</div><div class="stat-label">commits</div></div>
+      <div class="stat"><div class="stat-val">${displayLangs}</div><div class="stat-label">languages</div></div>
       <div class="stat"><div class="stat-val">${satisfaction || '—'}</div><div class="stat-label">${satisfaction ? 'satisfaction' : ''}</div></div>
     </div>
-    <div class="user">${name}</div>
-    <div class="period">${days} days of vibecoding</div>
-    ${percentile ? `<div class="percentile">top ${percentile}%</div>` : ''}
+    <div class="user">${displayName}</div>
+    <div class="period">${displayDays} days of vibecoding</div>
+    ${percentile ? `<div class="percentile">top ${esc(percentile)}%</div>` : ''}
     <div id="community-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:8px"></div>
     <div class="brand">vibestats.io</div>
   </div>

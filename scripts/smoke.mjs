@@ -468,7 +468,28 @@ async function assertCompareShareLoop() {
 }
 
 async function assertShareCardCta() {
-  const { default: handler } = await import('../api/card.js');
+  const { default: handler, sanitizeCardQuery } = await import('../api/card.js');
+  const sanitized = sanitizeCardQuery({
+    a: 'growth-hacker',
+    n: `${'A'.repeat(80)}\n<script>`,
+    d: '9000',
+    c: '<script>',
+    l: '201',
+    s: '100001',
+    sat: '101',
+    p: '0',
+    secret: 'raw-json-should-not-propagate',
+  });
+  assert(sanitized.archetypeKey === 'builder', 'share card should default unknown archetypes to the canon');
+  assert(sanitized.name.length <= 42 && !sanitized.name.includes('<script>'), 'share card should bound and sanitize display names');
+  assert(sanitized.days === '5000', 'share card should clamp day counts');
+  assert(sanitized.commits === '?', 'share card should reject invalid commit metrics');
+  assert(sanitized.langs === '200', 'share card should clamp language counts');
+  assert(sanitized.sessions === '100000', 'share card should clamp session counts');
+  assert(sanitized.satisfaction === '100', 'share card should clamp satisfaction');
+  assert(sanitized.percentile === '1', 'share card should clamp percentile');
+  assert(!sanitized.queryString.includes('secret') && !sanitized.queryString.includes('raw-json'), 'share card should not propagate unknown query params into metadata URLs');
+
   let statusCode = 0;
   let body = '';
   const req = {
@@ -479,6 +500,7 @@ async function assertShareCardCta() {
       c: '8',
       l: '4',
       s: '120',
+      secret: 'raw-json-should-not-propagate',
     },
   };
   const res = {
@@ -498,6 +520,7 @@ async function assertShareCardCta() {
   assert(body.includes('Compare with this archetype'), 'share card CTA should invite comparison instead of homepage upload');
   assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
   assert(body.includes('archetype=deepdiver'), 'share card /vibe CTA should use the sanitized archetype key');
+  assert(!body.includes('raw-json-should-not-propagate'), 'share card HTML should only use sanitized allowlisted query params');
   console.log('ok legacy share card routes visitors into comparison');
 }
 
