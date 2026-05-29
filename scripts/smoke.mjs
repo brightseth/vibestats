@@ -199,6 +199,7 @@ async function assertRoutes() {
   assert(leaderboardRankHelper.includes('weekly_uploads') && leaderboardRankHelper.includes('least(greatest((latest.scores->>latest.archetype)::numeric, 0), 100)'), 'weekly rank helper should rank by clamped public scores');
   assert(!leaderboardRankHelper.includes('coalesce((latest.scores->>${latest.archetype})::numeric'), 'weekly rank helper should not rank by raw stored scores');
   assert(leaderboardHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}'), 'leaderboard rows should route discovery into upload-to-compare');
+  assert(leaderboardHtml.includes('const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}`)'), 'leaderboard copied invites should canonicalize to vibestats.io');
   assert(leaderboardHtml.includes('data-invite="${esc(inviteText(entry, archetype))}"'), 'leaderboard rows should expose copyable rank invite text');
   assert(leaderboardHtml.includes("document.execCommand('copy')"), 'leaderboard copy actions should fall back when Clipboard API is unavailable');
   assert(leaderboardHtml.includes("See how you'd pair:"), 'leaderboard invite text should drive recipients into comparison');
@@ -218,9 +219,12 @@ async function assertRoutes() {
   assert(!browseApi.includes('coalesce((scores->>archetype)::numeric'), 'browse API should not sort by raw stored scores');
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
   assert(browseHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}'), 'browse share copy should drive recipients into upload-to-compare');
+  assert(browseHtml.includes('const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`)'), 'browse copied invites should canonicalize to vibestats.io');
   assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');
   assert(browseHtml.includes('Profile database unavailable') && browseHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'browse UI should distinguish unavailable DB from an empty directory');
   assert(matchHtml.includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
+  assert(matchHtml.includes('const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));'), 'match copied intros should canonicalize comparison URLs to vibestats.io');
+  assert(matchHtml.includes('url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}'), 'match X share URLs should canonicalize to vibestats.io');
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
   assert(matchHtml.includes('Match database unavailable') && matchHtml.includes('Boolean(data.unavailable)'), 'match UI should distinguish unavailable DB from no active matches');
   assert(profileApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'profile JSON API method errors should not be cached');
@@ -582,6 +586,8 @@ async function assertProfileShareLoop() {
   const indexHtml = await readFile('index.html', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   assert(profileHtml.includes('compareTo=${encodeURIComponent(handle)}'), 'profile compare CTA should seed upload-to-compare');
+  assert(profileHtml.includes("return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();"), 'profile outgoing share URLs should canonicalize to vibestats.io');
+  assert(profileHtml.includes('const uploadCompareUrl = canonicalVibestatsUrl(uploadComparePath);'), 'profile copied invites should use canonical compare URLs');
   assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile)'), 'profile copy action should use direct asymmetric compare invite text');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile invite copy should retain the profile as credential context');
   assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');

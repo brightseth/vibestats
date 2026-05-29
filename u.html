@@ -550,6 +550,14 @@
       deepdiver: 'Deep Diver', builder: 'Builder',
     };
 
+    function canonicalVibestatsUrl(pathOrUrl) {
+      try {
+        return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();
+      } catch {
+        return 'https://vibestats.io/';
+      }
+    }
+
     function handleFromLocation() {
       const query = new URLSearchParams(location.search).get('handle');
       if (query) return query;
@@ -755,14 +763,14 @@
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
       const profilePath = `/u/${encodeURIComponent(handle)}`;
-      const profileUrl = `${location.origin}${profilePath}`;
-      const uploadCompareUrl = `${location.origin}/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
+      const uploadComparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
+      const profileUrl = canonicalVibestatsUrl(profilePath);
+      const uploadCompareUrl = canonicalVibestatsUrl(uploadComparePath);
       const inviteText = profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile);
       const proof = profileProofLine(profile);
       const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} Profile: ${profileUrl}`;
       const badgePath = `${profilePath}/badge.svg`;
       const embedPath = `${profilePath}/embed`;
-      const uploadComparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
 
       compareCta.href = uploadComparePath;
       compareCta.textContent = `Compare with @${handle}`;
@@ -800,7 +808,7 @@
       });
 
       copyBadgeBtn.addEventListener('click', async () => {
-        const markdown = `[![vibestats: @${handle}](${location.origin}${badgePath})](${uploadCompareUrl})`;
+        const markdown = `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${uploadCompareUrl})`;
         try {
           await copyText(markdown);
           copyBadgeBtn.textContent = 'Badge copied!';
@@ -812,7 +820,7 @@
       });
 
       copyEmbedBtn.addEventListener('click', async () => {
-        const iframe = `<iframe src="${location.origin}${embedPath}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
+        const iframe = `<iframe src="${canonicalVibestatsUrl(embedPath)}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
         try {
           await copyText(iframe);
           copyEmbedBtn.textContent = 'Embed copied!';

@@ -338,6 +338,14 @@
       return n % 1 === 0 ? String(n) : n.toFixed(1);
     };
 
+    function canonicalVibestatsUrl(pathOrUrl) {
+      try {
+        return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();
+      } catch {
+        return 'https://vibestats.io/';
+      }
+    }
+
     function archetypeFromLocation() {
       const query = new URLSearchParams(location.search).get('archetype');
       if (query && ARCHETYPES[query]) return query;
@@ -378,8 +386,8 @@
       const handle = entry.user?.gh_handle || 'this profile';
       const arch = ARCHETYPES[entry.archetype || archetype] || ARCHETYPES[archetype] || ARCHETYPES.builder;
       const signature = entry.signature?.label || arch.name;
-      const compareUrl = `${location.origin}/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}`;
-      const profileUrl = `${location.origin}/u/${encodeURIComponent(handle)}`;
+      const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}`);
+      const profileUrl = canonicalVibestatsUrl(`/u/${encodeURIComponent(handle)}`);
       return `@${handle} is #${entry.rank} on the weekly ${arch.name} board with ${entry.score}% ${signature} signal. See how you'd pair:\n${compareUrl}\n${profileUrl}`;
     }
 

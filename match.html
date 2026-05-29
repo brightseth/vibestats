@@ -329,6 +329,14 @@
       return n % 1 === 0 ? String(n) : n.toFixed(1);
     };
 
+    function canonicalVibestatsUrl(pathOrUrl) {
+      try {
+        return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();
+      } catch {
+        return 'https://vibestats.io/';
+      }
+    }
+
     function stateFromLocation() {
       const params = new URLSearchParams(location.search);
       const goal = GOALS[params.get('goal')] ? params.get('goal') : 'pair-coding';
@@ -367,8 +375,8 @@
 
     function introText(entry, goalLabel, seekerArchetype) {
       const handle = entry.user?.gh_handle || 'there';
-      const compareUrl = `${location.origin}${comparePath(entry, seekerArchetype)}`;
-      const profileUrl = `${location.origin}/u/${encodeURIComponent(handle)}`;
+      const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));
+      const profileUrl = canonicalVibestatsUrl(`/u/${encodeURIComponent(handle)}`);
       const style = seekerArchetype && seekerArchetype !== 'any' ? `I'm a ${ARCHETYPE_NAMES[seekerArchetype] || seekerArchetype}. ` : '';
       return `${style}Saw your vibestats profile - you're a ${entry.signature?.label || ARCHETYPE_NAMES[entry.archetype] || entry.archetype}. vibestats has us at ${entry.fit_score}% for ${goalLabel.toLowerCase()}: ${entry.fit_reason} Compare here: ${compareUrl}\n${profileUrl}`;
     }
@@ -376,7 +384,7 @@
     function xShareUrl(entry, goalLabel, seekerArchetype) {
       const handle = entry.user?.gh_handle || 'this profile';
       const text = `Found a ${entry.fit_score}% ${goalLabel.toLowerCase()} match with @${handle} on vibestats.`;
-      return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`${location.origin}${comparePath(entry, seekerArchetype)}`)}`;
+      return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}`;
     }
 
     async function copyText(button, text, resetLabel) {

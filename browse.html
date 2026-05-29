@@ -350,6 +350,14 @@
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (value) => Number(value || 0).toLocaleString();
 
+    function canonicalVibestatsUrl(pathOrUrl) {
+      try {
+        return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();
+      } catch {
+        return 'https://vibestats.io/';
+      }
+    }
+
     function stateFromLocation() {
       const params = new URLSearchParams(location.search);
       const archetype = ARCHETYPES[params.get('archetype')] ? params.get('archetype') : 'all';
@@ -377,8 +385,8 @@
     function shareText(entry) {
       const handle = entry.user?.gh_handle || 'this profile';
       const label = entry.signature?.label || entry.archetype_label || entry.archetype;
-      const compareUrl = `${location.origin}/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`;
-      const profileUrl = `${location.origin}/u/${encodeURIComponent(handle)}`;
+      const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`);
+      const profileUrl = canonicalVibestatsUrl(`/u/${encodeURIComponent(handle)}`);
       return `See how you'd pair with @${handle}, a ${label}:\n${compareUrl}\n${profileUrl}`;
     }
 
