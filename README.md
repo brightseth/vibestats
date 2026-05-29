@@ -108,8 +108,10 @@ Pull shared Vercel env when available:
 
 ```bash
 vercel link --project vibestats --scope lets-vibe
-vercel env pull .env.local
+vercel env pull .env.local --scope lets-vibe
 ```
+
+When testing a Preview deployment, make sure the identity env vars are scoped to Preview, not only Production. `vercel env pull .env.local --environment=preview --scope lets-vibe` pulls the same env scope used by PR previews.
 
 Run database migrations:
 

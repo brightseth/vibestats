@@ -7,7 +7,7 @@ Use this as the production gate for the identity loop. Green PR checks prove the
 Inspect env names without printing secret values:
 
 ```bash
-vercel env ls
+vercel env ls --scope lets-vibe
 ```
 
 Required for GitHub-backed profiles:
@@ -23,7 +23,18 @@ Optional but launch-relevant:
 - `KV_REST_API_URL` + `KV_REST_API_TOKEN` or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` for aggregate community stats
 - `CRON_SECRET`, `RESEND_API_KEY`, and `DIGEST_FROM_EMAIL` for weekly digest delivery
 
-As of the latest audit, `lets-vibe/vibestats` only had the Redis/KV variables configured. Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.
+Env scope matters. For preview audits, the required identity variables must be attached to Preview as well as Production; for local `vercel env pull`, attach them to Development too. `vercel env ls` can show a variable that is present in Production only, and the Preview deployment will still report `session_secret`, `database`, or `github_oauth` as missing until that variable exists in Preview and a new deployment is created.
+
+```bash
+vercel env add POSTGRES_URL production preview development --scope lets-vibe
+vercel env add GITHUB_CLIENT_ID production preview development --scope lets-vibe
+vercel env add GITHUB_CLIENT_SECRET production preview development --scope lets-vibe
+vercel env add VIBE_SESSION_SECRET production preview development --scope lets-vibe
+```
+
+Use a production GitHub OAuth app with callback `https://vibestats.io/api/auth/github/callback`. For end-to-end preview OAuth testing, use a separate preview OAuth app or test OAuth on production after the final deploy.
+
+As of the latest audit, `lets-vibe/vibestats` has Neon/Postgres env vars in Production, Preview, and Development, plus `VIBESTATS_URL` and `VIBE_SESSION_SECRET` in Production. Identity is not production-ready until GitHub OAuth is added, and preview identity audits will still fail until a strong session secret is also added to Preview.
 
 ## 2. Vercel Deployment Gate
 
@@ -53,7 +64,7 @@ The launch audit can also run through Vercel auth for protected previews:
 npm run audit:launch -- --deployment <preview-url> --scope lets-vibe --handle <saved-gh-handle>
 ```
 
-As of the latest audit, the canonical project ignored-build setting has been cleared and the latest preview is Ready. The identity readiness probe still reports unavailable profile saves until the database, GitHub OAuth, and session secret env vars are configured.
+As of the latest audit, the canonical project ignored-build setting has been cleared and the latest preview is Ready. The identity readiness probe still reports unavailable profile saves until the target deployment has database, GitHub OAuth, and session secret env vars in that same Vercel environment scope.
 
 ## 3. Local Env Doctor
 
