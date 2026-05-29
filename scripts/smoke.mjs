@@ -209,6 +209,10 @@ async function assertRoutes() {
   assert(indexHtml.includes("fetch('/api/identity-status'"), 'upload page should check identity readiness before fetching session state');
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
+  assert(profileHtml.includes("fetch('/api/identity-status'"), 'profile page should check identity readiness before showing sign-in');
+  assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
+  assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
+  assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');

@@ -182,6 +182,16 @@
       background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
       color: #9bb5ff;
     }
+    .btn.muted {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      cursor: default;
+    }
+    .btn.muted:hover {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+    }
     .btn.danger {
       border-color: rgba(239,68,68,0.4);
       color: #ff9a9a;
@@ -237,8 +247,8 @@
     <section class="signed-out" id="signed-out">
       <div>
         <h1>Settings</h1>
-        <p class="sub">Sign in to manage your profile.</p>
-        <a class="btn primary" href="/api/auth/github/start?returnTo=/settings">Sign in with GitHub</a>
+        <p class="sub" id="signed-out-copy">Sign in to manage your profile.</p>
+        <a class="btn primary" id="settings-sign-in" href="/api/auth/github/start?returnTo=/settings">Sign in with GitHub</a>
       </div>
     </section>
 
@@ -379,11 +389,45 @@
       return data;
     }
 
+    async function fetchIdentityStatus() {
+      try {
+        const res = await fetch('/api/identity-status', { cache: 'no-store' });
+        if (!res.ok) return { profile_save_available: false };
+        return await res.json();
+      } catch {
+        return { profile_save_available: false };
+      }
+    }
+
+    function showSignedOut(identityStatus = {}) {
+      const copy = document.getElementById('signed-out-copy');
+      const signIn = document.getElementById('settings-sign-in');
+      if (identityStatus.profile_save_available === true) {
+        copy.textContent = 'Sign in to manage your profile.';
+        signIn.className = 'btn primary';
+        signIn.href = '/api/auth/github/start?returnTo=/settings';
+        signIn.textContent = 'Sign in with GitHub';
+      } else {
+        copy.textContent = 'Profile saves are not configured on this deployment yet.';
+        signIn.className = 'btn muted';
+        signIn.removeAttribute('href');
+        signIn.textContent = 'Profile saves pending';
+      }
+      document.getElementById('signed-out').style.display = 'grid';
+    }
+
     async function init() {
+      const identityStatus = await fetchIdentityStatus();
+      if (identityStatus.profile_save_available !== true) {
+        document.getElementById('loading').style.display = 'none';
+        showSignedOut(identityStatus);
+        return;
+      }
+
       const res = await fetch('/api/settings');
       document.getElementById('loading').style.display = 'none';
       if (!res.ok) {
-        document.getElementById('signed-out').style.display = 'grid';
+        showSignedOut(identityStatus);
         return;
       }
 

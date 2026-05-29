@@ -82,6 +82,16 @@
       background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
       color: #9bb5ff;
     }
+    .btn.muted {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      cursor: default;
+    }
+    .btn.muted:hover {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+    }
     .loading, .error, .empty {
       min-height: 60vh;
       display: grid;
@@ -673,7 +683,17 @@
       }
     }
 
-    function renderNav(me, profileHandle) {
+    async function fetchIdentityStatus() {
+      try {
+        const res = await fetch('/api/identity-status', { cache: 'no-store' });
+        if (!res.ok) return { profile_save_available: false };
+        return await res.json();
+      } catch {
+        return { profile_save_available: false };
+      }
+    }
+
+    function renderNav(me, profileHandle, identityStatus = {}) {
       const nav = document.getElementById('nav');
       if (me) {
         nav.innerHTML = `
@@ -686,7 +706,9 @@
         nav.innerHTML = `
           <a class="btn" href="/">Upload</a>
           <a class="btn" href="/browse">Browse</a>
-          <a class="btn primary" href="/api/auth/github/start?returnTo=${encodeURIComponent(`/u/${profileHandle}`)}">Sign in with GitHub</a>
+          ${identityStatus.profile_save_available === true
+            ? `<a class="btn primary" href="/api/auth/github/start?returnTo=${encodeURIComponent(`/u/${profileHandle}`)}">Sign in with GitHub</a>`
+            : '<span class="btn muted">Profile saves pending</span>'}
         `;
       }
     }
@@ -838,12 +860,13 @@
 
     async function renderProfile() {
       const profileHandle = handleFromLocation();
-      const [me, profileRes, statsRes] = await Promise.all([
-        fetchMe(),
+      const [identityStatus, profileRes, statsRes] = await Promise.all([
+        fetchIdentityStatus(),
         fetch(`/api/u/${encodeURIComponent(profileHandle)}`),
         fetch('/api/stats').catch(() => null),
       ]);
-      renderNav(me, profileHandle);
+      const me = identityStatus.profile_save_available === true ? await fetchMe() : null;
+      renderNav(me, profileHandle, identityStatus);
 
       if (!profileRes.ok) {
         document.getElementById('loading').style.display = 'none';
