@@ -248,7 +248,7 @@
       <div>
         <h1>Settings</h1>
         <p class="sub" id="signed-out-copy">Sign in to manage your profile.</p>
-        <a class="btn primary" id="settings-sign-in" href="/api/auth/github/start?returnTo=/settings">Sign in with GitHub</a>
+        <a class="btn muted" id="settings-sign-in" role="button" aria-disabled="true">Checking profile saves...</a>
       </div>
     </section>
 
@@ -406,11 +406,13 @@
         copy.textContent = 'Sign in to manage your profile.';
         signIn.className = 'btn primary';
         signIn.href = '/api/auth/github/start?returnTo=/settings';
+        signIn.removeAttribute('aria-disabled');
         signIn.textContent = 'Sign in with GitHub';
       } else {
         copy.textContent = 'Profile saves are not configured on this deployment yet.';
         signIn.className = 'btn muted';
         signIn.removeAttribute('href');
+        signIn.setAttribute('aria-disabled', 'true');
         signIn.textContent = 'Profile saves pending';
       }
       document.getElementById('signed-out').style.display = 'grid';

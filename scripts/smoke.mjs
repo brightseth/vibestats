@@ -214,6 +214,8 @@ async function assertRoutes() {
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
+  assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
+  assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
   assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
