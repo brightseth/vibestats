@@ -570,6 +570,7 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('comparisonTargetLabel(intent)'), 'upload-to-compare save status should label profile and archetype comparison targets');
   assert(!indexHtml.includes('Opening your pairing with @${comparisonIntent().handle}'), 'upload-to-compare save status must not render @undefined for archetype comparisons');
   assert(indexHtml.includes('const compareHref = comparisonIntent()'), 'result card compare button should honor upload-to-compare intake');
+  assert(indexHtml.includes('/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(intent.handle)}'), 'anonymous upload-to-profile comparison links should preserve the host profile identity');
   assert(indexHtml.includes('/compare?a=${encodeURIComponent(user.gh_handle)}&b=${encodeURIComponent(intent.archetype)}'), 'saved archetype-only intake should compare from the user profile identity');
   assert(!indexHtml.includes("What's YOUR personality?\\n${cardShareUrl}"), 'ephemeral share copy should not use old generic personality prompt');
   assert(!indexHtml.includes("What's yours?\\n${cardShareUrl}"), 'ephemeral share copy should not use old generic short prompt');

@@ -2139,7 +2139,7 @@
       if (intent.kind === 'profile') {
         return user
         ? `/u/${encodeURIComponent(intent.handle)}/pair/${encodeURIComponent(user.gh_handle)}`
-        : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(intent.archetype)}`;
+        : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(intent.handle)}`;
       }
       return user
         ? `/compare?a=${encodeURIComponent(user.gh_handle)}&b=${encodeURIComponent(intent.archetype)}`
