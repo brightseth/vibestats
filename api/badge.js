@@ -1,6 +1,7 @@
 import { readSession } from './_lib/auth.js';
 import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
+import { publicScores } from './_lib/public-profile.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -32,11 +33,16 @@ function truncate(value, max) {
   return text.length > max ? `${text.slice(0, max - 3)}...` : text;
 }
 
-function badgeSvg({ handle, label = 'vibestats profile', archetype = 'vibestats', color = '#6B8FFF' }) {
-  const safeHandle = esc(`@${truncate(handle, 24)}`);
-  const safeLabel = esc(truncate(label, 30));
+export function badgeSvg({ handle, label = 'vibestats profile', archetype = 'vibestats', color = '#6B8FFF', score = null }) {
+  const safeHandle = esc(`@${truncate(handle, 20)}`);
+  const safeLabel = esc(truncate(label, 25));
   const safeArchetype = esc(archetype);
   const safeColor = esc(color);
+  const scoreValue = Number(score);
+  const safeScore = Number.isFinite(scoreValue) ? esc(`${Math.max(0, Math.min(100, Math.round(scoreValue)))}%`) : '';
+  const footer = safeScore
+    ? `${safeScore} Claude Code signal - ${safeArchetype}`
+    : `Claude Code signature - ${safeArchetype}`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="120" viewBox="0 0 520 120" role="img" aria-label="${safeHandle} ${safeLabel}">
   <defs>
@@ -56,7 +62,9 @@ function badgeSvg({ handle, label = 'vibestats profile', archetype = 'vibestats'
   <text x="57" y="72" text-anchor="middle" fill="#8888a0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9">vibestats</text>
   <text x="114" y="42" fill="#e0e0e0" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="22" font-weight="800">${safeHandle}</text>
   <text x="114" y="67" fill="${safeColor}" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="800">${safeLabel}</text>
-  <text x="114" y="88" fill="#8888a0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11">Claude Code signature - ${safeArchetype}</text>
+  ${safeScore ? `<rect x="412" y="25" width="82" height="36" rx="9" fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.08)"/>
+  <text x="453" y="49" text-anchor="middle" fill="#ffffff" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="900">${safeScore}</text>` : ''}
+  <text x="114" y="88" fill="#8888a0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11">${footer}</text>
 </svg>`;
 }
 
@@ -91,7 +99,7 @@ export default async function handler(req, res) {
     }
 
     const uploads = await sql()`
-      select archetype, raw_meta
+      select archetype, scores, raw_meta
       from uploads
       where user_id = ${user.id}
       order by uploaded_at desc
@@ -100,12 +108,14 @@ export default async function handler(req, res) {
     const latest = uploads[0];
     const arch = ARCHETYPES[latest?.archetype] || null;
     const label = signatureFromUpload(latest)?.label || (arch ? arch.name : 'vibestats profile');
+    const score = latest?.archetype ? publicScores(latest.scores || {})[latest.archetype] : null;
 
     return sendSvg(res, 200, badgeSvg({
       handle: user.gh_handle,
       label,
       archetype: arch?.name || 'vibestats',
       color: arch?.color || '#6B8FFF',
+      score,
     }), profileShareCacheControl(user));
   } catch (err) {
     console.error('GET /api/badge error:', err);

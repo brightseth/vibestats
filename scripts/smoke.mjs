@@ -265,6 +265,8 @@ async function assertRoutes() {
   assert(embedApi.includes('Compare with @${user.gh_handle}'), 'profile embed should expose a comparison-oriented accessible action');
   assert(embedApi.includes('profileShareCacheControl(user)'), 'profile embed should use shared profile cache policy');
   assert(badgeApi.includes('profileShareCacheControl(user)'), 'profile badge should use shared profile cache policy');
+  assert(badgeApi.includes('publicScores(latest.scores || {})[latest.archetype]'), 'profile badge should render the derived primary score');
+  assert(badgeApi.includes('select archetype, scores, raw_meta'), 'profile badge should fetch only derived badge fields');
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
   assert(badgeApi.includes('sendPrivateNotFound(res)'), 'profile badge private 404 should not be cacheable');
   assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype'), 'profile links helper should expose compare-first URLs');
@@ -1727,7 +1729,18 @@ async function assertBadgeFallback() {
   const originalError = console.error;
   console.error = () => {};
   try {
-    const { default: handler } = await import('../api/badge.js');
+    const { default: handler, badgeSvg } = await import('../api/badge.js');
+    const scored = badgeSvg({
+      handle: 'brightseth',
+      label: 'high-velocity Builder',
+      archetype: 'BUILDER',
+      color: '#22c55e',
+      score: 999,
+    });
+    assert(scored.includes('100% Claude Code signal - BUILDER'), 'badge SVG should render clamped primary score as credential proof');
+    assert(scored.includes('>100%</text>'), 'badge SVG should show the score pill');
+    assert(!scored.includes('rawJson') && !scored.includes('tool_usage') && !scored.includes('language_usage'), 'badge SVG should not include raw insight markers');
+
     let statusCode = 0;
     let contentType = '';
     let cache = '';
