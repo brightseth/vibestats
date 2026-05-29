@@ -87,8 +87,8 @@ function usage() {
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
 - public auth/sync failure responses do not expose internal config names
-- profile shell, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
-- card, wrapped, dashboard, compare-first upload route, pair preview route, browse, match, and leaderboard surfaces
+- profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
+- card, wrapped, dashboard, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
 - obvious raw-insights field leaks in public profile/share HTML/SVG responses`;
 }
@@ -280,10 +280,18 @@ async function auditLaunch(options) {
       requireNoStore: true,
     },
     {
+      label: 'profile JSON',
+      path: `/api/u/${encodeURIComponent(handle)}`,
+      expectedType: 'application/json',
+      allowStatuses: expectReady ? [200] : [200, 404, 503],
+      requireNoStore: true,
+      mustInclude: expectReady ? ['"uploads"', '"metric_visibility"', '"history"', '"leaderboard"', '"evolution"'] : null,
+    },
+    {
       label: 'profile page',
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
-      allowStatuses: [200, 404],
+      allowStatuses: expectReady ? [200] : [200, 404],
     },
     {
       label: 'unknown profile fallback',
@@ -296,13 +304,13 @@ async function auditLaunch(options) {
       label: 'profile embed',
       path: `/u/${encodeURIComponent(handle)}/embed`,
       expectedType: 'text/html',
-      allowStatuses: [200, 404],
+      allowStatuses: expectReady ? [200] : [200, 404],
     },
     {
       label: 'profile badge',
       path: `/u/${encodeURIComponent(handle)}/badge.svg`,
       expectedType: 'image/svg+xml',
-      allowStatuses: [200, 404],
+      allowStatuses: expectReady ? [200] : [200, 404],
     },
     {
       label: 'upload-to-compare route',
@@ -318,6 +326,15 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: [200],
       mustInclude: 'Open the pairing, then claim yours',
+    },
+    {
+      label: 'profile-backed pair route',
+      path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`,
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: expectReady
+        ? ['Open the pairing, then claim yours', `@${handle}`, '/?compareTo=']
+        : ['comparisonParamsFromLocation()', 'compareTo=${encodeURIComponent(profileSubject.handle)}'],
     },
     {
       label: 'share card route',
