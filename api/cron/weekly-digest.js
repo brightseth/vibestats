@@ -1,4 +1,4 @@
-import { originForRequest } from '../_lib/auth.js';
+import { createDigestUnsubscribeToken, originForRequest } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
 import { buildWeeklyDigest } from '../_lib/digest.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed } from '../_lib/http.js';
@@ -143,6 +143,7 @@ export default async function handler(req, res) {
         rarity: await monthlyRarity(latest),
         leaderboard: await weeklyLeaderboardRank(user, latest),
         origin,
+        unsubscribeToken: createDigestUnsubscribeToken(user),
       });
       if (!digest) {
         results.push({ handle: user.gh_handle, skipped: 'no_digest' });

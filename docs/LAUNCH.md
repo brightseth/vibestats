@@ -97,4 +97,4 @@ With digest env configured, run a dry run first:
 curl -H "Authorization: Bearer $CRON_SECRET" "https://vibestats.io/api/cron/weekly-digest?dryRun=1"
 ```
 
-Confirm digest content links back to the profile and leaderboard, and that it includes only derived metrics.
+Confirm digest content links back to the profile and leaderboard, includes one-click unsubscribe, and uses only derived metrics.

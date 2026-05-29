@@ -4,8 +4,10 @@ import { getUserById } from './db.js';
 export const SESSION_COOKIE = 'vibestats_auth';
 export const OAUTH_STATE_COOKIE = 'vibestats_oauth_state';
 const SESSION_TOKEN_TYPE = 'vibestats_session';
+const DIGEST_UNSUBSCRIBE_TOKEN_TYPE = 'vibestats_digest_unsubscribe';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 const SYNC_TOKEN_MAX_AGE = 60 * 60 * 24 * 180;
+const DIGEST_UNSUBSCRIBE_TOKEN_MAX_AGE = 60 * 60 * 24 * 180;
 
 function base64url(input) {
   return Buffer.from(input)
@@ -70,6 +72,20 @@ export function createSyncToken(user) {
   return `${data}.${sign(data)}`;
 }
 
+export function createDigestUnsubscribeToken(user) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = base64url(JSON.stringify({
+    sub: user.id,
+    scope: 'digest:unsubscribe',
+    typ: DIGEST_UNSUBSCRIBE_TOKEN_TYPE,
+    iat: now,
+    exp: now + DIGEST_UNSUBSCRIBE_TOKEN_MAX_AGE,
+  }));
+  const data = `${header}.${payload}`;
+  return `${data}.${sign(data)}`;
+}
+
 export function syncTokenExpiresAt() {
   return new Date((Math.floor(Date.now() / 1000) + SYNC_TOKEN_MAX_AGE) * 1000).toISOString();
 }
@@ -100,6 +116,12 @@ export function verifySessionToken(token) {
 export function verifySyncToken(token) {
   const payload = verifySessionToken(token);
   if (!payload || payload.typ !== 'vibestats_sync' || payload.scope !== 'sync') return null;
+  return payload;
+}
+
+export function verifyDigestUnsubscribeToken(token) {
+  const payload = verifySessionToken(token);
+  if (!payload || payload.typ !== DIGEST_UNSUBSCRIBE_TOKEN_TYPE || payload.scope !== 'digest:unsubscribe') return null;
   return payload;
 }
 

@@ -19,6 +19,7 @@ const apiModules = [
   '../api/settings.js',
   '../api/settings/export.js',
   '../api/cron/weekly-digest.js',
+  '../api/digest/unsubscribe.js',
   '../api/_lib/cache.js',
   '../api/_lib/evolution.js',
   '../api/_lib/export-upload.js',
@@ -120,6 +121,8 @@ async function assertRoutes() {
   const settingsHtml = await readFile('settings.html', 'utf8');
   const settingsApi = await readFile('api/settings.js', 'utf8');
   const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
+  const weeklyDigestApi = await readFile('api/cron/weekly-digest.js', 'utf8');
+  const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
   const identityStatusApi = await readFile('api/identity-status.js', 'utf8');
@@ -220,6 +223,9 @@ async function assertRoutes() {
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
   assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
+  assert(weeklyDigestApi.includes('createDigestUnsubscribeToken'), 'weekly digest should include one-click unsubscribe tokens');
+  assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
+  assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
   assert(identityDoctor.includes('AUTH_SECRET') && identityDoctor.includes('NEXTAUTH_SECRET'), 'identity doctor should accept session secret aliases used by runtime');
@@ -232,6 +238,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');
   assert(launchDoc.includes('vercel curl /api/identity-status --deployment <preview-url> --scope lets-vibe'), 'launch checklist should document protected-preview runtime proof');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
+  assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
@@ -566,6 +573,26 @@ async function assertSyncTokenRoundTrip() {
   console.log('ok signed CLI sync token round-trip');
 }
 
+async function assertDigestUnsubscribeTokenRoundTrip() {
+  const {
+    SESSION_COOKIE,
+    createDigestUnsubscribeToken,
+    readSession,
+    verifyDigestUnsubscribeToken,
+    verifySyncToken,
+  } = await import('../api/_lib/auth.js');
+  const token = createDigestUnsubscribeToken({
+    id: '11111111-1111-1111-1111-111111111111',
+  });
+  const session = verifyDigestUnsubscribeToken(token);
+  assert(session?.sub === '11111111-1111-1111-1111-111111111111', 'digest unsubscribe token sub should round-trip');
+  assert(session?.scope === 'digest:unsubscribe', 'digest unsubscribe token should carry unsubscribe scope');
+  assert(session?.typ === 'vibestats_digest_unsubscribe', 'digest unsubscribe token should carry token type');
+  assert(verifySyncToken(token) === null, 'digest unsubscribe token must not authenticate as CLI sync token');
+  assert(readSession({ headers: { cookie: `${SESSION_COOKIE}=${encodeURIComponent(token)}` } }) === null, 'digest unsubscribe token must not authenticate as browser session');
+  console.log('ok signed digest unsubscribe token round-trip');
+}
+
 async function assertSameOriginGuard() {
   const { requireSameOrigin } = await import('../api/_lib/http.js');
   const sameOriginReq = {
@@ -782,6 +809,7 @@ async function assertDigestHelpers() {
     leaderboard: { rank: 4, total: 25, label: 'builder' },
     origin: 'https://vibestats.io',
     now: new Date('2026-05-28T12:00:00.000Z'),
+    unsubscribeToken: 'unsubscribe-token',
   });
 
   assert(uploadStreak(uploads) === 2, 'digest streak helper should count uploads within 7 days');
@@ -789,9 +817,12 @@ async function assertDigestHelpers() {
   assert(digest.text.includes('+4 points vs last upload'), 'digest text should include score movement');
   assert(digest.text.includes('#4 on the weekly Builder board'), 'digest text should include leaderboard position');
   assert(digest.text.includes('Manage digest: https://vibestats.io/settings'), 'digest text should include settings management link');
+  assert(digest.text.includes('Unsubscribe: https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token'), 'digest text should include one-click unsubscribe link');
   assert(digest.html.includes('/api/og?'), 'digest HTML should include the profile card image');
   assert(digest.html.includes('Manage digest settings'), 'digest HTML should include settings management link');
+  assert(digest.html.includes('unsubscribe'), 'digest HTML should include one-click unsubscribe link');
   assert(digest.settings_url === 'https://vibestats.io/settings', 'digest payload should expose settings URL');
+  assert(digest.unsubscribe_url === 'https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token', 'digest payload should expose unsubscribe URL');
   assert(!digest.html.includes('rawJson') && !digest.text.includes('rawJson'), 'digest must not leak raw metadata');
   console.log('ok weekly digest helpers render derived-only email');
 }
@@ -1200,6 +1231,12 @@ async function assertPrivateApiNoStore() {
         req: { method: 'GET', query: { dryRun: '1' }, headers: { host: 'localhost:3000' } },
         status: 503,
       },
+      {
+        label: '/api/digest/unsubscribe missing token',
+        module: '../api/digest/unsubscribe.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 400,
+      },
     ];
 
     for (const endpoint of endpoints) {
@@ -1281,6 +1318,7 @@ await assertExportUploadSanitizer();
 await assertCliDerivedPayload();
 await assertSessionRoundTrip();
 await assertSyncTokenRoundTrip();
+await assertDigestUnsubscribeTokenRoundTrip();
 await assertSameOriginGuard();
 await assertReadJsonLimit();
 await assertProfileSettingsHelpers();

@@ -84,6 +84,10 @@ function settingsUrl(origin) {
   return `${origin}/settings`;
 }
 
+function digestUnsubscribeUrl(origin, token) {
+  return token ? `${origin}/api/digest/unsubscribe?token=${encodeURIComponent(token)}` : null;
+}
+
 function ogUrl(origin, user, latest) {
   const metrics = latest.metrics || {};
   const percentiles = latest.scores?._percentiles || {};
@@ -111,7 +115,7 @@ function leaderboardText(leaderboard) {
   return `#${leaderboard.rank} on the weekly ${label} board`;
 }
 
-export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = null, origin, now = new Date() }) {
+export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = null, origin, now = new Date(), unsubscribeToken = null }) {
   const latest = uploads?.[0];
   if (!latest) return null;
 
@@ -125,6 +129,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
   const profile = profileUrl(origin, user.gh_handle);
   const board = leaderboardUrl(origin, latest.archetype);
   const settings = settingsUrl(origin);
+  const unsubscribe = digestUnsubscribeUrl(origin, unsubscribeToken);
   const boardLine = leaderboardText(leaderboard);
   const rareLine = scarcityText(rarity);
 
@@ -155,7 +160,8 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     `Open profile: ${profile}`,
     `Leaderboard: ${board}`,
     `Manage digest: ${settings}`,
-  ].join('\n');
+    unsubscribe ? `Unsubscribe: ${unsubscribe}` : null,
+  ].filter(Boolean).join('\n');
 
   const statHtml = stats.map((stat) => `
     <td style="padding:12px;border:1px solid #252535;border-radius:8px;background:#10101a;">
@@ -183,7 +189,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
       <a href="${esc(profile)}" style="display:inline-block;padding:12px 15px;border-radius:8px;background:#1b2443;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Open profile</a>
       <a href="${esc(board)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#14141e;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">View leaderboard</a>
     </p>
-    <p style="margin-top:26px;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#555568;">You opted in to weekly vibestats emails. <a href="${esc(settings)}" style="color:#8fa8ff;">Manage digest settings</a>. Raw Claude Code insights JSON never leaves your browser; this digest uses only saved derived metrics.</p>
+    <p style="margin-top:26px;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#555568;">You opted in to weekly vibestats emails. <a href="${esc(settings)}" style="color:#8fa8ff;">Manage digest settings</a>${unsubscribe ? ` or <a href="${esc(unsubscribe)}" style="color:#8fa8ff;">unsubscribe</a>` : ''}. Raw Claude Code insights JSON never leaves your browser; this digest uses only saved derived metrics.</p>
   </div>
 </body>
 </html>`;
@@ -195,6 +201,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     profile_url: profile,
     leaderboard_url: board,
     settings_url: settings,
+    unsubscribe_url: unsubscribe,
     score,
     delta,
     streak,
