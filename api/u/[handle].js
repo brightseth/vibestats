@@ -15,11 +15,11 @@ function getHandle(req) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
 
   const handle = String(getHandle(req)).trim();
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(handle)) {
-    return json(res, 400, { error: 'Invalid handle' });
+    return json(res, 400, { error: 'Invalid handle' }, NO_STORE_HEADERS);
   }
 
   try {
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       limit 1
     `;
     const user = rows[0];
-    if (!user) return json(res, 404, { error: 'Profile not found' });
+    if (!user) return json(res, 404, { error: 'Profile not found' }, { 'Cache-Control': PRIVATE_PROFILE_CACHE });
 
     const session = readSession(req);
     const isOwner = session?.sub === user.id;

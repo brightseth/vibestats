@@ -194,6 +194,9 @@ async function assertRoutes() {
   assert(matchHtml.includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
   assert(matchHtml.includes('Match database unavailable') && matchHtml.includes('Boolean(data.unavailable)'), 'match UI should distinguish unavailable DB from no active matches');
+  assert(profileApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'profile JSON API method errors should not be cached');
+  assert(profileApi.includes("json(res, 400, { error: 'Invalid handle' }, NO_STORE_HEADERS)"), 'profile JSON API invalid handles should not be cached');
+  assert(profileApi.includes("json(res, 404, { error: 'Profile not found' }, { 'Cache-Control': PRIVATE_PROFILE_CACHE })"), 'profile JSON API unknown handles should not be cached before a profile is created');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');
