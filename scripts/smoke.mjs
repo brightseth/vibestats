@@ -201,6 +201,7 @@ async function assertRoutes() {
   assert(profileApi.includes("'Cache-Control': PRIVATE_PROFILE_CACHE"), 'profile JSON private 404 should not be cacheable');
   assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
   assert(profileHtmlApi.includes('profileShareCacheControl(user)'), 'profile HTML OG metadata should use shared profile cache policy');
+  assert(profileHtmlApi.includes('sendGenericProfilePage(req, res, 404, handle)'), 'profile HTML unknown handles should render generic shell with explicit no-store cache policy');
   assert(profileHtmlApi.includes('sendPrivateNotFound(res)'), 'profile HTML private 404 should not be cacheable');
   assert(profileHtmlApi.includes('weeklyLeaderboardRank(user, latest)'), 'profile HTML OG metadata should include public leaderboard proof');
   assert(profileHtmlApi.includes('rarityForSignature(signature)'), 'profile HTML OG metadata should include signature scarcity proof');

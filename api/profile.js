@@ -65,6 +65,12 @@ function genericProfilePage(req, handle) {
   });
 }
 
+function sendGenericProfilePage(req, res, status, handle, cacheUser = null) {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', profileShareCacheControl(cacheUser));
+  return res.status(status).send(genericProfilePage(req, handle));
+}
+
 export function profileDescription({ signature = '', arch, metrics = {}, handle, rarity = null, leaderboard = null } = {}) {
   const proof = profileShareProof({ rarity, leaderboard });
   return [
@@ -90,7 +96,7 @@ export default async function handler(req, res) {
       limit 1
     `;
     const user = users[0];
-    if (!user) return res.status(404).send(genericProfilePage(req, handle));
+    if (!user) return sendGenericProfilePage(req, res, 404, handle);
 
     const session = readSession(req);
     const isOwner = session?.sub === user.id;
@@ -107,9 +113,7 @@ export default async function handler(req, res) {
     `;
     const latest = uploads[0];
     if (!latest) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', profileShareCacheControl(user));
-      return res.status(200).send(genericProfilePage(req, user.gh_handle));
+      return sendGenericProfilePage(req, res, 200, user.gh_handle, user);
     }
 
     const arch = ARCHETYPES[latest.archetype] || ARCHETYPES.builder;
@@ -158,8 +162,6 @@ export default async function handler(req, res) {
     res.status(200).send(html);
   } catch (err) {
     console.error('GET /api/profile error:', err);
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', profileShareCacheControl(null));
-    res.status(200).send(genericProfilePage(req, handle));
+    sendGenericProfilePage(req, res, 200, handle);
   }
 }
