@@ -159,6 +159,40 @@ async function assertCompareShareLoop() {
   console.log('ok compare share loop claims profile-backed comparisons');
 }
 
+async function assertShareCardCta() {
+  const { default: handler } = await import('../api/card.js');
+  let statusCode = 0;
+  let body = '';
+  const req = {
+    query: {
+      a: 'deepdiver',
+      n: 'Alex',
+      d: '30',
+      c: '8',
+      l: '4',
+      s: '120',
+    },
+  };
+  const res = {
+    setHeader() {},
+    status(code) {
+      statusCode = code;
+      return this;
+    },
+    send(value) {
+      body = String(value);
+    },
+  };
+
+  handler(req, res);
+  assert(statusCode === 200, 'share card should render HTTP 200');
+  assert(body.includes('href="/compare?me=deepdiver"'), 'share card CTA should send visitors into archetype comparison');
+  assert(body.includes('Compare with this archetype'), 'share card CTA should invite comparison instead of homepage upload');
+  assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
+  assert(body.includes('archetype=deepdiver'), 'share card /vibe CTA should use the sanitized archetype key');
+  console.log('ok legacy share card routes visitors into comparison');
+}
+
 async function assertMatchmakingHelpers() {
   const { cleanSeekerArchetype, goalFit } = await import('../api/_lib/matchmaking.js');
   assert(cleanSeekerArchetype('builder') === 'builder', 'match seeker archetype should normalize valid archetypes');
@@ -746,6 +780,7 @@ await assertApiImports();
 await assertRoutes();
 await assertProfileShareLoop();
 await assertCompareShareLoop();
+await assertShareCardCta();
 await assertMatchmakingHelpers();
 await assertUploadSanitizer();
 await assertCliDerivedPayload();

@@ -15,7 +15,9 @@ function esc(s) {
 
 export default function handler(req, res) {
   const { a: key, n, d, c, l, s, sat, p } = req.query;
-  const arch = ARCHETYPES[key] || ARCHETYPES.builder;
+  const archetypeKey = ARCHETYPES[key] ? key : 'builder';
+  const arch = ARCHETYPES[archetypeKey];
+  const archLabel = esc(arch.name.replace('THE ', ''));
   const name = esc(n || 'Vibecoder');
   const days = esc(d || '?');
   const commits = esc(c || '?');
@@ -34,7 +36,7 @@ export default function handler(req, res) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>${name} is ${esc(arch.name)} | vibestats</title>
-  <meta name="description" content="${name} — ${esc(arch.tagline)} ${days} days of vibecoding. What's YOUR personality?">
+  <meta name="description" content="${name} — ${esc(arch.tagline)} ${days} days of vibecoding. See how you'd pair with this archetype.">
   <meta property="og:title" content="${name} is ${esc(arch.name)} | vibestats">
   <meta property="og:description" content="${esc(arch.tagline)} — ${commits} commits/day across ${langs} languages. ${days} days of vibecoding.">
   <meta property="og:type" content="website">
@@ -44,7 +46,7 @@ export default function handler(req, res) {
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${name} is ${esc(arch.name)}">
-  <meta name="twitter:description" content="${esc(arch.tagline)} — ${days} days of vibecoding. What's yours?">
+  <meta name="twitter:description" content="${esc(arch.tagline)} — ${days} days of vibecoding. See how you'd pair.">
   <meta name="twitter:image" content="${ogImageUrl}">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
@@ -131,6 +133,15 @@ export default function handler(req, res) {
       font-size: 10px; color: var(--text-dim);
     }
     .footer a { color: var(--accent); text-decoration: none; }
+    @media (max-width: 480px) {
+      body { padding: 24px 16px; }
+      .card { width: 100%; }
+      .name { font-size: 30px; }
+      .cta {
+        width: 100%; justify-content: center; text-align: center;
+        padding-left: 16px; padding-right: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -150,8 +161,8 @@ export default function handler(req, res) {
     <div id="community-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:8px"></div>
     <div class="brand">vibestats.io</div>
   </div>
-  <a class="cta" href="/">What's YOUR personality? &rarr;</a>
-  <a class="cta" href="https://www.slashvibe.dev/join?ref=vibestats_card&archetype=${key}" target="_blank" rel="noopener" style="margin-top:12px;background:linear-gradient(135deg,rgba(107,143,255,0.2),rgba(167,139,250,0.15));border-color:rgba(107,143,255,0.5)">Find other ${esc(arch.name.replace('THE ', ''))}s on /vibe &rarr;</a>
+  <a class="cta" href="/compare?me=${encodeURIComponent(archetypeKey)}">Compare with this archetype &rarr;</a>
+  <a class="cta" href="https://www.slashvibe.dev/join?ref=vibestats_card&archetype=${archetypeKey}" target="_blank" rel="noopener" style="margin-top:12px;background:linear-gradient(135deg,rgba(107,143,255,0.2),rgba(167,139,250,0.15));border-color:rgba(107,143,255,0.5)">Find other ${archLabel}s on /vibe &rarr;</a>
   <script>
     (async function() {
       try {
@@ -159,9 +170,9 @@ export default function handler(req, res) {
         if (!r.ok) return;
         var d = await r.json();
         if (!d.success || !d.distribution) return;
-        var count = d.distribution['${key}'] || 0;
+        var count = d.distribution['${archetypeKey}'] || 0;
         var el = document.getElementById('community-count');
-        if (el && count > 0) el.textContent = count + ' other ' + '${esc(arch.name.replace('THE ', ''))}' + (count !== 1 ? 's' : '') + ' on /vibe';
+        if (el && count > 0) el.textContent = count + ' other ' + '${archLabel}' + (count !== 1 ? 's' : '') + ' on /vibe';
       } catch(e) {}
     })();
   </script>
