@@ -435,6 +435,25 @@
       document.getElementById('signed-out').style.display = 'grid';
     }
 
+    function renderDigestControls(settings = {}, identityStatus = {}) {
+      const digestOptIn = Boolean(settings?.weekly_digest_opt_in);
+      const digestReady = identityStatus.weekly_digest_available === true;
+      const checkbox = document.getElementById('weekly-digest');
+      const email = document.getElementById('digest-email');
+      const save = document.getElementById('save-digest');
+
+      checkbox.checked = digestOptIn;
+      email.value = settings?.digest_email || '';
+      document.getElementById('digest-hint').textContent = digestReady
+        ? 'Optional email summary of your evolution, streak, and future leaderboard movement.'
+        : digestOptIn
+        ? 'Weekly digest delivery is not configured on this deployment yet. You can still turn off the saved opt-in.'
+        : 'Weekly digest delivery is not configured on this deployment yet.';
+      checkbox.disabled = !digestReady && !digestOptIn;
+      email.disabled = !digestReady;
+      save.disabled = !digestReady && !digestOptIn;
+    }
+
     async function init() {
       const identityStatus = await fetchIdentityStatus();
       if (identityStatus.profile_save_available !== true) {
@@ -456,15 +475,7 @@
       document.getElementById('privacy').value = user.privacy || 'unlisted';
       document.getElementById('profile-url').textContent = `/u/${user.gh_handle}`;
       document.getElementById('profile-link').href = `/u/${encodeURIComponent(user.gh_handle)}`;
-      document.getElementById('weekly-digest').checked = Boolean(settings?.weekly_digest_opt_in);
-      document.getElementById('digest-email').value = settings?.digest_email || '';
-      const digestReady = identityStatus.weekly_digest_available === true;
-      document.getElementById('digest-hint').textContent = digestReady
-        ? 'Optional email summary of your evolution, streak, and future leaderboard movement.'
-        : 'Weekly digest delivery is not configured on this deployment yet.';
-      document.querySelectorAll('#digest-controls input, #digest-controls button').forEach((el) => {
-        el.disabled = !digestReady;
-      });
+      renderDigestControls(settings, identityStatus);
       document.getElementById('show-raw-counts').checked = Boolean(settings?.show_raw_counts);
       document.getElementById('show-languages').checked = Boolean(settings?.show_languages);
       document.getElementById('looking-for').value = settings?.looking_for || 'idle';
@@ -483,22 +494,21 @@
       });
 
       document.getElementById('save-digest').addEventListener('click', async () => {
-        if (identityStatus.weekly_digest_available !== true) {
+        const optIn = document.getElementById('weekly-digest').checked;
+        const email = document.getElementById('digest-email').value;
+        if (identityStatus.weekly_digest_available !== true && optIn) {
           showMessage('Weekly digest delivery is not configured on this deployment yet.', true);
           return;
         }
-        const optIn = document.getElementById('weekly-digest').checked;
-        const email = document.getElementById('digest-email').value;
         try {
           const body = await api('/api/settings', {
             method: 'PATCH',
             body: JSON.stringify({
               weekly_digest_opt_in: optIn,
-              digest_email: email,
+              digest_email: optIn ? email : '',
             }),
           });
-          document.getElementById('weekly-digest').checked = Boolean(body.settings?.weekly_digest_opt_in);
-          document.getElementById('digest-email').value = body.settings?.digest_email || '';
+          renderDigestControls(body.settings || {}, identityStatus);
           showMessage(body.settings?.weekly_digest_opt_in ? 'Weekly digest saved.' : 'Weekly digest off.');
         } catch (err) {
           showMessage(err.message, true);

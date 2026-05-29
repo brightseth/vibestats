@@ -257,7 +257,10 @@ async function assertRoutes() {
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
   assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
   assert(settingsHtml.includes('identityStatus.weekly_digest_available === true'), 'settings page should gate digest controls on delivery readiness');
-  assert(settingsHtml.includes("document.querySelectorAll('#digest-controls input, #digest-controls button')"), 'settings page should disable digest controls when delivery is unavailable');
+  assert(settingsHtml.includes('renderDigestControls(settings, identityStatus)'), 'settings page should centralize digest control readiness state');
+  assert(settingsHtml.includes('checkbox.disabled = !digestReady && !digestOptIn') && settingsHtml.includes('save.disabled = !digestReady && !digestOptIn'), 'settings page should allow saved digest opt-outs when delivery is unavailable');
+  assert(settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should block new digest opt-ins when delivery is unavailable');
+  assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
   assert(settingsHtml.includes('npx vibestats sync --dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
