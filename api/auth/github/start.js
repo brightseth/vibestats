@@ -9,6 +9,20 @@ import {
 import { identityReadiness, identityUnavailableMessage } from '../../_lib/identity-readiness.js';
 import { NO_STORE_HEADERS, methodNotAllowed, safeReturnTo, setNoStore } from '../../_lib/http.js';
 
+export function returnToFromRequest(req, fallback = '/') {
+  const explicit = safeReturnTo(req.query?.returnTo, '');
+  if (explicit) return explicit;
+
+  try {
+    if (!req.headers?.referer) return fallback;
+    const referer = new URL(req.headers.referer);
+    if (referer.origin !== originForRequest(req)) return fallback;
+    return safeReturnTo(`${referer.pathname}${referer.search}`, fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 export default function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') {
     return methodNotAllowed(res, ['GET', 'POST'], NO_STORE_HEADERS);
@@ -26,13 +40,7 @@ export default function handler(req, res) {
   }
 
   const state = randomToken();
-  let refererPath = '/';
-  try {
-    refererPath = req.headers?.referer ? new URL(req.headers.referer).pathname : '/';
-  } catch {
-    refererPath = '/';
-  }
-  const returnTo = safeReturnTo(req.query?.returnTo || refererPath, '/');
+  const returnTo = returnToFromRequest(req, '/');
   appendSetCookie(res, serializeCookie(req, OAUTH_STATE_COOKIE, encodeStatePayload({ state, returnTo }), {
     maxAge: 60 * 10,
   }));

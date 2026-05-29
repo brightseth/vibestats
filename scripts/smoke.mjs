@@ -326,6 +326,36 @@ async function assertIdentityReadiness() {
   }
 }
 
+async function assertOAuthReturnHandling() {
+  const { returnToFromRequest } = await import('../api/auth/github/start.js');
+  assert(returnToFromRequest({
+    query: { returnTo: '/u/brightseth?from=card' },
+    headers: { host: 'localhost:3000' },
+  }) === '/u/brightseth?from=card', 'OAuth start should honor safe explicit returnTo with query');
+  assert(returnToFromRequest({
+    query: {},
+    headers: {
+      host: 'localhost:3000',
+      referer: 'http://localhost:3000/?compareTo=brightseth&compareArchetype=builder',
+    },
+  }) === '/?compareTo=brightseth&compareArchetype=builder', 'OAuth start should preserve same-origin comparison query from referer');
+  assert(returnToFromRequest({
+    query: {},
+    headers: {
+      host: 'localhost:3000',
+      referer: 'https://attacker.example/?compareTo=brightseth',
+    },
+  }) === '/', 'OAuth start should ignore cross-origin referer fallback');
+  assert(returnToFromRequest({
+    query: { returnTo: 'https://attacker.example/' },
+    headers: {
+      host: 'localhost:3000',
+      referer: 'http://localhost:3000/settings',
+    },
+  }) === '/settings', 'OAuth start should reject unsafe explicit returnTo and fall back to same-origin referer');
+  console.log('ok OAuth return handling preserves viral intent safely');
+}
+
 async function assertProfileShareLoop() {
   const indexHtml = await readFile('index.html', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
@@ -1345,6 +1375,7 @@ await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
 await assertIdentityReadiness();
+await assertOAuthReturnHandling();
 await assertProfileShareLoop();
 await assertCompareShareLoop();
 await assertShareCardCta();
