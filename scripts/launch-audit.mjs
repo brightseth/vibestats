@@ -324,6 +324,20 @@ async function auditLaunch(options) {
     }
   }
 
+  let profileHasUpload = !expectReady;
+  if (expectReady) {
+    try {
+      const result = await fetchText(options, `/api/u/${encodeURIComponent(handle)}`);
+      const body = result.response.status === 200 ? JSON.parse(result.body) : null;
+      const uploads = Array.isArray(body?.uploads) ? body.uploads : [];
+      profileHasUpload = Boolean(uploads[0]?.archetype);
+      recorder.check(result.response.status === 200, 'saved profile JSON exists', `${result.response.status} ${result.url}`);
+      recorder.check(profileHasUpload, 'saved profile has minted signature upload', `uploads=${uploads.length}`);
+    } catch (err) {
+      recorder.fail('saved profile upload proof failed', err.message);
+    }
+  }
+
   const paths = [
     {
       label: 'profile JSON miss',
@@ -358,14 +372,14 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}/embed`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: expectReady ? ['Compare with me', '<span>signal</span>'] : null,
+      mustInclude: expectReady && profileHasUpload ? ['Compare with me', '<span>signal</span>'] : null,
     },
     {
       label: 'profile badge',
       path: `/u/${encodeURIComponent(handle)}/badge.svg`,
       expectedType: 'image/svg+xml',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: expectReady ? 'Claude Code signal' : null,
+      mustInclude: expectReady && profileHasUpload ? 'Claude Code signal' : null,
     },
     {
       label: 'upload-to-compare route',
@@ -387,7 +401,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: expectReady
+      mustInclude: expectReady && profileHasUpload
         ? ['Open the pairing, then claim yours', `@${handle}`, '/?compareTo=']
         : ['comparisonParamsFromLocation()', 'compareTo=${encodeURIComponent(profileSubject.handle)}'],
     },

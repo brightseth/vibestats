@@ -351,6 +351,7 @@ async function assertRoutes() {
   assert(identityDoctor.includes('confdeltype'), 'identity doctor schema check should inspect foreign key delete behavior');
   assert(!identityDoctor.includes("{ label: 'app origin', any: ['VIBESTATS_URL'] }"), 'identity doctor should not hard-require VIBESTATS_URL when runtime can infer host origin');
   assert(launchAudit.includes('/api/identity-status') && launchAudit.includes('profile_save_available') && launchAudit.includes('weekly_digest_available'), 'launch audit should verify deployed identity readiness');
+  assert(launchAudit.includes('profileHasUpload') && launchAudit.includes('saved profile has minted signature upload'), 'launch audit should distinguish configured identity from a minted signature profile');
   assert(launchAudit.includes('--vercel-deployment') && launchAudit.includes('vercel curl'), 'launch audit should support protected Vercel preview verification');
   assert(launchAudit.includes("args.push('--', '-s', '-i')"), 'launch audit should collect status and headers through vercel curl');
   assert(launchAudit.includes("label: 'OAuth callback failure response'") && launchAudit.includes("path: '/api/auth/github/callback?code=a&state=b'"), 'launch audit should verify OAuth callback failure responses');
@@ -406,6 +407,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --deployment <preview-url> --scope lets-vibe --handle <saved-gh-handle>'), 'launch checklist should document protected-preview launch audit');
   assert(launchDoc.includes('browse/match/leaderboard surfaces'), 'launch checklist should include discovery and scarcity launch surfaces');
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
+  assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
   assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('day-based streak') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
