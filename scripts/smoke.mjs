@@ -521,7 +521,7 @@ async function assertCliDerivedPayload() {
 }
 
 async function assertSessionRoundTrip() {
-  const { createSessionToken, verifySessionToken } = await import('../api/_lib/auth.js');
+  const { SESSION_COOKIE, createSessionToken, readSession, verifySessionToken } = await import('../api/_lib/auth.js');
   const token = createSessionToken({
     id: '11111111-1111-1111-1111-111111111111',
     gh_id: 123,
@@ -531,11 +531,13 @@ async function assertSessionRoundTrip() {
   const session = verifySessionToken(token);
   assert(session?.sub === '11111111-1111-1111-1111-111111111111', 'session sub should round-trip');
   assert(session?.gh_handle === 'brightseth', 'session handle should round-trip');
+  assert(session?.typ === 'vibestats_session', 'browser session token should carry session type');
+  assert(readSession({ headers: { cookie: `${SESSION_COOKIE}=${encodeURIComponent(token)}` } })?.sub === session.sub, 'typed browser session cookie should read back');
   console.log('ok signed session round-trip');
 }
 
 async function assertSyncTokenRoundTrip() {
-  const { createSyncToken, verifySyncToken } = await import('../api/_lib/auth.js');
+  const { SESSION_COOKIE, createSyncToken, readSession, verifySyncToken } = await import('../api/_lib/auth.js');
   const token = createSyncToken({
     id: '11111111-1111-1111-1111-111111111111',
     gh_handle: 'brightseth',
@@ -544,6 +546,7 @@ async function assertSyncTokenRoundTrip() {
   assert(session?.sub === '11111111-1111-1111-1111-111111111111', 'sync token sub should round-trip');
   assert(session?.scope === 'sync', 'sync token should carry sync scope');
   assert(session?.typ === 'vibestats_sync', 'sync token should carry sync token type');
+  assert(readSession({ headers: { cookie: `${SESSION_COOKIE}=${encodeURIComponent(token)}` } }) === null, 'sync token must not authenticate as browser session');
   console.log('ok signed CLI sync token round-trip');
 }
 

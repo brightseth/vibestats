@@ -3,6 +3,7 @@ import { getUserById } from './db.js';
 
 export const SESSION_COOKIE = 'vibestats_auth';
 export const OAUTH_STATE_COOKIE = 'vibestats_oauth_state';
+const SESSION_TOKEN_TYPE = 'vibestats_session';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 const SYNC_TOKEN_MAX_AGE = 60 * 60 * 24 * 180;
 
@@ -46,6 +47,7 @@ export function createSessionToken(user) {
     gh_id: user.gh_id,
     gh_handle: user.gh_handle,
     avatar_url: user.avatar_url,
+    typ: SESSION_TOKEN_TYPE,
     iat: now,
     exp: now + SESSION_MAX_AGE,
   }));
@@ -164,7 +166,10 @@ export function clearSessionCookie(req, res) {
 }
 
 export function readSession(req) {
-  return verifySessionToken(getCookie(req, SESSION_COOKIE));
+  const payload = verifySessionToken(getCookie(req, SESSION_COOKIE));
+  if (!payload) return null;
+  if (payload.typ && payload.typ !== SESSION_TOKEN_TYPE) return null;
+  return payload;
 }
 
 export async function requireUser(req) {
