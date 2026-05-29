@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       return json(res, 429, { error: 'Sync limit reached: 5 profile saves per day' }, NO_STORE_HEADERS);
     }
 
-    const payload = sanitizeUploadPayload(await readJson(req, { maxBytes: 64 * 1024 }));
+    const payload = sanitizeUploadPayload(await readJson(req, { maxBytes: 64 * 1024 }), { source: 'cli' });
     const rows = await sql()`
       insert into uploads (user_id, archetype, scores, metrics, raw_meta)
       values (

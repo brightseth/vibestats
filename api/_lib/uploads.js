@@ -23,7 +23,11 @@ function cleanText(value, max = 120) {
   return trimmed ? trimmed.slice(0, max) : null;
 }
 
-export function sanitizeUploadPayload(body = {}) {
+function uploadSource(value) {
+  return value === 'cli' ? 'cli' : 'browser';
+}
+
+export function sanitizeUploadPayload(body = {}, { source = 'browser' } = {}) {
   const archetype = cleanText(body.archetype, 32);
   if (!ARCHETYPE_KEYS.includes(archetype)) {
     const err = new Error('valid archetype required');
@@ -53,10 +57,10 @@ export function sanitizeUploadPayload(body = {}) {
 
   const rawMeta = {};
   const sourceMeta = body.raw_meta && typeof body.raw_meta === 'object' ? body.raw_meta : {};
-  for (const key of ['dateRange', 'source', 'version']) {
-    const value = cleanText(sourceMeta[key], key === 'dateRange' ? 80 : 40);
-    if (value) rawMeta[key] = value;
-  }
+  const dateRange = cleanText(sourceMeta.dateRange, 80);
+  if (dateRange) rawMeta.dateRange = dateRange;
+  rawMeta.source = uploadSource(source);
+  rawMeta.version = 'wave-1';
   const signature = signatureFromUpload({ archetype, scores, raw_meta: {} });
   if (signature?.label) rawMeta.signature = signature.label;
   if (signature?.combo) rawMeta.signatureCombo = signature.combo;

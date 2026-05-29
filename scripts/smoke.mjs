@@ -909,7 +909,8 @@ async function assertUploadSanitizer() {
     },
     raw_meta: {
       dateRange: '2026-01-01 to 2026-01-09',
-      source: 'browser',
+      source: 'rawJson',
+      version: 'rawJson',
       signature: 'rawJson Builder',
       signatureCombo: 'rawJson+builder',
       signatureFingerprint: 'rawJson:90s',
@@ -929,8 +930,13 @@ async function assertUploadSanitizer() {
   assert(payload.raw_meta.signatureCombo === 'shipper+builder', 'signature combo should be derived from sanitized scores');
   assert(payload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'signature fingerprint should be derived from sanitized scores');
   assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should be derived from sanitized scores');
+  assert(payload.raw_meta.source === 'browser', 'browser upload source should be assigned by the endpoint sanitizer');
+  assert(payload.raw_meta.version === 'wave-1', 'upload metadata version should be assigned by the endpoint sanitizer');
   assert(!('rawJson' in payload.raw_meta), 'raw_meta allowlist must drop unknown fields');
   assert(!JSON.stringify(payload.raw_meta).includes('rawJson'), 'upload sanitizer must not trust client-supplied signature metadata');
+
+  const cliPayload = sanitizeUploadPayload({ ...payload, raw_meta: { source: 'browser' } }, { source: 'cli' });
+  assert(cliPayload.raw_meta.source === 'cli', 'CLI upload source should be assigned by the sync endpoint sanitizer');
   console.log('ok upload sanitizer preserves privacy boundary');
 }
 
