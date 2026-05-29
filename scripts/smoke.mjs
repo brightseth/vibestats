@@ -630,6 +630,10 @@ async function assertOgFallback() {
 async function assertWrappedShareLoop() {
   const wrappedHtml = await readFile('wrapped.html', 'utf8');
   assert(wrappedHtml.includes('/?compareArchetype=orchestrator'), 'wrapped CTA should route to upload-to-compare');
+  assert(wrappedHtml.includes('wrappedCompareUrl'), 'wrapped page should centralize the compare-first share target');
+  assert(wrappedHtml.includes("'&url=' + encodeURIComponent(wrappedCompareUrl)"), 'wrapped X share should click through directly to upload-to-compare');
+  assert(wrappedHtml.includes('navigator.clipboard.writeText(wrappedCompareUrl)'), 'wrapped copy link should copy the upload-to-compare target');
+  assert(wrappedHtml.includes('Card: ${wrappedUrl}'), 'wrapped share text should retain the card as credential context');
   assert(wrappedHtml.includes("See how you'd pair with an Orchestrator"), 'wrapped share page should use comparison copy');
   assert(!wrappedHtml.includes("What's YOUR vibecoding personality?<br>"), 'wrapped page should not end on the old generic CTA');
   console.log('ok wrapped share page routes visitors into comparison');

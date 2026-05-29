@@ -786,6 +786,9 @@
       }
     }
 
+    const wrappedUrl = 'https://vibestats.io/wrapped';
+    const wrappedCompareUrl = 'https://vibestats.io/?compareArchetype=orchestrator';
+
     // Share to X
     const tweetText = `I'm THE ORCHESTRATOR
 
@@ -796,16 +799,16 @@
 One person. Two machines.
 
 See how you'd pair with an Orchestrator:
-vibestats.io/wrapped
+Card: ${wrappedUrl}
 
 #vibestats #vibecoding`;
 
     document.getElementById('share-x').href =
-      'https://twitter.com/intent/tweet?text=' + encodeURIComponent(tweetText);
+      'https://twitter.com/intent/tweet?text=' + encodeURIComponent(tweetText) + '&url=' + encodeURIComponent(wrappedCompareUrl);
 
     // Copy link
     function copyLink() {
-      navigator.clipboard.writeText('https://vibestats.io/wrapped').then(() => {
+      navigator.clipboard.writeText(wrappedCompareUrl).then(() => {
         const btn = document.getElementById('copy-link');
         btn.classList.add('copied');
         btn.textContent = 'Copied!';
