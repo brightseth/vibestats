@@ -364,6 +364,7 @@ async function assertCompareShareLoop() {
   assert(compareHtml.includes("See how you'd pair with @${profileSubject.handle}:"), 'profile-backed compare shares should use asymmetric invite copy');
   assert(compareHtml.includes('comparisonInviteText(aSubject, bSubject, compat, shareUrl)'), 'compare result should build portable invite copy');
   assert(compareHtml.includes('copyComparisonInvite(this)'), 'compare result should copy invite text, not just a bare URL');
+  assert(compareHtml.includes("document.execCommand('copy')"), 'compare invite copy should fall back when Clipboard API is unavailable');
   assert(compareHtml.includes('Copy invite'), 'compare result copy action should be framed as an invite');
   assert(compareHtml.includes('${esc(claimAction.label)} &rarr;'), 'compare result should render the computed claim CTA label');
   console.log('ok compare share loop claims profile-backed comparisons');
