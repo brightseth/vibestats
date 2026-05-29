@@ -101,7 +101,7 @@ Then verify the live schema shape before dogfooding profile saves:
 npm run doctor:identity -- --schema
 ```
 
-The schema doctor checks the required tables, columns, indexes, constraints, and `schema_migrations` rows, including the sync-token revocation column, the unlisted-by-default privacy column, and HTTPS contact URL constraint.
+The schema doctor checks the required tables, columns, indexes, constraints, foreign-key delete cascades, and `schema_migrations` rows, including the sync-token revocation column, the unlisted-by-default privacy column, HTTPS contact URL constraint, and cascading deletion of uploads/profile settings when an account is deleted.
 
 ## 5. Production Flow Proof
 
@@ -113,6 +113,7 @@ Before undrafting or merging the PR, prove these paths on the deployed app:
 - Profile share CTA routes a new visitor to `/?compareTo=<handle>&compareArchetype=<type>`.
 - Upload-to-compare saves the visitor profile and lands on `/u/<host>/pair/<visitor>`.
 - Settings export contains derived uploads and settings, not raw insights JSON.
+- Settings delete removes the user and cascades profile uploads/settings rows.
 - Public profile, embed, badge, browse, match, and leaderboard surfaces hide exact metrics unless the owner opted in.
 
 ## 6. Weekly Digest Proof

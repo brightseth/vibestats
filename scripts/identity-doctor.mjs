@@ -111,6 +111,22 @@ const requiredIndexes = [
   'profile_settings_looking_for_idx',
 ];
 const requiredConstraints = ['profile_settings_contact_url_protocol'];
+const requiredForeignKeys = [
+  {
+    table: 'uploads',
+    column: 'user_id',
+    references: 'users',
+    onDelete: 'c',
+    label: 'schema foreign key uploads.user_id cascades to users',
+  },
+  {
+    table: 'profile_settings',
+    column: 'user_id',
+    references: 'users',
+    onDelete: 'c',
+    label: 'schema foreign key profile_settings.user_id cascades to users',
+  },
+];
 const requiredColumnProperties = [
   {
     table: 'users',
@@ -193,6 +209,32 @@ async function checkIdentitySchema(databaseUrl) {
     for (const constraint of requiredConstraints) {
       if (constraints.has(constraint)) ok.push(`schema constraint ${constraint}`);
       else missing.push(`schema constraint ${constraint}`);
+    }
+
+    const foreignKeyRows = await sql`
+      select
+        source.relname as table_name,
+        source_attr.attname as column_name,
+        target.relname as references_table,
+        con.confdeltype
+      from pg_constraint con
+      join pg_class source on source.oid = con.conrelid
+      join pg_namespace namespace on namespace.oid = source.relnamespace
+      join pg_class target on target.oid = con.confrelid
+      join unnest(con.conkey) with ordinality as source_key(attnum, ord) on true
+      join pg_attribute source_attr on source_attr.attrelid = source.oid and source_attr.attnum = source_key.attnum
+      where namespace.nspname = 'public'
+        and con.contype = 'f'
+    `;
+    for (const rule of requiredForeignKeys) {
+      const found = foreignKeyRows.some((row) => (
+        row.table_name === rule.table
+        && row.column_name === rule.column
+        && row.references_table === rule.references
+        && row.confdeltype === rule.onDelete
+      ));
+      if (found) ok.push(rule.label);
+      else missing.push(rule.label);
     }
 
     const files = await migrationFiles();
