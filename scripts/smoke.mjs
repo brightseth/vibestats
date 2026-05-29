@@ -111,6 +111,7 @@ async function assertRoutes() {
   const browseApi = await readFile('api/browse.js', 'utf8');
   const browseHtml = await readFile('browse.html', 'utf8');
   const matchApi = await readFile('api/match.js', 'utf8');
+  const matchHtml = await readFile('match.html', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
   const ogApi = await readFile('api/og.js', 'utf8');
@@ -181,7 +182,10 @@ async function assertRoutes() {
   assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
   assert(browseApi.includes('updated: uploadRecency(row.uploaded_at)'), 'browse API should bucket public upload freshness');
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
-  assert((await readFile('match.html', 'utf8')).includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
+  assert(browseHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}'), 'browse share copy should drive recipients into upload-to-compare');
+  assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');
+  assert(matchHtml.includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
+  assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');

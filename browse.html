@@ -377,7 +377,31 @@
     function shareText(entry) {
       const handle = entry.user?.gh_handle || 'this profile';
       const label = entry.signature?.label || entry.archetype_label || entry.archetype;
-      return `See how you'd pair with @${handle}, a ${label}: ${location.origin}/u/${encodeURIComponent(handle)}`;
+      const compareUrl = `${location.origin}/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`;
+      const profileUrl = `${location.origin}/u/${encodeURIComponent(handle)}`;
+      return `See how you'd pair with @${handle}, a ${label}:\n${compareUrl}\n${profileUrl}`;
+    }
+
+    async function copyText(button, text, resetLabel) {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        button.textContent = 'Copied!';
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = resetLabel; }, 1500);
     }
 
     function renderEntries(entries) {
@@ -420,15 +444,8 @@
       }).join('');
 
       list.querySelectorAll('[data-share]').forEach((button) => {
-        button.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(button.getAttribute('data-share'));
-            button.textContent = 'Copied!';
-            setTimeout(() => { button.textContent = 'Copy share'; }, 1500);
-          } catch {
-            button.textContent = 'Copy failed';
-            setTimeout(() => { button.textContent = 'Copy share'; }, 1500);
-          }
+        button.addEventListener('click', () => {
+          copyText(button, button.getAttribute('data-share'), 'Copy share');
         });
       });
     }
