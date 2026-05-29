@@ -76,11 +76,14 @@ function profileUrl(origin, handle) {
   return `${origin}/u/${encodeURIComponent(handle)}`;
 }
 
-function compareUrl(origin, handle, archetype) {
-  const params = new URLSearchParams({
-    compareTo: handle,
-    compareArchetype: archetype,
-  });
+function shareCanUseHandle(user = {}) {
+  return user.privacy !== 'private';
+}
+
+function compareUrl(origin, user, archetype) {
+  const params = new URLSearchParams();
+  if (shareCanUseHandle(user)) params.set('compareTo', user.gh_handle);
+  params.set('compareArchetype', archetype);
   return `${origin}/?${params.toString()}`;
 }
 
@@ -148,7 +151,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
   const score = primaryScore(latest);
   const streak = uploadStreak(uploads);
   const profile = profileUrl(origin, user.gh_handle);
-  const share = compareUrl(origin, user.gh_handle, latest.archetype);
+  const share = compareUrl(origin, user, latest.archetype);
   const board = leaderboardUrl(origin, latest.archetype);
   const match = matchUrl(origin, latest.archetype);
   const settings = settingsUrl(origin);
@@ -168,7 +171,9 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
 
   const subject = `your vibecoding evolution - week ${isoWeek(now)}`;
   const signatureLine = signature?.label || arch.short;
-  const shareText = `See how you'd pair with @${user.gh_handle}, a ${signatureLine}`;
+  const shareText = shareCanUseHandle(user)
+    ? `See how you'd pair with @${user.gh_handle}, a ${signatureLine}`
+    : `See how you'd pair with a ${signatureLine}`;
   const xShare = xShareUrl(share, shareText);
 
   const text = [

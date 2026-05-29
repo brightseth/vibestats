@@ -1367,6 +1367,16 @@ async function assertDigestHelpers() {
   assert(resendPayload.headers['List-Unsubscribe'] === '<https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token>', 'digest email should include List-Unsubscribe header');
   assert(resendPayload.headers['List-Unsubscribe-Post'] === 'List-Unsubscribe=One-Click', 'digest email should include one-click unsubscribe header');
   assert(!digest.html.includes('rawJson') && !digest.text.includes('rawJson'), 'digest must not leak raw metadata');
+
+  const privateDigest = buildWeeklyDigest({
+    user: { gh_handle: 'privatehandle', privacy: 'private' },
+    uploads,
+    origin: 'https://vibestats.io',
+    now: new Date('2026-05-28T12:00:00.000Z'),
+  });
+  assert(privateDigest.share_url === 'https://vibestats.io/?compareArchetype=builder', 'private digest share URL should use archetype-only comparison');
+  assert(!privateDigest.share_url.includes('compareTo=privatehandle'), 'private digest share URL should not expose handle-backed comparison');
+  assert(!decodeURIComponent(privateDigest.x_share_url).includes('@privatehandle'), 'private digest X share text should not expose the hidden handle');
   console.log('ok weekly digest helpers render derived-only email');
 }
 
