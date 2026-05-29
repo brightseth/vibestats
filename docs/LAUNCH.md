@@ -82,8 +82,10 @@ npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle>
 This checks identity readiness, no-store fallback headers, profile/embed/badge/card share surfaces, compare-first routes, browse/match/leaderboard surfaces, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
 
 ```bash
-npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest
+CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest
 ```
+
+`--expect-digest` also runs the protected weekly digest dry run and fails if `CRON_SECRET` is not present in the local shell. The audit does not print the secret value.
 
 ## 4. Database Migrations
 

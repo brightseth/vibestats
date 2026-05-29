@@ -26,6 +26,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     archetype: DEFAULT_ARCHETYPE,
     expectReady: false,
     expectDigest: false,
+    cronSecret: process.env.CRON_SECRET || '',
     vercelDeployment: process.env.VERCEL_DEPLOYMENT_URL || '',
     vercelScope: process.env.VERCEL_SCOPE || 'lets-vibe',
   };
@@ -64,6 +65,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   options.origin = normalizeOrigin(options.origin);
   if (options.vercelDeployment) options.vercelDeployment = normalizeOrigin(options.vercelDeployment);
   options.vercelScope = String(options.vercelScope || '').trim();
+  options.cronSecret = String(options.cronSecret || '').trim();
   options.handle = String(options.handle || '').trim().replace(/^@/, '');
   options.archetype = String(options.archetype || '').trim().toLowerCase();
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(options.handle)) {
@@ -83,6 +85,7 @@ function normalizeOrigin(value) {
 function usage() {
   return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-digest]
        npm run audit:launch -- --deployment https://preview.vercel.app --scope lets-vibe --handle brightseth
+       CRON_SECRET=... npm run audit:launch -- --origin https://vibestats.io --handle brightseth --expect-ready --expect-digest
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
@@ -90,6 +93,7 @@ Checks the deployed identity loop without printing secrets:
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
+- protected weekly digest dry run when --expect-digest is used with CRON_SECRET
 - obvious raw-insights field leaks in public profile/share HTML/SVG responses`;
 }
 
@@ -274,6 +278,28 @@ async function auditLaunch(options) {
       recorder.check(!hasSecretName(result.body), `${item.label} does not expose secret env names`);
     } catch (err) {
       recorder.fail(`${item.label} fetch failed`, err.message);
+    }
+  }
+
+  if (expectDigest) {
+    if (!options.cronSecret) {
+      recorder.fail('weekly digest dry run has cron secret', 'set CRON_SECRET in the local environment');
+    } else {
+      try {
+        const result = await fetchText(options, '/api/cron/weekly-digest?dryRun=1', {
+          headers: { Authorization: `Bearer ${options.cronSecret}` },
+        });
+        const cache = result.response.headers.get('cache-control') || '';
+        const type = result.response.headers.get('content-type') || '';
+        recorder.check(result.response.status === 200, 'weekly digest dry run status', `${result.response.status} ${result.url}`);
+        recorder.check(type.includes('application/json'), 'weekly digest dry run content type', type || '(none)');
+        recorder.check(cache.includes('no-store'), 'weekly digest dry run disables public caching', cache || '(none)');
+        recorder.check(includesAll(result.body, ['"ok":true', '"dry_run":true', '"resend_ready":true']), 'weekly digest dry run returns readiness payload');
+        recorder.check(!hasSecretName(result.body), 'weekly digest dry run does not expose secret env names');
+        recorder.check(!hasRawLeak(result.body), 'weekly digest dry run has no raw-insights field names');
+      } catch (err) {
+        recorder.fail('weekly digest dry run fetch failed', err.message);
+      }
     }
   }
 

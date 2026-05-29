@@ -368,6 +368,8 @@ async function assertRoutes() {
   );
   assert(launchAudit.includes('checkRawLeaks: false'), 'launch audit should not fail the upload page for local raw-parser field names');
   assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
+  assert(launchAudit.includes('cronSecret: process.env.CRON_SECRET') && launchAudit.includes('weekly digest dry run has cron secret'), 'launch audit should run a protected digest dry run when strict digest readiness is expected');
+  assert(launchAudit.includes('weekly digest dry run returns readiness payload') && launchAudit.includes('"resend_ready":true'), 'launch audit should require digest dry-run readiness payload');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');
   assert((await readFile('db/migrations/0006_sync_token_revocation.sql', 'utf8')).includes('sync_token_invalidated_at'), 'migrations should support CLI sync token revocation');
   assert((await readFile('db/migrations/0007_https_contact_urls.sql', 'utf8')).includes("contact_url like 'https://%'"), 'migrations should enforce HTTPS public contact URLs for new rows');
@@ -386,7 +388,8 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --deployment <preview-url> --scope lets-vibe --handle <saved-gh-handle>'), 'launch checklist should document protected-preview launch audit');
   assert(launchDoc.includes('browse/match/leaderboard surfaces'), 'launch checklist should include discovery and scarcity launch surfaces');
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
-  assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
+  assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
+  assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   assert((await readFile('README.md', 'utf8')).includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
