@@ -295,9 +295,9 @@
         <div class="row">
           <div>
             <div class="label">Weekly digest</div>
-            <div class="hint">Optional email summary of your evolution, streak, and future leaderboard movement.</div>
+            <div class="hint" id="digest-hint">Optional email summary of your evolution, streak, and future leaderboard movement.</div>
           </div>
-          <div class="digest-controls">
+          <div class="digest-controls" id="digest-controls">
             <label class="check-row">
               <input type="checkbox" id="weekly-digest">
               <span>Opt in</span>
@@ -458,6 +458,13 @@
       document.getElementById('profile-link').href = `/u/${encodeURIComponent(user.gh_handle)}`;
       document.getElementById('weekly-digest').checked = Boolean(settings?.weekly_digest_opt_in);
       document.getElementById('digest-email').value = settings?.digest_email || '';
+      const digestReady = identityStatus.weekly_digest_available === true;
+      document.getElementById('digest-hint').textContent = digestReady
+        ? 'Optional email summary of your evolution, streak, and future leaderboard movement.'
+        : 'Weekly digest delivery is not configured on this deployment yet.';
+      document.querySelectorAll('#digest-controls input, #digest-controls button').forEach((el) => {
+        el.disabled = !digestReady;
+      });
       document.getElementById('show-raw-counts').checked = Boolean(settings?.show_raw_counts);
       document.getElementById('show-languages').checked = Boolean(settings?.show_languages);
       document.getElementById('looking-for').value = settings?.looking_for || 'idle';
@@ -476,6 +483,10 @@
       });
 
       document.getElementById('save-digest').addEventListener('click', async () => {
+        if (identityStatus.weekly_digest_available !== true) {
+          showMessage('Weekly digest delivery is not configured on this deployment yet.', true);
+          return;
+        }
         const optIn = document.getElementById('weekly-digest').checked;
         const email = document.getElementById('digest-email').value;
         try {

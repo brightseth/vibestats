@@ -7,6 +7,10 @@ function hasGitHubOAuth() {
   return Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
 }
 
+function hasWeeklyDigestDelivery() {
+  return Boolean(process.env.CRON_SECRET && process.env.RESEND_API_KEY && process.env.DIGEST_FROM_EMAIL);
+}
+
 export function sessionSecretValue() {
   const value = process.env.VIBE_SESSION_SECRET || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || '';
   return String(value).trim();
@@ -40,6 +44,7 @@ export function publicIdentityReadiness() {
   return {
     identity_available: readiness.available,
     profile_save_available: readiness.available,
+    weekly_digest_available: hasWeeklyDigestDelivery(),
     missing: readiness.missing,
   };
 }

@@ -240,15 +240,20 @@ async function assertRoutes() {
   assert(identityReadiness.includes("missing.push('database')"), 'identity readiness should report missing database readiness');
   assert(identityReadiness.includes("missing.push('github_oauth')"), 'identity readiness should report missing GitHub OAuth readiness');
   assert(identityReadiness.includes("missing.push('session_secret')"), 'identity readiness should report missing session secret readiness');
+  assert(identityReadiness.includes('weekly_digest_available'), 'identity readiness should expose non-secret weekly digest delivery readiness');
   assert(indexHtml.includes("fetch('/api/identity-status'"), 'upload page should check identity readiness before fetching session state');
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
+  assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should only show inline digest opt-in when delivery is configured');
+  assert(indexHtml.includes('Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.'), 'upload page should explain pending digest delivery without offering a dead opt-in');
   assert(profileHtml.includes("fetch('/api/identity-status'"), 'profile page should check identity readiness before showing sign-in');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
   assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
+  assert(settingsHtml.includes('identityStatus.weekly_digest_available === true'), 'settings page should gate digest controls on delivery readiness');
+  assert(settingsHtml.includes("document.querySelectorAll('#digest-controls input, #digest-controls button')"), 'settings page should disable digest controls when delivery is unavailable');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
   assert(settingsHtml.includes('npx vibestats sync --dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
@@ -308,6 +313,9 @@ async function assertIdentityReadiness() {
     'VIBE_SESSION_SECRET',
     'AUTH_SECRET',
     'NEXTAUTH_SECRET',
+    'CRON_SECRET',
+    'RESEND_API_KEY',
+    'DIGEST_FROM_EMAIL',
   ];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   const { identityReadiness, hasStrongSessionSecret } = await import('../api/_lib/identity-readiness.js');
@@ -368,7 +376,13 @@ async function assertIdentityReadiness() {
     process.env.AUTH_SECRET = 'session-secret-with-at-least-32-bytes';
     response = callStatusEndpoint();
     assert(response.body.profile_save_available === true, 'identity status endpoint should report available profile saves with required env');
+    assert(response.body.weekly_digest_available === false, 'identity status endpoint should not claim digest delivery without digest env');
     assert(response.body.message === null, 'identity status endpoint should not show unavailable copy when ready');
+    process.env.CRON_SECRET = 'cron-secret';
+    process.env.RESEND_API_KEY = 'resend-secret';
+    process.env.DIGEST_FROM_EMAIL = 'digest@example.com';
+    response = callStatusEndpoint();
+    assert(response.body.weekly_digest_available === true, 'identity status endpoint should report digest delivery when digest env is configured');
     console.log('ok identity readiness endpoint reports deployment state without secrets');
   } finally {
     restoreEnv();

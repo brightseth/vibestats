@@ -2034,6 +2034,14 @@
       const profilePath = profilePathFromSave(profileUrl);
       const safeProfilePath = safeHtml(profilePath);
       const safeCompareUrl = safeHtml(`/compare?me=${encodeURIComponent(currentUser?.gh_handle || '')}`);
+      const digestInline = identityStatus.weekly_digest_available === true
+        ? `
+        <div class="digest-inline">
+          <input type="email" id="digest-email-inline" placeholder="you@example.com" autocomplete="email" aria-label="Weekly digest email">
+          <button type="button" id="digest-opt-in-inline">Get weekly digest</button>
+          <div class="digest-inline-note">Monday email with evolution, rarity, and leaderboard movement. Raw insights JSON never leaves your browser.</div>
+        </div>`
+        : '<div class="digest-inline-note">Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.</div>';
       updateProfileSaveStatus(`
         Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a>
         <div class="post-save-actions">
@@ -2042,11 +2050,7 @@
           <button type="button" class="secondary" id="copy-saved-badge">Copy badge</button>
           <button type="button" class="secondary" id="copy-saved-embed">Copy embed</button>
         </div>
-        <div class="digest-inline">
-          <input type="email" id="digest-email-inline" placeholder="you@example.com" autocomplete="email" aria-label="Weekly digest email">
-          <button type="button" id="digest-opt-in-inline">Get weekly digest</button>
-          <div class="digest-inline-note">Monday email with evolution, rarity, and leaderboard movement. Raw insights JSON never leaves your browser.</div>
-        </div>
+        ${digestInline}
       `);
       wirePostSaveActions(profilePath, archetype, scores);
       const button = document.getElementById('digest-opt-in-inline');
