@@ -296,6 +296,9 @@ async function assertRoutes() {
   assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should only show inline digest opt-in when delivery is configured');
   assert(indexHtml.includes('Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.'), 'upload page should explain pending digest delivery without offering a dead opt-in');
   assert(profileHtml.includes("fetch('/api/identity-status'"), 'profile page should check identity readiness before showing sign-in');
+  assert(profileHtml.includes('function renderEmptyProfile') && profileHtml.includes('Signature mint pending'), 'profile page should render claimed-but-unminted profiles as a first-run state');
+  assert(profileHtml.includes('sameHandle(me?.gh_handle, handle)') && profileHtml.includes("isOwner ? 'Upload insights' : 'Mint yours'"), 'empty profile state should use owner-aware minting actions');
+  assert(profileHtml.includes('Raw insights stay in your browser; only derived metrics save.') && profileHtml.includes('Copy pending profile'), 'empty profile state should preserve the privacy promise and copyable profile loop');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
