@@ -125,6 +125,9 @@ async function assertRoutes() {
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
   assert(profileHtmlApi.includes("'private, no-store'"), 'private owner profile HTML must not be publicly cacheable');
+  assert(profileHtmlApi.includes('weeklyLeaderboardRank(user, latest)'), 'profile HTML OG metadata should include public leaderboard proof');
+  assert(profileHtmlApi.includes('rarityForSignature(signature)'), 'profile HTML OG metadata should include signature scarcity proof');
+  assert(profileHtmlApi.includes('profileDescription({'), 'profile HTML OG metadata should centralize comparison-oriented share copy');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
   assert(embedApi.includes('compareTo=${encodeURIComponent(user.gh_handle)}'), 'profile embed should click through to upload-to-compare when an archetype exists');
@@ -641,6 +644,27 @@ async function assertDigestHelpers() {
   console.log('ok weekly digest helpers render derived-only email');
 }
 
+async function assertProfileMetadataHelpers() {
+  const { profileDescription, profileShareProof } = await import('../api/profile.js');
+  const rarity = { count: 8, tier: 'rare' };
+  const leaderboard = { rank: 4, total: 25, label: 'builder' };
+  const proof = profileShareProof({ rarity, leaderboard });
+  const description = profileDescription({
+    signature: 'high-velocity Builder',
+    arch: { tagline: "You build things that didn't exist before." },
+    metrics: {},
+    handle: 'brightseth',
+    rarity,
+    leaderboard,
+  });
+
+  assert(proof.includes('rare combo: 1 of 8 saved profiles this month'), 'profile metadata proof should include scarcity');
+  assert(proof.includes('#4 of 25 on weekly Builder board'), 'profile metadata proof should include leaderboard rank');
+  assert(description.includes("Compare your vibecoding personality with @brightseth."), 'profile metadata should preserve comparison CTA');
+  assert(!description.includes('rawJson'), 'profile metadata must not leak raw JSON fields');
+  console.log('ok profile metadata helpers include social proof without raw JSON');
+}
+
 async function assertProfileFallback() {
   const originalError = console.error;
   console.error = () => {};
@@ -924,6 +948,7 @@ await assertPublicProfileHelpers();
 await assertSignatureHelpers();
 await assertEvolutionHelpers();
 await assertDigestHelpers();
+await assertProfileMetadataHelpers();
 await assertProfileFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();

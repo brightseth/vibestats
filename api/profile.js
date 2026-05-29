@@ -1,20 +1,21 @@
 import { readFileSync } from 'node:fs';
 import { readSession, originForRequest } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
+import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
-import { signatureFromUpload } from './_lib/signatures.js';
+import { rarityTier, signatureFromUpload } from './_lib/signatures.js';
 
 const PROFILE_HTML = readFileSync(new URL('../u.html', import.meta.url), 'utf8');
 
 const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct." },
-  shipper: { name: 'THE SHIPPER', tagline: 'Done is better than perfect. You live this.' },
-  architect: { name: 'THE ARCHITECT', tagline: 'You read before you write. You plan before you build.' },
-  debugger: { name: 'THE DEBUGGER', tagline: "You don't guess. You investigate." },
-  polyglot: { name: 'THE POLYGLOT', tagline: 'One language is never enough.' },
-  sprinter: { name: 'THE SPRINTER', tagline: 'Fast, focused, ferocious.' },
-  deepdiver: { name: 'THE DEEP DIVER', tagline: 'You go deep, not wide.' },
-  builder: { name: 'THE BUILDER', tagline: "You build things that didn't exist before." },
+  orchestrator: { name: 'THE ORCHESTRATOR', short: 'Orchestrator', tagline: "You don't code — you conduct." },
+  shipper: { name: 'THE SHIPPER', short: 'Shipper', tagline: 'Done is better than perfect. You live this.' },
+  architect: { name: 'THE ARCHITECT', short: 'Architect', tagline: 'You read before you write. You plan before you build.' },
+  debugger: { name: 'THE DEBUGGER', short: 'Debugger', tagline: "You don't guess. You investigate." },
+  polyglot: { name: 'THE POLYGLOT', short: 'Polyglot', tagline: 'One language is never enough.' },
+  sprinter: { name: 'THE SPRINTER', short: 'Sprinter', tagline: 'Fast, focused, ferocious.' },
+  deepdiver: { name: 'THE DEEP DIVER', short: 'Deep Diver', tagline: 'You go deep, not wide.' },
+  builder: { name: 'THE BUILDER', short: 'Builder', tagline: "You build things that didn't exist before." },
 };
 
 function esc(value) {
@@ -68,6 +69,63 @@ function profileCacheControl(user) {
     : 'public, s-maxage=300, stale-while-revalidate=3600';
 }
 
+function fmt(value) {
+  return Number(value || 0).toLocaleString('en-US');
+}
+
+export function rarityProof(rarity) {
+  if (!rarity?.count) return '';
+  const plural = rarity.count === 1 ? 'profile' : 'profiles';
+  return `${rarity.tier} combo: 1 of ${fmt(rarity.count)} saved ${plural} this month`;
+}
+
+export function leaderboardProof(leaderboard) {
+  if (!leaderboard?.rank) return '';
+  const label = ARCHETYPES[leaderboard.label]?.short || leaderboard.label || 'archetype';
+  const total = leaderboard.total ? ` of ${fmt(leaderboard.total)}` : '';
+  return `#${fmt(leaderboard.rank)}${total} on weekly ${label} board`;
+}
+
+export function profileShareProof({ rarity = null, leaderboard = null } = {}) {
+  return [
+    rarityProof(rarity),
+    leaderboardProof(leaderboard),
+  ].filter(Boolean).join(' / ');
+}
+
+export function profileDescription({ signature = '', arch, metrics = {}, handle, rarity = null, leaderboard = null } = {}) {
+  const proof = profileShareProof({ rarity, leaderboard });
+  return [
+    signature ? `${signature}.` : '',
+    arch?.tagline || 'A privacy-preserving Claude Code profile.',
+    metrics.days ? `${metrics.days} days of Claude Code history.` : 'A privacy-preserving Claude Code profile.',
+    proof ? `${proof}.` : '',
+    `Compare your vibecoding personality with @${handle}.`,
+  ].filter(Boolean).join(' ');
+}
+
+async function rarityForSignature(signature) {
+  if (!signature?.fingerprint) return null;
+  const rows = await sql()`
+    with latest_uploads as (
+      select distinct on (user_id) user_id, raw_meta, uploaded_at
+      from uploads
+      order by user_id, uploaded_at desc
+    )
+    select count(*)::int as count
+    from latest_uploads
+    where raw_meta->>'signatureFingerprint' = ${signature.fingerprint}
+      and uploaded_at > now() - interval '30 days'
+  `;
+  const count = rows[0]?.count || 1;
+  return {
+    fingerprint: signature.fingerprint,
+    count,
+    tier: rarityTier(count),
+    window_days: 30,
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).send('Method not allowed');
 
@@ -114,7 +172,12 @@ export default async function handler(req, res) {
     const visibility = metricVisibility(settingsRows[0] || {}, { isOwner: false });
     const metrics = visibleMetrics(latest.metrics || {}, visibility);
     const percentiles = latest.scores?._percentiles || {};
-    const signature = signatureFromUpload(latest)?.label || '';
+    const signature = signatureFromUpload(latest);
+    const signatureLabel = signature?.label || '';
+    const [rarity, leaderboard] = await Promise.all([
+      rarityForSignature(signature),
+      weeklyLeaderboardRank(user, latest),
+    ]);
     const origin = originForRequest(req);
     const imageParams = new URLSearchParams({
       a: latest.archetype,
@@ -127,8 +190,15 @@ export default async function handler(req, res) {
     if (percentiles[latest.archetype]) imageParams.set('p', String(percentiles[latest.archetype]));
 
     const html = injectProfileMeta(PROFILE_HTML, {
-      title: `@${user.gh_handle} is ${signature || arch.name} | vibestats`,
-      description: `${signature ? `${signature}. ` : ''}${arch.tagline} ${metrics.days ? `${metrics.days} days of Claude Code history.` : 'A privacy-preserving Claude Code profile.'} Compare your vibecoding personality with @${user.gh_handle}.`,
+      title: `@${user.gh_handle} is ${signatureLabel || arch.name} | vibestats`,
+      description: profileDescription({
+        signature: signatureLabel,
+        arch,
+        metrics,
+        handle: user.gh_handle,
+        rarity,
+        leaderboard,
+      }),
       url: `${origin}/u/${encodeURIComponent(user.gh_handle)}`,
       image: `${origin}/api/og?${imageParams.toString()}`,
     });
