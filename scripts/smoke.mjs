@@ -125,6 +125,7 @@ async function assertRoutes() {
   const badgeApi = await readFile('api/badge.js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   const settingsHtml = await readFile('settings.html', 'utf8');
+  const dashboardHtml = await readFile('dashboard.html', 'utf8');
   const settingsApi = await readFile('api/settings.js', 'utf8');
   const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
   const weeklyDigestApi = await readFile('api/cron/weekly-digest.js', 'utf8');
@@ -258,6 +259,9 @@ async function assertRoutes() {
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
   assert(settingsHtml.includes('npx vibestats sync --dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
   assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
+  assert(dashboardHtml.includes('url=https%3A%2F%2Fvibestats.io%2F%3FcompareArchetype%3Dorchestrator'), 'static dashboard X share should click through to Orchestrator comparison intake');
+  assert(dashboardHtml.includes('href="/?compareArchetype=orchestrator"'), 'static dashboard final CTA should route to comparison intake');
+  assert(dashboardHtml.includes('How would you pair with an Orchestrator?'), 'static dashboard footer should use asymmetric comparison copy');
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
   assert(settingsApi.includes('sync_token_invalidated_at'), 'authenticated settings API should preserve sync token revocation metadata');
   assert(settingsApi.includes('includeActivity: true'), 'authenticated settings API should retain owner activity timestamps');
