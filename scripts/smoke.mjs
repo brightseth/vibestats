@@ -273,6 +273,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
+  assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
   assert(settingsHtml.includes('npx vibestats sync --dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
   assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
@@ -527,6 +528,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile X share should retain the profile as credential context');
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
+  assert(profileHtml.includes('id="sync-cta"') && profileHtml.includes('set up CLI sync for weekly profile updates'), 'owner profile should expose return-loop CLI sync setup');
   assert(profileHtml.includes('](${uploadCompareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
@@ -549,6 +551,7 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('](${canonicalCompare})'), 'post-save badge markdown should click through to upload-to-compare');
   assert(indexHtml.includes('id="copy-saved-embed"'), 'post-save save state should expose portable embed copy');
   assert(indexHtml.includes('id="copy-saved-profile"'), 'post-save save state should expose profile URL copy');
+  assert(indexHtml.includes('href="/settings#cli-sync"'), 'post-save save state should route owners into CLI sync setup');
   assert(indexHtml.includes('Create pairing link'), 'post-save save state should prompt owners to create pairing links');
   assert(indexHtml.includes('<a class="auth-pill" href="/browse">Browse</a>'), 'upload page should expose public browse loop');
   assert(indexHtml.includes("See how you'd pair with this archetype:"), 'ephemeral share copy should drive card recipients into comparison');

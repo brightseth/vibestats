@@ -487,6 +487,7 @@
             <button class="btn" id="copy-embed" type="button">Copy embed</button>
             <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
             <a class="btn" id="browse-cta" href="/browse">Browse similar</a>
+            <a class="btn" id="sync-cta" href="/settings#cli-sync" style="display:none">Sync CLI</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
           <section class="compat-panel" id="compat-panel"></section>
@@ -783,7 +784,8 @@
       } else if (me && me.gh_handle === handle) {
         compareCta.href = `/compare?me=${encodeURIComponent(handle)}`;
         compareCta.textContent = 'Create a pairing link';
-        note.textContent = 'Pick another archetype and share the compatibility result.';
+        document.getElementById('sync-cta').style.display = 'inline-flex';
+        note.textContent = 'Pick another archetype to share the compatibility result, or set up CLI sync for weekly profile updates.';
       }
 
       copyBtn.addEventListener('click', async () => {
