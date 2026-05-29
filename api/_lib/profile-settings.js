@@ -13,14 +13,24 @@ const LOOKING_FOR_LABELS = {
 
 export function publicProfileSettings(row = {}) {
   return {
+    show_raw_counts: Boolean(row.show_raw_counts),
+    show_languages: Boolean(row.show_languages),
+    ...publicMatchSettings(row),
+    updated_at: row.updated_at || null,
+  };
+}
+
+export function ownerProfileSettings(row = {}) {
+  const lookingFor = cleanLookingFor(row.looking_for || 'idle');
+  return {
     weekly_digest_opt_in: Boolean(row.weekly_digest_opt_in),
     digest_email: row.digest_email || null,
     email_consent_at: row.email_consent_at || null,
     weekly_digest_sent_at: row.weekly_digest_sent_at || null,
     show_raw_counts: Boolean(row.show_raw_counts),
     show_languages: Boolean(row.show_languages),
-    looking_for: cleanLookingFor(row.looking_for || 'idle'),
-    looking_for_label: LOOKING_FOR_LABELS[cleanLookingFor(row.looking_for || 'idle')],
+    looking_for: lookingFor,
+    looking_for_label: LOOKING_FOR_LABELS[lookingFor],
     looking_for_expires_at: row.looking_for_expires_at || null,
     contact_url: row.contact_url || null,
     updated_at: row.updated_at || null,

@@ -118,6 +118,7 @@ async function assertRoutes() {
   const badgeApi = await readFile('api/badge.js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   const settingsHtml = await readFile('settings.html', 'utf8');
+  const settingsApi = await readFile('api/settings.js', 'utf8');
   const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
@@ -214,6 +215,8 @@ async function assertRoutes() {
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
+  assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
+  assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
@@ -610,7 +613,14 @@ async function assertReadJsonLimit() {
 }
 
 async function assertProfileSettingsHelpers() {
-  const { cleanContactUrl, cleanDigestEmail, cleanLookingFor, publicMatchSettings, publicProfileSettings } = await import('../api/_lib/profile-settings.js');
+  const {
+    cleanContactUrl,
+    cleanDigestEmail,
+    cleanLookingFor,
+    ownerProfileSettings,
+    publicMatchSettings,
+    publicProfileSettings,
+  } = await import('../api/_lib/profile-settings.js');
   assert(cleanDigestEmail('  SETH@EXAMPLE.COM ') === 'seth@example.com', 'digest email should normalize');
   assert(cleanDigestEmail('') === null, 'empty digest email should clear');
   let rejected = false;
@@ -620,7 +630,28 @@ async function assertProfileSettingsHelpers() {
     rejected = err.statusCode === 400;
   }
   assert(rejected, 'invalid digest email should be rejected');
-  assert(publicProfileSettings({ weekly_digest_opt_in: true }).weekly_digest_opt_in === true, 'digest opt-in should serialize');
+  const ownerSettings = ownerProfileSettings({
+    weekly_digest_opt_in: true,
+    digest_email: 'seth@example.com',
+    looking_for: 'pair-coding',
+    looking_for_expires_at: new Date(Date.now() - 10000).toISOString(),
+    contact_url: 'https://x.com/brightseth',
+  });
+  const publicSettings = publicProfileSettings({
+    weekly_digest_opt_in: true,
+    digest_email: 'seth@example.com',
+    looking_for: 'pair-coding',
+    looking_for_expires_at: new Date(Date.now() - 10000).toISOString(),
+    contact_url: 'https://x.com/brightseth',
+    show_raw_counts: true,
+    show_languages: true,
+  });
+  assert(ownerSettings.weekly_digest_opt_in === true, 'owner settings should serialize digest opt-in');
+  assert(ownerSettings.digest_email === 'seth@example.com', 'owner settings should serialize digest email');
+  assert(ownerSettings.contact_url === 'https://x.com/brightseth', 'owner settings should preserve configured contact URL');
+  assert(!Object.hasOwn(publicSettings, 'digest_email'), 'public settings must not serialize digest email');
+  assert(!Object.hasOwn(publicSettings, 'weekly_digest_opt_in'), 'public settings must not serialize digest opt-in');
+  assert(publicSettings.contact_url === null, 'public settings must hide expired match contact URL');
   assert(publicProfileSettings({ show_raw_counts: true, show_languages: true }).show_languages === true, 'metric visibility should serialize');
   assert(cleanLookingFor('pair-coding') === 'pair-coding', 'looking_for should accept valid values');
   assert(cleanContactUrl('https://x.com/brightseth') === 'https://x.com/brightseth', 'contact URL should normalize valid URL');
@@ -755,7 +786,10 @@ async function assertDigestHelpers() {
   assert(digest.subject.includes('week'), 'digest subject should include week label');
   assert(digest.text.includes('+4 points vs last upload'), 'digest text should include score movement');
   assert(digest.text.includes('#4 on the weekly Builder board'), 'digest text should include leaderboard position');
+  assert(digest.text.includes('Manage digest: https://vibestats.io/settings'), 'digest text should include settings management link');
   assert(digest.html.includes('/api/og?'), 'digest HTML should include the profile card image');
+  assert(digest.html.includes('Manage digest settings'), 'digest HTML should include settings management link');
+  assert(digest.settings_url === 'https://vibestats.io/settings', 'digest payload should expose settings URL');
   assert(!digest.html.includes('rawJson') && !digest.text.includes('rawJson'), 'digest must not leak raw metadata');
   console.log('ok weekly digest helpers render derived-only email');
 }

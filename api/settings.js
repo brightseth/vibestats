@@ -7,7 +7,7 @@ import {
   cleanLookingFor,
   getProfileSettings,
   lookingForExpiry,
-  publicProfileSettings,
+  ownerProfileSettings,
 } from './_lib/profile-settings.js';
 
 const PRIVACY_VALUES = new Set(['public', 'unlisted', 'private']);
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       const settings = await getProfileSettings(user.id);
       return json(res, 200, {
         user: publicUser(user, { includePrivacy: true }),
-        settings: publicProfileSettings(settings),
+        settings: ownerProfileSettings(settings),
       }, NO_STORE_HEADERS);
     }
 
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
 
       return json(res, 200, {
         user: publicUser(nextUser, { includePrivacy: true }),
-        settings: publicProfileSettings(nextSettings),
+        settings: ownerProfileSettings(nextSettings),
       }, NO_STORE_HEADERS);
     }
 

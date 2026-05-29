@@ -2,7 +2,7 @@ import { requireUser } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
 import { exportableUpload } from '../_lib/export-upload.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed } from '../_lib/http.js';
-import { getProfileSettings, publicProfileSettings } from '../_lib/profile-settings.js';
+import { getProfileSettings, ownerProfileSettings } from '../_lib/profile-settings.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
         privacy: user.privacy,
         created_at: user.created_at,
       },
-      settings: publicProfileSettings(settings),
+      settings: ownerProfileSettings(settings),
       uploads: uploads.map(exportableUpload),
     }, NO_STORE_HEADERS);
   } catch (err) {

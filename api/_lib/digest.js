@@ -80,6 +80,10 @@ function leaderboardUrl(origin, archetype) {
   return `${origin}/leaderboard/${encodeURIComponent(archetype)}`;
 }
 
+function settingsUrl(origin) {
+  return `${origin}/settings`;
+}
+
 function ogUrl(origin, user, latest) {
   const metrics = latest.metrics || {};
   const percentiles = latest.scores?._percentiles || {};
@@ -120,6 +124,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
   const streak = uploadStreak(uploads);
   const profile = profileUrl(origin, user.gh_handle);
   const board = leaderboardUrl(origin, latest.archetype);
+  const settings = settingsUrl(origin);
   const boardLine = leaderboardText(leaderboard);
   const rareLine = scarcityText(rarity);
 
@@ -149,6 +154,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     '',
     `Open profile: ${profile}`,
     `Leaderboard: ${board}`,
+    `Manage digest: ${settings}`,
   ].join('\n');
 
   const statHtml = stats.map((stat) => `
@@ -177,7 +183,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
       <a href="${esc(profile)}" style="display:inline-block;padding:12px 15px;border-radius:8px;background:#1b2443;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Open profile</a>
       <a href="${esc(board)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#14141e;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">View leaderboard</a>
     </p>
-    <p style="margin-top:26px;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#555568;">You opted in to weekly vibestats emails. Raw Claude Code insights JSON never leaves your browser; this digest uses only saved derived metrics.</p>
+    <p style="margin-top:26px;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#555568;">You opted in to weekly vibestats emails. <a href="${esc(settings)}" style="color:#8fa8ff;">Manage digest settings</a>. Raw Claude Code insights JSON never leaves your browser; this digest uses only saved derived metrics.</p>
   </div>
 </body>
 </html>`;
@@ -188,6 +194,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     html,
     profile_url: profile,
     leaderboard_url: board,
+    settings_url: settings,
     score,
     delta,
     streak,
