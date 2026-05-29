@@ -53,7 +53,8 @@ export default async function handler(req, res) {
     `;
     const settings = settingsRows[0] || {};
     const visibility = metricVisibility(settings, { isOwner });
-    const serializedUploads = uploads.map((upload) => publicUpload(upload, visibility, { isOwner }));
+    const visibleUploads = isOwner ? uploads : uploads.slice(0, 1);
+    const serializedUploads = visibleUploads.map((upload) => publicUpload(upload, visibility, { isOwner }));
     const latestSignature = signatureFromUpload(uploads[0]);
     let rarity = null;
     if (latestSignature?.fingerprint) {
@@ -82,10 +83,14 @@ export default async function handler(req, res) {
       is_owner: Boolean(isOwner),
       metric_visibility: visibility,
       match: publicMatchSettings(settings),
+      history: {
+        visible: Boolean(isOwner),
+        total_uploads: isOwner ? uploads.length : null,
+      },
       uploads: serializedUploads,
       rarity,
       leaderboard: await weeklyLeaderboardRank(user, uploads[0]),
-      evolution: profileEvolution(uploads),
+      evolution: profileEvolution(uploads, { isOwner }),
     }, {
       'Cache-Control': 'no-store',
     });

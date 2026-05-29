@@ -907,8 +907,10 @@
       document.getElementById('avatar').src = profile.user.avatar_url || '';
       document.getElementById('avatar').alt = `@${profile.user.gh_handle}`;
       document.getElementById('handle').textContent = `@${profile.user.gh_handle}`;
+      const historyVisible = profile.history?.visible !== false;
+      const uploadCount = profile.history?.total_uploads ?? profile.uploads.length;
       document.getElementById('handle-meta').innerHTML = `
-        <span>${profile.uploads.length} upload${profile.uploads.length === 1 ? '' : 's'}</span>
+        <span>${historyVisible ? `${uploadCount} upload${uploadCount === 1 ? '' : 's'}` : 'latest public result'}</span>
         <span>${shortDate(latest.uploaded_at)}</span>
         ${streak > 1 ? `<span class="pill">${streak}-upload streak</span>` : ''}
         ${profile.is_owner && profile.user.privacy ? `<span class="pill">${esc(profile.user.privacy)}</span>` : ''}

@@ -174,6 +174,9 @@ async function assertRoutes() {
   assert((await readFile('match.html', 'utf8')).includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
+  assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');
+  assert(profileApi.includes('total_uploads: isOwner ? uploads.length : null'), 'profile API should keep exact history count owner-only');
+  assert(profileHtml.includes('latest public result'), 'profile UI should not imply full history is visible to visitors');
   assert(profileApi.includes("'Cache-Control': PRIVATE_PROFILE_CACHE"), 'profile JSON private 404 should not be cacheable');
   assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
   assert(profileHtmlApi.includes('profileShareCacheControl(user)'), 'profile HTML OG metadata should use shared profile cache policy');
@@ -774,6 +777,8 @@ async function assertEvolutionHelpers() {
   const evolution = profileEvolution(uploads);
   assert(evolution.label === '+4 Builder points', 'evolution helper should surface primary score movement');
   assert(evolution.detail === 'vs last upload', 'evolution helper should describe score delta');
+  assert(evolution.previous_uploaded_at === '2026-05-23T10:00:00.000Z', 'owner evolution should retain previous upload timestamp');
+  assert(!Object.hasOwn(profileEvolution(uploads, { isOwner: false }), 'previous_uploaded_at'), 'visitor evolution must not expose previous upload timestamp');
   assert(!JSON.stringify(evolution).includes('rawJson'), 'evolution helper must not leak raw metadata');
   const shifted = profileEvolution([
     { archetype: 'orchestrator', scores: { orchestrator: 91, builder: 75 }, uploaded_at: '2026-05-28T10:00:00.000Z' },
