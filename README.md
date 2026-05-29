@@ -25,7 +25,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A public directory** (`/browse`) that filters opt-in profiles by archetype and active intent, showing only coarse derived activity.
 - **Public metric controls** so exact activity counts and language count stay hidden from visitors unless the owner opts in.
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
-- **A local sync CLI** (`npx vibestats sync`) that reads `~/.claude/usage-data/agent-insights.json`, computes derived metrics locally, and posts them with a signed sync token.
+- **A local sync CLI** (`npx vibestats sync`) that reads the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, and `report.html`), computes derived metrics locally, and posts them with a signed sync token.
 
 **Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default.
 
@@ -128,7 +128,7 @@ npx vibestats sync --token "$VIBESTATS_SYNC_TOKEN"
 npx vibestats sync --dry-run
 ```
 
-By default the CLI reads `~/.claude/usage-data/agent-insights.json`. It computes archetype, scores, and the saved metric payload locally, then posts only derived fields to `/api/sync`. Use `--dry-run` to inspect the derived payload locally without a token or network request. A successful sync prints both the profile URL and a compare-first invite URL.
+By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to inspect the derived payload locally without a token or network request, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints both the profile URL and a compare-first invite URL.
 
 Run local smoke checks:
 

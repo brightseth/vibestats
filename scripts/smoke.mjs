@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -276,6 +276,7 @@ async function assertRoutes() {
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
   assert(cliBin.includes('Invite people to compare:'), 'CLI sync success output should surface compare-first invite URL');
+  assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
   assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
   assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
   assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
@@ -313,6 +314,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
   assert(settingsHtml.includes('npx vibestats sync --dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
+  assert(settingsHtml.includes('local Claude Code `/insights` directory') && settingsHtml.includes('keeps raw session data on disk'), 'settings UI should explain the CLI /insights extractor privacy boundary');
   assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
   assert(dashboardHtml.includes('url=https%3A%2F%2Fvibestats.io%2F%3FcompareArchetype%3Dorchestrator'), 'static dashboard X share should click through to Orchestrator comparison intake');
   assert(dashboardHtml.includes('href="/?compareArchetype=orchestrator"'), 'static dashboard final CTA should route to comparison intake');
@@ -419,7 +421,9 @@ async function assertRoutes() {
   assert(badgeApi.includes('return sendSvg(res, 404, badgeSvg({'), 'badge endpoint should return SVG for missing/private profile badges');
   assert(launchDoc.includes('Identity is not production-ready until GitHub OAuth is added') && launchDoc.includes('preview identity audits will still fail until a strong session secret is also added to Preview'), 'launch checklist should record current identity env blockers');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
-  assert((await readFile('README.md', 'utf8')).includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
+  const readme = await readFile('README.md', 'utf8');
+  assert(readme.includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
+  assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
@@ -1007,6 +1011,7 @@ async function assertExportUploadSanitizer() {
 
 async function assertCliDerivedPayload() {
   const { derivedUploadPayloadFromInsights } = await import('../lib/insights-derived.js');
+  const { insightsFromClaudeUsageDirectory } = await import('../lib/claude-insights-extractor.js');
   const insights = {
     meta: { user: 'Alex Chen', date_range: '2025-12-01 to 2026-01-15' },
     metrics: {
@@ -1030,9 +1035,11 @@ async function assertCliDerivedPayload() {
   const { parseArgs, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
+  assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
 
   const dir = await mkdtemp(join(tmpdir(), 'vibestats-cli-'));
   const file = join(dir, 'agent-insights.json');
+  const usageDir = join(dir, 'usage-data');
   const originalWrite = process.stdout.write;
   const originalFetch = globalThis.fetch;
   const output = [];
@@ -1041,11 +1048,60 @@ async function assertCliDerivedPayload() {
     return true;
   };
   try {
+    await mkdir(join(usageDir, 'session-meta'), { recursive: true });
+    await mkdir(join(usageDir, 'facets'), { recursive: true });
+    await writeFile(join(usageDir, 'session-meta', 'one.json'), JSON.stringify({
+      session_id: 'one',
+      project_path: '/private/project-a',
+      start_time: '2026-05-01T10:00:00.000Z',
+      user_message_count: 3,
+      assistant_message_count: 7,
+      tool_counts: { Bash: 10, Read: 4, Write: 3, Edit: 2, Grep: 1, ToolSearch: 99 },
+      languages: { TypeScript: 12, Markdown: 4 },
+      git_commits: 2,
+      uses_task_agent: true,
+      first_prompt: 'private prompt should never leave disk',
+    }), 'utf8');
+    await writeFile(join(usageDir, 'session-meta', 'two.json'), JSON.stringify({
+      session_id: 'two',
+      project_path: '/private/project-b',
+      start_time: '2026-05-03T10:00:00.000Z',
+      user_message_count: 2,
+      assistant_message_count: 4,
+      tool_counts: { Bash: 2, Read: 6, MultiEdit: 5, Glob: 3 },
+      languages: { JavaScript: 8, JSON: 5 },
+      git_commits: 1,
+      uses_task_agent: false,
+      first_prompt: 'another private prompt',
+    }), 'utf8');
+    await writeFile(join(usageDir, 'facets', 'one.json'), JSON.stringify({
+      session_id: 'one',
+      underlying_goal: 'private goal should never leave disk',
+      friction_counts: { buggy_code: 2 },
+    }), 'utf8');
+    await writeFile(join(usageDir, 'report.html'), '<p>16 messages across 2 sessions | 2026-05-01 to 2026-05-03</p>', 'utf8');
+
+    const extracted = await insightsFromClaudeUsageDirectory(usageDir);
+    assert(extracted.meta.date_range === '2026-05-01 to 2026-05-03', 'Claude /insights extractor should derive the session date range');
+    assert(extracted.metrics.total_sessions === 2, 'Claude /insights extractor should count session-meta files');
+    assert(extracted.metrics.total_messages === 16, 'Claude /insights extractor should derive total messages');
+    assert(extracted.metrics.commits === 3, 'Claude /insights extractor should derive git commits');
+    assert(extracted.metrics.tool_usage.bash === 12 && extracted.metrics.tool_usage.read === 10 && extracted.metrics.tool_usage.edit === 7 && extracted.metrics.tool_usage.grep === 4, 'Claude /insights extractor should normalize tool counts');
+    assert(extracted.metrics.language_usage.typescript === 12 && extracted.metrics.language_usage.javascript === 8, 'Claude /insights extractor should normalize language counts');
+    assert(extracted.metrics.multi_clauding_rate === 0.5, 'Claude /insights extractor should derive task-agent session rate');
+    assert(extracted.metrics.buggy_code_events === 2, 'Claude /insights extractor should derive friction counts from facets');
+
     await writeFile(file, JSON.stringify(insights), 'utf8');
     const result = await sync({ file, host: 'https://example.invalid', token: '', dryRun: true });
     assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
     assert(output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should print derived payload JSON');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
+    assert(!output.join('').includes('private prompt') && !output.join('').includes('/private/project'), 'CLI dry-run output must not print raw Claude Code session details');
+
+    output.length = 0;
+    const usageResult = await sync({ file: usageDir, host: 'https://example.invalid', token: '', dryRun: true });
+    assert(usageResult.payload.metrics.sessions === 2, 'CLI dry-run should parse real /insights directories');
+    assert(!output.join('').includes('tool_usage') && !output.join('').includes('underlying_goal'), 'CLI dry-run from /insights directory must not print raw usage maps or facet details');
 
     output.length = 0;
     let postedBody = '';

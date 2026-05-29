@@ -8,7 +8,7 @@ Read this, then `README.md`, then `docs/ROADMAP.md`. In that order.
 
 ## What vibestats is
 
-A Claude Code personality engine. Users upload their `/insights` JSON (from `~/.claude/usage-data/agent-insights.json`), get an archetype + a shareable card. Privacy-first: JSON never leaves the browser, only aggregate counts go to Redis.
+A Claude Code personality engine. Users upload insights in the browser or run `npx vibestats sync` against the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, `report.html`), get an archetype + a shareable card. Privacy-first: raw insight/session data stays local, only aggregate counts go to Redis.
 
 Live: [vibestats.io](https://vibestats.io). Repo: `brightseth/vibestats`.
 
@@ -125,7 +125,7 @@ What to **not** ship in week 1: leaderboards, compatibility, embed badge, weekly
 
 ## Things to be careful about
 
-1. **The privacy promise.** Audit your flow: the `agent-insights.json` file should still never leave the browser. Compute archetype client-side, send only the derived `{archetype, scores, metrics, raw_meta}` to `/api/uploads`. Add a visible note in the upload UI: "We save your archetype and 5 derived metrics. We never see your raw insights file."
+1. **The privacy promise.** Audit your flow: raw `/insights` exports and session metadata should still never leave the browser or local CLI host. Compute archetype client-side or locally, send only the derived `{archetype, scores, metrics, raw_meta}` to `/api/uploads` or `/api/sync`. Add a visible note in the upload UI: "We save your archetype and 5 derived metrics. We never see your raw insights file."
 2. **The 8-archetype canon.** Don't add a 9th archetype. It cascades through scoring, OG, share URLs, community aggregates, compatibility math. Sub-archetypes (Wave 3) are additive and fine.
 3. **CSP in `vercel.json`.** Strict. If you add an external resource (analytics, fonts, anything), update CSP explicitly. Don't widen to `*`.
 4. **CLI tradition.** vibestats is "no build step" today. If you reach for Next.js, justify it in the PR — it changes deploy semantics, dev experience, and the README.

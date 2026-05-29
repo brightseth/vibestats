@@ -1,22 +1,23 @@
 #!/usr/bin/env node
-import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { readInsightsInput } from '../lib/claude-insights-extractor.js';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
 
-const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data', 'agent-insights.json');
+const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
 const DEFAULT_HOST = 'https://vibestats.io';
 
 function usage() {
   return `Usage:
-  vibestats sync [--file PATH] [--host URL] [--token TOKEN] [--dry-run]
+  vibestats sync [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--dry-run]
 
 Environment:
   VIBESTATS_SYNC_TOKEN  signed sync token from vibestats settings
   VIBESTATS_URL         alternate host, defaults to ${DEFAULT_HOST}
 
-The CLI reads Claude Code insights locally and sends only derived metrics.
+The CLI reads Claude Code /insights output locally and sends only derived metrics.
+By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 Use --dry-run to print the derived payload without sending it.`;
 }
 
@@ -34,6 +35,7 @@ export function parseArgs(argv) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') return { command: 'help', options };
     if (arg === '--file') options.file = args[++i] || '';
+    else if (arg === '--dir') options.file = args[++i] || '';
     else if (arg === '--host') options.host = args[++i] || '';
     else if (arg === '--token') options.token = args[++i] || '';
     else if (arg === '--dry-run' || arg === '--dryRun') options.dryRun = true;
@@ -49,8 +51,7 @@ export async function sync(options) {
   }
   if (!options.file) throw new Error('Missing insights file path.');
 
-  const raw = await readFile(options.file, 'utf8');
-  const insights = JSON.parse(raw);
+  const insights = await readInsightsInput(options.file);
   const payload = derivedUploadPayloadFromInsights(insights, { source: 'cli' });
 
   if (options.dryRun) {

@@ -327,7 +327,7 @@
         <div class="row" id="cli-sync">
           <div>
             <div class="label">CLI sync</div>
-            <div class="hint">Generate a signed token for `npx vibestats sync`. Revoke old tokens anytime; `npx vibestats sync --dry-run` previews the derived payload locally before anything is sent.</div>
+            <div class="hint">Generate a signed token for `npx vibestats sync`. It reads the local Claude Code `/insights` directory, keeps raw session data on disk, and `npx vibestats sync --dry-run` previews the derived payload before anything is sent.</div>
           </div>
           <div class="cli-controls">
             <textarea id="sync-command" readonly placeholder="Generate a sync command"></textarea>

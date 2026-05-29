@@ -164,8 +164,9 @@ create index on uploads(user_id, uploaded_at desc);
 3. **Goal-driven match score.** Not just "compatibility" — instead "for what." Pairing a Sprinter with a Deep Diver scores high for pair-coding (complementary), low for co-founding (friction). Build a small matrix.
 4. **`/match` flow.** Pick your goal → see top 10 matches in the directory with that goal. Click one → request intro (just generates a draft message you can copy to X / send via the user's preferred contact link).
 5. **CLI: `npx vibestats sync`.**
-   - Reads insights from `~/.claude/usage-data/agent-insights.json` (already on disk).
+   - Reads the real Claude Code `/insights` output in `~/.claude/usage-data/`: `session-meta/*.json`, `facets/*.json`, and `report.html`.
    - Computes metrics locally.
+   - Keeps prompts, summaries, project paths, session ids, raw tool maps, and raw language maps on disk.
    - POSTs to `/api/sync` with a signed token (GitHub auth required).
    - Updates profile silently. **This unlocks weekly upload cadence without manual download/upload.**
 6. **Cross-link with Anthropic's `/insights`.** Detect when CC users run /insights and surface a one-line CTA: "Push to vibestats." (Coordinate with Anthropic if they'll embed a CTA. Otherwise just ship the CLI and let users discover it.)
