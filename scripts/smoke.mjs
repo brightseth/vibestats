@@ -1052,11 +1052,14 @@ async function assertDigestHelpers() {
   assert(digest.subject.includes('week'), 'digest subject should include week label');
   assert(digest.text.includes('+4 points vs last upload'), 'digest text should include score movement');
   assert(digest.text.includes('#4 on the weekly Builder board'), 'digest text should include leaderboard position');
+  assert(digest.text.includes('Find matches: https://vibestats.io/match?goal=pair-coding&archetype=builder'), 'digest text should include goal-aware match link');
   assert(digest.text.includes('Manage digest: https://vibestats.io/settings'), 'digest text should include settings management link');
   assert(digest.text.includes('Unsubscribe: https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token'), 'digest text should include one-click unsubscribe link');
   assert(digest.html.includes('/api/og?'), 'digest HTML should include the profile card image');
+  assert(digest.html.includes('Find matches'), 'digest HTML should include a return CTA into matching');
   assert(digest.html.includes('Manage digest settings'), 'digest HTML should include settings management link');
   assert(digest.html.includes('unsubscribe'), 'digest HTML should include one-click unsubscribe link');
+  assert(digest.match_url === 'https://vibestats.io/match?goal=pair-coding&archetype=builder', 'digest payload should expose goal-aware match URL');
   assert(digest.settings_url === 'https://vibestats.io/settings', 'digest payload should expose settings URL');
   assert(digest.unsubscribe_url === 'https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token', 'digest payload should expose unsubscribe URL');
   const resendPayload = resendDigestPayload({ to: 'seth@example.com', digest });

@@ -80,6 +80,14 @@ function leaderboardUrl(origin, archetype) {
   return `${origin}/leaderboard/${encodeURIComponent(archetype)}`;
 }
 
+function matchUrl(origin, archetype) {
+  const params = new URLSearchParams({
+    goal: 'pair-coding',
+    archetype,
+  });
+  return `${origin}/match?${params.toString()}`;
+}
+
 function settingsUrl(origin) {
   return `${origin}/settings`;
 }
@@ -128,6 +136,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
   const streak = uploadStreak(uploads);
   const profile = profileUrl(origin, user.gh_handle);
   const board = leaderboardUrl(origin, latest.archetype);
+  const match = matchUrl(origin, latest.archetype);
   const settings = settingsUrl(origin);
   const unsubscribe = digestUnsubscribeUrl(origin, unsubscribeToken);
   const boardLine = leaderboardText(leaderboard);
@@ -159,6 +168,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     '',
     `Open profile: ${profile}`,
     `Leaderboard: ${board}`,
+    `Find matches: ${match}`,
     `Manage digest: ${settings}`,
     unsubscribe ? `Unsubscribe: ${unsubscribe}` : null,
   ].filter(Boolean).join('\n');
@@ -188,6 +198,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     <p style="margin:24px 0 0;">
       <a href="${esc(profile)}" style="display:inline-block;padding:12px 15px;border-radius:8px;background:#1b2443;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Open profile</a>
       <a href="${esc(board)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#14141e;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">View leaderboard</a>
+      <a href="${esc(match)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#162217;color:#c8facc;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Find matches</a>
     </p>
     <p style="margin-top:26px;font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#555568;">You opted in to weekly vibestats emails. <a href="${esc(settings)}" style="color:#8fa8ff;">Manage digest settings</a>${unsubscribe ? ` or <a href="${esc(unsubscribe)}" style="color:#8fa8ff;">unsubscribe</a>` : ''}. Raw Claude Code insights JSON never leaves your browser; this digest uses only saved derived metrics.</p>
   </div>
@@ -200,6 +211,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     html,
     profile_url: profile,
     leaderboard_url: board,
+    match_url: match,
     settings_url: settings,
     unsubscribe_url: unsubscribe,
     score,
