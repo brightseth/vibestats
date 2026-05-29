@@ -74,7 +74,7 @@ function authorizationPage({ action, handle, host }) {
 <body>
   <main>
     <h1>Authorize vibestats CLI</h1>
-    <p>Signed in as <span class="handle">@${htmlEsc(handle)}</span>. This creates a revocable sync token for local <span class="handle">npx vibestats sync</span>.</p>
+    <p>Signed in as <span class="handle">@${htmlEsc(handle)}</span>. This creates a revocable sync token for the local vibestats CLI.</p>
     <p>Raw Claude Code <span class="handle">/insights</span> data stays on your machine. The CLI uploads only derived metrics to ${htmlEsc(host)}.</p>
     <form method="post" action="${htmlEsc(action)}">
       <button type="submit">Authorize CLI sync</button>

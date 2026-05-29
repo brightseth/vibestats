@@ -914,7 +914,7 @@
       browseCta.href = `/browse?archetype=${encodeURIComponent(hostArchetype)}`;
       browseCta.textContent = `Browse ${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'similar'}`;
       shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(uploadCompareUrl)}`;
-      note.textContent = `@${handle} is ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} What are you? Run /insights, then npx vibestats sync.`;
+      note.textContent = `@${handle} is ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} What are you? Run /insights, then the npx reveal command on the homepage.`;
 
       if (me && me.gh_handle !== handle) {
         const myLatest = await latestForHandle(me.gh_handle);

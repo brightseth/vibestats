@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readInsightsInput } from '../lib/claude-insights-extractor.js';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
 
 const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
 const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
+const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE} sync`;
 
 function usage() {
   return `Usage:
@@ -23,6 +26,7 @@ Environment:
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 Without --token it opens a browser approval flow against your GitHub-backed vibestats session.
+Current public install command: ${DEFAULT_NPX_SYNC_COMMAND}
 Use --dry-run to print the derived payload without signing in or sending it.`;
 }
 
@@ -248,7 +252,16 @@ export async function main() {
   await sync(options);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+export function isDirectRun(entry = process.argv[1]) {
+  if (!entry) return false;
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entry);
+  } catch {
+    return import.meta.url === pathToFileURL(entry).href;
+  }
+}
+
+if (isDirectRun()) {
   main().catch((err) => {
     process.stderr.write(`${err.message}\n`);
     process.stderr.write(`\n${usage()}\n`);

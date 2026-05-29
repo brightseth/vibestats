@@ -41,7 +41,7 @@ The viral hook stays where it already works — the archetype card — but becom
 - **No retention surface.** The user's archetype changes as their CC usage evolves but nothing pulls them back to see it.
 - **8 archetypes is too coarse** to feel rare. "I'm an Orchestrator" is true for 5% of users — meaningful, but not scarce. Need sub-archetypes and rare combos for vanity scarcity.
 - **Naming.** "vibestats" reads as analytics. The social product wants a sub-brand or a verb. "Get vibed." "Match on vibestats." TBD.
-- **No CLI / no auto-import.** Manual download + upload is friction. `npx vibestats sync` would 10x retention.
+- **No CLI / no auto-import.** Manual download + upload is friction. One-command CLI sync would 10x retention.
 
 ---
 
@@ -163,7 +163,7 @@ create index on uploads(user_id, uploaded_at desc);
 2. **`/browse` directory.** Filter by archetype, language, looking-for, location (optional, opt-in). Default sort: recently active. Real-time-ish (5min cache).
 3. **Goal-driven match score.** Not just "compatibility" — instead "for what." Pairing a Sprinter with a Deep Diver scores high for pair-coding (complementary), low for co-founding (friction). Build a small matrix.
 4. **`/match` flow.** Pick your goal → see top 10 matches in the directory with that goal. Click one → request intro (just generates a draft message you can copy to X / send via the user's preferred contact link).
-5. **CLI: `npx vibestats sync`.**
+5. **CLI sync.**
    - Reads the real Claude Code `/insights` output in `~/.claude/usage-data/`: `session-meta/*.json`, `facets/*.json`, and `report.html`.
    - Computes metrics locally.
    - Keeps prompts, summaries, project paths, session ids, raw tool maps, and raw language maps on disk.

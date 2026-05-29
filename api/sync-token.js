@@ -2,8 +2,15 @@ import { createSyncToken, originForRequest, requireUser, syncTokenExpiresAt } fr
 import { sql } from './_lib/db.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, requireSameOrigin, safeErrorMessage } from './_lib/http.js';
 
+const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
+}
+
+function syncCommand(origin, token) {
+  const packageSpec = process.env.VIBESTATS_CLI_PACKAGE || DEFAULT_CLI_PACKAGE;
+  return `npx --yes ${shellQuote(packageSpec)} sync --host ${shellQuote(origin)} --token ${shellQuote(token)}`;
 }
 
 export default async function handler(req, res) {
@@ -35,7 +42,7 @@ export default async function handler(req, res) {
     return json(res, 200, {
       token,
       expires_at: syncTokenExpiresAt(),
-      command: `npx vibestats sync --host ${shellQuote(origin)} --token ${shellQuote(token)}`,
+      command: syncCommand(origin, token),
     }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('POST /api/sync-token error:', err);

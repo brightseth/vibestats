@@ -776,9 +776,9 @@
         <span class="reveal-step-num">2</span>
         <span>
           <span class="reveal-step-label">In your terminal</span>
-          <code>npx vibestats sync</code>
+          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity sync</code>
         </span>
-        <button class="copy-command" type="button" onclick="copyCommand('npx vibestats sync', this)">Copy</button>
+        <button class="copy-command" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync', this)">Copy</button>
       </div>
     </div>
 
@@ -798,7 +798,7 @@
 
     <div class="file-path" onclick="copyPath()">
       <span class="label">No file hunting</span>
-      <code>npx vibestats sync</code>
+      <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity sync</code>
       <span class="subcopy">Click to copy. The CLI reads the real ~/.claude/usage-data/ output and uploads only derived metrics.</span>
     </div>
 
@@ -1909,7 +1909,7 @@
       if (!intent) return;
       if (intent.kind === 'profile') {
         document.querySelector('.upload-title').textContent = `Compare with @${intent.handle}`;
-        document.querySelector('.upload-sub').textContent = `Claude Code already has your build fingerprint. Run /insights, then npx vibestats sync to reveal your pairing with @${intent.handle}.`;
+        document.querySelector('.upload-sub').textContent = `Claude Code already has your build fingerprint. Run /insights, then the npx command below to reveal your pairing with @${intent.handle}.`;
         document.querySelector('.drop-zone-text').textContent = `Drop legacy insights JSON to compare with @${intent.handle}`;
         document.querySelector('.drop-zone-hint').textContent = 'or use the npx command above for the real /insights directory';
         return;
@@ -1917,7 +1917,7 @@
 
       const label = archetypeDisplayName(intent.archetype);
       document.querySelector('.upload-title').textContent = `Compare with The ${label}`;
-      document.querySelector('.upload-sub').textContent = `Claude Code already knows your pattern. Run /insights, then npx vibestats sync to reveal how you pair with this ${label} archetype.`;
+      document.querySelector('.upload-sub').textContent = `Claude Code already knows your pattern. Run /insights, then the npx command below to reveal how you pair with this ${label} archetype.`;
       document.querySelector('.drop-zone-text').textContent = `Drop legacy insights JSON to compare with The ${label}`;
       document.querySelector('.drop-zone-hint').textContent = 'or use the npx command above for the real /insights directory';
     }
@@ -2550,7 +2550,7 @@
     }
 
     function copyPath() {
-      copyText('npx vibestats sync').then(() => {
+      copyText('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync').then(() => {
         const el = document.querySelector('.file-path code');
         const orig = el.textContent;
         el.textContent = 'Copied!';

@@ -1,6 +1,6 @@
 # vibestats
 
-**Find your vibecoding personality.** Upload Claude Code `/insights` data or run `npx vibestats sync`, get an archetype + a shareable card.
+**Find your vibecoding personality.** Upload Claude Code `/insights` data or run the vibestats CLI, get an archetype + a shareable card.
 
 Live: [vibestats.io](https://vibestats.io)
 
@@ -8,7 +8,7 @@ Live: [vibestats.io](https://vibestats.io)
 
 ## What it is today (May 2026)
 
-A single-page personality engine for Claude Code users. The user runs `/insights` inside CC, uploads locally in the browser or runs `npx vibestats sync`, and gets:
+A single-page personality engine for Claude Code users. The user runs `/insights` inside CC, uploads locally in the browser or runs the vibestats CLI, and gets:
 
 - **An archetype** (1 of 8: Orchestrator, Shipper, Architect, Debugger, Polyglot, Sprinter, Deep Diver, Builder).
 - **A derived signature combo** (top archetype + secondary signal, plus anonymous monthly rarity counts; no 9th archetype).
@@ -25,7 +25,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A public directory** (`/browse`) that filters opt-in profiles by archetype and active intent, showing only coarse derived activity.
 - **Public metric controls** so exact activity counts and language count stay hidden from visitors unless the owner opts in.
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
-- **A local sync CLI** (`npx vibestats sync`) that reads the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, and `report.html`), computes derived metrics locally, and posts them with a signed sync token.
+- **A local sync CLI** that reads the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, and `report.html`), computes derived metrics locally, and posts them with a signed sync token.
 
 **Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default.
 
@@ -77,7 +77,7 @@ vibestats/
 │   └── card.js        # share landing page (`/card?a=…`)
 ├── db/migrations/     # plain SQL migrations
 ├── scripts/migrate.mjs
-├── bin/vibestats.js   # `npx vibestats sync`
+├── bin/vibestats.js   # local sync CLI
 ├── lib/               # html2canvas + shared browser helpers
 ├── fonts/             # self-hosted Inter + JetBrains Mono
 └── vercel.json        # cleanUrls, CSP, headers
@@ -124,14 +124,16 @@ Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest
 Run one-command local sync after signing in. The CLI opens a browser approval flow against your GitHub-backed vibestats session and creates a revocable token automatically:
 
 ```bash
-npx vibestats sync
-npx vibestats sync --dry-run
+npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
+npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run
 ```
+
+The unscoped npm package name `vibestats` is currently owned by another publisher, so do not use `npx vibestats` for this project until a scoped package is published or package ownership changes.
 
 Settings still exposes a manual token command as a fallback. Sync tokens are revocable from Settings:
 
 ```bash
-npx vibestats sync --token "$VIBESTATS_SYNC_TOKEN"
+npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --token "$VIBESTATS_SYNC_TOKEN"
 ```
 
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to inspect the derived payload locally without a token or network request, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints both the profile URL and a compare-first invite URL.

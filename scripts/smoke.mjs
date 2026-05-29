@@ -1,6 +1,6 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret-with-at-least-32-bytes';
@@ -283,6 +283,7 @@ async function assertRoutes() {
   assert(cliBin.includes('--no-open') && cliBin.includes('Opening browser to authorize vibestats CLI sync'), 'CLI sync should support manual browser auth fallback');
   assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
   assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
+  assert(syncTokenApi.includes("github:brightseth/vibestats#feat/wave-1-identity") && syncTokenApi.includes('VIBESTATS_CLI_PACKAGE'), 'sync token API should avoid the occupied unscoped npm package name while allowing package override');
   assert(cliLocalTokenApi.includes("if (!['GET', 'POST'].includes(req.method))"), 'CLI browser auth endpoint should support approval page and token redirect');
   assert(cliLocalTokenApi.includes('allowedLocalCallback') && cliLocalTokenApi.includes('127.0.0.1') && cliLocalTokenApi.includes('localhost'), 'CLI browser auth endpoint should allow only local callbacks');
   assert(cliLocalTokenApi.includes('Authorize CLI sync') && cliLocalTokenApi.includes('requireSameOrigin(req)'), 'CLI browser auth endpoint should require same-origin browser approval before minting a token');
@@ -303,7 +304,8 @@ async function assertRoutes() {
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
   assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
-  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx vibestats sync'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
+  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
+  assert(!indexHtml.includes('npx vibestats sync'), 'upload page should not advertise the occupied unscoped npm package name');
   assert(indexHtml.includes('No file hunting') && indexHtml.includes('real ~/.claude/usage-data/ output'), 'upload page should steer cold users away from manual file hunting');
   assert(indexHtml.includes('weekly_digest_available: body.weekly_digest_available === true'), 'upload page should preserve digest delivery readiness from identity status');
   assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should only show inline digest opt-in when delivery is configured');
@@ -313,7 +315,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('sameHandle(me?.gh_handle, handle)') && profileHtml.includes("isOwner ? 'Upload insights' : 'Mint yours'"), 'empty profile state should use owner-aware minting actions');
   assert(profileHtml.includes('Raw insights stay in your browser; only derived metrics save.') && profileHtml.includes('Copy pending profile'), 'empty profile state should preserve the privacy promise and copyable profile loop');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
-  assert(profileHtml.includes('Reveal yours vs @${handle}') && profileHtml.includes('What are you? Run /insights, then npx vibestats sync'), 'profile pages should act as share-recipient landing pages with the reveal command');
+  assert(profileHtml.includes('Reveal yours vs @${handle}') && profileHtml.includes('What are you? Run /insights, then the npx reveal command on the homepage'), 'profile pages should act as share-recipient landing pages with the reveal command');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
@@ -323,10 +325,10 @@ async function assertRoutes() {
   assert(settingsHtml.includes('checkbox.disabled = !digestReady && !digestOptIn') && settingsHtml.includes('save.disabled = !digestReady && !digestOptIn'), 'settings page should allow saved digest opt-outs when delivery is unavailable');
   assert(settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
-  assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
+  assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
-  assert(settingsHtml.includes('npx vibestats sync --dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
+  assert(settingsHtml.includes('--dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
   assert(settingsHtml.includes('local Claude Code `/insights` directory') && settingsHtml.includes('keeps raw session data on disk'), 'settings UI should explain the CLI /insights extractor privacy boundary');
   assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
   assert(dashboardHtml.includes('url=https%3A%2F%2Fvibestats.io%2F%3FcompareArchetype%3Dorchestrator'), 'static dashboard X share should click through to Orchestrator comparison intake');
@@ -1116,10 +1118,11 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.signatureFingerprint, 'CLI derived payload should include rarity fingerprint');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { authUrlForLocalCallback, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, isDirectRun, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
+  assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity sync', 'CLI should expose the current GitHub-backed npx command');
   const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
   assert(parsedNoOpen.options.openBrowser === false && parsedNoOpen.options.authTimeoutMs === 1000, 'CLI sync should parse manual browser auth options');
   assert(normalizeHost('https://vibestats.example/path?q=1#x') === 'https://vibestats.example', 'CLI sync should normalize host URLs before auth and sync');
@@ -1129,6 +1132,7 @@ async function assertCliDerivedPayload() {
   const dir = await mkdtemp(join(tmpdir(), 'vibestats-cli-'));
   const file = join(dir, 'agent-insights.json');
   const usageDir = join(dir, 'usage-data');
+  const binSymlink = join(dir, 'vibestats-bin');
   const originalWrite = process.stdout.write;
   const originalFetch = globalThis.fetch;
   const output = [];
@@ -1137,6 +1141,9 @@ async function assertCliDerivedPayload() {
     return true;
   };
   try {
+    await symlink(resolve('bin/vibestats.js'), binSymlink);
+    assert(isDirectRun(binSymlink), 'CLI main guard should recognize npm .bin symlinks as direct execution');
+
     await mkdir(join(usageDir, 'session-meta'), { recursive: true });
     await mkdir(join(usageDir, 'facets'), { recursive: true });
     await writeFile(join(usageDir, 'session-meta', 'one.json'), JSON.stringify({

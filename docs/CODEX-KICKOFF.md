@@ -8,7 +8,7 @@ Read this, then `README.md`, then `docs/ROADMAP.md`. In that order.
 
 ## What vibestats is
 
-A Claude Code personality engine. Users upload insights in the browser or run `npx vibestats sync` against the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, `report.html`), get an archetype + a shareable card. The CLI opens browser approval against the existing GitHub session; Settings token copy is only a fallback. Privacy-first: raw insight/session data stays local, only aggregate counts go to Redis.
+A Claude Code personality engine. Users upload insights in the browser or run the GitHub-backed CLI command against the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, `report.html`), get an archetype + a shareable card. The CLI opens browser approval against the existing GitHub session; Settings token copy is only a fallback. Privacy-first: raw insight/session data stays local, only aggregate counts go to Redis.
 
 Live: [vibestats.io](https://vibestats.io). Repo: `brightseth/vibestats`.
 
