@@ -122,6 +122,7 @@ async function assertRoutes() {
   const config = JSON.parse(await readFile('vercel.json', 'utf8'));
   const leaderboardApi = await readFile('api/leaderboard.js', 'utf8');
   const leaderboardHtml = await readFile('leaderboard.html', 'utf8');
+  const leaderboardRankHelper = await readFile('api/_lib/leaderboard-rank.js', 'utf8');
   const browseApi = await readFile('api/browse.js', 'utf8');
   const browseHtml = await readFile('browse.html', 'utf8');
   const matchApi = await readFile('api/match.js', 'utf8');
@@ -193,6 +194,10 @@ async function assertRoutes() {
   assert(leaderboardApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'leaderboard API method errors should not be cached');
   assert(leaderboardApi.includes("json(res, 400, { error: 'Invalid archetype' }, NO_STORE_HEADERS)"), 'leaderboard API invalid filters should not be cached');
   assert(!leaderboardApi.includes('s-maxage='), 'leaderboard API profile lists should not be publicly cached');
+  assert(leaderboardApi.includes('public_score') && leaderboardApi.includes('least(greatest((scores->>${archetype})::numeric, 0), 100)'), 'leaderboard API should order by clamped public scores');
+  assert(!leaderboardApi.includes('coalesce((scores->>${archetype})::numeric'), 'leaderboard API should not order by raw stored scores');
+  assert(leaderboardRankHelper.includes('weekly_uploads') && leaderboardRankHelper.includes('least(greatest((latest.scores->>latest.archetype)::numeric, 0), 100)'), 'weekly rank helper should rank by clamped public scores');
+  assert(!leaderboardRankHelper.includes('coalesce((latest.scores->>${latest.archetype})::numeric'), 'weekly rank helper should not rank by raw stored scores');
   assert(leaderboardHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}'), 'leaderboard rows should route discovery into upload-to-compare');
   assert(leaderboardHtml.includes('data-invite="${esc(inviteText(entry, archetype))}"'), 'leaderboard rows should expose copyable rank invite text');
   assert(leaderboardHtml.includes("document.execCommand('copy')"), 'leaderboard copy actions should fall back when Clipboard API is unavailable');
@@ -209,6 +214,8 @@ async function assertRoutes() {
   assert(browseApi.includes('updated: uploadRecency(row.uploaded_at)'), 'browse API should bucket public upload freshness');
   assert(browseApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'browse API method errors should not be cached');
   assert(!browseApi.includes('s-maxage='), 'browse API profile lists should not be publicly cached');
+  assert(browseApi.includes('public_score') && browseApi.includes('least(greatest((scores->>archetype)::numeric, 0), 100)'), 'browse API signal sort should use clamped public scores');
+  assert(!browseApi.includes('coalesce((scores->>archetype)::numeric'), 'browse API should not sort by raw stored scores');
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
   assert(browseHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}'), 'browse share copy should drive recipients into upload-to-compare');
   assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');

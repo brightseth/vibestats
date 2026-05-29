@@ -73,13 +73,18 @@ export default async function handler(req, res) {
         order by u.id, up.uploaded_at desc
       ),
       filtered as (
-        select *
+        select *,
+          case
+            when scores->>${archetype} ~ '^-?[0-9]+([.][0-9]+)?$'
+              then least(greatest((scores->>${archetype})::numeric, 0), 100)
+            else 0
+          end as public_score
         from latest_uploads
         where archetype = ${archetype}
       )
       select *, count(*) over()::int as total, date_trunc('week', now()) as week_start
       from filtered
-      order by coalesce((scores->>${archetype})::numeric, 0) desc, uploaded_at desc
+      order by public_score desc, uploaded_at desc
       limit 25
     `;
 

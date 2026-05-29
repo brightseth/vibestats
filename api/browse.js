@@ -124,7 +124,12 @@ export default async function handler(req, res) {
         order by u.id, up.uploaded_at desc
       ),
       filtered as (
-        select *
+        select *,
+          case
+            when scores->>archetype ~ '^-?[0-9]+([.][0-9]+)?$'
+              then least(greatest((scores->>archetype)::numeric, 0), 100)
+            else 0
+          end as public_score
         from latest_uploads
         where (${filterArchetype} = false or archetype = ${archetype})
           and (
@@ -144,7 +149,7 @@ export default async function handler(req, res) {
       select *, count(*) over()::int as total
       from filtered
       order by
-        case when ${sort} = 'signal' then coalesce((scores->>archetype)::numeric, 0) end desc nulls last,
+        case when ${sort} = 'signal' then public_score end desc nulls last,
         uploaded_at desc
       limit 60
     `;
