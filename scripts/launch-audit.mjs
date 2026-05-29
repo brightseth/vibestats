@@ -302,6 +302,7 @@ async function auditLaunch(options) {
           'match_linked',
           'settings_linked',
           'unsubscribe_included',
+          'day_streak_included',
           'derived_only_notice',
         ];
         const proof = (body.results || []).find((item) => item?.proof);

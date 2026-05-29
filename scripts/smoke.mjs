@@ -30,6 +30,7 @@ const apiModules = [
   '../api/_lib/public-profile.js',
   '../api/_lib/social-proof.js',
   '../api/_lib/signatures.js',
+  '../api/_lib/streak.js',
   '../api/_lib/matchmaking.js',
   '../api/_lib/leaderboard-rank.js',
   '../api/_lib/digest.js',
@@ -232,6 +233,7 @@ async function assertRoutes() {
   assert(profileApi.includes("json(res, 404, { error: 'Profile not found' }, { 'Cache-Control': PRIVATE_PROFILE_CACHE })"), 'profile JSON API unknown handles should not be cached before a profile is created');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
+  assert(profileApi.includes('profileStreak') && profileApi.includes('streak: profileStreak(uploads, { isOwner })'), 'profile API should include derived day-based streaks');
   assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');
   assert(profileApi.includes('total_uploads: isOwner ? uploads.length : null'), 'profile API should keep exact history count owner-only');
   assert(profileHtml.includes('latest public result'), 'profile UI should not imply full history is visible to visitors');
@@ -376,6 +378,7 @@ async function assertRoutes() {
   assert(launchAudit.includes('cronSecret: process.env.CRON_SECRET') && launchAudit.includes('weekly digest dry run has cron secret'), 'launch audit should run a protected digest dry run when strict digest readiness is expected');
   assert(launchAudit.includes('weekly digest dry run returns readiness payload') && launchAudit.includes('body.resend_ready === true'), 'launch audit should require digest dry-run readiness payload');
   assert(launchAudit.includes('weekly digest dry run has at least one candidate') && launchAudit.includes('weekly digest dry run proves return-loop content'), 'launch audit should require digest dry-run content proof');
+  assert(launchAudit.includes('day_streak_included'), 'launch audit should require digest dry-run day-streak proof');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');
   assert((await readFile('db/migrations/0006_sync_token_revocation.sql', 'utf8')).includes('sync_token_invalidated_at'), 'migrations should support CLI sync token revocation');
   assert((await readFile('db/migrations/0007_https_contact_urls.sql', 'utf8')).includes("contact_url like 'https://%'"), 'migrations should enforce HTTPS public contact URLs for new rows');
@@ -396,13 +399,15 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
-  assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
+  assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('day-based streak') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   assert((await readFile('README.md', 'utf8')).includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
+  assert(profileHtml.includes('const streak = profile.streak || null') && profileHtml.includes('${esc(streak.label)}'), 'profile UI should render server-derived day streaks');
+  assert(!profileHtml.includes('function uploadStreak(uploads)'), 'profile UI should not recompute hidden history streaks from visitor uploads');
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
   assert(profileHtml.includes('owner history private'), 'profile UI should not render a fake history chart for visitors');
   assert(profileHtml.includes("historyVisible ? `${uploads.length} total` : 'latest only'"), 'profile UI should label visitor timeline as latest-only');
@@ -1408,6 +1413,33 @@ async function assertEvolutionHelpers() {
   console.log('ok profile evolution helpers');
 }
 
+async function assertStreakHelpers() {
+  const { profileStreak } = await import('../api/_lib/streak.js');
+  const uploads = [
+    { uploaded_at: '2026-05-28T10:00:00.000Z' },
+    { uploaded_at: '2026-05-23T10:00:00.000Z' },
+    { uploaded_at: '2026-05-16T10:00:00.000Z' },
+    { uploaded_at: '2026-05-08T10:00:00.000Z' },
+  ];
+  const streak = profileStreak(uploads, { now: new Date('2026-05-29T10:00:00.000Z') });
+  assert(streak.active === true, 'streak helper should mark recent streaks active');
+  assert(streak.days === 13, 'streak helper should report day span across uploads within the 7-day cadence');
+  assert(streak.upload_count === 3, 'streak helper should stop before uploads more than 7 days apart');
+  assert(streak.label === '13-day streak', 'streak helper should label day-based streaks');
+  assert(!Object.hasOwn(streak, 'started_at'), 'public streak payload should not expose exact streak start timestamp');
+  assert(!Object.hasOwn(streak, 'latest_uploaded_at'), 'public streak payload should not expose exact latest upload timestamp');
+
+  const ownerStreak = profileStreak(uploads, { now: new Date('2026-05-29T10:00:00.000Z'), isOwner: true });
+  assert(ownerStreak.started_at === '2026-05-16T10:00:00.000Z', 'owner streak payload should retain exact start timestamp');
+  assert(ownerStreak.latest_uploaded_at === '2026-05-28T10:00:00.000Z', 'owner streak payload should retain exact latest timestamp');
+
+  const paused = profileStreak(uploads, { now: new Date('2026-06-10T10:00:00.000Z') });
+  assert(paused.active === false, 'streak helper should mark stale streaks paused');
+  assert(paused.label === '13-day streak paused', 'streak helper should preserve last streak span when paused');
+  assert(profileStreak([]) === null, 'streak helper should tolerate empty upload lists');
+  console.log('ok profile streak helpers');
+}
+
 async function assertDigestHelpers() {
   const { buildWeeklyDigest, uploadStreak } = await import('../api/_lib/digest.js');
   const { digestCronResult, digestDryRunProof, resendDigestPayload } = await import('../api/cron/weekly-digest.js');
@@ -1444,8 +1476,10 @@ async function assertDigestHelpers() {
   });
 
   assert(uploadStreak(uploads) === 2, 'digest streak helper should count uploads within 7 days');
+  assert(digest.streak.days === 6 && digest.streak.upload_count === 2, 'digest payload should expose day-based streak proof');
   assert(digest.subject.includes('week'), 'digest subject should include week label');
   assert(digest.text.includes('+4 points vs last upload'), 'digest text should include score movement');
+  assert(digest.text.includes('Streak: 6-day streak (2 uploads)'), 'digest text should include a day-based streak');
   assert(digest.text.includes('#4 on the weekly Builder board'), 'digest text should include leaderboard position');
   assert(digest.text.includes('Share invite: https://vibestats.io/?compareTo=brightseth&compareArchetype=builder'), 'digest text should include compare-first share invite');
   assert(digest.text.includes('Find matches: https://vibestats.io/match?goal=pair-coding&archetype=builder'), 'digest text should include goal-aware match link');
@@ -1455,6 +1489,7 @@ async function assertDigestHelpers() {
   assert(digest.text.includes('Unsubscribe: https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token'), 'digest text should include one-click unsubscribe link');
   assert(digest.html.includes('/api/og?'), 'digest HTML should include the profile card image');
   assert(digest.html.includes('Share invite') && digest.html.includes('twitter.com/intent/tweet'), 'digest HTML should include a social share CTA');
+  assert(digest.html.includes('6-day streak (2 uploads)'), 'digest HTML should include day-based streak copy');
   assert(digest.html.includes('Find matches'), 'digest HTML should include a return CTA into matching');
   assert(digest.html.includes('Manage digest settings'), 'digest HTML should include settings management link');
   assert(digest.html.includes('unsubscribe'), 'digest HTML should include one-click unsubscribe link');
@@ -2255,6 +2290,7 @@ await assertProfileApiPayloadHelpers();
 await assertDiscoveryEntrySerializers();
 await assertSignatureHelpers();
 await assertEvolutionHelpers();
+await assertStreakHelpers();
 await assertDigestHelpers();
 await assertProfileMetadataHelpers();
 await assertProfileCacheHelpers();

@@ -7,6 +7,7 @@ import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
 import { publicMatchSettings } from '../_lib/profile-settings.js';
 import { metricVisibility, publicUpload } from '../_lib/public-profile.js';
 import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
+import { profileStreak } from '../_lib/streak.js';
 
 function getHandle(req) {
   const raw = req.query?.handle;
@@ -97,6 +98,7 @@ export default async function handler(req, res) {
       rarity,
       leaderboard: await weeklyLeaderboardRank(user, uploads[0]),
       evolution: profileEvolution(uploads, { isOwner }),
+      streak: profileStreak(uploads, { isOwner }),
     }, {
       'Cache-Control': 'no-store',
     });

@@ -1,5 +1,6 @@
 import { publicScores } from './public-profile.js';
 import { signatureFromUpload } from './signatures.js';
+import { profileStreak } from './streak.js';
 
 const ARCHETYPES = {
   orchestrator: { name: 'The Orchestrator', short: 'Orchestrator' },
@@ -42,20 +43,13 @@ export function isoWeek(date = new Date()) {
   return Math.ceil((((d - yearStart) / dayMs) + 1) / 7);
 }
 
-export function uploadStreak(uploads = []) {
-  const sorted = [...uploads]
-    .map((upload) => new Date(upload.uploaded_at))
-    .filter((date) => !Number.isNaN(date.getTime()))
-    .sort((a, b) => b - a);
-  if (!sorted.length) return 0;
+export function uploadStreak(uploads = [], options = {}) {
+  return profileStreak(uploads, options)?.upload_count || 0;
+}
 
-  let streak = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const gapDays = Math.round((sorted[i - 1] - sorted[i]) / dayMs);
-    if (gapDays > 7) break;
-    streak += 1;
-  }
-  return streak;
+function streakText(streak) {
+  if (!streak) return 'First saved result';
+  return `${streak.label} (${streak.upload_count} upload${streak.upload_count === 1 ? '' : 's'})`;
 }
 
 function primaryScore(upload) {
@@ -150,7 +144,8 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
   const delta = scoreDelta(latest, previous);
   const metrics = latest.metrics || {};
   const score = primaryScore(latest);
-  const streak = uploadStreak(uploads);
+  const streak = profileStreak(uploads, { now });
+  const streakLine = streakText(streak);
   const profile = profileUrl(origin, user.gh_handle);
   const share = compareUrl(origin, user, latest.archetype);
   const board = leaderboardUrl(origin, latest.archetype);
@@ -165,7 +160,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     { label: 'Evolution', value: delta == null ? 'new' : `${delta > 0 ? '+' : ''}${delta}`, detail: deltaText(delta) },
     {
       label: boardLine ? 'Leaderboard' : 'Rarity',
-      value: boardLine ? `#${leaderboard.rank}` : (rarity?.count ? `1 of ${fmt(rarity.count)}` : `${streak}`),
+      value: boardLine ? `#${leaderboard.rank}` : (rarity?.count ? `1 of ${fmt(rarity.count)}` : `${streak?.days || 1}d`),
       detail: boardLine || rareLine,
     },
   ];
@@ -183,7 +178,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     `${signatureLine} / ${arch.name}`,
     `Current signal: ${score}%`,
     `Evolution: ${deltaText(delta)}`,
-    `Streak: ${streak} upload${streak === 1 ? '' : 's'}`,
+    `Streak: ${streakLine}`,
     boardLine || rareLine,
     `Days tracked: ${fmt(metrics.days)}`,
     `Commits/day: ${fmt(metrics.commitsPerDay)}`,
@@ -218,7 +213,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-spacing:8px;margin:20px -8px 10px;">
       <tr>${statHtml}</tr>
     </table>
-    <p style="font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#8888a0;">${esc(rareLine)}. ${esc(streak)} upload${streak === 1 ? '' : 's'} in your active streak.</p>
+    <p style="font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#8888a0;">${esc(rareLine)}. ${esc(streakLine)}.</p>
     <p style="margin:24px 0 0;">
       <a href="${esc(profile)}" style="display:inline-block;padding:12px 15px;border-radius:8px;background:#1b2443;color:#c8d5ff;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Open profile</a>
       <a href="${esc(xShare)}" style="display:inline-block;margin-left:8px;padding:12px 15px;border-radius:8px;background:#ffffff;color:#06060a;text-decoration:none;font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;">Share invite</a>

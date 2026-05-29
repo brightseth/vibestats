@@ -538,7 +538,6 @@
     const fmt = (n) => Number(n || 0).toLocaleString();
     const shortDate = (value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     const uploadDateLabel = (upload) => upload?.uploaded_at ? shortDate(upload.uploaded_at) : (upload?.updated?.label || 'recent result');
-    const dayMs = 24 * 60 * 60 * 1000;
     const SUB_PREFIXES = {
       orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
       debugger: 'investigative', polyglot: 'multi-stack', sprinter: 'rapid-fire',
@@ -637,22 +636,6 @@
 
     function evolutionClass(evolution) {
       return evolution?.type === 'score-drop' ? ' warning' : '';
-    }
-
-    function uploadStreak(uploads) {
-      const sorted = [...uploads]
-        .map((upload) => new Date(upload.uploaded_at))
-        .filter((date) => !Number.isNaN(date.getTime()))
-        .sort((a, b) => b - a);
-      if (!sorted.length) return 0;
-
-      let streak = 1;
-      for (let i = 1; i < sorted.length; i++) {
-        const gapDays = Math.round((sorted[i - 1] - sorted[i]) / dayMs);
-        if (gapDays > 7) break;
-        streak += 1;
-      }
-      return streak;
     }
 
     function renderCompatibilityPanel(me, myLatest, profile, hostLatest) {
@@ -929,7 +912,7 @@
       const canShowLanguages = Boolean(profile.is_owner || visibility.show_languages);
       const avg = stats?.averages || {};
       const signature = vibeSignature(latest);
-      const streak = uploadStreak(profile.uploads);
+      const streak = profile.streak || null;
 
       document.title = `@${profile.user.gh_handle} is ${signature.label || arch.name} | vibestats`;
       document.documentElement.style.setProperty('--card-color', arch.color);
@@ -945,7 +928,7 @@
       document.getElementById('handle-meta').innerHTML = `
         <span>${historyVisible ? `${uploadCount} upload${uploadCount === 1 ? '' : 's'}` : 'latest public result'}</span>
         <span>${esc(uploadDateLabel(latest))}</span>
-        ${streak > 1 ? `<span class="pill">${streak}-upload streak</span>` : ''}
+        ${streak && (streak.days > 1 || streak.upload_count > 1) ? `<span class="pill">${esc(streak.label)}</span>` : ''}
         ${profile.is_owner && profile.user.privacy ? `<span class="pill">${esc(profile.user.privacy)}</span>` : ''}
       `;
       document.getElementById('archetype-line').style.background = arch.gradient;

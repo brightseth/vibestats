@@ -86,7 +86,7 @@ CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io 
 ```
 
 `--expect-digest` also runs the protected weekly digest dry run and fails if `CRON_SECRET` is not present in the local shell. The audit does not print the secret value.
-For the strict digest gate to pass, at least one saved profile must be opted in with a digest email so the dry run can prove the email content has profile, share, leaderboard, match, settings, unsubscribe, and derived-only privacy copy.
+For the strict digest gate to pass, at least one saved profile must be opted in with a digest email so the dry run can prove the email content has profile, share, leaderboard, match, settings, unsubscribe, day-based streak, and derived-only privacy copy.
 
 ## 4. Database Migrations
 

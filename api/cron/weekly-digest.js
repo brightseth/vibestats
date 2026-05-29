@@ -64,6 +64,7 @@ export function digestDryRunProof(digest = {}) {
     match_linked: contains(digest.text, digest.match_url) && contains(digest.html, digest.match_url),
     settings_linked: contains(digest.text, digest.settings_url) && contains(digest.html, digest.settings_url),
     unsubscribe_included: Boolean(digest.unsubscribe_url && contains(digest.text, 'Unsubscribe:') && contains(digest.html, 'unsubscribe')),
+    day_streak_included: /\b\d+-day streak\b/.test(combined),
     derived_only_notice: contains(combined, 'Raw Claude Code insights JSON never leaves your browser') && contains(combined, 'saved derived metrics'),
   };
 }
