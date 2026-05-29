@@ -1,7 +1,7 @@
 import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
-import { publicActivity, uploadRecency } from './_lib/public-profile.js';
+import { publicActivity, publicScores, uploadRecency } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -57,15 +57,11 @@ function getSort(req) {
   return sort === 'signal' ? 'signal' : 'recent';
 }
 
-function safeNumber(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function browseEntry(row) {
+export function browseEntry(row) {
+  const scores = publicScores(row.scores || {});
   const upload = {
     archetype: row.archetype,
-    scores: row.scores || {},
+    scores,
     metrics: row.metrics || {},
     raw_meta: row.raw_meta || {},
   };
@@ -78,7 +74,7 @@ function browseEntry(row) {
     },
     archetype: row.archetype,
     archetype_label: ARCHETYPES[row.archetype] || row.archetype,
-    score: Math.round(safeNumber(row.scores?.[row.archetype])),
+    score: scores[row.archetype] || 0,
     signature: signature ? {
       label: signature.label,
       combo: signature.combo,

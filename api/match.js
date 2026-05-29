@@ -1,6 +1,6 @@
 import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
-import { publicActivity, uploadRecency } from './_lib/public-profile.js';
+import { publicActivity, publicScores, uploadRecency } from './_lib/public-profile.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 import { ARCHETYPE_LABELS, GOAL_LABELS, cleanSeekerArchetype, goalFit } from './_lib/matchmaking.js';
@@ -16,21 +16,17 @@ function getGoal(req) {
   return goal;
 }
 
-function safeNumber(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function entry(row, goal, seekerArchetype) {
+export function matchEntry(row, goal, seekerArchetype) {
+  const scores = publicScores(row.scores || {});
   const upload = {
     archetype: row.archetype,
-    scores: row.scores || {},
+    scores,
     metrics: row.metrics || {},
     raw_meta: row.raw_meta || {},
   };
   const signature = signatureFromUpload(upload);
   const match = publicMatchSettings(row);
-  const score = Math.round(safeNumber(row.scores?.[row.archetype]));
+  const score = scores[row.archetype] || 0;
   const fit = goalFit({
     goal,
     lookingFor: match.looking_for,
@@ -100,7 +96,7 @@ export default async function handler(req, res) {
     `;
 
     const entries = rows.map((row) => ({
-      value: entry(row, goal, seekerArchetype),
+      value: matchEntry(row, goal, seekerArchetype),
       uploadedAt: row.uploaded_at,
     }))
       .sort((a, b) => b.value.fit_score - a.value.fit_score || new Date(b.uploadedAt) - new Date(a.uploadedAt))

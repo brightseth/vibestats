@@ -1271,6 +1271,44 @@ async function assertProfileApiPayloadHelpers() {
   console.log('ok profile API payload helpers keep rarity fingerprints owner-only');
 }
 
+async function assertDiscoveryEntrySerializers() {
+  const { leaderboardEntry } = await import('../api/leaderboard.js');
+  const { browseEntry } = await import('../api/browse.js');
+  const { matchEntry } = await import('../api/match.js');
+  const row = {
+    gh_handle: 'brightseth',
+    avatar_url: 'https://example.com/avatar.png',
+    archetype: 'builder',
+    scores: {
+      builder: 999,
+      rawJson: { should: 'drop' },
+      _percentiles: { builder: 0, rawJson: 1 },
+    },
+    metrics: { days: 31, commitsPerDay: 12.4, sessions: 88, languages: 6 },
+    raw_meta: {
+      signature: 'high-velocity Builder',
+      signatureCombo: 'shipper+builder',
+      signatureFingerprint: 'builder+shipper+orchestrator:90s',
+      rawJson: { should: 'drop' },
+    },
+    looking_for: 'pair-coding',
+    looking_for_expires_at: new Date(Date.now() + 10000).toISOString(),
+    contact_url: 'https://x.com/brightseth',
+    uploaded_at: new Date().toISOString(),
+  };
+  for (const entry of [
+    leaderboardEntry(row, 0),
+    browseEntry(row),
+    matchEntry(row, 'pair-coding', 'shipper'),
+  ]) {
+    assert(entry.score === 100, 'public discovery entries should clamp stored archetype scores');
+    assert(entry.signature?.label === 'high-velocity Builder', 'public discovery entries should retain signature labels');
+    assert(!JSON.stringify(entry).includes('rawJson'), 'public discovery entries must not echo unknown stored fields');
+    assert(!JSON.stringify(entry).includes('signatureFingerprint'), 'public discovery entries must not expose rarity fingerprints');
+  }
+  console.log('ok discovery entry serializers clamp public scores');
+}
+
 async function assertSignatureHelpers() {
   const { rarityTier, signatureFingerprint, signatureFromUpload } = await import('../api/_lib/signatures.js');
   const upload = {
@@ -2159,6 +2197,7 @@ await assertProfileSettingsHelpers();
 await assertPublicProfileHelpers();
 await assertPublicUserSerializer();
 await assertProfileApiPayloadHelpers();
+await assertDiscoveryEntrySerializers();
 await assertSignatureHelpers();
 await assertEvolutionHelpers();
 await assertDigestHelpers();

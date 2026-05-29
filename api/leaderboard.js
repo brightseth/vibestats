@@ -1,6 +1,6 @@
 import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
 import { sql } from './_lib/db.js';
-import { publicActivity, uploadRecency } from './_lib/public-profile.js';
+import { publicActivity, publicScores, uploadRecency } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = {
@@ -19,15 +19,11 @@ function getArchetype(req) {
   return String(Array.isArray(raw) ? raw[0] : raw || '').trim().toLowerCase();
 }
 
-function safeNumber(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function leaderboardEntry(row, index) {
+export function leaderboardEntry(row, index) {
+  const scores = publicScores(row.scores || {});
   const upload = {
     archetype: row.archetype,
-    scores: row.scores || {},
+    scores,
     metrics: row.metrics || {},
     raw_meta: row.raw_meta || {},
   };
@@ -40,7 +36,7 @@ function leaderboardEntry(row, index) {
       avatar_url: row.avatar_url,
     },
     archetype: row.archetype,
-    score: Math.round(safeNumber(row.scores?.[row.archetype])),
+    score: scores[row.archetype] || 0,
     signature: signature ? {
       label: signature.label,
       combo: signature.combo,
