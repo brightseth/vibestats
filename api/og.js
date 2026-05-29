@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
+import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
 const ARCHETYPES = {
   orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF' },
@@ -87,6 +88,8 @@ export function sendFallbackOg(res) {
 }
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
+
   try {
     const sanitized = sanitizeOgQuery(req.query);
 

@@ -2,7 +2,7 @@
 // Set env vars: KV_REST_API_URL + KV_REST_API_TOKEN (Vercel KV)
 // or: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
 
-import { readJson, requireSameOrigin } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
 
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -42,7 +42,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Cache-Control', NO_STORE_HEADERS['Cache-Control']);
+    return res.status(200).end();
+  }
 
   const hasRedis = REDIS_URL && REDIS_TOKEN;
 
@@ -50,15 +53,15 @@ export default async function handler(req, res) {
     try {
       requireSameOrigin(req);
     } catch (err) {
-      return res.status(err.statusCode || 403).json({ error: err.message || 'Stats mutation blocked' });
+      return json(res, err.statusCode || 403, { error: err.message || 'Stats mutation blocked' }, NO_STORE_HEADERS);
     }
-    if (!hasRedis) return res.status(200).json({ ok: true, stored: false });
+    if (!hasRedis) return json(res, 200, { ok: true, stored: false }, NO_STORE_HEADERS);
 
     try {
       const body = await readJson(req, { maxBytes: 16 * 1024 });
       const { archetype, commitsPerDay, sessions, languages, msgsPerSession, days } = body || {};
       if (!archetype || !ARCHETYPE_KEYS.includes(archetype)) {
-        return res.status(400).json({ error: 'valid archetype required' });
+        return json(res, 400, { error: 'valid archetype required' }, NO_STORE_HEADERS);
       }
 
       // Rate limit: 1 submission per IP per hour
@@ -66,7 +69,7 @@ export default async function handler(req, res) {
       const rlKey = `vs:rl:${ip}`;
       const rlCheck = await pipeline([['GET', rlKey]]);
       if (rlCheck[0]?.result) {
-        return res.status(429).json({ error: 'Rate limited — 1 submission per hour' });
+        return json(res, 429, { error: 'Rate limited — 1 submission per hour' }, NO_STORE_HEADERS);
       }
       await pipeline([['SET', rlKey, '1', 'EX', '3600']]);
 
@@ -83,10 +86,10 @@ export default async function handler(req, res) {
         ['INCRBYFLOAT', 'vs:sum:days', String(clamp(days, 1000))],
       ]);
 
-      res.status(200).json({ ok: true, stored: true });
+      json(res, 200, { ok: true, stored: true }, NO_STORE_HEADERS);
     } catch (err) {
       console.error('Stats POST error:', err);
-      res.status(200).json({ ok: true, stored: false });
+      json(res, 200, { ok: true, stored: false }, NO_STORE_HEADERS);
     }
   } else if (req.method === 'GET') {
     if (!hasRedis) {
@@ -136,6 +139,6 @@ export default async function handler(req, res) {
       res.status(200).json(BASELINE);
     }
   } else {
-    res.status(405).json({ error: 'Method not allowed' });
+    return methodNotAllowed(res, ['GET', 'POST', 'OPTIONS'], NO_STORE_HEADERS);
   }
 }

@@ -1,3 +1,5 @@
+import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
+
 const ARCHETYPES = {
   orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)' },
   shipper: { name: 'THE SHIPPER', tagline: "Done is better than perfect. You live this.", color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)' },
@@ -71,6 +73,8 @@ export function sanitizeCardQuery(query = {}) {
 }
 
 export default function handler(req, res) {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
+
   const card = sanitizeCardQuery(req.query);
   const { archetypeKey, name, days, commits, langs, sessions, percentile } = card;
   const arch = ARCHETYPES[archetypeKey];

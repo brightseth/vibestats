@@ -70,6 +70,10 @@ function mockRes() {
       this.body = value;
       return this;
     },
+    end(value = '') {
+      this.body = value;
+      return this;
+    },
     redirect(code, value) {
       this.statusCode = code;
       this.body = value;
@@ -620,6 +624,7 @@ async function assertShareCardCta() {
   let statusCode = 0;
   let body = '';
   const req = {
+    method: 'GET',
     query: {
       a: 'deepdiver',
       n: 'Alex',
@@ -648,11 +653,17 @@ async function assertShareCardCta() {
   assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
   assert(body.includes('archetype=deepdiver'), 'share card /vibe CTA should use the sanitized archetype key');
   assert(!body.includes('raw-json-should-not-propagate'), 'share card HTML should only use sanitized allowlisted query params');
+
+  const methodRes = mockRes();
+  handler({ method: 'POST', query: {}, headers: { host: 'localhost:3000' } }, methodRes);
+  assert(methodRes.statusCode === 405, 'share card should reject non-GET methods');
+  assert(methodRes.headers.Allow === 'GET', 'share card should advertise GET-only access');
+  assertNoStore(methodRes, 'share card method guard');
   console.log('ok legacy share card routes visitors into comparison');
 }
 
 async function assertOgFallback() {
-  const { sanitizeOgQuery, sendFallbackOg } = await import('../api/og.js');
+  const { default: handler, sanitizeOgQuery, sendFallbackOg } = await import('../api/og.js');
   const archetype = sanitizeOgQuery({
     mode: '<script>',
     a: 'growth-hacker',
@@ -709,7 +720,40 @@ async function assertOgFallback() {
   assert(contentType === 'image/png', 'OG fallback should return PNG content');
   assert(cacheControl.includes('s-maxage=60'), 'OG fallback should use short cache');
   assert(Buffer.isBuffer(body) && body.length > 1000, 'OG fallback should send the static share image');
+  const methodRes = mockRes();
+  await handler({ method: 'POST', query: {}, headers: { host: 'localhost:3000' } }, methodRes);
+  assert(methodRes.statusCode === 405, 'OG image endpoint should reject non-GET methods');
+  assert(methodRes.headers.Allow === 'GET', 'OG image endpoint should advertise GET-only access');
+  assertNoStore(methodRes, 'OG image method guard');
   console.log('ok OG image inputs are bounded and failures fall back without stack traces');
+}
+
+async function assertStatsApiGuards() {
+  const { default: handler } = await import('../api/stats.js');
+
+  const optionsRes = mockRes();
+  await handler({ method: 'OPTIONS', query: {}, headers: { host: 'localhost:3000' } }, optionsRes);
+  assert(optionsRes.statusCode === 200, 'stats preflight should return HTTP 200');
+  assertNoStore(optionsRes, 'stats preflight');
+
+  const methodRes = mockRes();
+  await handler({ method: 'DELETE', query: {}, headers: { host: 'localhost:3000' } }, methodRes);
+  assert(methodRes.statusCode === 405, 'stats API should reject unsupported methods');
+  assert(methodRes.headers.Allow === 'GET, POST, OPTIONS', 'stats API should advertise supported methods');
+  assertNoStore(methodRes, 'stats method guard');
+
+  const originRes = mockRes();
+  await handler({
+    method: 'POST',
+    query: {},
+    headers: {
+      host: 'localhost:3000',
+      origin: 'https://attacker.example',
+    },
+  }, originRes);
+  assert(originRes.statusCode === 403, 'stats POST should reject cross-origin mutations');
+  assertNoStore(originRes, 'stats cross-origin mutation');
+  console.log('ok stats API mutations and method guards are no-store');
 }
 
 async function assertWrappedShareLoop() {
@@ -1883,6 +1927,7 @@ await assertProfileShareLoop();
 await assertCompareShareLoop();
 await assertShareCardCta();
 await assertOgFallback();
+await assertStatsApiGuards();
 await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
 await assertUploadSanitizer();
