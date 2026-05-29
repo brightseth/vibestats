@@ -27,6 +27,30 @@ function resendReady() {
   return Boolean(process.env.RESEND_API_KEY && process.env.DIGEST_FROM_EMAIL);
 }
 
+export function resendDigestPayload({ to, digest }) {
+  const payload = {
+    from: process.env.DIGEST_FROM_EMAIL,
+    to,
+    subject: digest.subject,
+    html: digest.html,
+    text: digest.text,
+    reply_to: process.env.DIGEST_REPLY_TO || undefined,
+    tags: [
+      { name: 'product', value: 'vibestats' },
+      { name: 'kind', value: 'weekly-digest' },
+    ],
+  };
+
+  if (digest.unsubscribe_url) {
+    payload.headers = {
+      'List-Unsubscribe': `<${digest.unsubscribe_url}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    };
+  }
+
+  return payload;
+}
+
 async function sendDigestEmail({ to, digest }) {
   if (!resendReady()) {
     const err = new Error('RESEND_API_KEY and DIGEST_FROM_EMAIL are required');
@@ -40,18 +64,7 @@ async function sendDigestEmail({ to, digest }) {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: process.env.DIGEST_FROM_EMAIL,
-      to,
-      subject: digest.subject,
-      html: digest.html,
-      text: digest.text,
-      reply_to: process.env.DIGEST_REPLY_TO || undefined,
-      tags: [
-        { name: 'product', value: 'vibestats' },
-        { name: 'kind', value: 'weekly-digest' },
-      ],
-    }),
+    body: JSON.stringify(resendDigestPayload({ to, digest })),
   });
 
   if (!response.ok) {

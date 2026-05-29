@@ -224,6 +224,7 @@ async function assertRoutes() {
   assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(weeklyDigestApi.includes('createDigestUnsubscribeToken'), 'weekly digest should include one-click unsubscribe tokens');
+  assert(weeklyDigestApi.includes("'List-Unsubscribe'"), 'weekly digest sender should advertise unsubscribe headers');
   assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
@@ -780,6 +781,7 @@ async function assertEvolutionHelpers() {
 
 async function assertDigestHelpers() {
   const { buildWeeklyDigest, uploadStreak } = await import('../api/_lib/digest.js');
+  const { resendDigestPayload } = await import('../api/cron/weekly-digest.js');
   const uploads = [
     {
       archetype: 'builder',
@@ -823,6 +825,9 @@ async function assertDigestHelpers() {
   assert(digest.html.includes('unsubscribe'), 'digest HTML should include one-click unsubscribe link');
   assert(digest.settings_url === 'https://vibestats.io/settings', 'digest payload should expose settings URL');
   assert(digest.unsubscribe_url === 'https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token', 'digest payload should expose unsubscribe URL');
+  const resendPayload = resendDigestPayload({ to: 'seth@example.com', digest });
+  assert(resendPayload.headers['List-Unsubscribe'] === '<https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token>', 'digest email should include List-Unsubscribe header');
+  assert(resendPayload.headers['List-Unsubscribe-Post'] === 'List-Unsubscribe=One-Click', 'digest email should include one-click unsubscribe header');
   assert(!digest.html.includes('rawJson') && !digest.text.includes('rawJson'), 'digest must not leak raw metadata');
   console.log('ok weekly digest helpers render derived-only email');
 }
