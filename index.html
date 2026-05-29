@@ -65,6 +65,11 @@
       border-color: rgba(107,143,255,0.45);
       background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
     }
+    .auth-pill.muted {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+      background: rgba(13,13,20,0.72);
+    }
     .auth-pill img {
       width: 22px; height: 22px; border-radius: 50%;
       border: 1px solid rgba(255,255,255,0.08);
@@ -1703,6 +1708,7 @@
     const PENDING_UPLOAD_KEY = 'vibestats_pending_upload';
     const PENDING_UPLOAD_TTL_MS = 30 * 60 * 1000;
     let currentUser = null;
+    let identityStatus = { identity_available: false, profile_save_available: false, missing: [] };
     let authReady = initAuth();
     renderComparisonIntent();
 
@@ -1802,9 +1808,31 @@
       } catch (e) { /* fire and forget */ }
     }
 
-    async function initAuth() {
+    async function fetchIdentityStatus() {
       try {
-        const res = await fetch('/api/me');
+        const res = await fetch('/api/identity-status', { cache: 'no-store' });
+        const body = res.ok ? await res.json() : {};
+        identityStatus = {
+          identity_available: body.identity_available === true,
+          profile_save_available: body.profile_save_available === true,
+          missing: Array.isArray(body.missing) ? body.missing : [],
+        };
+      } catch (e) {
+        identityStatus = { identity_available: false, profile_save_available: false, missing: ['identity_status'] };
+      }
+      return identityStatus;
+    }
+
+    async function initAuth() {
+      await fetchIdentityStatus();
+      if (!identityStatus.profile_save_available) {
+        currentUser = null;
+        renderAuth();
+        return currentUser;
+      }
+
+      try {
+        const res = await fetch('/api/me', { cache: 'no-store' });
         currentUser = res.ok ? (await res.json()).user : null;
       } catch (e) {
         currentUser = null;
@@ -1828,10 +1856,15 @@
         `;
         saveToggle.classList.add('visible');
       } else {
-        authBar.innerHTML = `
-          <a class="auth-pill" href="/browse">Browse</a>
-          <a class="auth-pill primary" href="/api/auth/github/start?returnTo=${returnTo}">Sign in with GitHub</a>
-        `;
+        authBar.innerHTML = identityStatus.profile_save_available
+          ? `
+            <a class="auth-pill" href="/browse">Browse</a>
+            <a class="auth-pill primary" href="/api/auth/github/start?returnTo=${returnTo}">Sign in with GitHub</a>
+          `
+          : `
+            <a class="auth-pill" href="/browse">Browse</a>
+            <span class="auth-pill muted">Profile saves pending</span>
+          `;
         saveToggle.classList.remove('visible');
       }
     }
@@ -2017,6 +2050,10 @@
       await authReady;
       if (options.demo) {
         updateProfileSaveStatus(`Demo data is not saved to profiles.${comparisonReturnLink(archetype)}`, 'muted');
+        return;
+      }
+      if (!identityStatus.profile_save_available) {
+        updateProfileSaveStatus(`Profile saves are not configured on this deployment yet. Your result stayed local.${comparisonReturnLink(archetype)}`, 'muted');
         return;
       }
       if (!currentUser) {

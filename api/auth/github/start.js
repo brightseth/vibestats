@@ -6,11 +6,16 @@ import {
   randomToken,
   serializeCookie,
 } from '../../_lib/auth.js';
+import { identityReadiness, identityUnavailableMessage } from '../../_lib/identity-readiness.js';
 import { methodNotAllowed, safeReturnTo } from '../../_lib/http.js';
 
 export default function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') {
     return methodNotAllowed(res, ['GET', 'POST']);
+  }
+
+  if (!identityReadiness().available) {
+    return res.status(503).send(identityUnavailableMessage());
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID;

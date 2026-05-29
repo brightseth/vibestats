@@ -9,6 +9,7 @@ const apiModules = [
   '../api/auth/github/start.js',
   '../api/auth/github/callback.js',
   '../api/auth/logout.js',
+  '../api/identity-status.js',
   '../api/me.js',
   '../api/uploads.js',
   '../api/sync.js',
@@ -77,6 +78,9 @@ async function assertRoutes() {
   const settingsHtml = await readFile('settings.html', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
+  const identityStatusApi = await readFile('api/identity-status.js', 'utf8');
+  const identityReadiness = await readFile('api/_lib/identity-readiness.js', 'utf8');
+  const indexHtml = await readFile('index.html', 'utf8');
   const identityDoctor = await readFile('scripts/identity-doctor.mjs', 'utf8');
   const launchDoc = await readFile('docs/LAUNCH.md', 'utf8');
   const envExample = await readFile('.env.example', 'utf8');
@@ -134,6 +138,14 @@ async function assertRoutes() {
     statsApi.indexOf('readJson(req, { maxBytes: 16 * 1024 })') < statsApi.indexOf('const ip ='),
     'community stats API should parse and validate JSON before mutating rate-limit state',
   );
+  assert(identityStatusApi.includes('publicIdentityReadiness'), 'identity status API should use public readiness serialization');
+  assert(identityStatusApi.includes("'Cache-Control': 'no-store'"), 'identity status API should not be cached');
+  assert(identityReadiness.includes("missing.push('database')"), 'identity readiness should report missing database readiness');
+  assert(identityReadiness.includes("missing.push('github_oauth')"), 'identity readiness should report missing GitHub OAuth readiness');
+  assert(identityReadiness.includes("missing.push('session_secret')"), 'identity readiness should report missing session secret readiness');
+  assert(indexHtml.includes("fetch('/api/identity-status'"), 'upload page should check identity readiness before fetching session state');
+  assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
+  assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
@@ -150,6 +162,78 @@ async function assertRoutes() {
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   console.log('ok route rewrites');
+}
+
+async function assertIdentityReadiness() {
+  const keys = [
+    'DATABASE_URL',
+    'POSTGRES_URL',
+    'NEON_DATABASE_URL',
+    'GITHUB_CLIENT_ID',
+    'GITHUB_CLIENT_SECRET',
+    'VIBE_SESSION_SECRET',
+    'AUTH_SECRET',
+    'NEXTAUTH_SECRET',
+  ];
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  const { identityReadiness } = await import('../api/_lib/identity-readiness.js');
+  const { default: handler } = await import('../api/identity-status.js');
+
+  function restoreEnv() {
+    for (const key of keys) {
+      if (previous[key] == null) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous[key];
+      }
+    }
+  }
+
+  function callStatusEndpoint() {
+    let statusCode = 0;
+    let body = null;
+    const headers = {};
+    handler({ method: 'GET' }, {
+      setHeader(key, value) {
+        headers[key] = value;
+      },
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      json(value) {
+        body = value;
+      },
+    });
+    return { statusCode, body, headers };
+  }
+
+  try {
+    for (const key of keys) delete process.env[key];
+    const missing = identityReadiness();
+    assert(missing.available === false, 'identity readiness should be unavailable with no identity env');
+    assert(missing.missing.includes('database'), 'identity readiness should report missing database');
+    assert(missing.missing.includes('github_oauth'), 'identity readiness should report missing GitHub OAuth');
+    assert(missing.missing.includes('session_secret'), 'identity readiness should report missing session secret');
+
+    let response = callStatusEndpoint();
+    assert(response.statusCode === 200, 'identity status endpoint should render HTTP 200 when unavailable');
+    assert(response.headers['Cache-Control'] === 'no-store', 'identity status endpoint should disable caching');
+    assert(response.body.profile_save_available === false, 'identity status endpoint should report unavailable profile saves');
+    assert(response.body.message === 'Profile saves are not configured on this deployment yet.', 'identity status endpoint should explain unavailable profile saves');
+    assert(!JSON.stringify(response.body).includes('secret-value'), 'identity status endpoint must not leak env values');
+
+    process.env.POSTGRES_URL = 'postgres://user:password@example.invalid/db';
+    process.env.GITHUB_CLIENT_ID = 'client-id';
+    process.env.GITHUB_CLIENT_SECRET = 'secret-value';
+    process.env.AUTH_SECRET = 'session-secret';
+    response = callStatusEndpoint();
+    assert(response.body.profile_save_available === true, 'identity status endpoint should report available profile saves with required env');
+    assert(response.body.message === null, 'identity status endpoint should not show unavailable copy when ready');
+    console.log('ok identity readiness endpoint reports deployment state without secrets');
+  } finally {
+    restoreEnv();
+  }
 }
 
 async function assertProfileShareLoop() {
@@ -809,6 +893,7 @@ await assertHtmlScriptsParse();
 await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
+await assertIdentityReadiness();
 await assertProfileShareLoop();
 await assertCompareShareLoop();
 await assertShareCardCta();

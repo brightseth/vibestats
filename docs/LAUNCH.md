@@ -35,6 +35,14 @@ npm run doctor:identity
 
 The doctor should pass before running migrations or dogfooding the profile save flow.
 
+The deployed app also exposes a non-secret readiness probe:
+
+```bash
+curl https://vibestats.io/api/identity-status
+```
+
+Before OAuth proof, it should return `"profile_save_available": true`. If it is false, the upload flow remains local and does not show a dead-end GitHub sign-in button.
+
 ## 3. Database Migrations
 
 Run migrations against the intended Neon database:
