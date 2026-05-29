@@ -7,7 +7,7 @@ import {
   setSessionCookie,
 } from '../../_lib/auth.js';
 import { sql } from '../../_lib/db.js';
-import { safeReturnTo, setNoStore } from '../../_lib/http.js';
+import { NO_STORE_HEADERS, methodNotAllowed, safeReturnTo, setNoStore } from '../../_lib/http.js';
 
 async function exchangeCode(req, code) {
   const clientId = process.env.GITHUB_CLIENT_ID;
@@ -55,7 +55,7 @@ async function exchangeCode(req, code) {
 export default async function handler(req, res) {
   setNoStore(res);
 
-  if (req.method !== 'GET') return res.status(405).send('Method not allowed');
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
 
   const statePayload = decodeStatePayload(getCookie(req, OAUTH_STATE_COOKIE) || '');
   clearCookie(req, res, OAUTH_STATE_COOKIE);

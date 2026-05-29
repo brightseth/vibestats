@@ -1877,6 +1877,13 @@ async function assertPrivateApiNoStore() {
         status: 400,
       },
       {
+        label: '/api/auth/github/callback method guard',
+        module: '../api/auth/github/callback.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'GET',
+      },
+      {
         label: '/api/identity-status method guard',
         module: '../api/identity-status.js',
         req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
@@ -1902,6 +1909,9 @@ async function assertPrivateApiNoStore() {
       await handler(endpoint.req, res);
       assert(res.statusCode === endpoint.status, `${endpoint.label} should return HTTP ${endpoint.status}`);
       assertNoStore(res, endpoint.label);
+      if (endpoint.allow) {
+        assert(res.headers.Allow === endpoint.allow, `${endpoint.label} should advertise allowed methods`);
+      }
     }
     console.log('ok private APIs consistently disable caching');
   } finally {
