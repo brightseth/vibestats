@@ -31,6 +31,29 @@ function sortedScores(scores = {}) {
     .sort((a, b) => Number(b[1]) - Number(a[1]));
 }
 
+function cleanText(value, max = 80) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, max) : '';
+}
+
+function cleanSignatureCombo(value, primary) {
+  const combo = cleanText(value, 80);
+  const [secondary, comboPrimary] = combo.split('+');
+  if (!ARCHETYPE_KEYS.includes(secondary) || comboPrimary !== primary || secondary === primary) {
+    return '';
+  }
+  return combo;
+}
+
+function cleanSignatureFingerprint(value) {
+  const fingerprint = cleanText(value, 120);
+  const match = fingerprint.match(/^([a-z]+(?:\+[a-z]+){0,2}):(0|10|20|30|40|50|60|70|80|90)s$/);
+  if (!match) return '';
+  const archetypes = match[1].split('+');
+  return archetypes.every((key) => ARCHETYPE_KEYS.includes(key)) ? fingerprint : '';
+}
+
 export function signatureFingerprint(scores = {}, primary) {
   if (!ARCHETYPE_KEYS.includes(primary)) return '';
   const top = sortedScores(scores).slice(0, 3).map(([key]) => key);
@@ -50,18 +73,22 @@ export function signatureFromUpload(upload = {}) {
   const rawMeta = upload.raw_meta || {};
   const fallbackSecondary = sortedScores(upload.scores)
     .filter(([key]) => key !== primary)[0]?.[0] || '';
-  const secondary = ARCHETYPE_KEYS.includes(rawMeta.secondaryArchetype)
-    ? rawMeta.secondaryArchetype
+  const rawSecondary = cleanText(rawMeta.secondaryArchetype, 32);
+  const secondary = ARCHETYPE_KEYS.includes(rawSecondary)
+    ? rawSecondary
     : fallbackSecondary;
   const fallbackLabel = secondary
     ? `${SUB_PREFIXES[secondary] || secondary} ${ARCHETYPE_SHORT_NAMES[primary] || primary}`
     : '';
+  const label = cleanText(rawMeta.signature, 80);
+  const combo = cleanSignatureCombo(rawMeta.signatureCombo, primary);
+  const fingerprint = cleanSignatureFingerprint(rawMeta.signatureFingerprint);
 
   return {
-    label: rawMeta.signature || fallbackLabel,
-    combo: rawMeta.signatureCombo || (secondary ? `${secondary}+${primary}` : ''),
+    label: label || fallbackLabel,
+    combo: combo || (secondary ? `${secondary}+${primary}` : ''),
     secondary,
-    fingerprint: rawMeta.signatureFingerprint || signatureFingerprint(upload.scores, primary),
+    fingerprint: fingerprint || signatureFingerprint(upload.scores, primary),
   };
 }
 

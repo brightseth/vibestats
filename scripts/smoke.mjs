@@ -1056,6 +1056,30 @@ async function assertSignatureHelpers() {
   assert(signature.label === 'high-velocity Builder', 'signature helper should infer label');
   assert(signature.fingerprint === 'builder+shipper+orchestrator:90s', 'signature helper should fingerprint top scores');
   assert(signatureFingerprint(upload.scores, 'builder') === signature.fingerprint, 'fingerprint helper should match upload helper');
+  const validStored = signatureFromUpload({
+    ...upload,
+    raw_meta: {
+      signature: ' saved Builder ',
+      signatureCombo: 'shipper+builder',
+      signatureFingerprint: 'builder+shipper+orchestrator:90s',
+      secondaryArchetype: 'shipper',
+    },
+  });
+  assert(validStored.label === 'saved Builder', 'signature helper should trim saved signature labels');
+  assert(validStored.combo === 'shipper+builder', 'signature helper should keep valid saved combos');
+  const malformed = signatureFromUpload({
+    ...upload,
+    raw_meta: {
+      signature: { rawJson: 'leak' },
+      signatureCombo: 'rawJson+builder',
+      signatureFingerprint: 'rawJson:90s',
+      secondaryArchetype: 'growth-hacker',
+    },
+  });
+  assert(malformed.label === 'high-velocity Builder', 'signature helper should ignore malformed saved labels');
+  assert(malformed.combo === 'shipper+builder', 'signature helper should fall back from malformed combos');
+  assert(malformed.fingerprint === 'builder+shipper+orchestrator:90s', 'signature helper should fall back from malformed fingerprints');
+  assert(!JSON.stringify(malformed).includes('rawJson'), 'signature helper must not echo raw-shaped metadata');
   assert(rarityTier(8) === 'rare' && rarityTier(40) === 'uncommon' && rarityTier(90) === 'common', 'rarity tiers should classify counts');
   console.log('ok signature rarity helpers');
 }
