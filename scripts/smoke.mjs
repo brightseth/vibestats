@@ -118,6 +118,7 @@ async function assertRoutes() {
   const cacheHelper = await readFile('api/_lib/cache.js', 'utf8');
   const publicProfileHelper = await readFile('api/_lib/public-profile.js', 'utf8');
   const profileHtmlApi = await readFile('api/profile.js', 'utf8');
+  const authCallbackApi = await readFile('api/auth/github/callback.js', 'utf8');
   const embedApi = await readFile('api/embed.js', 'utf8');
   const badgeApi = await readFile('api/badge.js', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
@@ -267,15 +268,18 @@ async function assertRoutes() {
   assert(identityDoctor.includes('CRON_SECRET') && identityDoctor.includes('RESEND_API_KEY') && identityDoctor.includes('DIGEST_FROM_EMAIL'), 'identity doctor should report weekly digest env readiness');
   assert(identityDoctor.includes('--schema') && identityDoctor.includes('checkIdentitySchema'), 'identity doctor should expose an explicit DB schema readiness check');
   assert(identityDoctor.includes('information_schema.columns') && identityDoctor.includes('schema_migrations'), 'identity doctor schema check should verify columns and applied migrations');
+  assert(identityDoctor.includes('users.privacy default unlisted and not null'), 'identity doctor schema check should verify the profile privacy default');
   assert(identityDoctor.includes('profile_settings_contact_url_protocol'), 'identity doctor schema check should verify HTTPS contact URL constraint');
   assert(identityDoctor.includes('sync_token_invalidated_at'), 'identity doctor schema check should verify sync-token revocation schema');
   assert(!identityDoctor.includes("{ label: 'app origin', any: ['VIBESTATS_URL'] }"), 'identity doctor should not hard-require VIBESTATS_URL when runtime can infer host origin');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');
   assert((await readFile('db/migrations/0006_sync_token_revocation.sql', 'utf8')).includes('sync_token_invalidated_at'), 'migrations should support CLI sync token revocation');
   assert((await readFile('db/migrations/0007_https_contact_urls.sql', 'utf8')).includes("contact_url like 'https://%'"), 'migrations should enforce HTTPS public contact URLs for new rows');
+  assert((await readFile('db/migrations/0008_privacy_not_null.sql', 'utf8')).includes("alter column privacy set not null"), 'migrations should enforce non-null profile privacy');
+  assert(authCallbackApi.includes('gh_handle, avatar_url, privacy, last_seen_at') && authCallbackApi.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(launchDoc.includes('vercel env ls') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
   assert(launchDoc.includes('npm run doctor:identity -- --schema'), 'launch checklist should require post-migration schema proof');
-  assert(launchDoc.includes('sync-token revocation column and HTTPS contact URL constraint'), 'launch checklist should name schema gates for privacy and sync hardening');
+  assert(launchDoc.includes('sync-token revocation column, the unlisted-by-default privacy column, and HTTPS contact URL constraint'), 'launch checklist should name schema gates for privacy and sync hardening');
   assert(launchDoc.includes('"commandForIgnoringBuildStep": null'), 'launch checklist should require Vercel ignored-build setting to be disabled');
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');
   assert(launchDoc.includes('vercel curl /api/identity-status --deployment <preview-url> --scope lets-vibe'), 'launch checklist should document protected-preview runtime proof');

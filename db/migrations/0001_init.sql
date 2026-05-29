@@ -7,7 +7,7 @@ create table if not exists users (
   avatar_url text,
   created_at timestamptz default now(),
   last_seen_at timestamptz default now(),
-  privacy text default 'unlisted' check (privacy in ('public','unlisted','private'))
+  privacy text not null default 'unlisted' check (privacy in ('public','unlisted','private'))
 );
 
 create unique index if not exists users_gh_handle_lower_idx on users (lower(gh_handle));
@@ -24,4 +24,3 @@ create table if not exists uploads (
 );
 
 create index if not exists uploads_user_time_idx on uploads(user_id, uploaded_at desc);
-

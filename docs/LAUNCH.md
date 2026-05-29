@@ -83,7 +83,7 @@ Then verify the live schema shape before dogfooding profile saves:
 npm run doctor:identity -- --schema
 ```
 
-The schema doctor checks the required tables, columns, indexes, constraints, and `schema_migrations` rows, including the sync-token revocation column and HTTPS contact URL constraint.
+The schema doctor checks the required tables, columns, indexes, constraints, and `schema_migrations` rows, including the sync-token revocation column, the unlisted-by-default privacy column, and HTTPS contact URL constraint.
 
 ## 5. Production Flow Proof
 

@@ -67,8 +67,8 @@ export default async function handler(req, res) {
   try {
     const ghUser = await exchangeCode(req, req.query.code);
     const rows = await sql()`
-      insert into users (gh_id, gh_handle, avatar_url, last_seen_at)
-      values (${ghUser.id}, ${ghUser.login}, ${ghUser.avatar_url || null}, now())
+      insert into users (gh_id, gh_handle, avatar_url, privacy, last_seen_at)
+      values (${ghUser.id}, ${ghUser.login}, ${ghUser.avatar_url || null}, 'unlisted', now())
       on conflict (gh_id) do update
         set gh_handle = excluded.gh_handle,
             avatar_url = excluded.avatar_url,

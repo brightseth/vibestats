@@ -111,6 +111,16 @@ const requiredIndexes = [
   'profile_settings_looking_for_idx',
 ];
 const requiredConstraints = ['profile_settings_contact_url_protocol'];
+const requiredColumnProperties = [
+  {
+    table: 'users',
+    column: 'privacy',
+    label: 'schema column users.privacy default unlisted and not null',
+    check(row) {
+      return row?.is_nullable === 'NO' && String(row?.column_default || '').includes("'unlisted'");
+    },
+  },
+];
 
 async function migrationFiles() {
   return (await readdir(migrationsDir))
@@ -143,18 +153,23 @@ async function checkIdentitySchema(databaseUrl) {
 
     const columnTables = Object.keys(requiredColumns);
     const columnRows = await sql`
-      select table_name, column_name
+      select table_name, column_name, is_nullable, column_default
       from information_schema.columns
       where table_schema = 'public'
         and table_name in ${sql(columnTables)}
     `;
-    const columns = new Set(columnRows.map((row) => `${row.table_name}.${row.column_name}`));
+    const columns = new Map(columnRows.map((row) => [`${row.table_name}.${row.column_name}`, row]));
     for (const [table, names] of Object.entries(requiredColumns)) {
       for (const column of names) {
         const key = `${table}.${column}`;
         if (columns.has(key)) ok.push(`schema column ${key}`);
         else missing.push(`schema column ${key}`);
       }
+    }
+    for (const rule of requiredColumnProperties) {
+      const key = `${rule.table}.${rule.column}`;
+      if (rule.check(columns.get(key))) ok.push(rule.label);
+      else missing.push(rule.label);
     }
 
     const indexRows = await sql`
