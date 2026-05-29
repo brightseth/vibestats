@@ -43,6 +43,41 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function mockRes() {
+  return {
+    headers: {},
+    statusCode: 0,
+    body: null,
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
+    getHeader(name) {
+      return this.headers[name];
+    },
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(value) {
+      this.body = value;
+      return this;
+    },
+    send(value) {
+      this.body = value;
+      return this;
+    },
+    redirect(code, value) {
+      this.statusCode = code;
+      this.body = value;
+      return this;
+    },
+  };
+}
+
+function assertNoStore(res, label) {
+  assert(res.headers['Cache-Control'] === 'no-store', `${label} should disable response caching`);
+}
+
 async function assertHtmlScriptsParse() {
   for (const file of htmlFiles) {
     const html = await readFile(file, 'utf8');
@@ -164,7 +199,7 @@ async function assertRoutes() {
     'community stats API should parse and validate JSON before mutating rate-limit state',
   );
   assert(identityStatusApi.includes('publicIdentityReadiness'), 'identity status API should use public readiness serialization');
-  assert(identityStatusApi.includes("'Cache-Control': 'no-store'"), 'identity status API should not be cached');
+  assert(identityStatusApi.includes('NO_STORE_HEADERS'), 'identity status API should not be cached');
   assert(identityReadiness.includes("missing.push('database')"), 'identity readiness should report missing database readiness');
   assert(identityReadiness.includes("missing.push('github_oauth')"), 'identity readiness should report missing GitHub OAuth readiness');
   assert(identityReadiness.includes("missing.push('session_secret')"), 'identity readiness should report missing session secret readiness');
@@ -1039,6 +1074,103 @@ async function assertBrowseFallback() {
   }
 }
 
+async function assertPrivateApiNoStore() {
+  const originalError = console.error;
+  console.error = () => {};
+  const envKeys = ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET'];
+  const previous = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+  for (const key of envKeys) delete process.env[key];
+
+  try {
+    const endpoints = [
+      {
+        label: '/api/me unauthenticated',
+        module: '../api/me.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/settings unauthenticated',
+        module: '../api/settings.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/settings/export unauthenticated',
+        module: '../api/settings/export.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/uploads unauthenticated',
+        module: '../api/uploads.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/sync invalid token',
+        module: '../api/sync.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/sync-token unauthenticated',
+        module: '../api/sync-token.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/auth/logout',
+        module: '../api/auth/logout.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 200,
+      },
+      {
+        label: '/api/auth/github/start unavailable',
+        module: '../api/auth/github/start.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 503,
+      },
+      {
+        label: '/api/auth/github/callback invalid state',
+        module: '../api/auth/github/callback.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 400,
+      },
+      {
+        label: '/api/identity-status method guard',
+        module: '../api/identity-status.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+      },
+      {
+        label: '/api/cron/weekly-digest unauthorized',
+        module: '../api/cron/weekly-digest.js',
+        req: { method: 'GET', query: { dryRun: '1' }, headers: { host: 'localhost:3000' } },
+        status: 503,
+      },
+    ];
+
+    for (const endpoint of endpoints) {
+      const { default: handler } = await import(endpoint.module);
+      const res = mockRes();
+      await handler(endpoint.req, res);
+      assert(res.statusCode === endpoint.status, `${endpoint.label} should return HTTP ${endpoint.status}`);
+      assertNoStore(res, endpoint.label);
+    }
+    console.log('ok private APIs consistently disable caching');
+  } finally {
+    console.error = originalError;
+    for (const key of envKeys) {
+      if (previous[key] == null) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous[key];
+      }
+    }
+  }
+}
+
 async function assertDigestCronAuth() {
   const { default: handler } = await import('../api/cron/weekly-digest.js');
   const previousSecret = process.env.CRON_SECRET;
@@ -1053,7 +1185,10 @@ async function assertDigestCronAuth() {
   let statusCode = 0;
   let body = '';
   const res = {
-    setHeader() {},
+    headers: {},
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
     status(code) {
       statusCode = code;
       return this;
@@ -1068,6 +1203,7 @@ async function assertDigestCronAuth() {
     const parsed = JSON.parse(body);
     assert(statusCode === 401, 'weekly digest cron should reject invalid bearer token');
     assert(parsed.error === 'Unauthorized', 'weekly digest cron should return unauthorized error');
+    assertNoStore(res, 'weekly digest cron unauthorized');
     console.log('ok weekly digest cron requires bearer secret');
   } finally {
     console.error = originalError;
@@ -1110,6 +1246,7 @@ await assertEmbedFallback();
 await assertLeaderboardFallback();
 await assertMatchFallback();
 await assertBrowseFallback();
+await assertPrivateApiNoStore();
 await assertDigestCronAuth();
 
 console.log('smoke checks passed');

@@ -1,3 +1,9 @@
+export const NO_STORE_HEADERS = Object.freeze({ 'Cache-Control': 'no-store' });
+
+export function setNoStore(res) {
+  res.setHeader('Cache-Control', NO_STORE_HEADERS['Cache-Control']);
+}
+
 export function json(res, status, body, headers = {}) {
   for (const [key, value] of Object.entries(headers)) {
     res.setHeader(key, value);
@@ -5,9 +11,9 @@ export function json(res, status, body, headers = {}) {
   res.status(status).json(body);
 }
 
-export function methodNotAllowed(res, allowed) {
+export function methodNotAllowed(res, allowed, headers = {}) {
   res.setHeader('Allow', allowed.join(', '));
-  json(res, 405, { error: 'Method not allowed' });
+  json(res, 405, { error: 'Method not allowed' }, headers);
 }
 
 const DEFAULT_MAX_JSON_BYTES = 64 * 1024;

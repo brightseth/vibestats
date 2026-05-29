@@ -1,7 +1,7 @@
 import { originForRequest } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
 import { buildWeeklyDigest } from '../_lib/digest.js';
-import { json, methodNotAllowed } from '../_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed } from '../_lib/http.js';
 import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
 import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
 
@@ -119,7 +119,7 @@ async function latestUploads(userId) {
 }
 
 export default async function handler(req, res) {
-  if (!['GET', 'POST'].includes(req.method)) return methodNotAllowed(res, ['GET', 'POST']);
+  if (!['GET', 'POST'].includes(req.method)) return methodNotAllowed(res, ['GET', 'POST'], NO_STORE_HEADERS);
 
   try {
     authorized(req);
@@ -173,9 +173,9 @@ export default async function handler(req, res) {
       resend_ready: resendReady(),
       considered: candidates.length,
       results,
-    });
+    }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('weekly digest cron error:', err);
-    return json(res, err.statusCode || 500, { error: err.message || 'Weekly digest failed' });
+    return json(res, err.statusCode || 500, { error: err.message || 'Weekly digest failed' }, NO_STORE_HEADERS);
   }
 }

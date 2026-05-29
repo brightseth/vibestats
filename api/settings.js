@@ -1,6 +1,6 @@
 import { clearSessionCookie, requireUser } from './_lib/auth.js';
 import { publicUser, sql } from './_lib/db.js';
-import { json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
 import {
   cleanContactUrl,
   cleanDigestEmail,
@@ -14,22 +14,20 @@ const PRIVACY_VALUES = new Set(['public', 'unlisted', 'private']);
 
 export default async function handler(req, res) {
   if (!['GET', 'PATCH', 'DELETE'].includes(req.method)) {
-    return methodNotAllowed(res, ['GET', 'PATCH', 'DELETE']);
+    return methodNotAllowed(res, ['GET', 'PATCH', 'DELETE'], NO_STORE_HEADERS);
   }
 
   try {
     if (req.method !== 'GET') requireSameOrigin(req);
     const user = await requireUser(req);
-    if (!user) return json(res, 401, { error: 'Not authenticated' });
+    if (!user) return json(res, 401, { error: 'Not authenticated' }, NO_STORE_HEADERS);
 
     if (req.method === 'GET') {
       const settings = await getProfileSettings(user.id);
       return json(res, 200, {
         user: publicUser(user, { includePrivacy: true }),
         settings: publicProfileSettings(settings),
-      }, {
-        'Cache-Control': 'no-store',
-      });
+      }, NO_STORE_HEADERS);
     }
 
     if (req.method === 'PATCH') {
@@ -40,7 +38,7 @@ export default async function handler(req, res) {
       if (Object.hasOwn(body, 'privacy')) {
         const privacy = String(body.privacy || '');
         if (!PRIVACY_VALUES.has(privacy)) {
-          return json(res, 400, { error: 'Invalid privacy value' });
+          return json(res, 400, { error: 'Invalid privacy value' }, NO_STORE_HEADERS);
         }
 
         const rows = await sql()`
@@ -61,7 +59,7 @@ export default async function handler(req, res) {
           : (nextSettings.digest_email || null);
 
         if (optIn && !email) {
-          return json(res, 400, { error: 'Digest email required to opt in' });
+          return json(res, 400, { error: 'Digest email required to opt in' }, NO_STORE_HEADERS);
         }
 
         const settingsRows = await sql()`
@@ -159,14 +157,14 @@ export default async function handler(req, res) {
       return json(res, 200, {
         user: publicUser(nextUser, { includePrivacy: true }),
         settings: publicProfileSettings(nextSettings),
-      });
+      }, NO_STORE_HEADERS);
     }
 
     await sql()`delete from users where id = ${user.id}`;
     clearSessionCookie(req, res);
-    return json(res, 200, { ok: true });
+    return json(res, 200, { ok: true }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('/api/settings error:', err);
-    json(res, err.statusCode || 500, { error: err.message || 'Settings failed' });
+    json(res, err.statusCode || 500, { error: err.message || 'Settings failed' }, NO_STORE_HEADERS);
   }
 }

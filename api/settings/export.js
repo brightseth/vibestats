@@ -1,15 +1,15 @@
 import { requireUser } from '../_lib/auth.js';
 import { sql } from '../_lib/db.js';
 import { exportableUpload } from '../_lib/export-upload.js';
-import { json, methodNotAllowed } from '../_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed } from '../_lib/http.js';
 import { getProfileSettings, publicProfileSettings } from '../_lib/profile-settings.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
 
   try {
     const user = await requireUser(req);
-    if (!user) return json(res, 401, { error: 'Not authenticated' });
+    if (!user) return json(res, 401, { error: 'Not authenticated' }, NO_STORE_HEADERS);
 
     const uploads = await sql()`
       select id, archetype, scores, metrics, raw_meta, uploaded_at
@@ -30,11 +30,9 @@ export default async function handler(req, res) {
       },
       settings: publicProfileSettings(settings),
       uploads: uploads.map(exportableUpload),
-    }, {
-      'Cache-Control': 'no-store',
-    });
+    }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('GET /api/settings/export error:', err);
-    json(res, err.statusCode || 500, { error: err.message || 'Export failed' });
+    json(res, err.statusCode || 500, { error: err.message || 'Export failed' }, NO_STORE_HEADERS);
   }
 }

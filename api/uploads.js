@@ -1,15 +1,15 @@
 import { requireUser } from './_lib/auth.js';
 import { sql } from './_lib/db.js';
-import { json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
 import { sanitizeUploadPayload } from './_lib/uploads.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
+  if (req.method !== 'POST') return methodNotAllowed(res, ['POST'], NO_STORE_HEADERS);
 
   try {
     requireSameOrigin(req);
     const user = await requireUser(req);
-    if (!user) return json(res, 401, { error: 'Not authenticated' });
+    if (!user) return json(res, 401, { error: 'Not authenticated' }, NO_STORE_HEADERS);
 
     const recent = await sql()`
       select count(*)::int as count
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         and uploaded_at > now() - interval '1 day'
     `;
     if ((recent[0]?.count || 0) >= 5) {
-      return json(res, 429, { error: 'Upload limit reached: 5 profile saves per day' });
+      return json(res, 429, { error: 'Upload limit reached: 5 profile saves per day' }, NO_STORE_HEADERS);
     }
 
     const payload = sanitizeUploadPayload(await readJson(req));
@@ -39,9 +39,9 @@ export default async function handler(req, res) {
       ok: true,
       profile_url: `/u/${user.gh_handle}`,
       upload: rows[0],
-    });
+    }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('POST /api/uploads error:', err);
-    json(res, err.statusCode || 500, { error: err.message || 'Upload failed' });
+    json(res, err.statusCode || 500, { error: err.message || 'Upload failed' }, NO_STORE_HEADERS);
   }
 }

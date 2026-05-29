@@ -7,12 +7,14 @@ import {
   serializeCookie,
 } from '../../_lib/auth.js';
 import { identityReadiness, identityUnavailableMessage } from '../../_lib/identity-readiness.js';
-import { methodNotAllowed, safeReturnTo } from '../../_lib/http.js';
+import { NO_STORE_HEADERS, methodNotAllowed, safeReturnTo, setNoStore } from '../../_lib/http.js';
 
 export default function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') {
-    return methodNotAllowed(res, ['GET', 'POST']);
+    return methodNotAllowed(res, ['GET', 'POST'], NO_STORE_HEADERS);
   }
+
+  setNoStore(res);
 
   if (!identityReadiness().available) {
     return res.status(503).send(identityUnavailableMessage());
