@@ -598,9 +598,9 @@
       ].filter(Boolean).join(' / ');
     }
 
-    function profileInviteText(handle, latest, profileUrl, profile) {
+    function profileInviteText(handle, latest, profileUrl, compareUrl, profile) {
       const proof = profileProofLine(profile);
-      return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:${proof ? `\n${proof}` : ''}\n${profileUrl}`;
+      return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:${proof ? `\n${proof}` : ''}\n${compareUrl}\nProfile: ${profileUrl}`;
     }
 
     async function copyText(text) {
@@ -755,14 +755,15 @@
       const hostArchetype = latest.archetype;
       const profilePath = `/u/${encodeURIComponent(handle)}`;
       const profileUrl = `${location.origin}${profilePath}`;
-      const inviteText = profileInviteText(handle, latest, profileUrl, profile);
+      const uploadCompareUrl = `${location.origin}/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
+      const inviteText = profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile);
       const proof = profileProofLine(profile);
       const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''}`;
       const badgePath = `${profilePath}/badge.svg`;
       const embedPath = `${profilePath}/embed`;
-      const uploadCompareUrl = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
+      const uploadComparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
 
-      compareCta.href = uploadCompareUrl;
+      compareCta.href = uploadComparePath;
       compareCta.textContent = `Compare with @${handle}`;
       leaderboardCta.href = `/leaderboard/${encodeURIComponent(hostArchetype)}`;
       leaderboardCta.textContent = `${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'Archetype'} board`;

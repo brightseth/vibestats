@@ -443,7 +443,8 @@ async function assertProfileShareLoop() {
   const indexHtml = await readFile('index.html', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   assert(profileHtml.includes('compareTo=${encodeURIComponent(handle)}'), 'profile compare CTA should seed upload-to-compare');
-  assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl, profile)'), 'profile copy action should use asymmetric invite text');
+  assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile)'), 'profile copy action should use direct asymmetric compare invite text');
+  assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile invite copy should retain the profile as credential context');
   assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
@@ -455,6 +456,8 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('digest-email-inline'), 'post-save profile flow should offer weekly digest opt-in');
   assert(indexHtml.includes('weekly_digest_opt_in: true'), 'inline digest opt-in should use settings API');
   assert(indexHtml.includes('postSaveInviteText(profilePath, archetype, scores)'), 'post-save save state should copy asymmetric profile invite text');
+  assert(indexHtml.includes('https://vibestats.io/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}'), 'post-save invite copy should send recipients directly into upload-to-compare');
+  assert(indexHtml.includes('Profile: ${canonicalProfileUrl(profilePath)}'), 'post-save invite copy should retain the profile credential link');
   assert(indexHtml.includes("document.execCommand('copy')"), 'upload/post-save copy actions should fall back when Clipboard API is unavailable');
   assert(indexHtml.includes("copyShareLink(this, '${shareUrl}')"), 'archetype result copy button should use resilient copy helper');
   assert(indexHtml.includes('id="copy-saved-badge"'), 'post-save save state should expose portable badge copy');

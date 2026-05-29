@@ -1976,7 +1976,8 @@
       const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
       const handle = currentUser?.gh_handle || 'me';
       const label = signature?.label || arch.name;
-      return `See how you'd pair with @${handle}, a ${label}:\n${canonicalProfileUrl(profilePath)}`;
+      const compareUrl = `https://vibestats.io/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
+      return `See how you'd pair with @${handle}, a ${label}:\n${compareUrl}\nProfile: ${canonicalProfileUrl(profilePath)}`;
     }
 
     async function copyText(text) {
