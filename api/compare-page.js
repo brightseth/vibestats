@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { originForRequest } from './_lib/auth.js';
+import { sendPrivateMethodNotAllowed } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
@@ -174,7 +175,7 @@ async function resolveCompareSubject(req, value) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).send('Method not allowed');
+  if (req.method !== 'GET') return sendPrivateMethodNotAllowed(res);
 
   const origin = originForRequest(req);
   let meta = genericMeta(origin);

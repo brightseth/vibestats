@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { readSession, originForRequest } from './_lib/auth.js';
-import { profileShareCacheControl, sendPrivateNotFound } from './_lib/cache.js';
+import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
@@ -83,10 +83,10 @@ export function profileDescription({ signature = '', arch, metrics = {}, handle,
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).send('Method not allowed');
+  if (req.method !== 'GET') return sendPrivateMethodNotAllowed(res);
 
   const handle = getHandle(req);
-  if (!/^[a-zA-Z0-9-]{1,39}$/.test(handle)) return res.status(404).send('Not found');
+  if (!/^[a-zA-Z0-9-]{1,39}$/.test(handle)) return sendPrivateNotFound(res);
 
   try {
     const users = await sql()`

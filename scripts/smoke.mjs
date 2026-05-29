@@ -219,12 +219,13 @@ async function assertRoutes() {
   assert(comparePageApi.includes("user.privacy !== 'private'"), 'compare page metadata must not expose private profiles');
   assert(comparePageApi.includes('profileShareProof({ rarity: subject.rarity, leaderboard: subject.leaderboard })'), 'compare page metadata should include profile social proof');
   assert(comparePageApi.includes('Open the pairing, then claim yours'), 'compare page metadata should drive recipients to claim their profile');
-  assert(comparePageApi.includes("res.setHeader('Cache-Control', 'private, no-store')"), 'compare page metadata should not be publicly cached');
+  assert(comparePageApi.includes('sendPrivateMethodNotAllowed(res)'), 'compare page method guard should use private no-store profile cache policy');
   assert(ogApi.includes("mode === 'pair'"), 'OG API should support pair-specific share images');
   assert(ogApi.includes('CLAUDE CODE PAIRING'), 'pair OG image should frame shared comparisons as Claude Code pairings');
   assert(ogApi.includes('sendFallbackOg(res)'), 'OG API should return a static fallback image on generation failure');
   assert(!ogApi.includes('e.stack'), 'OG API must not return stack traces to share-card crawlers');
   assert(cacheHelper.includes("user?.privacy === 'public'"), 'profile cache helper should cache only explicit public profiles');
+  assert(cacheHelper.includes('sendPrivateMethodNotAllowed'), 'profile cache helper should cover method errors on dynamic share surfaces');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
   assert(publicProfileHelper.includes('if (isOwner) out.uploaded_at = upload.uploaded_at'), 'profile upload serializer should keep exact upload timestamps owner-only');
@@ -1301,7 +1302,7 @@ async function assertProfileMetadataHelpers() {
 }
 
 async function assertProfileCacheHelpers() {
-  const { profileShareCacheControl, sendPrivateNotFound } = await import('../api/_lib/cache.js');
+  const { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } = await import('../api/_lib/cache.js');
   assert(profileShareCacheControl({ privacy: 'public' }).includes('s-maxage=300'), 'public profiles should allow short shared cache');
   assert(profileShareCacheControl({ privacy: 'unlisted' }) === 'private, no-store', 'unlisted profile share surfaces should not be publicly cached');
   assert(profileShareCacheControl({ privacy: 'private' }) === 'private, no-store', 'private profile share surfaces should not be publicly cached');
@@ -1325,6 +1326,11 @@ async function assertProfileCacheHelpers() {
   sendPrivateNotFound(res);
   assert(res.statusCode === 404, 'private not found helper should return 404');
   assert(res.headers['Cache-Control'] === 'private, no-store', 'private not found helper should disable caching');
+  const methodRes = mockRes();
+  sendPrivateMethodNotAllowed(methodRes);
+  assert(methodRes.statusCode === 405, 'private method helper should return 405');
+  assert(methodRes.headers.Allow === 'GET', 'private method helper should advertise allowed methods');
+  assert(methodRes.headers['Cache-Control'] === 'private, no-store', 'private method helper should disable caching');
   console.log('ok profile share cache helper keeps unlisted/private surfaces uncacheable');
 }
 
@@ -1361,6 +1367,7 @@ async function assertCompareMetadataHelpers() {
 
   let statusCode = 0;
   let contentType = '';
+  let cache = '';
   let body = '';
   await handler({
     method: 'GET',
@@ -1369,6 +1376,7 @@ async function assertCompareMetadataHelpers() {
   }, {
     setHeader(name, value) {
       if (name.toLowerCase() === 'content-type') contentType = value;
+      if (name.toLowerCase() === 'cache-control') cache = value;
     },
     status(code) {
       statusCode = code;
@@ -1380,6 +1388,7 @@ async function assertCompareMetadataHelpers() {
   });
   assert(statusCode === 200, 'compare page API should render HTTP 200');
   assert(contentType.includes('text/html'), 'compare page API should return HTML');
+  assert(cache === 'private, no-store', 'compare page API should not publicly cache dynamic metadata');
   assert(body.includes('@brightseth + Shipper = Feature Factory') || body.includes('Builder + Shipper = Feature Factory'), 'compare page API should inject dynamic pairing title');
   assert(body.includes('Open the pairing, then claim yours'), 'compare page API should inject claim-oriented metadata');
   console.log('ok compare metadata helpers render dynamic pair previews');
@@ -1535,6 +1544,70 @@ async function assertEmbedFallback() {
   } finally {
     console.error = originalError;
   }
+}
+
+async function assertProfileShareSurfaceGuards() {
+  const endpoints = [
+    {
+      label: 'profile HTML method guard',
+      module: '../api/profile.js',
+      req: { method: 'POST', query: { handle: 'brightseth' }, headers: { host: 'localhost:3000' } },
+      status: 405,
+      allow: 'GET',
+    },
+    {
+      label: 'profile HTML invalid handle',
+      module: '../api/profile.js',
+      req: { method: 'GET', query: { handle: 'bad_handle' }, headers: { host: 'localhost:3000' } },
+      status: 404,
+    },
+    {
+      label: 'compare page method guard',
+      module: '../api/compare-page.js',
+      req: { method: 'POST', query: { a: 'builder', b: 'shipper' }, headers: { host: 'localhost:3000' } },
+      status: 405,
+      allow: 'GET',
+    },
+    {
+      label: 'profile badge method guard',
+      module: '../api/badge.js',
+      req: { method: 'POST', query: { handle: 'brightseth' }, headers: { host: 'localhost:3000' } },
+      status: 405,
+      allow: 'GET',
+    },
+    {
+      label: 'profile badge invalid handle',
+      module: '../api/badge.js',
+      req: { method: 'GET', query: { handle: 'bad_handle' }, headers: { host: 'localhost:3000' } },
+      status: 404,
+    },
+    {
+      label: 'profile embed method guard',
+      module: '../api/embed.js',
+      req: { method: 'POST', query: { handle: 'brightseth' }, headers: { host: 'localhost:3000' } },
+      status: 405,
+      allow: 'GET',
+    },
+    {
+      label: 'profile embed invalid handle',
+      module: '../api/embed.js',
+      req: { method: 'GET', query: { handle: 'bad_handle' }, headers: { host: 'localhost:3000' } },
+      status: 404,
+    },
+  ];
+
+  for (const endpoint of endpoints) {
+    const { default: handler } = await import(endpoint.module);
+    const res = mockRes();
+    await handler(endpoint.req, res);
+    assert(res.statusCode === endpoint.status, `${endpoint.label} should return HTTP ${endpoint.status}`);
+    assert(res.headers['Cache-Control'] === 'private, no-store', `${endpoint.label} should use private no-store caching`);
+    if (endpoint.allow) {
+      assert(res.headers.Allow === endpoint.allow, `${endpoint.label} should advertise allowed methods`);
+    }
+  }
+
+  console.log('ok profile share surface guards disable caching');
 }
 
 async function assertLeaderboardFallback() {
@@ -1829,6 +1902,7 @@ await assertProfileFallback();
 await assertProfileJsonFallback();
 await assertBadgeFallback();
 await assertEmbedFallback();
+await assertProfileShareSurfaceGuards();
 await assertLeaderboardFallback();
 await assertMatchFallback();
 await assertBrowseFallback();

@@ -11,3 +11,9 @@ export function sendPrivateNotFound(res, body = 'Not found') {
   res.setHeader('Cache-Control', PRIVATE_PROFILE_CACHE);
   return res.status(404).send(body);
 }
+
+export function sendPrivateMethodNotAllowed(res, allowed = ['GET'], body = 'Method not allowed') {
+  res.setHeader('Allow', allowed.join(', '));
+  res.setHeader('Cache-Control', PRIVATE_PROFILE_CACHE);
+  return res.status(405).send(body);
+}

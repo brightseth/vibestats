@@ -1,5 +1,5 @@
 import { readSession } from './_lib/auth.js';
-import { profileShareCacheControl, sendPrivateNotFound } from './_lib/cache.js';
+import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
@@ -67,11 +67,11 @@ function sendSvg(res, status, svg, cache = 'public, s-maxage=300, stale-while-re
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).send('Method not allowed');
+  if (req.method !== 'GET') return sendPrivateMethodNotAllowed(res);
 
   const handle = getHandle(req);
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(handle)) {
-    return res.status(404).send('Not found');
+    return sendPrivateNotFound(res);
   }
 
   try {
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       limit 1
     `;
     const user = users[0];
-    if (!user) return res.status(404).send('Not found');
+    if (!user) return sendPrivateNotFound(res);
 
     const session = readSession(req);
     const isOwner = session?.sub === user.id;
