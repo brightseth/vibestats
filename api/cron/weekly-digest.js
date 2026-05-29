@@ -51,14 +51,33 @@ export function resendDigestPayload({ to, digest }) {
   return payload;
 }
 
-export function digestCronResult({ user, digest, dryRun }) {
+function contains(value, needle) {
+  return Boolean(needle && String(value || '').replace(/&amp;/g, '&').includes(needle));
+}
+
+export function digestDryRunProof(digest = {}) {
+  const combined = `${digest.text || ''}\n${digest.html || ''}`;
   return {
+    profile_linked: contains(digest.text, digest.profile_url) && contains(digest.html, digest.profile_url),
+    share_invite_linked: contains(digest.text, digest.share_url) && contains(digest.html, digest.x_share_url),
+    leaderboard_linked: contains(digest.text, digest.leaderboard_url) && contains(digest.html, digest.leaderboard_url),
+    match_linked: contains(digest.text, digest.match_url) && contains(digest.html, digest.match_url),
+    settings_linked: contains(digest.text, digest.settings_url) && contains(digest.html, digest.settings_url),
+    unsubscribe_included: Boolean(digest.unsubscribe_url && contains(digest.text, 'Unsubscribe:') && contains(digest.html, 'unsubscribe')),
+    derived_only_notice: contains(combined, 'Raw Claude Code insights JSON never leaves your browser') && contains(combined, 'saved derived metrics'),
+  };
+}
+
+export function digestCronResult({ user, digest, dryRun }) {
+  const result = {
     handle: user.gh_handle,
     digest_email_configured: Boolean(user.digest_email),
     subject: digest.subject,
     sent: !dryRun,
     dry_run: dryRun,
   };
+  if (dryRun) result.proof = digestDryRunProof(digest);
+  return result;
 }
 
 export function weeklyDigestErrorMessage(err) {

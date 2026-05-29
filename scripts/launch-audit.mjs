@@ -294,7 +294,21 @@ async function auditLaunch(options) {
         recorder.check(result.response.status === 200, 'weekly digest dry run status', `${result.response.status} ${result.url}`);
         recorder.check(type.includes('application/json'), 'weekly digest dry run content type', type || '(none)');
         recorder.check(cache.includes('no-store'), 'weekly digest dry run disables public caching', cache || '(none)');
-        recorder.check(includesAll(result.body, ['"ok":true', '"dry_run":true', '"resend_ready":true']), 'weekly digest dry run returns readiness payload');
+        const body = JSON.parse(result.body);
+        const proofFields = [
+          'profile_linked',
+          'share_invite_linked',
+          'leaderboard_linked',
+          'match_linked',
+          'settings_linked',
+          'unsubscribe_included',
+          'derived_only_notice',
+        ];
+        const proof = (body.results || []).find((item) => item?.proof);
+        recorder.check(body.ok === true && body.dry_run === true && body.resend_ready === true, 'weekly digest dry run returns readiness payload');
+        recorder.check(Number(body.considered || 0) > 0, 'weekly digest dry run has at least one candidate', `considered=${body.considered || 0}`);
+        recorder.check(Boolean(proof), 'weekly digest dry run includes content proof');
+        recorder.check(Boolean(proof) && proofFields.every((field) => proof.proof?.[field] === true), 'weekly digest dry run proves return-loop content');
         recorder.check(!hasSecretName(result.body), 'weekly digest dry run does not expose secret env names');
         recorder.check(!hasRawLeak(result.body), 'weekly digest dry run has no raw-insights field names');
       } catch (err) {

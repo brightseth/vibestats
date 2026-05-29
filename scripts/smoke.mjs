@@ -315,6 +315,7 @@ async function assertRoutes() {
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(weeklyDigestApi.includes('createDigestUnsubscribeToken'), 'weekly digest should include one-click unsubscribe tokens');
   assert(weeklyDigestApi.includes("'List-Unsubscribe'"), 'weekly digest sender should advertise unsubscribe headers');
+  assert(weeklyDigestApi.includes('digestDryRunProof'), 'weekly digest dry run should expose non-secret content proof');
   assert(weeklyDigestApi.includes('weeklyDigestErrorMessage'), 'weekly digest cron should centralize public error serialization');
   assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
@@ -369,7 +370,8 @@ async function assertRoutes() {
   assert(launchAudit.includes('checkRawLeaks: false'), 'launch audit should not fail the upload page for local raw-parser field names');
   assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
   assert(launchAudit.includes('cronSecret: process.env.CRON_SECRET') && launchAudit.includes('weekly digest dry run has cron secret'), 'launch audit should run a protected digest dry run when strict digest readiness is expected');
-  assert(launchAudit.includes('weekly digest dry run returns readiness payload') && launchAudit.includes('"resend_ready":true'), 'launch audit should require digest dry-run readiness payload');
+  assert(launchAudit.includes('weekly digest dry run returns readiness payload') && launchAudit.includes('body.resend_ready === true'), 'launch audit should require digest dry-run readiness payload');
+  assert(launchAudit.includes('weekly digest dry run has at least one candidate') && launchAudit.includes('weekly digest dry run proves return-loop content'), 'launch audit should require digest dry-run content proof');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');
   assert((await readFile('db/migrations/0006_sync_token_revocation.sql', 'utf8')).includes('sync_token_invalidated_at'), 'migrations should support CLI sync token revocation');
   assert((await readFile('db/migrations/0007_https_contact_urls.sql', 'utf8')).includes("contact_url like 'https://%'"), 'migrations should enforce HTTPS public contact URLs for new rows');
@@ -390,6 +392,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
+  assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
   assert(launchDoc.includes('Identity is not production-ready until the database, GitHub OAuth, and session secret variables are added.'), 'launch checklist should record current production env blocker');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   assert((await readFile('README.md', 'utf8')).includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
@@ -1401,7 +1404,7 @@ async function assertEvolutionHelpers() {
 
 async function assertDigestHelpers() {
   const { buildWeeklyDigest, uploadStreak } = await import('../api/_lib/digest.js');
-  const { digestCronResult, resendDigestPayload } = await import('../api/cron/weekly-digest.js');
+  const { digestCronResult, digestDryRunProof, resendDigestPayload } = await import('../api/cron/weekly-digest.js');
   const uploads = [
     {
       archetype: 'builder',
@@ -1441,6 +1444,8 @@ async function assertDigestHelpers() {
   assert(digest.text.includes('Share invite: https://vibestats.io/?compareTo=brightseth&compareArchetype=builder'), 'digest text should include compare-first share invite');
   assert(digest.text.includes('Find matches: https://vibestats.io/match?goal=pair-coding&archetype=builder'), 'digest text should include goal-aware match link');
   assert(digest.text.includes('Manage digest: https://vibestats.io/settings'), 'digest text should include settings management link');
+  assert(digest.text.includes('Raw Claude Code insights JSON never leaves your browser'), 'digest text should include the privacy promise');
+  assert(digest.text.includes('saved derived metrics'), 'digest text should say it uses derived metrics');
   assert(digest.text.includes('Unsubscribe: https://vibestats.io/api/digest/unsubscribe?token=unsubscribe-token'), 'digest text should include one-click unsubscribe link');
   assert(digest.html.includes('/api/og?'), 'digest HTML should include the profile card image');
   assert(digest.html.includes('Share invite') && digest.html.includes('twitter.com/intent/tweet'), 'digest HTML should include a social share CTA');
@@ -1472,9 +1477,12 @@ async function assertDigestHelpers() {
     dryRun: true,
   });
   assert(dryRunResult.digest_email_configured === true, 'digest cron result should report configured recipient without echoing it');
+  assert(Object.values(dryRunResult.proof).every(Boolean), 'digest dry-run result should prove return-loop content without exposing URLs');
   assert(!Object.hasOwn(dryRunResult, 'to'), 'digest cron result must not expose recipient email field');
   assert(!JSON.stringify(dryRunResult).includes('seth@example.com'), 'digest cron result must not leak recipient email address');
+  assert(!JSON.stringify(dryRunResult).includes('unsubscribe-token'), 'digest cron result must not leak unsubscribe token');
   assert(dryRunResult.sent === false && dryRunResult.dry_run === true, 'digest cron result should preserve delivery status');
+  assert(Object.values(digestDryRunProof(digest)).every(Boolean), 'digest dry-run proof helper should verify all required content markers');
   assert(!digest.html.includes('rawJson') && !digest.text.includes('rawJson'), 'digest must not leak raw metadata');
 
   const privateDigest = buildWeeklyDigest({

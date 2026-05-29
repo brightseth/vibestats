@@ -193,6 +193,7 @@ export function buildWeeklyDigest({ user, uploads, rarity = null, leaderboard = 
     `Leaderboard: ${board}`,
     `Find matches: ${match}`,
     `Manage digest: ${settings}`,
+    'Privacy: Raw Claude Code insights JSON never leaves your browser; this digest uses only saved derived metrics.',
     unsubscribe ? `Unsubscribe: ${unsubscribe}` : null,
   ].filter(Boolean).join('\n');
 
