@@ -465,7 +465,10 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('https://vibestats.io/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}'), 'post-save invite copy should send recipients directly into upload-to-compare');
   assert(indexHtml.includes('Profile: ${canonicalProfileUrl(profilePath)}'), 'post-save invite copy should retain the profile credential link');
   assert(indexHtml.includes("document.execCommand('copy')"), 'upload/post-save copy actions should fall back when Clipboard API is unavailable');
-  assert(indexHtml.includes("copyShareLink(this, '${shareUrl}')"), 'archetype result copy button should use resilient copy helper');
+  assert(indexHtml.includes('url=${encodeURIComponent(shareClickUrl)}'), 'archetype result X share should click through directly to comparison');
+  assert(indexHtml.includes("copyShareLink(this, '${shareClickUrl}')"), 'archetype result copy button should copy the comparison entry point');
+  assert(indexHtml.includes('Profile: ${profileShareUrl}'), 'saved result X share should retain the profile as credential context');
+  assert(indexHtml.includes('Card: ${cardShareUrl}'), 'ephemeral result X share should retain the share card as credential context');
   assert(indexHtml.includes('id="copy-saved-badge"'), 'post-save save state should expose portable badge copy');
   assert(indexHtml.includes('](${compareUrl})'), 'post-save badge markdown should click through to upload-to-compare');
   assert(indexHtml.includes('id="copy-saved-embed"'), 'post-save save state should expose portable embed copy');
@@ -497,6 +500,8 @@ async function assertCompareShareLoop() {
   assert(!compareHtml.includes("href: '/', label: \"What's YOUR archetype?\""), 'anonymous compare result should not fall back to generic homepage upload');
   assert(compareHtml.includes("See how you'd pair with @${profileSubject.handle}:"), 'profile-backed compare shares should use asymmetric invite copy');
   assert(compareHtml.includes('comparisonInviteText(aSubject, bSubject, compat, shareUrl)'), 'compare result should build portable invite copy');
+  assert(compareHtml.includes('const claimUrl = absoluteUrl(claimAction.href)'), 'compare result X share should derive a direct claim URL');
+  assert(compareHtml.includes('url=${encodeURIComponent(claimUrl)}'), 'compare result X share should click through to the comparison claim target');
   assert(compareHtml.includes('copyComparisonInvite(this)'), 'compare result should copy invite text, not just a bare URL');
   assert(compareHtml.includes("document.execCommand('copy')"), 'compare invite copy should fall back when Clipboard API is unavailable');
   assert(compareHtml.includes('Copy invite'), 'compare result copy action should be framed as an invite');

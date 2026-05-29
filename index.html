@@ -1572,7 +1572,9 @@
       const saveToggle = document.getElementById('save-to-profile');
       const shouldShareProfile = !options.demo && currentUser && saveToggle && saveToggle.checked;
       const profileShareUrl = shouldShareProfile ? `https://vibestats.io/u/${encodeURIComponent(currentUser.gh_handle)}` : null;
-      const shareUrl = profileShareUrl || cardShareUrl;
+      const shareClickUrl = shouldShareProfile
+        ? `https://vibestats.io/?compareTo=${encodeURIComponent(currentUser.gh_handle)}&compareArchetype=${encodeURIComponent(archetype)}`
+        : `https://vibestats.io/?compareArchetype=${encodeURIComponent(archetype)}`;
       const compareSeed = shouldShareProfile ? currentUser.gh_handle : archetype;
       const compareHref = comparisonIntent()
         ? comparisonDestination(archetype, null)
@@ -1581,14 +1583,14 @@
       // Tweet variants — pick one randomly
       const tweetVariants = profileShareUrl
         ? [
-            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\nSee how you'd pair with me:\n${profileShareUrl}\n\nvia @slashvibe #vibestats #claudecode`,
-            `My Claude Code signature: ${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\n${profileShareUrl}\n\n#vibestats`,
-            `This is how I build with Claude Code: ${signature ? signature.label : a.name}\n\nHow do you compare?\n${profileShareUrl}\n\nvia @slashvibe #vibestats`,
+            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\nSee how you'd pair with me:\nProfile: ${profileShareUrl}\n\nvia @slashvibe #vibestats #claudecode`,
+            `My Claude Code signature: ${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\nProfile: ${profileShareUrl}\n\n#vibestats`,
+            `This is how I build with Claude Code: ${signature ? signature.label : a.name}\n\nHow do you compare?\nProfile: ${profileShareUrl}\n\nvia @slashvibe #vibestats`,
           ]
         : [
-            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nSee how you'd pair with this archetype:\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
-            `${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nCompare with this archetype:\n${cardShareUrl}\n\n#vibestats #claudecode`,
-            `My vibecoding signature: ${signature ? signature.label : a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nSee how you'd pair:\n${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nSee how you'd pair with this archetype:\nCard: ${cardShareUrl}\n\nvia @slashvibe #vibestats`,
+            `${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nCompare with this archetype:\nCard: ${cardShareUrl}\n\n#vibestats #claudecode`,
+            `My vibecoding signature: ${signature ? signature.label : a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nSee how you'd pair:\nCard: ${cardShareUrl}\n\nvia @slashvibe #vibestats`,
           ];
       const tweetText = tweetVariants[Math.floor(Math.random() * tweetVariants.length)];
 
@@ -1628,7 +1630,7 @@
             ${communityTotal ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em">${communityTotal.toLocaleString()} vibecoders analyzed</div>` : ''}
           </div>
           <div class="share-row anim d3">
-            <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}" target="_blank" rel="noopener">
+            <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareClickUrl)}" target="_blank" rel="noopener">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               Share
             </a>
@@ -1636,7 +1638,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
               Save card
             </button>
-            <button class="share-btn share-btn-copy" onclick="copyShareLink(this, '${shareUrl}')">
+            <button class="share-btn share-btn-copy" onclick="copyShareLink(this, '${shareClickUrl}')">
               Copy link
             </button>
             <a class="share-btn share-btn-copy" href="${compareHref}" style="text-decoration:none">
