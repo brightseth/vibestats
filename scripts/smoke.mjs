@@ -197,6 +197,14 @@ async function assertShareCardCta() {
   console.log('ok legacy share card routes visitors into comparison');
 }
 
+async function assertWrappedShareLoop() {
+  const wrappedHtml = await readFile('wrapped.html', 'utf8');
+  assert(wrappedHtml.includes('/compare?me=orchestrator'), 'wrapped CTA should route to archetype comparison');
+  assert(wrappedHtml.includes("See how you'd pair with an Orchestrator"), 'wrapped share page should use comparison copy');
+  assert(!wrappedHtml.includes("What's YOUR vibecoding personality?<br>"), 'wrapped page should not end on the old generic CTA');
+  console.log('ok wrapped share page routes visitors into comparison');
+}
+
 async function assertMatchmakingHelpers() {
   const { cleanSeekerArchetype, goalFit } = await import('../api/_lib/matchmaking.js');
   assert(cleanSeekerArchetype('builder') === 'builder', 'match seeker archetype should normalize valid archetypes');
@@ -785,6 +793,7 @@ await assertRoutes();
 await assertProfileShareLoop();
 await assertCompareShareLoop();
 await assertShareCardCta();
+await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
 await assertUploadSanitizer();
 await assertCliDerivedPayload();
