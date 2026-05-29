@@ -76,6 +76,7 @@ async function assertRoutes() {
   const profileHtml = await readFile('u.html', 'utf8');
   const settingsHtml = await readFile('settings.html', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
+  const statsApi = await readFile('api/stats.js', 'utf8');
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const rewrites = config.rewrites || [];
   assert(
@@ -125,6 +126,11 @@ async function assertRoutes() {
   assert(badgeApi.includes("'private, no-store'"), 'private owner profile badge must not be publicly cacheable');
   assert(syncApi.includes('requireSyncUser'), 'sync API should require signed CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
+  assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
+  assert(
+    statsApi.indexOf('readJson(req, { maxBytes: 16 * 1024 })') < statsApi.indexOf('const ip ='),
+    'community stats API should parse and validate JSON before mutating rate-limit state',
+  );
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');

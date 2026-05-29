@@ -2,7 +2,7 @@
 // Set env vars: KV_REST_API_URL + KV_REST_API_TOKEN (Vercel KV)
 // or: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
 
-import { requireSameOrigin } from './_lib/http.js';
+import { readJson, requireSameOrigin } from './_lib/http.js';
 
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -55,6 +55,12 @@ export default async function handler(req, res) {
     if (!hasRedis) return res.status(200).json({ ok: true, stored: false });
 
     try {
+      const body = await readJson(req, { maxBytes: 16 * 1024 });
+      const { archetype, commitsPerDay, sessions, languages, msgsPerSession, days } = body || {};
+      if (!archetype || !ARCHETYPE_KEYS.includes(archetype)) {
+        return res.status(400).json({ error: 'valid archetype required' });
+      }
+
       // Rate limit: 1 submission per IP per hour
       const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
       const rlKey = `vs:rl:${ip}`;
@@ -63,11 +69,6 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: 'Rate limited — 1 submission per hour' });
       }
       await pipeline([['SET', rlKey, '1', 'EX', '3600']]);
-
-      const { archetype, commitsPerDay, sessions, languages, msgsPerSession, days } = req.body || {};
-      if (!archetype || !ARCHETYPE_KEYS.includes(archetype)) {
-        return res.status(400).json({ error: 'valid archetype required' });
-      }
 
       // Clamp numeric values to prevent extreme inputs
       const clamp = (v, max) => Math.min(Math.max(Number(v) || 0, 0), max);
