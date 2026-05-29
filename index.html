@@ -2102,6 +2102,12 @@
       return `<br><a href="${compareUrl}">${label}</a>`;
     }
 
+    function comparisonTargetLabel(intent) {
+      if (!intent) return 'your comparison';
+      if (intent.kind === 'profile') return `@${intent.handle}`;
+      return `The ${archetypeDisplayName(intent.archetype)}`;
+    }
+
     function clearPendingProfileSave() {
       try {
         localStorage.removeItem(PENDING_UPLOAD_KEY);
@@ -2220,7 +2226,7 @@
         const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights));
         const compareUrl = comparisonDestination(archetype);
         if (compareUrl) {
-          updateProfileSaveStatus(`Saved to your profile. Opening your pairing with @${comparisonIntent().handle}...<br><a href="${compareUrl}">Open now</a>`);
+          updateProfileSaveStatus(`Saved to your profile. Opening your pairing with ${safeHtml(comparisonTargetLabel(comparisonIntent()))}...<br><a href="${compareUrl}">Open now</a>`);
           setTimeout(() => { location.href = compareUrl; }, 650);
           return;
         }
