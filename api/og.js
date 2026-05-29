@@ -18,6 +18,7 @@ const COMPAT_SOURCE = readFileSync(new URL('../lib/compat.js', import.meta.url),
 const compatContext = { window: {} };
 runInNewContext(COMPAT_SOURCE, compatContext);
 const VibeCompat = compatContext.window.VibeCompat;
+const FALLBACK_OG = readFileSync(new URL('../og-card.png', import.meta.url));
 
 let fontCache = null;
 
@@ -41,6 +42,12 @@ function labelParam(value, fallback) {
 
 function shortName(key) {
   return (ARCHETYPES[key]?.name || 'VIBECODER').replace(/^THE /, '');
+}
+
+export function sendFallbackOg(res) {
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.status(200).send(FALLBACK_OG);
 }
 
 export default async function handler(req, res) {
@@ -79,7 +86,8 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
     res.status(200).send(Buffer.from(png));
   } catch (e) {
-    res.status(500).send(`OG Error: ${e.message}\n${e.stack}`);
+    console.error('OG image generation failed:', e);
+    sendFallbackOg(res);
   }
 }
 

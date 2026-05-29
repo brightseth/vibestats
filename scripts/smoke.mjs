@@ -197,6 +197,8 @@ async function assertRoutes() {
   assert(comparePageApi.includes("res.setHeader('Cache-Control', 'private, no-store')"), 'compare page metadata should not be publicly cached');
   assert(ogApi.includes("mode === 'pair'"), 'OG API should support pair-specific share images');
   assert(ogApi.includes('CLAUDE CODE PAIRING'), 'pair OG image should frame shared comparisons as Claude Code pairings');
+  assert(ogApi.includes('sendFallbackOg(res)'), 'OG API should return a static fallback image on generation failure');
+  assert(!ogApi.includes('e.stack'), 'OG API must not return stack traces to share-card crawlers');
   assert(cacheHelper.includes("user?.privacy === 'public'"), 'profile cache helper should cache only explicit public profiles');
   assert(embedApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile embed must use visitor-safe metric visibility');
   assert(embedApi.includes('publicUpload(latest, visibility, { isOwner: false })'), 'profile embed must not serialize owner-only upload fields');
@@ -491,6 +493,39 @@ async function assertShareCardCta() {
   assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
   assert(body.includes('archetype=deepdiver'), 'share card /vibe CTA should use the sanitized archetype key');
   console.log('ok legacy share card routes visitors into comparison');
+}
+
+async function assertOgFallback() {
+  const { sendFallbackOg } = await import('../api/og.js');
+  let statusCode = 0;
+  let contentType = '';
+  let cacheControl = '';
+  let body = null;
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    sendFallbackOg({
+      setHeader(name, value) {
+        if (name.toLowerCase() === 'content-type') contentType = value;
+        if (name.toLowerCase() === 'cache-control') cacheControl = value;
+      },
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      send(value) {
+        body = value;
+      },
+    });
+  } finally {
+    console.error = originalError;
+  }
+
+  assert(statusCode === 200, 'OG fallback should preserve successful image responses');
+  assert(contentType === 'image/png', 'OG fallback should return PNG content');
+  assert(cacheControl.includes('s-maxage=60'), 'OG fallback should use short cache');
+  assert(Buffer.isBuffer(body) && body.length > 1000, 'OG fallback should send the static share image');
+  console.log('ok OG image failures fall back without stack traces');
 }
 
 async function assertWrappedShareLoop() {
@@ -1455,6 +1490,7 @@ await assertOAuthReturnHandling();
 await assertProfileShareLoop();
 await assertCompareShareLoop();
 await assertShareCardCta();
+await assertOgFallback();
 await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
 await assertUploadSanitizer();
