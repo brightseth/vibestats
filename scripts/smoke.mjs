@@ -124,6 +124,7 @@ async function assertRoutes() {
   const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
   const weeklyDigestApi = await readFile('api/cron/weekly-digest.js', 'utf8');
   const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
+  const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
   const identityStatusApi = await readFile('api/identity-status.js', 'utf8');
@@ -207,8 +208,11 @@ async function assertRoutes() {
   assert(badgeApi.includes('profileShareCacheControl(user)'), 'profile badge should use shared profile cache policy');
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
   assert(badgeApi.includes('sendPrivateNotFound(res)'), 'profile badge private 404 should not be cacheable');
-  assert(syncApi.includes('requireSyncUser'), 'sync API should require signed CLI sync tokens');
+  assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
+  assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
+  assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
+  assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
   assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
   assert(
     statsApi.indexOf('readJson(req, { maxBytes: 16 * 1024 })') < statsApi.indexOf('const ip ='),
@@ -229,7 +233,10 @@ async function assertRoutes() {
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
   assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
   assert(settingsHtml.includes('npx vibestats sync'), 'settings UI should expose CLI sync command generation');
+  assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
+  assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
+  assert(settingsApi.includes('sync_token_invalidated_at'), 'authenticated settings API should preserve sync token revocation metadata');
   assert(settingsApi.includes('includeActivity: true'), 'authenticated settings API should retain owner activity timestamps');
   assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
@@ -244,6 +251,7 @@ async function assertRoutes() {
   assert(identityDoctor.includes('CRON_SECRET') && identityDoctor.includes('RESEND_API_KEY') && identityDoctor.includes('DIGEST_FROM_EMAIL'), 'identity doctor should report weekly digest env readiness');
   assert(!identityDoctor.includes("{ label: 'app origin', any: ['VIBESTATS_URL'] }"), 'identity doctor should not hard-require VIBESTATS_URL when runtime can infer host origin');
   assert(envExample.includes('POSTGRES_URL=') && envExample.includes('AUTH_SECRET='), '.env.example should document runtime env aliases');
+  assert((await readFile('db/migrations/0006_sync_token_revocation.sql', 'utf8')).includes('sync_token_invalidated_at'), 'migrations should support CLI sync token revocation');
   assert(launchDoc.includes('vercel env ls') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
   assert(launchDoc.includes('"commandForIgnoringBuildStep": null'), 'launch checklist should require Vercel ignored-build setting to be disabled');
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');
@@ -645,7 +653,7 @@ async function assertSessionRoundTrip() {
 }
 
 async function assertSyncTokenRoundTrip() {
-  const { SESSION_COOKIE, createSyncToken, readSession, verifySyncToken } = await import('../api/_lib/auth.js');
+  const { SESSION_COOKIE, createSyncToken, readSession, syncTokenIsRevoked, verifySyncToken } = await import('../api/_lib/auth.js');
   const token = createSyncToken({
     id: '11111111-1111-1111-1111-111111111111',
     gh_handle: 'brightseth',
@@ -654,6 +662,9 @@ async function assertSyncTokenRoundTrip() {
   assert(session?.sub === '11111111-1111-1111-1111-111111111111', 'sync token sub should round-trip');
   assert(session?.scope === 'sync', 'sync token should carry sync scope');
   assert(session?.typ === 'vibestats_sync', 'sync token should carry sync token type');
+  assert(Number.isFinite(session?.iat_ms), 'sync token should carry millisecond issue time for revocation');
+  assert(syncTokenIsRevoked(session, new Date(Number(session.iat_ms) - 1)) === false, 'sync token should survive older revocation cutoffs');
+  assert(syncTokenIsRevoked(session, new Date(Number(session.iat_ms))) === true, 'sync token should be rejected at or before revocation cutoff');
   assert(readSession({ headers: { cookie: `${SESSION_COOKIE}=${encodeURIComponent(token)}` } }) === null, 'sync token must not authenticate as browser session');
   console.log('ok signed CLI sync token round-trip');
 }
@@ -747,6 +758,7 @@ async function assertProfileSettingsHelpers() {
   const ownerSettings = ownerProfileSettings({
     weekly_digest_opt_in: true,
     digest_email: 'seth@example.com',
+    sync_token_invalidated_at: '2026-05-28T10:00:00.000Z',
     looking_for: 'pair-coding',
     looking_for_expires_at: new Date(Date.now() - 10000).toISOString(),
     contact_url: 'https://x.com/brightseth',
@@ -762,6 +774,7 @@ async function assertProfileSettingsHelpers() {
   });
   assert(ownerSettings.weekly_digest_opt_in === true, 'owner settings should serialize digest opt-in');
   assert(ownerSettings.digest_email === 'seth@example.com', 'owner settings should serialize digest email');
+  assert(ownerSettings.sync_token_invalidated_at === '2026-05-28T10:00:00.000Z', 'owner settings should serialize sync token revocation time');
   assert(ownerSettings.contact_url === 'https://x.com/brightseth', 'owner settings should preserve configured contact URL');
   assert(!Object.hasOwn(publicSettings, 'digest_email'), 'public settings must not serialize digest email');
   assert(!Object.hasOwn(publicSettings, 'weekly_digest_opt_in'), 'public settings must not serialize digest opt-in');

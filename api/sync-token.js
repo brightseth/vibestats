@@ -1,4 +1,5 @@
 import { createSyncToken, originForRequest, requireUser, syncTokenExpiresAt } from './_lib/auth.js';
+import { sql } from './_lib/db.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, requireSameOrigin } from './_lib/http.js';
 
 function shellQuote(value) {
@@ -6,12 +7,28 @@ function shellQuote(value) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return methodNotAllowed(res, ['POST'], NO_STORE_HEADERS);
+  if (!['POST', 'DELETE'].includes(req.method)) return methodNotAllowed(res, ['POST', 'DELETE'], NO_STORE_HEADERS);
 
   try {
     requireSameOrigin(req);
     const user = await requireUser(req);
     if (!user) return json(res, 401, { error: 'Not authenticated' }, NO_STORE_HEADERS);
+
+    if (req.method === 'DELETE') {
+      const revokedAt = new Date();
+      const rows = await sql()`
+        insert into profile_settings (user_id, sync_token_invalidated_at, updated_at)
+        values (${user.id}, ${revokedAt}, now())
+        on conflict (user_id) do update
+          set sync_token_invalidated_at = excluded.sync_token_invalidated_at,
+              updated_at = now()
+        returning sync_token_invalidated_at
+      `;
+      return json(res, 200, {
+        ok: true,
+        sync_token_invalidated_at: rows[0]?.sync_token_invalidated_at || null,
+      }, NO_STORE_HEADERS);
+    }
 
     const token = createSyncToken(user);
     const origin = originForRequest(req);

@@ -58,7 +58,8 @@ export function createSessionToken(user) {
 }
 
 export function createSyncToken(user) {
-  const now = Math.floor(Date.now() / 1000);
+  const nowMs = Date.now();
+  const now = Math.floor(nowMs / 1000);
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(JSON.stringify({
     sub: user.id,
@@ -66,6 +67,7 @@ export function createSyncToken(user) {
     scope: 'sync',
     typ: 'vibestats_sync',
     iat: now,
+    iat_ms: nowMs,
     exp: now + SYNC_TOKEN_MAX_AGE,
   }));
   const data = `${header}.${payload}`;
@@ -117,6 +119,20 @@ export function verifySyncToken(token) {
   const payload = verifySessionToken(token);
   if (!payload || payload.typ !== 'vibestats_sync' || payload.scope !== 'sync') return null;
   return payload;
+}
+
+export function readSyncSession(req) {
+  const payload = verifySyncToken(readBearerToken(req));
+  return payload?.sub ? payload : null;
+}
+
+export function syncTokenIsRevoked(payload, invalidatedAt) {
+  if (!payload || !invalidatedAt) return false;
+  const invalidatedMs = new Date(invalidatedAt).getTime();
+  if (!Number.isFinite(invalidatedMs)) return false;
+  const issuedMs = Number(payload.iat_ms || 0) || (Number(payload.iat || 0) * 1000);
+  if (!Number.isFinite(issuedMs) || issuedMs <= 0) return true;
+  return issuedMs <= invalidatedMs;
 }
 
 export function verifyDigestUnsubscribeToken(token) {
@@ -201,7 +217,7 @@ export async function requireUser(req) {
 }
 
 export async function requireSyncUser(req) {
-  const session = verifySyncToken(readBearerToken(req));
+  const session = readSyncSession(req);
   if (!session?.sub) return null;
   return getUserById(session.sub);
 }

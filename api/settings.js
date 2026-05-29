@@ -83,7 +83,8 @@ export default async function handler(req, res) {
                 email_consent_at = excluded.email_consent_at,
                 updated_at = now()
           returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at,
-            show_raw_counts, show_languages, looking_for, looking_for_expires_at, contact_url, updated_at
+            sync_token_invalidated_at, show_raw_counts, show_languages, looking_for, looking_for_expires_at,
+            contact_url, updated_at
         `;
         nextSettings = settingsRows[0];
       }
@@ -114,7 +115,8 @@ export default async function handler(req, res) {
                 show_languages = excluded.show_languages,
                 updated_at = now()
           returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at,
-            show_raw_counts, show_languages, looking_for, looking_for_expires_at, contact_url, updated_at
+            sync_token_invalidated_at, show_raw_counts, show_languages, looking_for, looking_for_expires_at,
+            contact_url, updated_at
         `;
         nextSettings = settingsRows[0];
       }
@@ -149,7 +151,8 @@ export default async function handler(req, res) {
                 contact_url = excluded.contact_url,
                 updated_at = now()
           returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at,
-            show_raw_counts, show_languages, looking_for, looking_for_expires_at, contact_url, updated_at
+            sync_token_invalidated_at, show_raw_counts, show_languages, looking_for, looking_for_expires_at,
+            contact_url, updated_at
         `;
         nextSettings = settingsRows[0];
       }

@@ -1,5 +1,5 @@
-import { requireSyncUser } from './_lib/auth.js';
-import { sql } from './_lib/db.js';
+import { readSyncSession, syncTokenIsRevoked } from './_lib/auth.js';
+import { getUserById, sql } from './_lib/db.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, readJson } from './_lib/http.js';
 import { sanitizeUploadPayload } from './_lib/uploads.js';
 
@@ -7,8 +7,19 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST'], NO_STORE_HEADERS);
 
   try {
-    const user = await requireSyncUser(req);
+    const session = readSyncSession(req);
+    const user = session?.sub ? await getUserById(session.sub) : null;
     if (!user) return json(res, 401, { error: 'Invalid sync token' }, NO_STORE_HEADERS);
+
+    const settingsRows = await sql()`
+      select sync_token_invalidated_at
+      from profile_settings
+      where user_id = ${user.id}
+      limit 1
+    `;
+    if (syncTokenIsRevoked(session, settingsRows[0]?.sync_token_invalidated_at)) {
+      return json(res, 401, { error: 'Sync token revoked. Generate a new token from Settings.' }, NO_STORE_HEADERS);
+    }
 
     const recent = await sql()`
       select count(*)::int as count

@@ -135,7 +135,7 @@
     }
     .cli-controls {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 10px;
       width: min(560px, 100%);
     }
@@ -327,11 +327,12 @@
         <div class="row">
           <div>
             <div class="label">CLI sync</div>
-            <div class="hint">Generate a signed token for `npx vibestats sync`. The CLI reads insights locally and sends only derived metrics.</div>
+            <div class="hint">Generate a signed token for `npx vibestats sync`. Revoke old tokens anytime; the CLI reads insights locally and sends only derived metrics.</div>
           </div>
           <div class="cli-controls">
             <textarea id="sync-command" readonly placeholder="Generate a sync command"></textarea>
             <button class="btn" id="generate-sync-token">Generate</button>
+            <button class="btn danger" id="revoke-sync-tokens">Revoke</button>
           </div>
         </div>
       </div>
@@ -387,6 +388,22 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Request failed');
       return data;
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
     }
 
     async function fetchIdentityStatus() {
@@ -523,7 +540,7 @@
           const body = await api('/api/sync-token', { method: 'POST' });
           command.value = body.command || '';
           try {
-            await navigator.clipboard.writeText(command.value);
+            await copyText(command.value);
             showMessage(`CLI sync command copied. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
           } catch {
             showMessage(`CLI sync command generated. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
@@ -532,6 +549,24 @@
         } catch (err) {
           showMessage(err.message, true);
           button.textContent = 'Generate';
+        }
+      });
+
+      document.getElementById('revoke-sync-tokens').addEventListener('click', async () => {
+        if (!confirm('Revoke all previously generated vibestats sync tokens?')) return;
+        const button = document.getElementById('revoke-sync-tokens');
+        try {
+          button.textContent = 'Revoking...';
+          const body = await api('/api/sync-token', { method: 'DELETE' });
+          document.getElementById('sync-command').value = '';
+          const revokedAt = body.sync_token_invalidated_at
+            ? new Date(body.sync_token_invalidated_at).toLocaleString()
+            : 'now';
+          showMessage(`Sync tokens revoked at ${revokedAt}. Generate a new command before syncing again.`);
+        } catch (err) {
+          showMessage(err.message, true);
+        } finally {
+          button.textContent = 'Revoke';
         }
       });
 

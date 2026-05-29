@@ -119,7 +119,7 @@ npm run migrate
 
 Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured.
 
-Generate a local sync command from `/settings` after signing in:
+Generate a local sync command from `/settings` after signing in. Sync tokens are revocable from Settings:
 
 ```bash
 npx vibestats sync --token "$VIBESTATS_SYNC_TOKEN"

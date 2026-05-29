@@ -27,6 +27,7 @@ export function ownerProfileSettings(row = {}) {
     digest_email: row.digest_email || null,
     email_consent_at: row.email_consent_at || null,
     weekly_digest_sent_at: row.weekly_digest_sent_at || null,
+    sync_token_invalidated_at: row.sync_token_invalidated_at || null,
     show_raw_counts: Boolean(row.show_raw_counts),
     show_languages: Boolean(row.show_languages),
     looking_for: lookingFor,
@@ -55,7 +56,8 @@ export async function getProfileSettings(userId) {
     values (${userId})
     on conflict (user_id) do update set user_id = excluded.user_id
     returning weekly_digest_opt_in, digest_email, email_consent_at, weekly_digest_sent_at,
-      show_raw_counts, show_languages, looking_for, looking_for_expires_at, contact_url, updated_at
+      sync_token_invalidated_at, show_raw_counts, show_languages, looking_for, looking_for_expires_at,
+      contact_url, updated_at
   `;
   return rows[0];
 }
