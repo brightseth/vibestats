@@ -315,6 +315,7 @@ async function assertRoutes() {
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
   assert(weeklyDigestApi.includes('createDigestUnsubscribeToken'), 'weekly digest should include one-click unsubscribe tokens');
   assert(weeklyDigestApi.includes("'List-Unsubscribe'"), 'weekly digest sender should advertise unsubscribe headers');
+  assert(weeklyDigestApi.includes('weeklyDigestErrorMessage'), 'weekly digest cron should centralize public error serialization');
   assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
@@ -414,6 +415,7 @@ async function assertLaunchAuditHelpers() {
   assert(parsedCurl.body === '{"ok":true}', 'vercel curl parser should isolate the response body');
   assert(launchAuditSource.includes("path: '/api/sync'") && launchAuditSource.includes("Authorization: 'Bearer a.b.c'"), 'launch audit should probe public sync failure without exposing env names');
   assert(launchAuditSource.includes("path: '/api/me'") && launchAuditSource.includes("Cookie: 'vibestats_auth=a.b.c'"), 'launch audit should probe session failure without exposing env names');
+  assert(launchAuditSource.includes("label: 'weekly digest cron guard'"), 'launch audit should probe the weekly digest cron guard without exposing env names');
   console.log('ok launch audit supports protected Vercel previews');
 }
 
@@ -2159,12 +2161,21 @@ async function assertPublicApiErrorsHideInternalConfig() {
 }
 
 async function assertDigestCronAuth() {
-  const { default: handler } = await import('../api/cron/weekly-digest.js');
+  const { default: handler, weeklyDigestErrorMessage } = await import('../api/cron/weekly-digest.js');
   const previousSecret = process.env.CRON_SECRET;
   const originalError = console.error;
   console.error = () => {};
 
   try {
+    assert(
+      weeklyDigestErrorMessage(Object.assign(new Error('Resend failed: 502 seth@example.com'), { statusCode: 502 })) === 'Weekly digest failed',
+      'weekly digest cron should not expose provider failure details',
+    );
+    assert(
+      weeklyDigestErrorMessage(Object.assign(new Error('Unauthorized'), { statusCode: 401 })) === 'Unauthorized',
+      'weekly digest cron should preserve unauthorized responses',
+    );
+
     delete process.env.CRON_SECRET;
     const missingRes = mockRes();
     await handler({

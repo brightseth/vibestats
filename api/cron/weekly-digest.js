@@ -61,6 +61,16 @@ export function digestCronResult({ user, digest, dryRun }) {
   };
 }
 
+export function weeklyDigestErrorMessage(err) {
+  const status = err?.statusCode || 500;
+  if (status === 401) return 'Unauthorized';
+  if (status === 503 && err?.message === 'Weekly digest delivery is not configured') {
+    return 'Weekly digest delivery is not configured';
+  }
+  if (status >= 500) return 'Weekly digest failed';
+  return err?.message || 'Weekly digest failed';
+}
+
 async function sendDigestEmail({ to, digest }) {
   if (!resendReady()) {
     const err = new Error('Weekly digest delivery is not configured');
@@ -194,6 +204,6 @@ export default async function handler(req, res) {
     }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('weekly digest cron error:', err);
-    return json(res, err.statusCode || 500, { error: err.message || 'Weekly digest failed' }, NO_STORE_HEADERS);
+    return json(res, err.statusCode || 500, { error: weeklyDigestErrorMessage(err) }, NO_STORE_HEADERS);
   }
 }

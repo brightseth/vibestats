@@ -255,6 +255,12 @@ async function auditLaunch(options) {
       allowStatuses: [401, 500],
       expectedType: 'application/json',
     },
+    {
+      label: 'weekly digest cron guard',
+      path: '/api/cron/weekly-digest?dryRun=1',
+      allowStatuses: [401, 503],
+      expectedType: 'application/json',
+    },
   ];
 
   for (const item of failurePaths) {
