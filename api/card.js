@@ -161,7 +161,7 @@ export default function handler(req, res) {
     <div id="community-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:8px"></div>
     <div class="brand">vibestats.io</div>
   </div>
-  <a class="cta" href="/compare?me=${encodeURIComponent(archetypeKey)}">Compare with this archetype &rarr;</a>
+  <a class="cta" href="/?compareArchetype=${encodeURIComponent(archetypeKey)}">Compare with this archetype &rarr;</a>
   <a class="cta" href="https://www.slashvibe.dev/join?ref=vibestats_card&archetype=${archetypeKey}" target="_blank" rel="noopener" style="margin-top:12px;background:linear-gradient(135deg,rgba(107,143,255,0.2),rgba(167,139,250,0.15));border-color:rgba(107,143,255,0.5)">Find other ${archLabel}s on /vibe &rarr;</a>
   <script>
     (async function() {

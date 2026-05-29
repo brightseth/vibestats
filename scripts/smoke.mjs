@@ -252,6 +252,10 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('<a class="auth-pill" href="/browse">Browse</a>'), 'upload page should expose public browse loop');
   assert(indexHtml.includes("See how you'd pair with this archetype:"), 'ephemeral share copy should drive card recipients into comparison');
   assert(indexHtml.includes('Compare with this archetype:'), 'ephemeral share variants should avoid passive homepage discovery copy');
+  assert(indexHtml.includes("return { kind: 'archetype', archetype }"), 'upload page should support archetype-only comparison intake');
+  assert(indexHtml.includes('Compare with The ${archetypeDisplayName(intent.archetype)}'), 'archetype-only intake should frame upload as comparison');
+  assert(indexHtml.includes('const compareHref = comparisonIntent()'), 'result card compare button should honor upload-to-compare intake');
+  assert(indexHtml.includes('/compare?a=${encodeURIComponent(user.gh_handle)}&b=${encodeURIComponent(intent.archetype)}'), 'saved archetype-only intake should compare from the user profile identity');
   assert(!indexHtml.includes("What's YOUR personality?\\n${cardShareUrl}"), 'ephemeral share copy should not use old generic personality prompt');
   assert(!indexHtml.includes("What's yours?\\n${cardShareUrl}"), 'ephemeral share copy should not use old generic short prompt');
   console.log('ok profile share loop returns visitors to comparison');
@@ -293,7 +297,7 @@ async function assertShareCardCta() {
 
   handler(req, res);
   assert(statusCode === 200, 'share card should render HTTP 200');
-  assert(body.includes('href="/compare?me=deepdiver"'), 'share card CTA should send visitors into archetype comparison');
+  assert(body.includes('href="/?compareArchetype=deepdiver"'), 'share card CTA should send visitors into upload-to-compare');
   assert(body.includes('Compare with this archetype'), 'share card CTA should invite comparison instead of homepage upload');
   assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
   assert(body.includes('archetype=deepdiver'), 'share card /vibe CTA should use the sanitized archetype key');
@@ -302,7 +306,7 @@ async function assertShareCardCta() {
 
 async function assertWrappedShareLoop() {
   const wrappedHtml = await readFile('wrapped.html', 'utf8');
-  assert(wrappedHtml.includes('/compare?me=orchestrator'), 'wrapped CTA should route to archetype comparison');
+  assert(wrappedHtml.includes('/?compareArchetype=orchestrator'), 'wrapped CTA should route to upload-to-compare');
   assert(wrappedHtml.includes("See how you'd pair with an Orchestrator"), 'wrapped share page should use comparison copy');
   assert(!wrappedHtml.includes("What's YOUR vibecoding personality?<br>"), 'wrapped page should not end on the old generic CTA');
   console.log('ok wrapped share page routes visitors into comparison');
