@@ -1,15 +1,9 @@
-import { ARCHETYPE_KEYS } from './signatures.js';
+import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
 
-const PUBLIC_RAW_META_KEYS = [
-  'signature',
-  'signatureCombo',
-];
 const OWNER_RAW_META_KEYS = [
   'dateRange',
   'source',
   'version',
-  'signatureFingerprint',
-  ...PUBLIC_RAW_META_KEYS,
 ];
 
 function safeNumber(value) {
@@ -116,27 +110,28 @@ export function visibleMetrics(metrics = {}, visibility = {}) {
   return out;
 }
 
-export function publicRawMeta(rawMeta = {}, { isOwner = false } = {}) {
+export function publicRawMeta(rawMeta = {}, { isOwner = false, signature = null } = {}) {
   const out = {};
-  const keys = isOwner ? OWNER_RAW_META_KEYS : PUBLIC_RAW_META_KEYS;
-  for (const key of keys) {
+  for (const key of isOwner ? OWNER_RAW_META_KEYS : []) {
     const value = rawMeta?.[key];
     if (typeof value === 'string' && value.trim()) out[key] = value.trim();
   }
-  if (ARCHETYPE_KEYS.includes(rawMeta?.secondaryArchetype)) {
-    out.secondaryArchetype = rawMeta.secondaryArchetype;
-  }
+  if (signature?.label) out.signature = signature.label;
+  if (signature?.combo) out.signatureCombo = signature.combo;
+  if (ARCHETYPE_KEYS.includes(signature?.secondary)) out.secondaryArchetype = signature.secondary;
+  if (isOwner && signature?.fingerprint) out.signatureFingerprint = signature.fingerprint;
   return out;
 }
 
 export function publicUpload(upload = {}, visibility = {}, { isOwner = false } = {}) {
+  const signature = signatureFromUpload(upload);
   const out = {
     archetype: upload.archetype,
     scores: publicScores(upload.scores || {}),
     metrics: visibleMetrics(upload.metrics || {}, visibility),
     activity: publicActivity(upload.metrics || {}),
     updated: uploadRecency(upload.uploaded_at),
-    raw_meta: publicRawMeta(upload.raw_meta || {}, { isOwner }),
+    raw_meta: publicRawMeta(upload.raw_meta || {}, { isOwner, signature }),
   };
   if (isOwner) out.uploaded_at = upload.uploaded_at;
   if (isOwner) out.id = upload.id;

@@ -1250,15 +1250,16 @@ async function assertPublicProfileHelpers() {
     scores: {
       builder: 192,
       shipper: 80,
+      orchestrator: 61,
       rawJson: { should: 'drop' },
       _percentiles: { builder: 4, rawJson: 1 },
     },
     metrics: { days: 31, commitsPerDay: 12.4, sessions: 88, languages: 6, msgsPerSession: 9 },
     raw_meta: {
-      signature: 'high-velocity Builder',
-      signatureCombo: 'shipper+builder',
-      signatureFingerprint: 'builder+shipper+orchestrator:90s',
-      secondaryArchetype: 'shipper',
+      signature: 'spoofed Builder',
+      signatureCombo: 'architect+builder',
+      signatureFingerprint: 'architect+builder+shipper:90s',
+      secondaryArchetype: 'architect',
       dateRange: 'private range',
       source: 'browser',
       version: 'wave-1',
@@ -1275,7 +1276,9 @@ async function assertPublicProfileHelpers() {
   assert(!JSON.stringify(privateView.scores).includes('rawJson'), 'visitor upload payload must not echo unknown score fields');
   assert(Object.keys(privateView.metrics).length === 0, 'visitor upload payload should hide exact metrics by default');
   assert(privateView.activity.cadence === 'high-velocity cadence', 'visitor upload payload should include coarse activity');
-  assert(privateView.raw_meta.signature === 'high-velocity Builder', 'visitor upload payload should keep signature metadata');
+  assert(privateView.raw_meta.signature === 'high-velocity Builder', 'visitor upload payload should derive signature metadata from scores');
+  assert(privateView.raw_meta.signatureCombo === 'shipper+builder', 'visitor upload payload should derive signature combos from scores');
+  assert(privateView.raw_meta.secondaryArchetype === 'shipper', 'visitor upload payload should derive secondary archetype from scores');
   assert(!('signatureFingerprint' in privateView.raw_meta), 'visitor upload payload should hide internal rarity fingerprint');
   assert(!Object.hasOwn(privateView, 'uploaded_at'), 'visitor upload payload must not expose exact upload timestamp');
   assert(privateView.updated.label === 'updated this week', 'visitor upload payload should expose bucketed freshness');
@@ -1292,6 +1295,7 @@ async function assertPublicProfileHelpers() {
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
   assert(ownerView.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'owner upload payload should retain internal rarity fingerprint');
   assert(ownerView.raw_meta.source === 'browser' && ownerView.raw_meta.version === 'wave-1', 'owner upload payload should retain derived source metadata');
+  assert(!JSON.stringify(ownerView.raw_meta).includes('spoofed'), 'owner upload payload must not echo stored spoofed signature text');
   assert(!JSON.stringify(ownerView).includes('tool_usage'), 'owner upload payload must not echo raw tool usage from stored metadata');
   assert(!JSON.stringify(ownerView).includes('language_usage'), 'owner upload payload must not echo raw language usage from stored metadata');
   assert(!JSON.stringify(ownerView).includes('rawJson'), 'owner upload payload must not echo raw JSON fields from stored metadata');
@@ -1342,14 +1346,16 @@ async function assertDiscoveryEntrySerializers() {
     archetype: 'builder',
     scores: {
       builder: 999,
+      shipper: 80,
+      orchestrator: 61,
       rawJson: { should: 'drop' },
       _percentiles: { builder: 0, rawJson: 1 },
     },
     metrics: { days: 31, commitsPerDay: 12.4, sessions: 88, languages: 6 },
     raw_meta: {
-      signature: 'high-velocity Builder',
-      signatureCombo: 'shipper+builder',
-      signatureFingerprint: 'builder+shipper+orchestrator:90s',
+      signature: 'spoofed Builder',
+      signatureCombo: 'architect+builder',
+      signatureFingerprint: 'architect+builder+shipper:90s',
       rawJson: { should: 'drop' },
     },
     looking_for: 'pair-coding',
@@ -1363,9 +1369,10 @@ async function assertDiscoveryEntrySerializers() {
     matchEntry(row, 'pair-coding', 'shipper'),
   ]) {
     assert(entry.score === 100, 'public discovery entries should clamp stored archetype scores');
-    assert(entry.signature?.label === 'high-velocity Builder', 'public discovery entries should retain signature labels');
+    assert(entry.signature?.label === 'high-velocity Builder', 'public discovery entries should derive signature labels from scores');
     assert(!JSON.stringify(entry).includes('rawJson'), 'public discovery entries must not echo unknown stored fields');
     assert(!JSON.stringify(entry).includes('signatureFingerprint'), 'public discovery entries must not expose rarity fingerprints');
+    assert(!JSON.stringify(entry).includes('spoofed'), 'public discovery entries must not echo stored spoofed signature text');
   }
   console.log('ok discovery entry serializers clamp public scores');
 }
@@ -1385,13 +1392,14 @@ async function assertSignatureHelpers() {
     ...upload,
     raw_meta: {
       signature: ' saved Builder ',
-      signatureCombo: 'shipper+builder',
-      signatureFingerprint: 'builder+shipper+orchestrator:90s',
-      secondaryArchetype: 'shipper',
+      signatureCombo: 'architect+builder',
+      signatureFingerprint: 'architect+builder+shipper:90s',
+      secondaryArchetype: 'architect',
     },
   });
-  assert(validStored.label === 'saved Builder', 'signature helper should trim saved signature labels');
-  assert(validStored.combo === 'shipper+builder', 'signature helper should keep valid saved combos');
+  assert(validStored.label === 'high-velocity Builder', 'signature helper should ignore stored signature labels');
+  assert(validStored.combo === 'shipper+builder', 'signature helper should derive combos from scores');
+  assert(validStored.fingerprint === 'builder+shipper+orchestrator:90s', 'signature helper should derive fingerprints from scores');
   const malformed = signatureFromUpload({
     ...upload,
     raw_meta: {
