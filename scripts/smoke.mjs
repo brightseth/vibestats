@@ -838,6 +838,13 @@ async function assertUploadSanitizer() {
       languages: 4,
       msgsPerSession: 7,
       days: 9,
+      messages: 999999,
+      messagesPerDay: 999,
+      commandsPerDay: 888,
+      satisfaction: 95,
+      multiClauding: 12,
+      frictionEvents: 4,
+      topLang: 'typescript',
       raw: { should: 'drop' },
     },
     raw_meta: {
@@ -854,7 +861,10 @@ async function assertUploadSanitizer() {
   assert(payload.scores.builder === 100, 'scores should clamp to 100');
   assert(payload.scores.orchestrator === 0, 'scores should clamp to 0');
   assert(payload.metrics.languages === 4, 'derived languages metric should persist');
+  assert(Object.keys(payload.metrics).sort().join(',') === 'commitsPerDay,days,languages,msgsPerSession,sessions', 'profile saves should persist only the five Wave 1 metrics');
   assert(!('raw' in payload.metrics), 'raw metric payload must be dropped');
+  assert(!('topLang' in payload.metrics), 'profile saves should not persist language detail');
+  assert(!('messages' in payload.metrics), 'profile saves should not persist extended private counters');
   assert(payload.raw_meta.signature === 'high-velocity Builder', 'signature metadata should persist');
   assert(payload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'signature fingerprint should persist');
   assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should persist');
@@ -877,6 +887,12 @@ async function assertExportUploadSanitizer() {
       days: 31,
       commitsPerDay: 12.4,
       sessions: 88,
+      messages: 999999,
+      messagesPerDay: 999,
+      commandsPerDay: 888,
+      satisfaction: 95,
+      multiClauding: 12,
+      frictionEvents: 4,
       topLang: ' typescript ',
       raw: { should: 'drop' },
       tool_usage: { bash: 9000 },
@@ -897,7 +913,8 @@ async function assertExportUploadSanitizer() {
   assert(upload.id === 'upload-1', 'export upload should retain upload id for the owner archive');
   assert(upload.scores.builder === 92, 'export upload should retain derived archetype scores');
   assert(upload.scores._percentiles.builder === 4, 'export upload should retain derived percentiles');
-  assert(upload.metrics.topLang === 'typescript', 'export upload should retain sanitized derived top language');
+  assert(!('topLang' in upload.metrics), 'export upload should not include language detail');
+  assert(!('messages' in upload.metrics), 'export upload should not include extended private counters');
   assert(upload.raw_meta.signature === 'high-velocity Builder', 'export upload should retain signature metadata');
   assert(!JSON.stringify(upload).includes('tool_usage'), 'export upload must not include raw tool usage');
   assert(!JSON.stringify(upload).includes('language_usage'), 'export upload must not include raw language usage');

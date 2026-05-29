@@ -8,12 +8,6 @@ const NUMERIC_METRICS = {
   languages: 200,
   msgsPerSession: 5000,
   days: 5000,
-  messages: 10000000,
-  messagesPerDay: 100000,
-  commandsPerDay: 100000,
-  satisfaction: 100,
-  multiClauding: 100,
-  frictionEvents: 100000,
 };
 
 function clampNumber(value, max) {
@@ -56,8 +50,6 @@ export function sanitizeUploadPayload(body = {}) {
     const value = clampNumber(sourceMetrics[key], max);
     if (value != null) metrics[key] = value;
   }
-  const topLang = cleanText(sourceMetrics.topLang, 40);
-  if (topLang) metrics.topLang = topLang;
 
   const rawMeta = {};
   const sourceMeta = body.raw_meta && typeof body.raw_meta === 'object' ? body.raw_meta : {};

@@ -6,12 +6,6 @@ const METRIC_KEYS = [
   'languages',
   'msgsPerSession',
   'days',
-  'messages',
-  'messagesPerDay',
-  'commandsPerDay',
-  'satisfaction',
-  'multiClauding',
-  'frictionEvents',
 ];
 const RAW_META_KEYS = [
   'dateRange',
@@ -44,11 +38,7 @@ function exportScores(scores = {}) {
 }
 
 function exportMetrics(metrics = {}) {
-  const out = copyFiniteNumbers(metrics, METRIC_KEYS);
-  if (typeof metrics.topLang === 'string' && metrics.topLang.trim()) {
-    out.topLang = metrics.topLang.trim().slice(0, 40);
-  }
-  return out;
+  return copyFiniteNumbers(metrics, METRIC_KEYS);
 }
 
 function exportRawMeta(rawMeta = {}) {
