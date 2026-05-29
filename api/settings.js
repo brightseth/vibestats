@@ -56,7 +56,11 @@ export default async function handler(req, res) {
           ? Boolean(body.weekly_digest_opt_in)
           : Boolean(nextSettings.weekly_digest_opt_in);
         const email = optIn
-          ? (Object.hasOwn(body, 'digest_email') ? cleanDigestEmail(body.digest_email) : (nextSettings.digest_email || null))
+          ? (
+            Object.hasOwn(body, 'digest_email')
+              ? cleanDigestEmail(body.digest_email)
+              : (nextSettings.digest_email || null)
+          )
           : null;
 
         if (optIn && !email) {
