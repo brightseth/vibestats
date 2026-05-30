@@ -2497,10 +2497,17 @@
       return `Anonymous vibestats reveal: ${label}. Raw /insights stayed local. What are you? ${revealUrl}`;
     }
 
+    function revealExpiryLabel(value) {
+      const date = new Date(value || '');
+      if (!Number.isFinite(date.getTime())) return '30 days';
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
     function renderAnonymousRevealStatus(snapshot, archetype, scores) {
       const revealPath = pathFromSaveUrl(snapshot.reveal_path || snapshot.reveal_url, '/');
       const revealUrl = canonicalVibestatsUrl(snapshot.reveal_url || revealPath);
       const text = anonymousRevealShareText(archetype, scores, revealUrl);
+      const expiry = revealExpiryLabel(snapshot.expires_at);
       const claimLaterAction = identityStatus.profile_save_available
         ? `<a class="secondary" href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">Optional GitHub claim</a>`
         : '';
@@ -2510,7 +2517,7 @@
       }).toString()}`;
       updateProfileSaveStatus(`
         <strong>Anonymous share link created.</strong>
-        <div class="post-save-note">No name, GitHub handle, leaderboard entry, or raw /insights data. This unlisted link hosts derived metrics only.</div>
+        <div class="post-save-note">Public unlisted link; anyone with it can view this derived snapshot until ${safeHtml(expiry)}. No name, GitHub handle, leaderboard entry, or raw /insights data.</div>
         <div class="post-save-actions">
           <a class="primary" href="${safeHtml(revealPath)}">Open reveal</a>
           <button type="button" class="secondary" id="copy-anon-reveal-link">Copy link</button>

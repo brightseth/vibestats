@@ -27,6 +27,12 @@ function fmt(value, fallback = '?') {
   return Math.round(n).toLocaleString();
 }
 
+function dateLabel(value) {
+  const date = new Date(value || '');
+  if (!Number.isFinite(date.getTime())) return '30 days after creation';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function scoreRows(scores = {}, primary) {
   return Object.entries(scores)
     .filter(([key, value]) => ARCHETYPES[key] && Number.isFinite(Number(value)))
@@ -86,6 +92,7 @@ function renderRevealHtml(snapshot, origin) {
   const moments = momentRows(snapshot.raw_meta?.moments || []);
   const scores = scoreRows(snapshot.scores || {}, snapshot.archetype);
   const meta = revealMetadata(snapshot, origin);
+  const expiry = dateLabel(snapshot.expires_at);
   const compareUrl = `/?compareArchetype=${encodeURIComponent(snapshot.archetype)}`;
   const revealCommand = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
   const shareText = `Anonymous vibestats reveal: ${signature}. Raw /insights stayed local. What are you?`;
@@ -150,7 +157,7 @@ function renderRevealHtml(snapshot, origin) {
         <h1>${esc(arch.name)}</h1>
         <div class="signature">${esc(signature)}</div>
         <p class="copy">Someone shared their vibecoding profile without attaching a name or GitHub handle. This is a hosted snapshot of derived metrics only, created from a local reveal.</p>
-        <div class="privacy">Raw /insights stayed local. No prompts, project paths, session ids, or free text are stored in this link.</div>
+        <div class="privacy">Public unlisted link; expires ${esc(expiry)}. Raw /insights stayed local. No prompts, project paths, session ids, or free text are stored in this link.</div>
         <div class="actions">
           <a class="btn primary" href="${esc(compareUrl)}">Compare with this archetype</a>
           <button class="btn" type="button" data-copy="${esc(meta.url)}">Copy link</button>

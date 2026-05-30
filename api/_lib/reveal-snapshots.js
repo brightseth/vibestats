@@ -76,9 +76,11 @@ export function publicRevealSnapshot(row = {}, { origin = 'https://vibestats.io'
     reveal_url: `${String(origin || 'https://vibestats.io').replace(/\/$/, '')}${path}`,
     privacy: {
       identity: 'anonymous',
+      link_visibility: 'public-unlisted',
       listed: false,
       raw_insights: 'local-only',
       synced_fields: 'derived-only',
+      retention_days: 30,
     },
   };
 }

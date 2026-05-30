@@ -33,6 +33,7 @@
     "audit:launch": "node scripts/launch-audit.mjs",
     "audit:ssh": "node scripts/ssh-audit.mjs",
     "share:kit": "node scripts/share-kit.mjs",
+    "reveal:delete": "node scripts/delete-reveal-snapshot.mjs",
     "ssh:dev": "node services/ssh-shell/server.js",
     "dev": "vercel dev",
     "serve": "vercel dev",

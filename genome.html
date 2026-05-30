@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>The Coding Genome | vibestats</title>
-  <meta name="description" content="How the Claude Code community codes. See the live genome, then run /insights to reveal where your derived profile lands.">
+  <meta name="description" content="How Claude Code builders code. See the launch baseline and live reveal contributions, then run /insights to reveal where your derived profile lands.">
   <meta property="og:title" content="The Coding Genome | vibestats">
-  <meta property="og:description" content="Claude Code already knows how you build. See the live genome, then run /insights to reveal where you land.">
+  <meta property="og:description" content="Claude Code already knows how you build. See the launch baseline and live reveal contributions, then run /insights to reveal where you land.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vibestats.io/genome">
   <meta property="og:image" content="https://vibestats.io/og-card.png">
@@ -99,6 +99,13 @@
     }
     .hero-counter .count-label {
       color: var(--text-muted); font-size: 12px;
+    }
+    .source-note {
+      margin-top: 10px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
     }
 
     @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -406,19 +413,20 @@
     <!-- Hero -->
     <section class="hero">
       <h1>The Coding Genome</h1>
-      <p class="hero-subtitle">How the Claude Code community codes. Updated live.</p>
+      <p class="hero-subtitle">A transparent launch baseline that blends in live anonymous reveal submissions.</p>
       <div class="hero-counter">
         <span class="pulse-dot"></span>
         <span class="count" id="hero-total">&mdash;</span>
-        <span class="count-label">coders mapped</span>
+        <span class="count-label">profiles modeled</span>
       </div>
+      <div class="source-note" id="source-note">Launch baseline; live submissions update this as people reveal.</div>
     </section>
 
     <section class="reveal-strip" aria-label="Reveal your place in the genome">
       <div>
         <div class="section-label">your place in the genome</div>
         <h2 class="reveal-title">What are you?</h2>
-        <p class="reveal-copy">Claude Code already knows how you build. Run <code>/insights</code>, then use the no-npm local helper to reveal where your derived profile lands in the live community genome.</p>
+        <p class="reveal-copy">Claude Code already knows how you build. Run <code>/insights</code>, then use the terminal helper to reveal where your derived profile lands.</p>
       </div>
       <div class="command-card">
         <span>Step 1 in Claude Code</span>
@@ -433,7 +441,7 @@
       <div class="command-card">
         <span>Step 3 in terminal</span>
         <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
-        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy no-npm reveal command</button>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy reveal command</button>
       </div>
       <div class="command-card">
         <span>Step 4 when ready</span>
@@ -445,7 +453,7 @@
         <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
         <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command">Copy install command</button>
       </div>
-      <div class="privacy-note">Raw Claude Code /insights data stays local. vibestats stores derived profile metrics only when you choose to claim a public identity.</div>
+      <div class="privacy-note">Raw Claude Code /insights data stays local. Anonymous share links store derived snapshots only; claimed profiles store derived profile metrics only.</div>
     </section>
 
     <!-- Archetype Distribution -->
@@ -640,6 +648,7 @@
 
       if (stats) {
         renderHeroCount(stats.total);
+        renderSourceNote(stats.source);
         renderDistribution(stats.total, stats.archetypes);
         renderAverages(stats.averages);
         renderBarcode(stats.total, stats.archetypes);
@@ -684,6 +693,15 @@
     function renderHeroCount(total) {
       const el = document.getElementById('hero-total');
       animateCount(el, total, 1200);
+    }
+
+    function renderSourceNote(source) {
+      const el = document.getElementById('source-note');
+      if (!el || !source) return;
+      const live = Number(source.live_total || 0);
+      el.textContent = live > 0
+        ? `${Number(source.baseline_total || 0).toLocaleString()} launch baseline profiles + ${live.toLocaleString()} live anonymous submissions.`
+        : source.note || 'Launch baseline shown until live anonymous submissions accumulate.';
     }
 
     function animateCount(el, target, duration) {

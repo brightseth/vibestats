@@ -17,12 +17,20 @@ Required for GitHub-backed profiles:
 - `GITHUB_CLIENT_SECRET`
 - One session secret: `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET` with at least 32 bytes
 
+Hard launch gate: rotate any credential that passed through chat, screenshots, shell history, or another non-secret channel before broad sharing. Rotation must be verified in the upstream provider and the old value must not appear in git history. Do not treat this as a nice-to-have launch caveat.
+
 Required for anonymous reveal links:
 
 - One database URL: `DATABASE_URL`, `POSTGRES_URL`, or `NEON_DATABASE_URL`
 - Migration `0015_reveal_snapshots.sql` applied
 
 Anonymous reveal links intentionally do not require GitHub OAuth or a signed session. They are unlisted `/r/<slug>` pages that store only sanitized derived metrics for 30 days and never enter browse, match, or leaderboard surfaces.
+
+Manual anonymous-link takedown is available for support requests:
+
+```bash
+npm run reveal:delete -- <reveal-slug>
+```
 
 Optional but launch-relevant:
 
@@ -43,7 +51,7 @@ vercel env add VIBE_SESSION_SECRET production preview development --scope lets-v
 
 Use a production GitHub OAuth app with callback `https://vibestats.io/api/auth/github/callback`. For end-to-end preview OAuth testing, use a separate preview OAuth app or test OAuth on production after the final deploy.
 
-As of the latest audit, `lets-vibe/vibestats` has Neon/Postgres env vars in Production, Preview, and Development, plus `VIBESTATS_URL` and `VIBE_SESSION_SECRET` in Production. Identity is not production-ready until GitHub OAuth is added, and preview identity audits will still fail until a strong session secret is also added to Preview.
+As of May 30, 2026, `lets-vibe/vibestats` has Neon/Postgres env vars, GitHub OAuth, `VIBESTATS_URL`, and `VIBE_SESSION_SECRET` configured for Production, and the strict production identity audit passes. Preview auth testing still requires the same identity vars in the Preview environment plus a preview-safe OAuth callback plan.
 
 ## 2. Vercel Deployment Gate
 

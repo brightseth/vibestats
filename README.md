@@ -25,7 +25,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **Anonymous unlisted reveal links** (`/r/<slug>`) so users can share a hosted derived snapshot without GitHub, a name, leaderboard placement, or matchmaker identity.
 - **A shareable card** with dynamic OG image (`/card?a=…`) → Twitter intent prefilled.
 - **Compare-first homepage previews** (`/?compareTo=<handle>&compareArchetype=<type>`) that unfurl as "pair with @handle, then reveal yours" instead of generic homepage copy.
-- **A community genome page** (`/genome`) — archetype distribution + community averages.
+- **A community genome page** (`/genome`) — transparent launch baseline + live anonymous submissions for archetype distribution and averages.
 - **A compatibility view** (`/compare`) — two pasted profiles side-by-side.
 - **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
 - **A portable profile badge** (`/u/<handle>/badge.svg`) for GitHub READMEs and personal sites; copied Markdown clicks through to compare.
@@ -273,4 +273,5 @@ CI runs the smoke harness on pull requests and pushes to `main`.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — strategic direction, 4 waves of execution, opinion on what's actually viral.
 - [`docs/GOAL.md`](docs/GOAL.md) — north star and viral loop guardrails.
 - [`docs/LAUNCH.md`](docs/LAUNCH.md) — production readiness gates for identity, privacy, and viral-loop launch.
+- [`docs/SHARE-PLAYBOOK.md`](docs/SHARE-PLAYBOOK.md) — mobile-first launch copy, rarity wording, and first-batch outreach guidance.
 - [`docs/CODEX-KICKOFF.md`](docs/CODEX-KICKOFF.md) — paste-ready brief for the next developer picking this up.

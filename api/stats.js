@@ -38,6 +38,24 @@ const BASELINE = {
   },
 };
 
+function statsSource(realTotal = 0) {
+  return {
+    kind: realTotal > 0 ? 'launch-baseline-plus-live' : 'launch-baseline',
+    baseline_total: BASELINE.total,
+    live_total: realTotal,
+    note: realTotal > 0
+      ? 'Launch baseline blended with live anonymous submissions.'
+      : 'Launch baseline shown until live anonymous submissions accumulate.',
+  };
+}
+
+function baselineStats() {
+  return {
+    ...BASELINE,
+    source: statsSource(0),
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -94,7 +112,7 @@ export default async function handler(req, res) {
   } else if (req.method === 'GET') {
     if (!hasRedis) {
       res.setHeader('Cache-Control', 'public, s-maxage=3600');
-      return res.status(200).json(BASELINE);
+      return res.status(200).json(baselineStats());
     }
 
     try {
@@ -132,11 +150,11 @@ export default async function handler(req, res) {
       };
 
       res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-      res.status(200).json({ total, archetypes, averages });
+      res.status(200).json({ total, archetypes, averages, source: statsSource(realTotal) });
     } catch (err) {
       console.error('Stats GET error:', err);
       res.setHeader('Cache-Control', 'public, s-maxage=3600');
-      res.status(200).json(BASELINE);
+      res.status(200).json(baselineStats());
     }
   } else {
     return methodNotAllowed(res, ['GET', 'POST', 'OPTIONS'], NO_STORE_HEADERS);
