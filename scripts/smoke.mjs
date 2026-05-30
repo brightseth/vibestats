@@ -1020,7 +1020,7 @@ async function assertCompareShareLoop() {
   assert(compareHtml.includes("showPicker(knownSubject, { intent: 'claim', missingHandle })"), 'compare route should preserve a known profile when the other side is unminted');
   assert(compareHtml.includes('That profile is not minted yet. Preview a pairing or reveal yours.'), 'compare route should make missing profile pair links productive');
   assert(compareHtml.includes('Run /insights for your real pairing'), 'compare picker should teach the reveal flow for share recipients');
-  assert(compareHtml.includes("copyCommand('/insights', this)") && compareHtml.includes('copyCommand(REVEAL_COMMAND, this)'), 'compare picker should expose copy buttons for the reveal commands');
+  assert(compareHtml.includes("copyCommand('/insights', this)") && compareHtml.includes('copyCommand(REVEAL_COMMAND, this)') && compareHtml.includes('INSTALL_CLAUDE_COMMAND') && compareHtml.includes('Copy install'), 'compare picker should expose copy buttons for reveal and the Claude Code install return hook');
   console.log('ok compare share loop claims profile-backed comparisons');
 }
 

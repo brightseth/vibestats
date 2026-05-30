@@ -386,6 +386,7 @@
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
     const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
+    const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
     let currentComparison = null;
 
     function renderStars(n) {
@@ -448,6 +449,10 @@
         <div class="reveal-command-row">
           <code>${esc(REVEAL_COMMAND)}</code>
           <button class="copy-command" type="button" onclick="copyCommand(REVEAL_COMMAND, this)">Copy npx</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(INSTALL_CLAUDE_COMMAND, this)">Copy install</button>
         </div>
       `;
       el.classList.add('visible');
