@@ -289,6 +289,56 @@ function section(title, lines = []) {
   ];
 }
 
+function boundedNumber(value, max = 1000000) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(Math.max(Math.round(n), 0), max);
+}
+
+function boundedMap(source = {}, maxEntries = 20, maxValue = 1000000) {
+  return Object.fromEntries(Object.entries(source || {})
+    .map(([key, value]) => [
+      String(key || '').trim().replace(/[^a-zA-Z0-9_+-]/g, '').slice(0, 32).toLowerCase(),
+      boundedNumber(value, maxValue),
+    ])
+    .filter(([key, value]) => key && value > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxEntries));
+}
+
+function localWebPreviewData(insights = {}) {
+  const metrics = insights.metrics || {};
+  return {
+    version: 'vibestats.local_preview.v1',
+    source: 'cli',
+    insights: {
+      meta: {
+        user: String(insights.meta?.user || 'Local terminal reveal').replace(/\s+/g, ' ').trim().slice(0, 80),
+        date_range: String(insights.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32),
+      },
+      metrics: {
+        total_sessions: boundedNumber(metrics.total_sessions, 100000),
+        total_messages: boundedNumber(metrics.total_messages, 5000000),
+        commits: boundedNumber(metrics.commits, 1000000),
+        satisfaction_rate: Number.isFinite(Number(metrics.satisfaction_rate)) ? Math.min(Math.max(Number(metrics.satisfaction_rate), 0), 1) : undefined,
+        multi_clauding_rate: Number.isFinite(Number(metrics.multi_clauding_rate)) ? Math.min(Math.max(Number(metrics.multi_clauding_rate), 0), 1) : undefined,
+        buggy_code_events: boundedNumber(metrics.buggy_code_events, 100000),
+        task_agent_sessions: boundedNumber(metrics.task_agent_sessions, 100000),
+        longest_session_minutes: boundedNumber(metrics.longest_session_minutes, 60 * 72),
+        files_modified: boundedNumber(metrics.files_modified, 100000),
+        lines_changed: boundedNumber(metrics.lines_changed, 5000000),
+        tool_usage: boundedMap(metrics.tool_usage, 12, 5000000),
+        language_usage: boundedMap(metrics.language_usage, 20, 5000000),
+      },
+    },
+  };
+}
+
+export function localWebPreviewUrl(insights = {}, { host = DEFAULT_HOST } = {}) {
+  const encoded = Buffer.from(JSON.stringify(localWebPreviewData(insights)), 'utf8').toString('base64url');
+  return `${normalizeHost(host)}/#vibestatsPreview=${encoded}`;
+}
+
 export function cliShareText({ label, compareUrl } = {}) {
   const shareLabel = compactShareLabel(label);
   return `I just claimed my Claude Code build profile: ${shareLabel}. Raw /insights stayed local. What are you? See how you'd pair with me: ${compareUrl}`;
@@ -929,6 +979,12 @@ export async function sync(options) {
   const score = Math.round(Number(payload.scores?.[payload.archetype] || 0));
   if (options.promptToPublish) {
     process.stdout.write(dryRunRevealText(payload, { host: options.host }));
+    if (options.openBrowser !== false) {
+      const previewUrl = localWebPreviewUrl(insights, { host: options.host });
+      process.stdout.write(`Opening web reveal preview: ${previewUrl}\n`);
+      const opened = (options.open || openBrowser)(previewUrl);
+      if (!opened) process.stdout.write(`Browser did not open automatically. Open your reveal preview: ${previewUrl}\n`);
+    }
     const publish = await confirmPublish({
       assumeYes: options.assumeYes,
       input: options.input || process.stdin,

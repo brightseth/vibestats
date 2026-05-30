@@ -462,6 +462,7 @@ async function assertRoutes() {
   assert(indexHtml.includes('function shouldAutoRunDemo()') && indexHtml.includes('setTimeout(runDemo, 120)'), 'demo-first URLs should auto-start the reveal instead of landing on manual upload');
   assert(indexHtml.includes('install-claude-command') && indexHtml.includes('Install /vibestats in Claude Code'), 'upload page should expose the installable Claude Code command path');
   assert(indexHtml.includes('Try the reveal demo') && indexHtml.includes('Copy no-npm reveal command') && indexHtml.includes('claim yours only when you want a public profile'), 'upload page should let cold visitors preview the no-npm reveal before asking them to publish');
+  assert(indexHtml.includes('vibestatsPreview') && indexHtml.includes('Local web preview from terminal') && indexHtml.includes('if (!options.localPreview) submitStats'), 'upload page should render CLI-opened local previews without publishing profile or community stats data');
   assert(indexHtml.includes('Explore sample pairings without data') && indexHtml.includes('href="/compare?a=orchestrator&b=shipper"'), 'upload page should give no-data visitors an archetype-pairing gallery path');
   assert(!indexHtml.includes('npx vibestats sync'), 'upload page should not advertise the occupied unscoped npm package name');
   assert(indexHtml.includes('No file hunting') && indexHtml.includes('checks the real ~/.claude/usage-data/ output with file counts first'), 'upload page should steer cold users away from manual file hunting');
@@ -2019,7 +2020,7 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_LOCAL_INSTALL_COMMAND, DEFAULT_LOCAL_REVEAL_COMMAND, DEFAULT_LOCAL_STATUS_COMMAND, DEFAULT_LOCAL_SYNC_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, localHelperCommand, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, printProfileShareKit, requestDeviceSyncToken, requestSyncToken, setMatchIntent, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_LOCAL_INSTALL_COMMAND, DEFAULT_LOCAL_REVEAL_COMMAND, DEFAULT_LOCAL_STATUS_COMMAND, DEFAULT_LOCAL_SYNC_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, localHelperCommand, localWebPreviewUrl, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, printProfileShareKit, requestDeviceSyncToken, requestSyncToken, setMatchIntent, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
@@ -2081,6 +2082,12 @@ async function assertCliDerivedPayload() {
   const revealXShare = cliRevealXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareArchetype=shipper' });
   const parsedRevealXShare = new URL(revealXShare);
   assert(parsedRevealXShare.origin === 'https://twitter.com' && parsedRevealXShare.searchParams.get('url')?.includes('compareArchetype=shipper') && !parsedRevealXShare.searchParams.get('url')?.includes('compareTo='), 'CLI reveal X share URL should use archetype-only comparison before claiming');
+  const webPreviewUrl = localWebPreviewUrl(insights, { host: 'https://vibestats.example' });
+  const previewHash = new URL(webPreviewUrl).hash.replace(/^#vibestatsPreview=/, '');
+  const decodedPreview = JSON.parse(Buffer.from(previewHash, 'base64url').toString('utf8'));
+  assert(webPreviewUrl.startsWith('https://vibestats.example/#vibestatsPreview='), 'CLI local web preview should open vibestats with fragment-only local preview data');
+  assert(decodedPreview.version === 'vibestats.local_preview.v1' && decodedPreview.insights.metrics.tool_usage.bash === 6000 && decodedPreview.insights.metrics.language_usage.typescript === 45000, 'CLI local web preview should carry bounded aggregate preview metrics for the web reveal');
+  assert(!JSON.stringify(decodedPreview).includes('private prompt'), 'CLI local web preview must not include raw prompts or session text');
   const revealTerminalCard = cliRevealTerminalCard(payload, { host: 'https://vibestats.example' });
   assert(revealTerminalCard.includes('[vibestats]') && revealTerminalCard.includes('prolific Shipper') && revealTerminalCard.includes('280 sessions |') && revealTerminalCard.includes('commits/day |') && revealTerminalCard.includes('Raw /insights stayed local. What are you?') && revealTerminalCard.includes('https://vibestats.example/?compareArchetype=shipper'), 'CLI reveal terminal card should be compact, pasteable, privacy-aware, and compare-first');
   assert(revealTerminalCard.includes('Moments:') && revealTerminalCard.includes('Terminal heavy') && revealTerminalCard.includes('Code movement') && !revealTerminalCard.includes('tool_usage') && !revealTerminalCard.includes('language_usage'), 'CLI reveal terminal card should include only public-safe derived moments');
@@ -2621,6 +2628,7 @@ async function assertCliDerivedPayload() {
     assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI claim sync request must not post raw usage maps');
 
     output.length = 0;
+    const onboardOpenedUrls = [];
     const consentedOnboardResult = await sync({
       file,
       host: 'https://vibestats.example',
@@ -2628,10 +2636,15 @@ async function assertCliDerivedPayload() {
       dryRun: false,
       promptToPublish: true,
       assumeYes: true,
-      openBrowser: false,
+      open(url) {
+        onboardOpenedUrls.push(url);
+        return true;
+      },
     });
     assert(consentedOnboardResult.ok === true, 'CLI default onboarding should publish after explicit yes consent');
+    assert(onboardOpenedUrls[0]?.includes('https://vibestats.example/#vibestatsPreview=') && onboardOpenedUrls[1] === 'https://vibestats.example/u/alex/recap', 'CLI default onboarding should open the local web reveal before publishing and the claimed recap after publishing');
     assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Publishing the derived profile now. Raw Claude Code /insights data stays local.'), 'CLI default onboarding should print the full local reveal before consented publishing');
+    assert(output.join('').includes('Opening web reveal preview: https://vibestats.example/#vibestatsPreview='), 'CLI default onboarding should explain that it opened a local web reveal before the publish prompt');
     assert(output.join('').includes('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.'), 'CLI default onboarding should keep the claimed profile proof after publishing');
 
     output.length = 0;
