@@ -15,8 +15,8 @@ Use these exact commands:
 
 ```bash
 /insights
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
+npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
+npx --yes github:brightseth/vibestats#feat/wave-1-identity
 ```
 
 ## Flow
@@ -28,7 +28,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
 3. If it exists, run:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run
+npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
 ```
 
 4. Summarize only the derived reveal:
@@ -40,7 +40,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run
 6. Only after the user agrees, run:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
+npx --yes github:brightseth/vibestats#feat/wave-1-identity
 ```
 
 7. Report the profile URL and compare invite URL printed by the CLI.

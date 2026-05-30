@@ -10,7 +10,7 @@ function shellQuote(value) {
 
 function syncCommand(origin, token) {
   const packageSpec = process.env.VIBESTATS_CLI_PACKAGE || DEFAULT_CLI_PACKAGE;
-  return `npx --yes ${shellQuote(packageSpec)} sync --host ${shellQuote(origin)} --token ${shellQuote(token)}`;
+  return `npx --yes ${shellQuote(packageSpec)} --host ${shellQuote(origin)} --token ${shellQuote(token)}`;
 }
 
 export default async function handler(req, res) {

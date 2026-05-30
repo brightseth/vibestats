@@ -126,11 +126,11 @@ npm run migrate
 
 Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured. Users can save digest consent before delivery is configured; those opt-ins become eligible once the email env is enabled.
 
-Run one-command local sync after signing in. The CLI opens a browser approval flow against your GitHub-backed vibestats session and creates a revocable token automatically:
+Run one-command local sync after signing in. The CLI opens a browser approval flow against your GitHub-backed vibestats session and creates a revocable token automatically. The `sync` subcommand still works, but the copied command omits it to keep first-run onboarding shorter:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run
+npx --yes github:brightseth/vibestats#feat/wave-1-identity
+npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
 ```
 
 The unscoped npm package name `vibestats` is currently owned by another publisher, so do not use `npx vibestats` for this project until a scoped package is published or package ownership changes.
@@ -138,7 +138,7 @@ The unscoped npm package name `vibestats` is currently owned by another publishe
 Settings still exposes a manual token command as a fallback. Sync tokens are revocable from Settings:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --token "$VIBESTATS_SYNC_TOKEN"
+npx --yes github:brightseth/vibestats#feat/wave-1-identity --token "$VIBESTATS_SYNC_TOKEN"
 ```
 
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to inspect the derived payload locally without a token or network request, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.

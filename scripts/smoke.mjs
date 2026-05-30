@@ -290,7 +290,7 @@ async function assertRoutes() {
   assert(recapHtml.includes("fetch(`/api/u/${encodeURIComponent(handle)}`") && recapHtml.includes('Copy recap'), 'profile recap page should render from sanitized public profile JSON');
   assert(recapHtml.includes('Raw Claude Code /insights data stays local') && recapHtml.includes('facet shape'), 'profile recap should state derived-only privacy and facet proof');
   assert(recapHtml.includes('id="digest-cta"') && recapHtml.includes('profile.is_owner'), 'profile recap should give owners a path into digest consent');
-  assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'profile recap should let owners refresh the return surface with CLI sync');
+  assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'profile recap should let owners refresh the return surface with CLI sync');
   assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
   assert(homeApi.includes('homeMetadataForInvite') && homeApi.includes('Run /insights, then reveal yours against @${handle}'), 'homepage API should render compare-first share-recipient metadata');
   assert(homeApi.includes("user.privacy === 'private'") && homeApi.includes('profileShareCacheControl(cacheUser)'), 'homepage API should avoid private profile previews and preserve profile cache policy');
@@ -334,6 +334,7 @@ async function assertRoutes() {
   assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
   assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
   assert(syncTokenApi.includes("github:brightseth/vibestats#feat/wave-1-identity") && syncTokenApi.includes('VIBESTATS_CLI_PACKAGE'), 'sync token API should avoid the occupied unscoped npm package name while allowing package override');
+  assert(syncTokenApi.includes('${shellQuote(packageSpec)} --host') && !syncTokenApi.includes(' sync --host '), 'sync token API should generate the shorter one-command CLI form');
   assert(cliLocalTokenApi.includes("if (!['GET', 'POST'].includes(req.method))"), 'CLI browser auth endpoint should support approval page and token redirect');
   assert(cliLocalTokenApi.includes('allowedLocalCallback') && cliLocalTokenApi.includes('127.0.0.1') && cliLocalTokenApi.includes('localhost'), 'CLI browser auth endpoint should allow only local callbacks');
   assert(cliLocalTokenApi.includes('Authorize CLI sync') && cliLocalTokenApi.includes('requireSameOrigin(req)'), 'CLI browser auth endpoint should require same-origin browser approval before minting a token');
@@ -354,7 +355,7 @@ async function assertRoutes() {
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
   assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
-  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
+  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
   assert(indexHtml.includes('Try the reveal demo') && indexHtml.includes('Copy npx reveal command') && indexHtml.includes('claim yours only when you want a public profile'), 'upload page should let cold visitors preview the reveal before asking them to publish');
   assert(indexHtml.includes('Explore sample pairings without data') && indexHtml.includes('href="/compare?a=orchestrator&b=shipper"'), 'upload page should give no-data visitors an archetype-pairing gallery path');
   assert(!indexHtml.includes('npx vibestats sync'), 'upload page should not advertise the occupied unscoped npm package name');
@@ -382,7 +383,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes('id="weekly-digest-row"'), 'settings page should expose a stable weekly digest anchor');
   assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
-  assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'settings UI should expose CLI sync command generation');
+  assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'settings UI should expose CLI sync command generation');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="match-settings"'), 'settings UI should expose a direct anchor for match intent setup');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
@@ -516,7 +517,7 @@ async function assertRoutes() {
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
-  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
+  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
   assert(claudeCommand.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code command should explicitly avoid the dead agent-insights path');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
@@ -805,7 +806,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('id="digest-cta"') && profileHtml.includes('reserve the weekly email'), 'owner profile should expose return-loop weekly email setup');
   assert(profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)') && profileHtml.includes('](${compareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes('id="reveal-panel"') && profileHtml.includes('renderRevealPanel(me, profile, latest)'), 'profile pages should show share recipients a direct reveal panel');
-  assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'profile reveal panel should carry the command path without sending visitors hunting');
+  assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'profile reveal panel should carry the command path without sending visitors hunting');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
@@ -1320,7 +1321,9 @@ async function assertCliDerivedPayload() {
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
-  assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity sync', 'CLI should expose the current GitHub-backed npx command');
+  const parsedDefault = parseArgs(['node', 'vibestats', '--dry-run']);
+  assert(parsedDefault.command === 'sync' && parsedDefault.options.dryRun === true, 'CLI should default to sync so the copied npx command needs no subcommand');
+  assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'CLI should expose the current GitHub-backed npx command');
   assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.'), 'CLI help should frame sync as reveal-before-publish');
   const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
   assert(parsedNoOpen.options.openBrowser === false && parsedNoOpen.options.authTimeoutMs === 1000, 'CLI sync should parse manual browser auth options');

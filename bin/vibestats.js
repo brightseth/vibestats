@@ -13,7 +13,7 @@ const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
 const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
-export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE} sync`;
+export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE}`;
 const ARCHETYPE_LABELS = {
   orchestrator: 'Orchestrator',
   shipper: 'Shipper',
@@ -27,7 +27,7 @@ const ARCHETYPE_LABELS = {
 
 function usage() {
   return `Usage:
-  vibestats sync [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
+  vibestats [sync] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
 
 Environment:
   VIBESTATS_SYNC_TOKEN  optional signed sync token from vibestats settings
@@ -43,7 +43,7 @@ Use --dry-run to print the derived payload without signing in or sending it.`;
 
 export function parseArgs(argv) {
   const args = argv.slice(2);
-  const command = args.shift();
+  const command = args[0] && !args[0].startsWith('-') ? args.shift() : 'sync';
   const options = {
     file: DEFAULT_INSIGHTS_PATH,
     host: process.env.VIBESTATS_URL || DEFAULT_HOST,
@@ -277,7 +277,7 @@ export async function sync(options) {
 
 export async function main() {
   const { command, options } = parseArgs(process.argv);
-  if (!command || command === 'help' || command === '--help' || command === '-h') {
+  if (command === 'help' || command === '--help' || command === '-h') {
     process.stdout.write(`${usage()}\n`);
     return;
   }
