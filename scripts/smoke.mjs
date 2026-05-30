@@ -413,6 +413,8 @@ async function assertRoutes() {
   assert(settingsHtml.includes('install-claude-command'), 'settings UI should expose the installable Claude Code command path');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="match-settings"'), 'settings UI should expose a direct anchor for match intent setup');
+  assert(settingsHtml.includes('Match intent saved, but your profile is still unlisted') && settingsHtml.includes("document.getElementById('privacy').focus()"), 'settings UI should preserve unlisted privacy when match intent is saved and prompt explicit public opt-in');
+  assert(settingsHtml.includes('Visibility saved. Your active match intent can now appear in browse and /match.'), 'settings UI should confirm public visibility unlocks active match discovery');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
   assert(settingsHtml.includes('--dry-run'), 'settings UI should tell users how to preview CLI reveals locally');
   assert(settingsHtml.includes('--dry-run --json') && settingsHtml.includes('shows the local reveal before anything is sent'), 'settings UI should reserve JSON mode for exact derived payload audits');

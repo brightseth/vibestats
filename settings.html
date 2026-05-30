@@ -488,7 +488,10 @@
             method: 'PATCH',
             body: JSON.stringify({ privacy: event.target.value }),
           });
-          showMessage('Visibility saved.');
+          const lookingFor = document.getElementById('looking-for').value;
+          showMessage(event.target.value === 'public' && lookingFor !== 'idle'
+            ? 'Visibility saved. Your active match intent can now appear in browse and /match.'
+            : 'Visibility saved.');
         } catch (err) {
           showMessage(err.message, true);
         }
@@ -546,7 +549,14 @@
           });
           document.getElementById('looking-for').value = body.settings?.looking_for || 'idle';
           document.getElementById('contact-url').value = body.settings?.contact_url || '';
-          showMessage(body.settings?.looking_for === 'idle' ? 'Match intent cleared.' : 'Match intent active for 7 days.');
+          const activeIntent = body.settings?.looking_for && body.settings.looking_for !== 'idle';
+          const privacy = document.getElementById('privacy').value;
+          if (activeIntent && privacy !== 'public') {
+            showMessage('Match intent saved, but your profile is still unlisted. Change visibility to Public above to appear in browse and /match.');
+            document.getElementById('privacy').focus();
+          } else {
+            showMessage(activeIntent ? 'Match intent active for 7 days.' : 'Match intent cleared.');
+          }
         } catch (err) {
           showMessage(err.message, true);
         }
