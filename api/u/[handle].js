@@ -5,6 +5,7 @@ import { publicUser, sql } from '../_lib/db.js';
 import { profileEvolution } from '../_lib/evolution.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed } from '../_lib/http.js';
 import { weeklyLeaderboardRank } from '../_lib/leaderboard-rank.js';
+import { GOAL_LABELS } from '../_lib/matchmaking.js';
 import { publicMatchSettings } from '../_lib/profile-settings.js';
 import { metricVisibility, publicUpload } from '../_lib/public-profile.js';
 import { rarityTier, signatureFromUpload } from '../_lib/signatures.js';
@@ -25,6 +26,42 @@ export function profileRarityPayload(signature, count, { isOwner = false } = {})
     tier: rarityTier(safeCount),
     window_days: 30,
   };
+}
+
+function matchInterestBucket(count) {
+  if (count >= 20) return { bucket: '20+', label: 'hot match interest', level: 'hot' };
+  if (count >= 10) return { bucket: '10-19', label: 'strong match interest', level: 'strong' };
+  if (count >= 3) return { bucket: '3-9', label: 'warming match interest', level: 'warming' };
+  return { bucket: '1-2', label: 'early match interest', level: 'early' };
+}
+
+export function profileMatchInterestPayload(row = {}, { isOwner = false } = {}) {
+  const events = Math.max(0, Number(row.week_count || 0));
+  if (!events) return null;
+  const bucket = matchInterestBucket(events);
+  const topGoal = GOAL_LABELS[row.top_goal] ? row.top_goal : null;
+  const goalText = topGoal ? `${GOAL_LABELS[topGoal]} interest` : 'profile interest';
+  return {
+    window_days: 7,
+    level: bucket.level,
+    label: bucket.label,
+    count_bucket: bucket.bucket,
+    top_goal: topGoal,
+    top_goal_label: topGoal ? GOAL_LABELS[topGoal] : null,
+    detail: `${goalText} from compare/contact/share actions`,
+    ...(isOwner ? {
+      events,
+      contact_clicks: Math.max(0, Number(row.contact_count || 0)),
+      intro_copies: Math.max(0, Number(row.copy_intro_count || 0)),
+      compare_clicks: Math.max(0, Number(row.compare_count || 0)),
+      share_clicks: Math.max(0, Number(row.share_count || 0)),
+    } : {}),
+  };
+}
+
+function matchInterestUnavailable(err) {
+  const message = String(err?.message || '').toLowerCase();
+  return err?.code === '42P01' || message.includes('match_intro_events');
 }
 
 export default async function handler(req, res) {
@@ -89,6 +126,35 @@ export default async function handler(req, res) {
     const leaderboard = await weeklyLeaderboardRank(user, uploads[0]);
     const evolution = profileEvolution(uploads, { isOwner });
     const streak = profileStreak(uploads, { isOwner });
+    let matchInterest = null;
+    try {
+      const interestRows = await sql()`
+        with recent as (
+          select goal, action
+          from match_intro_events
+          where lower(target_handle) = lower(${user.gh_handle})
+            and created_at > now() - interval '7 days'
+        ),
+        top_goal as (
+          select goal
+          from recent
+          group by goal
+          order by count(*) desc, goal asc
+          limit 1
+        )
+        select
+          count(*)::int as week_count,
+          count(*) filter (where action = 'contact_click')::int as contact_count,
+          count(*) filter (where action = 'copy_intro')::int as copy_intro_count,
+          count(*) filter (where action = 'compare_click')::int as compare_count,
+          count(*) filter (where action = 'share_x')::int as share_count,
+          (select goal from top_goal) as top_goal
+        from recent
+      `;
+      matchInterest = profileMatchInterestPayload(interestRows[0], { isOwner });
+    } catch (err) {
+      if (!matchInterestUnavailable(err)) throw err;
+    }
 
     json(res, 200, {
       user: publicUser(user, { includePrivacy: isOwner, includeActivity: isOwner }),
@@ -104,6 +170,7 @@ export default async function handler(req, res) {
       leaderboard,
       evolution,
       streak,
+      match_interest: matchInterest,
       achievements: publicAchievements({
         upload: uploads[0],
         publicUpload: serializedUploads[0],

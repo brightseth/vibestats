@@ -467,7 +467,7 @@ async function auditLaunch(options) {
       expectedType: 'application/json',
       allowStatuses: expectReady ? [200] : [200, 404, 503],
       requireNoStore: true,
-      mustInclude: expectReady ? ['"uploads"', '"metric_visibility"', '"history"', '"leaderboard"', '"evolution"', '"streak"'] : null,
+      mustInclude: expectReady ? ['"uploads"', '"metric_visibility"', '"history"', '"leaderboard"', '"evolution"', '"streak"', '"match_interest"'] : null,
     },
     {
       label: 'profile page',

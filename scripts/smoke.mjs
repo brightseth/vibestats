@@ -304,6 +304,7 @@ async function assertRoutes() {
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
   assert(profileApi.includes('const streak = profileStreak(uploads, { isOwner })') && profileApi.includes('streak,'), 'profile API should include derived day-based streaks');
+  assert(profileApi.includes('profileMatchInterestPayload') && profileApi.includes('match_intro_events') && profileApi.includes('match_interest: matchInterest'), 'profile API should include bounded match-interest aggregate proof from intro events');
   assert(profileApi.includes('publicAchievements({'), 'profile API should include public-safe collectible achievements');
   assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');
   assert(profileApi.includes('total_uploads: isOwner ? uploads.length : null'), 'profile API should keep exact history count owner-only');
@@ -617,6 +618,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');
   assert(profileHtml.includes('const streak = profile.streak || null') && profileHtml.includes('${esc(streak.label)}'), 'profile UI should render server-derived day streaks');
+  assert(profileHtml.includes('matchInterestText(profile?.match_interest)') && profileHtml.includes("['match interest', matchInterestText(matchInterest), matchInterestDetail(matchInterest)]"), 'profile UI should render bounded match-interest proof as a return signal');
   assert(!profileHtml.includes('function uploadStreak(uploads)'), 'profile UI should not recompute hidden history streaks from visitor uploads');
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
   assert(profileHtml.includes('id="facet-panel"') && profileHtml.includes('renderFacetRadar(latest)'), 'profile UI should render a derived facet radar');
@@ -650,6 +652,7 @@ async function assertLaunchAuditHelpers() {
   assert(launchAuditSource.includes("path: '/api/me'") && launchAuditSource.includes("Cookie: 'vibestats_auth=a.b.c'"), 'launch audit should probe session failure without exposing env names');
   assert(launchAuditSource.includes("label: 'weekly digest cron guard'"), 'launch audit should probe the weekly digest cron guard without exposing env names');
   assert(launchAuditSource.includes("'/api/match-intros'") && launchAuditSource.includes('match intro event recording status') && launchAuditSource.includes("action: 'compare_click'"), 'launch audit should probe bounded match-intro event recording without sending free text');
+  assert(launchAuditSource.includes('"match_interest"'), 'launch audit should verify profile JSON exposes the match-interest return signal');
   assert(launchAuditSource.includes('auditCliPackage') && launchAuditSource.includes("execFileAsync('npm', ['view', packageSpec") && launchAuditSource.includes("execFileAsync('npm', ['exec', '--yes', '--package', packageSpec"), 'launch audit should verify the public npm CLI package when strict package readiness is expected');
   console.log('ok launch audit supports protected Vercel previews');
 }
@@ -2512,14 +2515,34 @@ async function assertPublicUserSerializer() {
 }
 
 async function assertProfileApiPayloadHelpers() {
-  const { profileRarityPayload } = await import('../api/u/[handle].js');
+  const { profileMatchInterestPayload, profileRarityPayload } = await import('../api/u/[handle].js');
   const signature = { fingerprint: 'builder+shipper+orchestrator:90s' };
   const visitorRarity = profileRarityPayload(signature, 8);
   const ownerRarity = profileRarityPayload(signature, 8, { isOwner: true });
   assert(visitorRarity.count === 8 && visitorRarity.tier === 'rare', 'visitor profile rarity should retain public scarcity proof');
   assert(!Object.hasOwn(visitorRarity, 'fingerprint'), 'visitor profile rarity must not expose internal signature fingerprint');
   assert(ownerRarity.fingerprint === 'builder+shipper+orchestrator:90s', 'owner profile rarity can retain internal signature fingerprint');
-  console.log('ok profile API payload helpers keep rarity fingerprints owner-only');
+  const visitorInterest = profileMatchInterestPayload({
+    week_count: 12,
+    contact_count: 3,
+    copy_intro_count: 4,
+    compare_count: 5,
+    share_count: 0,
+    top_goal: 'pair-coding',
+  });
+  const ownerInterest = profileMatchInterestPayload({
+    week_count: 12,
+    contact_count: 3,
+    copy_intro_count: 4,
+    compare_count: 5,
+    share_count: 0,
+    top_goal: 'pair-coding',
+  }, { isOwner: true });
+  assert(visitorInterest.label === 'strong match interest' && visitorInterest.count_bucket === '10-19' && visitorInterest.top_goal_label === 'Pair coding', 'visitor match interest should expose coarse public aggregate proof');
+  assert(!Object.hasOwn(visitorInterest, 'events') && !Object.hasOwn(visitorInterest, 'contact_clicks'), 'visitor match interest must not expose exact event counts');
+  assert(ownerInterest.events === 12 && ownerInterest.contact_clicks === 3 && ownerInterest.intro_copies === 4, 'owner match interest should expose exact bounded event counts');
+  assert(profileMatchInterestPayload({ week_count: 0 }) === null, 'profile match interest should omit empty event windows');
+  console.log('ok profile API payload helpers keep rarity and match-interest internals owner-only');
 }
 
 async function assertDiscoveryEntrySerializers() {
