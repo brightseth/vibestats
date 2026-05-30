@@ -7,7 +7,7 @@ allowed-tools: Bash
 
 Use this when the user wants to find out their vibecoding personality from Claude Code.
 
-The core promise is: reveal first, publish only if the user chooses, and never expose raw Claude Code session data.
+The core promise is: reveal first, publish only if the user chooses, and never expose raw Claude Code session data. The user can complete onboarding from the terminal; no manual website upload is required.
 
 ## Commands
 
@@ -36,14 +36,14 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
    - signature, if present
    - behavioral moments, if present
    - coarse derived metrics such as sessions, days, languages, commits per day, messages per session
-5. Ask whether to publish/claim the result.
+5. Ask whether to publish/claim the result. Frame this as claiming a GitHub-backed, derived-only profile, not uploading analytics.
 6. Only after the user agrees, run:
 
 ```bash
 npx --yes github:brightseth/vibestats#feat/wave-1-identity join
 ```
 
-7. Report the profile URL and compare invite URL printed by the CLI.
+7. Report the profile URL, compare invite URL, and any README badge or recap links printed by the CLI.
 
 ## Privacy Rules
 

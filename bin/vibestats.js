@@ -184,13 +184,13 @@ function compactShareLabel(value) {
 
 export function cliShareText({ label, compareUrl } = {}) {
   const shareLabel = compactShareLabel(label);
-  return `I just revealed my Claude Code build profile: ${shareLabel}. What are you? See how you'd pair with me: ${compareUrl}`;
+  return `I just claimed my Claude Code build profile: ${shareLabel}. Raw /insights stayed local. What are you? See how you'd pair with me: ${compareUrl}`;
 }
 
 export function cliXShareUrl({ label, compareUrl } = {}) {
   const shareLabel = compactShareLabel(label);
   const params = new URLSearchParams({
-    text: `I just revealed my Claude Code build profile: ${shareLabel}. What are you? See how you'd pair with me.`,
+    text: `I just claimed my Claude Code build profile: ${shareLabel}. Raw /insights stayed local. What are you? See how you'd pair with me.`,
     url: compareUrl || DEFAULT_HOST,
   });
   return `https://twitter.com/intent/tweet?${params.toString()}`;
@@ -223,7 +223,8 @@ export function dryRunRevealText(payload = {}) {
 
   lines.push(
     'Raw Claude Code /insights data stayed local. No profile was published.',
-    'To claim your profile and share compare links, rerun without --dry-run.',
+    'No website upload required.',
+    `To claim your GitHub-backed profile and share compare links, run: ${DEFAULT_NPX_JOIN_COMMAND}`,
     'For machine-readable derived payload: add --json.',
   );
 
@@ -507,6 +508,7 @@ export async function sync(options) {
   const shareText = cliShareText({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   const xShare = cliXShareUrl({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
+  process.stdout.write('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.\n');
   process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
   process.stdout.write(`Copy/paste share: ${shareText}\n`);
   process.stdout.write(`Share on X: ${xShare}\n`);
