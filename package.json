@@ -29,6 +29,7 @@
   "scripts": {
     "test": "node scripts/smoke.mjs",
     "doctor:identity": "node scripts/identity-doctor.mjs",
+    "audit:package": "node scripts/package-audit.mjs",
     "audit:launch": "node scripts/launch-audit.mjs",
     "audit:ssh": "node scripts/ssh-audit.mjs",
     "share:kit": "node scripts/share-kit.mjs",

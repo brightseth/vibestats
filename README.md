@@ -148,6 +148,7 @@ The unscoped npm package name `vibestats` is currently owned by another publishe
 
 ```bash
 npm pack --dry-run
+npm run audit:package
 npm publish --access public
 ```
 

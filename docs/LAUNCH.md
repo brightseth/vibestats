@@ -115,6 +115,7 @@ Before replacing the GitHub branch npx command with a public npm command, publis
 
 ```bash
 npm pack --dry-run
+npm run audit:package
 npm publish --access public
 ```
 

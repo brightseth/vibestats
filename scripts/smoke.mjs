@@ -225,6 +225,7 @@ async function assertRoutes() {
   const rewrites = config.rewrites || [];
   assert(packageJson.scripts?.dev === 'vercel dev' && packageJson.scripts?.serve === 'vercel dev', 'local dev should use Vercel routing now that / is rendered by an API function');
   assert(packageJson.scripts?.['share:kit'] === 'node scripts/share-kit.mjs', 'package should expose the public profile share-kit generator');
+  assert(packageJson.scripts?.['audit:package'] === 'node scripts/package-audit.mjs', 'package should expose the prepublish package audit');
   assert(packageJson.scripts?.['ssh:dev'] === 'node services/ssh-shell/server.js' && packageJson.dependencies?.ssh2, 'package should expose the deployable SSH shell service');
   assert(packageJson.scripts?.['audit:ssh'] === 'node scripts/ssh-audit.mjs', 'package should expose the public SSH service audit');
   assert(flySshConfig.includes('app = "vibestats-ssh"') && flySshConfig.includes('internal_port = 2222') && flySshConfig.includes('port = 22') && flySshConfig.includes('VIBESTATS_URL = "https://vibestats.io"'), 'Fly config should expose the SSH shell as a public TCP service');
@@ -762,6 +763,64 @@ async function assertSshAuditScript() {
   assert(source.includes('UserKnownHostsFile') && source.includes('StrictHostKeyChecking') && source.includes('ConnectTimeout'), 'SSH audit should isolate known-hosts and bound connection time');
   assert(source.includes('SSH_HOST_KEY') && source.includes('hasSecretName'), 'SSH audit should guard against secret-name leaks in remote output');
   console.log('ok SSH service audit script');
+}
+
+async function assertPackageAuditScript() {
+  const { auditPackage, parseArgs } = await import('../scripts/package-audit.mjs');
+  const parsed = parseArgs(['--package', '@lets-vibe/vibestats', '--version', '0.1.0']);
+  assert(parsed.packageName === '@lets-vibe/vibestats' && parsed.expectedVersion === '0.1.0', 'package audit should parse package and version');
+  const calls = [];
+  const results = await auditPackage(parsed, {
+    exec: async (bin, args) => {
+      calls.push([bin, ...args].join(' '));
+      if (bin === 'npm' && args[0] === 'pack') {
+        return {
+          stdout: 'lets-vibe-vibestats-0.1.0.tgz\n',
+          stderr: [
+            'npm notice name: @lets-vibe/vibestats',
+            'npm notice version: 0.1.0',
+            'npm notice 41.0kB bin/vibestats.js',
+            'npm notice 5.2kB lib/claude-insights-extractor.js',
+            'npm notice 6.5kB lib/insights-derived.js',
+            'npm notice 5.0kB lib/share-kit.js',
+            'npm notice 5.0kB api/_lib/moments.js',
+            'npm notice 2.5kB api/_lib/signatures.js',
+            'npm notice 3.3kB .claude/commands/vibestats.md',
+          ].join('\n'),
+        };
+      }
+      if (bin === 'npm' && args.includes('--help')) {
+        return {
+          stdout: [
+            'Current public claim command: npx --yes @lets-vibe/vibestats',
+            'vibestats share --handle HANDLE',
+            'Use reveal for a local result',
+            'Use claim CODE from an SSH/TUI claim session',
+          ].join('\n'),
+          stderr: '',
+        };
+      }
+      if (bin === 'npm' && args.includes('reveal')) {
+        const err = new Error('missing fixture');
+        err.stdout = [
+          'Terminal onboarding:',
+          '1. Open Claude Code and run /insights.',
+          '2. Check terminal readiness: npx --yes @lets-vibe/vibestats status',
+        ].join('\n');
+        err.stderr = '';
+        throw err;
+      }
+      throw new Error(`unexpected package audit command: ${bin} ${args.join(' ')}`);
+    },
+  });
+  assert(calls.some((call) => call.startsWith('npm pack --pack-destination')), 'package audit should run npm pack into a temp directory');
+  assert(calls.some((call) => call.includes('npm exec --yes --package') && call.includes('vibestats --help')), 'package audit should execute packed CLI help');
+  assert(calls.some((call) => call.includes('vibestats reveal --json --file /path/does-not-exist.json')), 'package audit should execute packed CLI missing-input recovery');
+  assert(results.every((result) => result.ok), `package audit fake tarball should pass: ${results.filter((result) => !result.ok).map((result) => result.label).join(', ')}`);
+  const source = await readFile('scripts/package-audit.mjs', 'utf8');
+  assert(source.includes("exec('npm', ['pack'") && source.includes("exec('npm', ['exec'") && source.includes('Terminal onboarding:'), 'package audit should cover pack, execution, and onboarding recovery');
+  assert(source.includes('SECRET_NAME_PATTERNS') && source.includes('RAW_LEAK_PATTERNS'), 'package audit should guard package output against raw field and secret-name leaks');
+  console.log('ok package audit script');
 }
 
 async function assertUpdateCliCommandScript() {
@@ -4058,6 +4117,7 @@ await assertApiImports();
 await assertRoutes();
 await assertLaunchAuditHelpers();
 await assertSshAuditScript();
+await assertPackageAuditScript();
 await assertUpdateCliCommandScript();
   await assertShareKitScript();
   await assertDerivedProfileCredentialHelpers();
