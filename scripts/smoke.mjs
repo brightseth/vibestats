@@ -293,6 +293,7 @@ async function assertRoutes() {
   assert(recapHtml.includes('Raw Claude Code /insights data stays local') && recapHtml.includes('facet shape'), 'profile recap should state derived-only privacy and facet proof');
   assert(recapHtml.includes('id="digest-cta"') && recapHtml.includes('profile.is_owner'), 'profile recap should give owners a path into digest consent');
   assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'profile recap should let owners refresh the return surface with CLI sync');
+  assert(recapHtml.includes('id="copy-install"') && recapHtml.includes('install-claude-command'), 'profile recap should let owners install the Claude Code /vibestats return hook');
   assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
   assert(digestPreviewApi.includes('requireUser(req)') && digestPreviewApi.includes('buildWeeklyDigest({'), 'digest preview should be authenticated and reuse the weekly digest builder');
   assert(digestPreviewApi.includes('rarityForSignature(signature)') && digestPreviewApi.includes('weeklyLeaderboardRank(user, latest)'), 'digest preview should include scarcity and leaderboard proof');
@@ -333,6 +334,7 @@ async function assertRoutes() {
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
   assert(cliBin.includes('Invite people to compare:') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface compare-first, recap, and README badge hooks');
+  assert(cliBin.includes('Install /vibestats for future reveals:') && cliBin.includes('Reserve weekly digest:'), 'CLI sync success output should surface Claude Code and digest return hooks');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
   assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when no token is supplied');
   assert(cliBin.includes('--no-open') && cliBin.includes('Opening browser to authorize vibestats CLI sync'), 'CLI sync should support manual browser auth fallback');
@@ -464,6 +466,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'profile-backed pair route'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`'), 'launch audit should cover profile-backed pair URLs');
   assert(launchAudit.includes("label: 'profile recap'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/recap`'), 'launch audit should cover profile recap return URLs');
   assert(launchAudit.includes('Copy sync command') && launchAudit.includes('Run CLI sync after more Claude Code work'), 'launch audit should verify recap-to-sync return action');
+  assert(launchAudit.includes('Copy /vibestats install') && launchAudit.includes('install-claude-command'), 'launch audit should verify recap-to-Claude-command return action');
   assert(launchAudit.includes('Open the pairing, then claim yours') && launchAudit.includes('/?compareTo='), 'launch audit should verify dynamic pair metadata when identity is ready');
   assert(launchAudit.includes("See how you'd pair with @${handle}") && launchAudit.includes('Run /insights, then reveal yours'), 'launch audit should verify compare-first homepage unfurl metadata');
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
@@ -1540,6 +1543,8 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
     assert(output.join('').includes('Share your recap: https://vibestats.example/u/alex/recap'), 'CLI sync should print recap return URL');
     assert(output.join('').includes('README badge Markdown: [![vibestats: @alex](https://vibestats.example/u/alex/badge.svg)](https://vibestats.example/?compareTo=alex&compareArchetype=shipper)'), 'CLI sync should print copyable README badge Markdown');
+    assert(output.join('').includes('Install /vibestats for future reveals: npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command'), 'CLI sync should print the Claude Code command installer as a return hook');
+    assert(output.join('').includes('Reserve weekly digest: https://vibestats.example/settings#weekly-digest-row'), 'CLI sync should print the weekly digest setup link as a return hook');
     assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI sync request must not post raw usage maps');
 
     output.length = 0;

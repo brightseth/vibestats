@@ -353,12 +353,15 @@ export async function sync(options) {
   const compareUrl = apiUrl(host, body.compare_url, `/?compareArchetype=${encodeURIComponent(payload.archetype)}`);
   const recapUrl = apiUrl(host, body.recap_url, `${profilePath}/recap`);
   const badgeUrl = apiUrl(host, body.badge_url, `${profilePath}/badge.svg`);
+  const digestUrl = apiUrl(host, '/settings#weekly-digest-row');
   const handle = profileHandle(profileUrl) || 'me';
   const badgeMarkdown = `[![vibestats: @${handle}](${badgeUrl})](${compareUrl})`;
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
   process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
   process.stdout.write(`Share your recap: ${recapUrl}\n`);
   process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
+  process.stdout.write(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}\n`);
+  process.stdout.write(`Reserve weekly digest: ${digestUrl}\n`);
   return body;
 }
 

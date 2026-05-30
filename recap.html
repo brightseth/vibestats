@@ -319,6 +319,7 @@
             <a class="btn" id="share-x" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener">Share on X</a>
             <a class="btn" id="profile-cta" href="/">Open profile</a>
             <button class="btn" id="copy-sync" type="button" style="display:none">Copy sync command</button>
+            <button class="btn" id="copy-install" type="button" style="display:none">Copy /vibestats install</button>
             <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
           </div>
           <div class="privacy">Raw Claude Code /insights data stays local. This recap uses only saved derived profile signals.</div>
@@ -385,6 +386,7 @@
     }
 
     const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+    const INSTALL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
 
     function profileProofLine(profile, latest) {
       const proof = [];
@@ -498,6 +500,7 @@
       if (profile.is_owner) {
         document.getElementById('digest-cta').style.display = 'inline-flex';
         document.getElementById('copy-sync').style.display = 'inline-flex';
+        document.getElementById('copy-install').style.display = 'inline-flex';
       }
       document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(invite)}&url=${encodeURIComponent(compareUrl)}`;
       document.getElementById('copy-recap').addEventListener('click', async (event) => {
@@ -519,6 +522,16 @@
           button.textContent = 'Copy failed';
         }
         setTimeout(() => { button.textContent = 'Copy sync command'; }, 1500);
+      });
+      document.getElementById('copy-install').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        try {
+          await copyText(INSTALL_COMMAND);
+          button.textContent = '/vibestats copied!';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = 'Copy /vibestats install'; }, 1500);
       });
       renderFacets(latest);
       document.getElementById('loading').style.display = 'none';

@@ -377,7 +377,7 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
       mustInclude: expectReady && profileHasUpload
-        ? ['Copy recap', 'Copy sync command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
+        ? ['Copy recap', 'Copy sync command', 'Copy /vibestats install', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
         : ['A privacy-preserving weekly recap'],
     },
     {
