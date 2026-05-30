@@ -2094,8 +2094,8 @@ async function assertCliDerivedPayload() {
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
   assert(revealText.includes('No website upload required.') && revealText.includes(DEFAULT_LOCAL_SYNC_COMMAND), 'CLI dry-run reveal should hand off to exact no-npm one-command terminal-first claim command');
   assert(revealText.includes(`Install /vibestats for future reveals: ${DEFAULT_LOCAL_INSTALL_COMMAND}`), 'CLI dry-run reveal should print the no-npm Claude Code command installer as a return hook');
-  assert(revealText.includes(`Refresh after more Claude Code work: run /insights, then ${DEFAULT_LOCAL_STATUS_COMMAND}, then ${DEFAULT_LOCAL_REVEAL_COMMAND}`), 'CLI dry-run reveal should print the status-aware no-npm repeat reveal loop');
-  assert(revealText.includes('For machine-readable derived payload: add --json to the reveal command.'), 'CLI dry-run reveal should point auditors to JSON mode');
+  assert(revealText.includes(`3. Refresh later: run /insights, then ${DEFAULT_LOCAL_STATUS_COMMAND}, then ${DEFAULT_LOCAL_REVEAL_COMMAND}`), 'CLI dry-run reveal should print the status-aware no-npm repeat reveal loop');
+  assert(revealText.includes('Audit mode: add --json to print the machine-readable derived payload.'), 'CLI dry-run reveal should point auditors to JSON mode');
   assert(!revealText.includes('tool_usage') && !revealText.includes('language_usage'), 'CLI dry-run reveal must not print raw usage maps');
   const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
   assert(parsedNoOpen.options.openBrowser === false && parsedNoOpen.options.authTimeoutMs === 1000, 'CLI sync should parse manual browser auth options');
@@ -2186,7 +2186,7 @@ async function assertCliDerivedPayload() {
         },
       },
     });
-    assert(output.join('').includes('Found: 2 session-meta JSON files, 1 facet JSON file, report.html present.'), 'CLI status command should print privacy-safe readiness counts');
+    assert(output.join('').includes('2 session-meta JSON files') && output.join('').includes('1 facet JSON file') && output.join('').includes('report.html present'), 'CLI status command should print privacy-safe readiness counts');
     output.length = 0;
     await printOnboardingStatus({ file: join(dir, 'missing-usage-data'), json: true }, {
       stdout: {
@@ -2367,7 +2367,7 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Share reveal on X: https://twitter.com/intent/tweet?'), 'CLI dry-run should print one-click X sharing for local reveal');
     assert(output.join('').includes('Preview a Shipper x Debugger pairing: https://example.invalid/compare?a=shipper&b=debugger'), 'CLI dry-run should respect the selected host for local pairing previews');
     assert(output.join('').includes(`Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the no-npm Claude Code command installer');
-    assert(output.join('').includes(`Refresh after more Claude Code work: run /insights, then ${localHelperCommand('status', { host: 'https://example.invalid' })}, then ${localHelperCommand('reveal', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the status-aware no-npm repeat reveal loop');
+    assert(output.join('').includes(`3. Refresh later: run /insights, then ${localHelperCommand('status', { host: 'https://example.invalid' })}, then ${localHelperCommand('reveal', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the status-aware no-npm repeat reveal loop');
     assert(!output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should not dump payload JSON by default');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
     assert(!output.join('').includes('private prompt') && !output.join('').includes('/private/project'), 'CLI dry-run output must not print raw Claude Code session details');
@@ -2576,8 +2576,19 @@ async function assertCliDerivedPayload() {
         },
       };
     };
-    const syncResult = await sync({ file, host: 'https://vibestats.example', token: 'sync-token', dryRun: false });
+    let openedRecapUrl = '';
+    const syncResult = await sync({
+      file,
+      host: 'https://vibestats.example',
+      token: 'sync-token',
+      dryRun: false,
+      open(url) {
+        openedRecapUrl = url;
+        return true;
+      },
+    });
     assert(syncResult.compare_url.includes('compareTo=alex'), 'CLI sync should receive compare-first URL from API');
+    assert(openedRecapUrl === 'https://vibestats.example/u/alex/recap', 'CLI sync should open the wrapped recap after a successful claim');
     assert(output.join('').includes('Revealed: prolific Shipper'), 'CLI sync should print the local reveal before publishing');
     assert(output.join('').includes('Raw Claude Code /insights data stayed local. Publishing only derived metrics.'), 'CLI sync should state the privacy boundary before publishing');
     assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
@@ -2593,6 +2604,7 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('View your weekly board: https://vibestats.example/leaderboard/shipper'), 'CLI sync should print the archetype leaderboard return URL');
     assert(output.join('').includes('Find complementary builders: https://vibestats.example/match?goal=pair-coding&archetype=shipper'), 'CLI sync should print the matchmaker return URL');
     assert(output.join('').includes('Share your recap: https://vibestats.example/u/alex/recap'), 'CLI sync should print recap return URL');
+    assert(output.join('').includes('Opening wrapped recap: https://vibestats.example/u/alex/recap'), 'CLI sync should tell users that the wrapped recap is opening');
     assert(output.join('').includes('README badge Markdown: [![vibestats: @alex](https://vibestats.example/u/alex/badge.svg)](https://vibestats.example/?compareTo=alex&compareArchetype=shipper)'), 'CLI sync should print copyable README badge Markdown');
     assert(output.join('').includes('Profile embed HTML: <iframe src="https://vibestats.example/u/alex/embed" width="600" height="320" loading="lazy" title="@alex on vibestats"'), 'CLI sync should print copyable profile embed HTML');
     assert(output.join('').includes(`Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host: 'https://vibestats.example' })}`), 'CLI sync should print the no-npm Claude Code command installer as a return hook');
@@ -2602,7 +2614,7 @@ async function assertCliDerivedPayload() {
     assert(!JSON.parse(postedBody).claim_code, 'CLI sync should not attach a claim code unless one is provided');
 
     output.length = 0;
-    const claimSyncResult = await sync({ file, host: 'https://vibestats.example', token: 'sync-token', dryRun: false, claimCode: 'VIBE-ABCD-2345' });
+    const claimSyncResult = await sync({ file, host: 'https://vibestats.example', token: 'sync-token', dryRun: false, claimCode: 'VIBE-ABCD-2345', openBrowser: false });
     assert(claimSyncResult.claim_session?.state === 'synced', 'CLI sync should receive SSH claim-session attachment status');
     assert(JSON.parse(postedBody).claim_code === 'VIBE-ABCD-2345', 'CLI sync should include an explicit SSH claim code in the derived upload request');
     assert(output.join('').includes('Updated SSH claim session for @alex.'), 'CLI sync should tell users when the waiting SSH claim session was updated');
@@ -2616,6 +2628,7 @@ async function assertCliDerivedPayload() {
       dryRun: false,
       promptToPublish: true,
       assumeYes: true,
+      openBrowser: false,
     });
     assert(consentedOnboardResult.ok === true, 'CLI default onboarding should publish after explicit yes consent');
     assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Publishing the derived profile now. Raw Claude Code /insights data stays local.'), 'CLI default onboarding should print the full local reveal before consented publishing');

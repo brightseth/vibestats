@@ -276,6 +276,19 @@ function localRevealLinks(payload = {}, host = DEFAULT_HOST) {
   };
 }
 
+function heading(title) {
+  const value = String(title || '').trim();
+  return [value, '='.repeat(value.length)];
+}
+
+function section(title, lines = []) {
+  return [
+    '',
+    title,
+    ...lines.filter(Boolean).map((line) => `  ${line}`),
+  ];
+}
+
 export function cliShareText({ label, compareUrl } = {}) {
   const shareLabel = compactShareLabel(label);
   return `I just claimed my Claude Code build profile: ${shareLabel}. Raw /insights stayed local. What are you? See how you'd pair with me: ${compareUrl}`;
@@ -347,35 +360,42 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
     `${formatInt(metrics.msgsPerSession)} messages/session`,
   ].join(' · ');
   const lines = [
-    'vibestats local reveal',
-    `Revealed: ${label}${score ? ` (${score}% ${archetype})` : ''}.`,
-    `Pattern: ${metricLine}.`,
+    ...heading('vibestats local reveal'),
+    ...section('Profile', [
+      `Revealed: ${label}${score ? ` (${score}% ${archetype})` : ''}.`,
+      `Pattern: ${metricLine}.`,
+    ]),
   ];
 
   if (moments.length) {
-    lines.push('Behavioral moments:');
+    lines.push('', 'Behavioral moments');
     for (const moment of moments) {
-      lines.push(`- ${moment.label}: ${moment.value}`);
+      lines.push(`  - ${moment.label}: ${moment.value}`);
     }
   }
 
   if (links) {
     lines.push(
-      `Share without claiming: ${links.compare}`,
-      `Pasteable terminal card:\n${cliRevealTerminalCard(payload, { host })}`,
-      `Copy/paste reveal: ${cliRevealShareText({ label, compareUrl: links.compare })}`,
-      `Share reveal on X: ${cliRevealXShareUrl({ label, compareUrl: links.compare })}`,
-      `Preview a ${archetype} x ${links.complement} pairing: ${links.pairing}`,
+      '',
+      'Share',
+      `  Share without claiming: ${links.compare}`,
+      '  Pasteable terminal card:',
+      cliRevealTerminalCard(payload, { host }),
+      `  Copy/paste reveal: ${cliRevealShareText({ label, compareUrl: links.compare })}`,
+      `  Share reveal on X: ${cliRevealXShareUrl({ label, compareUrl: links.compare })}`,
+      `  Preview a ${archetype} x ${links.complement} pairing: ${links.pairing}`,
     );
   }
 
   lines.push(
-    'Raw Claude Code /insights data stayed local. No profile was published.',
-    'No website upload required.',
-    `To claim your GitHub-backed profile and share compare links, run: ${localHelperCommand('', { host })}`,
-    `Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}`,
-    `Refresh after more Claude Code work: run /insights, then ${localHelperCommand('status', { host })}, then ${localHelperCommand('reveal', { host })}`,
-    'For machine-readable derived payload: add --json to the reveal command.',
+    '',
+    'Next',
+    '  Raw Claude Code /insights data stayed local. No profile was published.',
+    '  No website upload required.',
+    `  1. Claim your GitHub-backed profile: ${localHelperCommand('', { host })}`,
+    `  2. Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}`,
+    `  3. Refresh later: run /insights, then ${localHelperCommand('status', { host })}, then ${localHelperCommand('reveal', { host })}`,
+    '  Audit mode: add --json to print the machine-readable derived payload.',
   );
 
   return `${lines.join('\n')}\n`;
@@ -396,7 +416,13 @@ export async function confirmPublish({
 
   const rl = createInterface({ input, output });
   try {
-    const answer = await rl.question('Claim this GitHub-backed, derived-only profile now? [y/N] ');
+    const answer = await rl.question([
+      '',
+      'Claim this GitHub-backed profile on vibestats?',
+      '  Raw /insights stays local. Only derived metrics are published.',
+      '  The browser will open your wrapped recap after sync.',
+      'Publish now? [y/N] ',
+    ].join('\n'));
     return /^(y|yes)$/i.test(answer.trim());
   } finally {
     rl.close();
@@ -538,28 +564,36 @@ export async function onboardingStatus({ file = DEFAULT_INSIGHTS_PATH } = {}) {
 export function onboardingStatusText(status = {}) {
   const ready = status.ready === true;
   const lines = [
-    'vibestats terminal onboarding check',
-    `Insights input: ${status.display_path || displayPath(status.path)}`,
-    `Status: ${ready ? 'ready for reveal' : 'waiting for Claude Code /insights output'}`,
+    ...heading('vibestats terminal onboarding check'),
+    ...section('Input', [
+      `Insights input: ${status.display_path || displayPath(status.path)}`,
+      `Status: ${ready ? 'ready for reveal' : 'waiting for Claude Code /insights output'}`,
+    ]),
   ];
 
   if (status.input_kind === 'claude-usage-directory') {
     const sessionCount = Number(status.session_meta_files || 0);
     const facetCount = Number(status.facet_files || 0);
-    lines.push(`Found: ${formatInt(sessionCount)} session-meta JSON ${sessionCount === 1 ? 'file' : 'files'}, ${formatInt(facetCount)} facet JSON ${facetCount === 1 ? 'file' : 'files'}, report.html ${status.report_html ? 'present' : 'missing'}.`);
+    lines.push(
+      '',
+      'Found',
+      `  ${formatInt(sessionCount)} session-meta JSON ${sessionCount === 1 ? 'file' : 'files'}`,
+      `  ${formatInt(facetCount)} facet JSON ${facetCount === 1 ? 'file' : 'files'}`,
+      `  report.html ${status.report_html ? 'present' : 'missing'}`,
+    );
   } else if (status.input_kind === 'legacy-json') {
-    lines.push('Found: legacy JSON export file. Prefer the real /insights directory when available.');
+    lines.push('', 'Found', '  legacy JSON export file. Prefer the real /insights directory when available.');
   } else if (status.input_kind === 'report-html') {
-    lines.push('Found: /insights report HTML. The CLI will read the sibling session-meta and facets directories.');
+    lines.push('', 'Found', '  /insights report HTML. The CLI will read the sibling session-meta and facets directories.');
   } else if (status.input_kind === 'unsupported-file') {
-    lines.push('Found: unsupported file type. Use the /insights directory or a legacy JSON export.');
+    lines.push('', 'Found', '  unsupported file type. Use the /insights directory or a legacy JSON export.');
   }
 
-  lines.push('Next:');
+  lines.push('', 'Next');
   for (const [index, step] of (status.next_steps || onboardingNextSteps(ready)).entries()) {
-    lines.push(`${index + 1}. ${step}`);
+    lines.push(`  ${index + 1}. ${step}`);
   }
-  lines.push(`Privacy: ${status.privacy || 'Raw Claude Code data stays local; publishing sends derived metrics only.'}`);
+  lines.push('', 'Privacy', `  ${status.privacy || 'Raw Claude Code data stays local; publishing sends derived metrics only.'}`);
   return `${lines.join('\n')}\n`;
 }
 
@@ -953,27 +987,38 @@ export async function sync(options) {
   const embedHtml = `<iframe src="${embedUrl}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
   const shareText = cliShareText({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   const xShare = cliXShareUrl({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
-  process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
-  process.stdout.write('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.\n');
+  process.stdout.write(`${heading('vibestats profile claimed').join('\n')}\n\n`);
+  process.stdout.write(`Profile\n`);
+  process.stdout.write(`  Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
+  process.stdout.write('  Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.\n');
   if (body.claim_session?.state === 'synced') {
-    process.stdout.write(`Updated SSH claim session for @${body.claim_session.gh_handle || handle}.\n`);
+    process.stdout.write(`  Updated SSH claim session for @${body.claim_session.gh_handle || handle}.\n`);
   }
-  process.stdout.write(`Verify derived credential: ${credentialUrl}\n`);
-  process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
-  process.stdout.write(`Copy/paste share: ${shareText}\n`);
-  process.stdout.write(`Share on X: ${xShare}\n`);
-  process.stdout.write(`Optional public discovery: ${privacyUrl}\n`);
-  process.stdout.write('Profiles stay unlisted unless you choose Public.\n');
-  process.stdout.write(`Set match intent: ${matchSettingsUrl}\n`);
-  process.stdout.write(`Set match intent from terminal: ${localHelperCommand(`intent pair-coding --contact-url https://x.com/${handle} --public`, { host })}\n`);
-  process.stdout.write(`View your weekly board: ${leaderboardUrl}\n`);
-  process.stdout.write(`Find complementary builders: ${matchUrl}\n`);
-  process.stdout.write(`Share your recap: ${recapUrl}\n`);
-  process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
-  process.stdout.write(`Profile embed HTML: ${embedHtml}\n`);
-  process.stdout.write(`Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}\n`);
-  process.stdout.write(`Reserve weekly digest: ${digestUrl}\n`);
-  process.stdout.write(`Preview weekly digest: ${digestPreviewUrl}\n`);
+  process.stdout.write(`  Share your recap: ${recapUrl}\n`);
+  if (options.openBrowser !== false) {
+    process.stdout.write(`  Opening wrapped recap: ${recapUrl}\n`);
+    const opened = (options.open || openBrowser)(recapUrl);
+    if (!opened) process.stdout.write(`  Browser did not open automatically. Open your wrapped recap: ${recapUrl}\n`);
+  }
+  process.stdout.write(`  Verify derived credential: ${credentialUrl}\n`);
+
+  process.stdout.write(`\nShare\n`);
+  process.stdout.write(`  Invite people to compare: ${compareUrl}\n`);
+  process.stdout.write(`  Copy/paste share: ${shareText}\n`);
+  process.stdout.write(`  Share on X: ${xShare}\n`);
+  process.stdout.write(`  README badge Markdown: ${badgeMarkdown}\n`);
+  process.stdout.write(`  Profile embed HTML: ${embedHtml}\n`);
+
+  process.stdout.write(`\nNext\n`);
+  process.stdout.write(`  Optional public discovery: ${privacyUrl}\n`);
+  process.stdout.write('  Profiles stay unlisted unless you choose Public.\n');
+  process.stdout.write(`  Set match intent: ${matchSettingsUrl}\n`);
+  process.stdout.write(`  Set match intent from terminal: ${localHelperCommand(`intent pair-coding --contact-url https://x.com/${handle} --public`, { host })}\n`);
+  process.stdout.write(`  View your weekly board: ${leaderboardUrl}\n`);
+  process.stdout.write(`  Find complementary builders: ${matchUrl}\n`);
+  process.stdout.write(`  Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}\n`);
+  process.stdout.write(`  Reserve weekly digest: ${digestUrl}\n`);
+  process.stdout.write(`  Preview weekly digest: ${digestPreviewUrl}\n`);
   return body;
 }
 
