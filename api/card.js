@@ -2,6 +2,7 @@ import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
 const INSIGHTS_COMMAND = '/insights';
 const BASE_CLI_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+const CLAIM_COMMAND = BASE_CLI_COMMAND;
 const REVEAL_COMMAND = `${BASE_CLI_COMMAND} reveal`;
 const INSTALL_CLAUDE_COMMAND = `${BASE_CLI_COMMAND} install-claude-command`;
 
@@ -259,6 +260,10 @@ export default function handler(req, res) {
     <div class="reveal-command">
       <code>${esc(REVEAL_COMMAND)}</code>
       <button type="button" data-copy="${esc(REVEAL_COMMAND)}">Copy</button>
+    </div>
+    <div class="reveal-command">
+      <code>${esc(CLAIM_COMMAND)}</code>
+      <button type="button" data-copy="${esc(CLAIM_COMMAND)}">Copy claim</button>
     </div>
     <div class="reveal-command">
       <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>

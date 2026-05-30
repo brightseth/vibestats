@@ -385,6 +385,7 @@
     const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
+    const CLAIM_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
     const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
     const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
     let currentComparison = null;
@@ -449,6 +450,10 @@
         <div class="reveal-command-row">
           <code>${esc(REVEAL_COMMAND)}</code>
           <button class="copy-command" type="button" onclick="copyCommand(REVEAL_COMMAND, this)">Copy npx</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(CLAIM_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(CLAIM_COMMAND, this)">Copy claim</button>
         </div>
         <div class="reveal-command-row">
           <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>

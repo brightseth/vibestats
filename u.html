@@ -949,6 +949,7 @@
       deepdiver: 'Deep Diver', builder: 'Builder',
     };
     const INSIGHTS_COMMAND = '/insights';
+    const CLAIM_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
     const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
     const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
 
@@ -1115,6 +1116,10 @@
             <button type="button" data-copy-reveal="${esc(REVEAL_COMMAND)}" data-label="Copy">Copy</button>
           </div>
           <div class="reveal-command">
+            <code>${esc(CLAIM_COMMAND)}</code>
+            <button type="button" data-copy-reveal="${esc(CLAIM_COMMAND)}" data-label="Copy claim">Copy claim</button>
+          </div>
+          <div class="reveal-command">
             <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>
             <button type="button" data-copy-reveal="${esc(INSTALL_CLAUDE_COMMAND)}" data-label="Copy install">Copy install</button>
           </div>
@@ -1253,7 +1258,7 @@
             : `Only @${handle} can claim this exact URL with GitHub. You can still reveal your own Claude Code identity now.`)} Raw sessions stay on your machine; only derived metrics save.</p>
           <div class="empty-profile-proof" aria-label="Unclaimed profile path">
             <div class="empty-proof-item"><strong>Claim by GitHub</strong><span>The persistent URL is tied to the matching GitHub handle.</span></div>
-            <div class="empty-proof-item"><strong>Reveal first</strong><span>Run /insights, then the npx reveal command. The CLI prints the claim command when you want persistence.</span></div>
+            <div class="empty-proof-item"><strong>Reveal first</strong><span>Run /insights, then the npx reveal command. Claim from terminal only when you want persistence.</span></div>
             <div class="empty-proof-item"><strong>Privacy intact</strong><span>Raw Claude Code session data never has to leave your machine.</span></div>
           </div>
           <div class="reveal-command-grid" aria-label="Reveal commands">
@@ -1264,6 +1269,10 @@
             <div class="reveal-command">
               <code>${esc(REVEAL_COMMAND)}</code>
               <button type="button" data-copy-unclaimed="${esc(REVEAL_COMMAND)}">Copy</button>
+            </div>
+            <div class="reveal-command">
+              <code>${esc(CLAIM_COMMAND)}</code>
+              <button type="button" data-copy-unclaimed="${esc(CLAIM_COMMAND)}">Copy claim</button>
             </div>
             <div class="reveal-command">
               <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>
