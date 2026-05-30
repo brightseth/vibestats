@@ -385,7 +385,7 @@
     const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
-    const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+    const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
     let currentComparison = null;
 
     function renderStars(n) {

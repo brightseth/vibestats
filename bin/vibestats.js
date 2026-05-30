@@ -17,6 +17,7 @@ const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
 export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE}`;
+export const DEFAULT_NPX_REVEAL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} reveal`;
 export const DEFAULT_NPX_JOIN_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} join`;
 export const DEFAULT_INSTALL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} install-claude-command`;
 const CLAUDE_COMMAND_SOURCE = new URL('../.claude/commands/vibestats.md', import.meta.url);
@@ -33,6 +34,7 @@ const ARCHETYPE_LABELS = {
 
 function usage() {
   return `Usage:
+  vibestats reveal [--file PATH] [--dir PATH] [--json]
   vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run]
   vibestats [sync|join|onboard] --dry-run --json
   vibestats install-claude-command [--force] [--path PATH]
@@ -44,13 +46,15 @@ Environment:
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 It reveals your archetype locally before asking for approval to publish it.
+Use reveal for a local result with no sign-in and no network publish.
 Use join/onboard when you want the terminal-first participation flow; they use a GitHub device code by default.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
 Use --device to force terminal device-code auth, or --browser to force local browser callback auth.
+Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}
 Current public join command: ${DEFAULT_NPX_JOIN_COMMAND}
 Install the Claude Code /vibestats command: ${DEFAULT_INSTALL_COMMAND}
-Use --dry-run to reveal locally without signing in or sending it.
-Use --dry-run --json to print the exact derived payload for debugging.`;
+Use --dry-run as a legacy alias for reveal.
+Use reveal --json to print the exact derived payload for debugging.`;
 }
 
 export function parseArgs(argv) {
@@ -90,20 +94,21 @@ export function parseArgs(argv) {
   if (!['', 'browser', 'device'].includes(options.authMode)) {
     throw new Error('Auth mode must be browser or device.');
   }
+  if (command === 'reveal') options.dryRun = true;
   if (!options.authMode) options.authMode = ['join', 'onboard'].includes(command) ? 'device' : 'browser';
 
   return { command, options };
 }
 
 export function isSyncCommand(command) {
-  return ['sync', 'join', 'onboard'].includes(command);
+  return ['reveal', 'sync', 'join', 'onboard'].includes(command);
 }
 
 function missingInsightsAdvice() {
   return [
     'Terminal onboarding:',
     '1. Open Claude Code and run /insights.',
-    `2. Preview locally: ${DEFAULT_NPX_SYNC_COMMAND} --dry-run`,
+    `2. Preview locally: ${DEFAULT_NPX_REVEAL_COMMAND}`,
     `3. Publish when ready: ${DEFAULT_NPX_JOIN_COMMAND}`,
     'No raw Claude Code session data leaves your machine; publishing sends derived metrics only.',
   ].join('\n');
@@ -225,7 +230,7 @@ export function dryRunRevealText(payload = {}) {
     'Raw Claude Code /insights data stayed local. No profile was published.',
     'No website upload required.',
     `To claim your GitHub-backed profile and share compare links, run: ${DEFAULT_NPX_JOIN_COMMAND}`,
-    'For machine-readable derived payload: add --json.',
+    'For machine-readable derived payload: add --json to the reveal command.',
   );
 
   return `${lines.join('\n')}\n`;

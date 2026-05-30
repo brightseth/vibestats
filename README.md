@@ -130,9 +130,9 @@ Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest
 Run one-command local sync after `/insights`. The terminal-first `join` flow prints a GitHub device code, creates a revocable sync token automatically after approval, and never requires copying a token out of Settings. The `sync` subcommand still works and can force the older local browser callback with `--browser`:
 
 ```bash
+npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 npx --yes github:brightseth/vibestats#feat/wave-1-identity join
-npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
-npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run --json
+npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal --json
 npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command
 ```
 
@@ -148,15 +148,15 @@ Terminal-first onboarding is intentionally short:
 
 ```bash
 # after running /insights in Claude Code
-npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
+npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 npx --yes github:brightseth/vibestats#feat/wave-1-identity join
 ```
 
-`join` and `onboard` are aliases for the terminal-first sync flow. They reveal locally first, then ask the user to open GitHub's device login page and enter a short code only when publishing the derived profile. No website upload is required. Use `--browser` if you explicitly want the local callback approval flow instead.
+`reveal` is the local, no-sign-in result. `join` and `onboard` are aliases for the terminal-first sync flow. They reveal locally first, then ask the user to open GitHub's device login page and enter a short code only when publishing the derived profile. No website upload is required. Use `--browser` if you explicitly want the local callback approval flow instead.
 
-By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser reveal, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to reveal the derived result locally without a token or network request, `--dry-run --json` to inspect the exact derived payload, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync mints a GitHub-claimed, derived-only profile and prints the profile URL, compare-first invite URL, copy/paste share line, X share URL, optional public-discovery opt-in link, match intent link, leaderboard/match return links, recap URL, and README badge Markdown.
+By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser reveal, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `reveal` to show the derived result locally without a token or network request, `reveal --json` to inspect the exact derived payload, and `--file path/to/agent-insights.json` only for legacy JSON exports. `--dry-run` remains a legacy alias for `reveal`. A successful sync mints a GitHub-claimed, derived-only profile and prints the profile URL, compare-first invite URL, copy/paste share line, X share URL, optional public-discovery opt-in link, match intent link, leaderboard/match return links, recap URL, and README badge Markdown.
 
-Claude Code users can also invoke the `/vibestats` command from `.claude/commands/vibestats.md`. Install it into `~/.claude/commands/vibestats.md` with `npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command`; use `--force` only if you want to replace an existing local command. It checks for `/insights` output, runs the CLI dry-run to reveal derived results first, and only publishes after the user explicitly asks to claim the profile.
+Claude Code users can also invoke the `/vibestats` command from `.claude/commands/vibestats.md`. Install it into `~/.claude/commands/vibestats.md` with `npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command`; use `--force` only if you want to replace an existing local command. It checks for `/insights` output, runs the CLI reveal to show derived results first, and only publishes after the user explicitly asks to claim the profile.
 
 Run local smoke checks:
 

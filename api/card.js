@@ -2,7 +2,7 @@ import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
 const INSIGHTS_COMMAND = '/insights';
 const BASE_CLI_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
-const REVEAL_COMMAND = `${BASE_CLI_COMMAND} join`;
+const REVEAL_COMMAND = `${BASE_CLI_COMMAND} reveal`;
 const INSTALL_CLAUDE_COMMAND = `${BASE_CLI_COMMAND} install-claude-command`;
 
 const ARCHETYPES = {

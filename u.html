@@ -949,7 +949,7 @@
       deepdiver: 'Deep Diver', builder: 'Builder',
     };
     const INSIGHTS_COMMAND = '/insights';
-    const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join';
+    const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
     const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
 
     function canonicalVibestatsUrl(pathOrUrl) {
@@ -1249,11 +1249,11 @@
             </div>
           </div>
           <p class="empty-profile-copy">${esc(isTargetOwner
-            ? 'This GitHub handle is yours. Run the reveal command to turn it into a persistent profile with comparisons, rarity, and weekly return hooks.'
+            ? 'This GitHub handle is yours. Reveal locally first, then claim it when you want a persistent profile with comparisons, rarity, and weekly return hooks.'
             : `Only @${handle} can claim this exact URL with GitHub. You can still reveal your own Claude Code identity now.`)} Raw sessions stay on your machine; only derived metrics save.</p>
           <div class="empty-profile-proof" aria-label="Unclaimed profile path">
             <div class="empty-proof-item"><strong>Claim by GitHub</strong><span>The persistent URL is tied to the matching GitHub handle.</span></div>
-            <div class="empty-proof-item"><strong>Reveal first</strong><span>Run /insights, then the npx reveal command. No file hunting.</span></div>
+            <div class="empty-proof-item"><strong>Reveal first</strong><span>Run /insights, then the npx reveal command. The CLI prints the claim command when you want persistence.</span></div>
             <div class="empty-proof-item"><strong>Privacy intact</strong><span>Raw Claude Code session data never has to leave your machine.</span></div>
           </div>
           <div class="reveal-command-grid" aria-label="Reveal commands">
