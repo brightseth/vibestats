@@ -270,8 +270,53 @@
       flex-wrap: wrap;
       justify-content: center;
     }
+    .reveal-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 22px;
+      padding: 16px;
+      border: 1px solid rgba(107,143,255,0.20);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.045);
+    }
+    .reveal-title {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .reveal-copy {
+      margin-top: 5px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .reveal-commands {
+      display: grid;
+      gap: 8px;
+    }
+    .reveal-command {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .reveal-command code {
+      color: #dbe7ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+    .reveal-command .btn {
+      min-height: 32px;
+      padding: 7px 10px;
+      font-size: 11px;
+    }
     @media (max-width: 760px) {
       .topbar, .hero, .entry { align-items: stretch; flex-direction: column; }
+      .reveal-strip { grid-template-columns: 1fr; }
       h1 { font-size: 34px; line-height: 1.08; }
       .stats, .actions { justify-content: flex-start; }
       .fit, .metric, .fit-reason { text-align: left; }
@@ -292,7 +337,7 @@
     <nav class="topbar">
       <a class="brand" href="/">vibestats</a>
       <div class="nav">
-        <a class="btn" href="/">Upload</a>
+        <a class="btn" href="/">Reveal</a>
         <a class="btn" href="/browse">Browse</a>
         <a class="btn primary" href="/settings">Set intent</a>
       </div>
@@ -303,6 +348,23 @@
         <div class="eyebrow">match by goal</div>
         <h1 id="title">Pair coding matches</h1>
         <p class="lead">Active public profiles. Links go out.</p>
+      </div>
+    </section>
+
+    <section class="reveal-strip" aria-label="Reveal your vibestats profile">
+      <div>
+        <div class="reveal-title">Find your real match</div>
+        <div class="reveal-copy">Run /insights, reveal your local Claude Code pattern, then compare against active public profiles by goal.</div>
+      </div>
+      <div class="reveal-commands">
+        <div class="reveal-command">
+          <code>/insights</code>
+          <button class="btn" type="button" data-copy-command="/insights">Copy</button>
+        </div>
+        <div class="reveal-command">
+          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+          <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy</button>
+        </div>
       </div>
     </section>
 
@@ -440,6 +502,12 @@
       }
       setTimeout(() => { button.textContent = resetLabel; }, 1500);
     }
+
+    document.querySelectorAll('[data-copy-command]').forEach((button) => {
+      button.addEventListener('click', () => {
+        copyText(button, button.getAttribute('data-copy-command'), 'Copy');
+      });
+    });
 
     function renderEntries(entries, goalLabel, seekerArchetype, unavailable = false) {
       const list = document.getElementById('list');

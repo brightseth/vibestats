@@ -242,6 +242,7 @@ async function assertRoutes() {
   assert(leaderboardHtml.includes('function xShareUrl(entry, archetype)') && leaderboardHtml.includes('href="${esc(xShareUrl(entry, archetype))}"') && leaderboardHtml.includes('twitter.com/intent/tweet'), 'leaderboard rows should expose X sharing that clicks through to upload-to-compare');
   assert(leaderboardHtml.includes("document.execCommand('copy')"), 'leaderboard copy actions should fall back when Clipboard API is unavailable');
   assert(leaderboardHtml.includes("See how you'd pair:"), 'leaderboard invite text should drive recipients into comparison');
+  assert(leaderboardHtml.includes('class="reveal-strip"') && leaderboardHtml.includes('Where do you rank?') && leaderboardHtml.includes('data-copy-command="/insights"') && leaderboardHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'leaderboard page should offer a direct reveal command path even when the board is populated');
   assert(leaderboardHtml.includes('Leaderboard database unavailable') && leaderboardHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'leaderboard UI should distinguish unavailable DB from an empty board');
   assert(!matchApi.includes('languages:'), 'match API should not expose public language counts');
   assert(matchApi.includes('updated: uploadRecency(row.uploaded_at)'), 'match API should bucket public upload freshness');
@@ -261,12 +262,14 @@ async function assertRoutes() {
   assert(browseHtml.includes('const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`)'), 'browse copied invites should canonicalize to vibestats.io');
   assert(browseHtml.includes('function xShareUrl(entry)') && browseHtml.includes('href="${esc(xShareUrl(entry))}"') && browseHtml.includes('twitter.com/intent/tweet'), 'browse rows should expose X sharing that clicks through to upload-to-compare');
   assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');
+  assert(browseHtml.includes('class="reveal-strip"') && browseHtml.includes('What are you?') && browseHtml.includes('data-copy-command="/insights"') && browseHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'browse page should offer a direct reveal command path even when the directory is populated');
   assert(browseHtml.includes('Profile database unavailable') && browseHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'browse UI should distinguish unavailable DB from an empty directory');
   assert(matchHtml.includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(matchHtml.includes('entry.facet_focus') && matchHtml.includes('Strongest goal facet'), 'match UI should expose facet-aware match reasons');
   assert(matchHtml.includes('const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));'), 'match copied intros should canonicalize comparison URLs to vibestats.io');
   assert(matchHtml.includes('url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}'), 'match X share URLs should canonicalize to vibestats.io');
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
+  assert(matchHtml.includes('class="reveal-strip"') && matchHtml.includes('Find your real match') && matchHtml.includes('data-copy-command="/insights"') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'match page should offer a direct reveal command path even when matches are populated');
   assert(matchHtml.includes('Match database unavailable') && matchHtml.includes('Boolean(data.unavailable)'), 'match UI should distinguish unavailable DB from no active matches');
   assert(profileApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'profile JSON API method errors should not be cached');
   assert(profileApi.includes("json(res, 400, { error: 'Invalid handle' }, NO_STORE_HEADERS)"), 'profile JSON API invalid handles should not be cached');

@@ -273,11 +273,56 @@
       flex-wrap: wrap;
       justify-content: center;
     }
+    .reveal-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 22px;
+      padding: 16px;
+      border: 1px solid rgba(107,143,255,0.20);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.045);
+    }
+    .reveal-title {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .reveal-copy {
+      margin-top: 5px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .reveal-commands {
+      display: grid;
+      gap: 8px;
+    }
+    .reveal-command {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .reveal-command code {
+      color: #dbe7ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+    .reveal-command .btn {
+      min-height: 32px;
+      padding: 7px 10px;
+      font-size: 11px;
+    }
     @media (max-width: 820px) {
       .topbar, .hero, .entry {
         align-items: stretch;
         flex-direction: column;
       }
+      .reveal-strip { grid-template-columns: 1fr; }
       h1 { font-size: 36px; }
       .count, .score, .activity { text-align: left; }
       .stats, .actions { justify-content: flex-start; }
@@ -298,7 +343,7 @@
     <nav class="topbar">
       <a class="brand" href="/">vibestats</a>
       <div class="nav">
-        <a class="btn" href="/">Upload</a>
+        <a class="btn" href="/">Reveal</a>
         <a class="btn" href="/match">Match</a>
         <a class="btn primary" href="/settings">Go public</a>
       </div>
@@ -313,6 +358,23 @@
       <div class="count">
         <strong id="total">-</strong>
         <span id="total-label">public profiles</span>
+      </div>
+    </section>
+
+    <section class="reveal-strip" aria-label="Reveal your vibestats profile">
+      <div>
+        <div class="reveal-title">What are you?</div>
+        <div class="reveal-copy">Claude Code already has your build fingerprint. Reveal yours locally, then compare against any public profile here.</div>
+      </div>
+      <div class="reveal-commands">
+        <div class="reveal-command">
+          <code>/insights</code>
+          <button class="btn" type="button" data-copy-command="/insights">Copy</button>
+        </div>
+        <div class="reveal-command">
+          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+          <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy</button>
+        </div>
       </div>
     </section>
 
@@ -450,6 +512,12 @@
       }
       setTimeout(() => { button.textContent = resetLabel; }, 1500);
     }
+
+    document.querySelectorAll('[data-copy-command]').forEach((button) => {
+      button.addEventListener('click', () => {
+        copyText(button, button.getAttribute('data-copy-command'), 'Copy');
+      });
+    });
 
     function renderEntries(entries, unavailable = false) {
       const list = document.getElementById('list');

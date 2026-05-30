@@ -466,7 +466,7 @@ async function auditLaunch(options) {
       path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing'],
+      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
     },
     {
       label: 'browse API',
@@ -481,7 +481,7 @@ async function auditLaunch(options) {
       path: `/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings'],
+      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings', 'Find your real match', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
     },
     {
       label: 'match API',
@@ -496,7 +496,7 @@ async function auditLaunch(options) {
       path: `/leaderboard/${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing'],
+      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing', 'Where do you rank?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
     },
     {
       label: 'leaderboard API',
