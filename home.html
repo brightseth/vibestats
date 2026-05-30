@@ -825,7 +825,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Try the reveal demo
       </button>
-      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity', this)">Copy npx reveal command</button>
+      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity join', this)">Copy npx reveal command</button>
     </div>
     <div class="demo-hint hero-demo-hint">No sign-in or upload required for the demo. See the archetype reveal first; claim yours only when you want a public profile.</div>
 
@@ -842,9 +842,9 @@
         <span class="reveal-step-num">2</span>
         <span>
           <span class="reveal-step-label">In your terminal</span>
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity join</code>
         </span>
-        <button class="copy-command" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity', this)">Copy</button>
+        <button class="copy-command" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity join', this)">Copy</button>
       </div>
       <div class="reveal-step">
         <span class="reveal-step-num">+</span>
@@ -872,7 +872,7 @@
 
     <div class="file-path" onclick="copyPath()">
       <span class="label">No file hunting</span>
-      <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+      <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity join</code>
       <span class="subcopy">Click to copy. The CLI reads the real ~/.claude/usage-data/ output and uploads only derived metrics.</span>
     </div>
 
@@ -2678,7 +2678,7 @@
     }
 
     function copyPath() {
-      copyText('npx --yes github:brightseth/vibestats#feat/wave-1-identity').then(() => {
+      copyText('npx --yes github:brightseth/vibestats#feat/wave-1-identity join').then(() => {
         const el = document.querySelector('.file-path code');
         const orig = el.textContent;
         el.textContent = 'Copied!';

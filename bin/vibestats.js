@@ -17,6 +17,7 @@ const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
 export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE}`;
+export const DEFAULT_NPX_JOIN_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} join`;
 export const DEFAULT_INSTALL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} install-claude-command`;
 const CLAUDE_COMMAND_SOURCE = new URL('../.claude/commands/vibestats.md', import.meta.url);
 const ARCHETYPE_LABELS = {
@@ -32,7 +33,7 @@ const ARCHETYPE_LABELS = {
 
 function usage() {
   return `Usage:
-  vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
+  vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run]
   vibestats [sync|join|onboard] --dry-run --json
   vibestats install-claude-command [--force] [--path PATH]
 
@@ -43,9 +44,10 @@ Environment:
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 It reveals your archetype locally before asking for approval to publish it.
-Use join/onboard when you want the terminal-first participation flow; they run the same privacy-preserving sync.
-Without --token it opens a browser approval flow against your GitHub-backed vibestats session.
-Current public install command: ${DEFAULT_NPX_SYNC_COMMAND}
+Use join/onboard when you want the terminal-first participation flow; they use a GitHub device code by default.
+Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
+Use --device to force terminal device-code auth, or --browser to force local browser callback auth.
+Current public join command: ${DEFAULT_NPX_JOIN_COMMAND}
 Install the Claude Code /vibestats command: ${DEFAULT_INSTALL_COMMAND}
 Use --dry-run to reveal locally without signing in or sending it.
 Use --dry-run --json to print the exact derived payload for debugging.`;
@@ -64,6 +66,7 @@ export function parseArgs(argv) {
     path: DEFAULT_CLAUDE_COMMAND_PATH,
     openBrowser: true,
     authTimeoutMs: DEFAULT_AUTH_TIMEOUT_MS,
+    authMode: process.env.VIBESTATS_AUTH_MODE || '',
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -75,12 +78,19 @@ export function parseArgs(argv) {
     else if (arg === '--host') options.host = args[++i] || '';
     else if (arg === '--token') options.token = args[++i] || '';
     else if (arg === '--no-open') options.openBrowser = false;
+    else if (arg === '--device') options.authMode = 'device';
+    else if (arg === '--browser') options.authMode = 'browser';
     else if (arg === '--auth-timeout-ms') options.authTimeoutMs = Number(args[++i] || 0);
     else if (arg === '--dry-run' || arg === '--dryRun') options.dryRun = true;
     else if (arg === '--json') options.json = true;
     else if (arg === '--force') options.force = true;
     else throw new Error(`Unknown option: ${arg}`);
   }
+
+  if (!['', 'browser', 'device'].includes(options.authMode)) {
+    throw new Error('Auth mode must be browser or device.');
+  }
+  if (!options.authMode) options.authMode = ['join', 'onboard'].includes(command) ? 'device' : 'browser';
 
   return { command, options };
 }
@@ -94,7 +104,7 @@ function missingInsightsAdvice() {
     'Terminal onboarding:',
     '1. Open Claude Code and run /insights.',
     `2. Preview locally: ${DEFAULT_NPX_SYNC_COMMAND} --dry-run`,
-    `3. Publish when ready: ${DEFAULT_NPX_SYNC_COMMAND}`,
+    `3. Publish when ready: ${DEFAULT_NPX_JOIN_COMMAND}`,
     'No raw Claude Code session data leaves your machine; publishing sends derived metrics only.',
   ].join('\n');
 }
@@ -249,6 +259,16 @@ export function authUrlForLocalCallback(host, callback, nonce) {
   return `${normalizeHost(host)}/api/cli/local-token?${params.toString()}`;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function readJsonResponse(res, fallback) {
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || fallback || `HTTP ${res.status}`);
+  return body;
+}
+
 export function openBrowser(url) {
   const commands = {
     darwin: ['open', [url]],
@@ -348,6 +368,67 @@ export async function requestSyncToken({
   });
 }
 
+export async function requestDeviceSyncToken({
+  host = DEFAULT_HOST,
+  timeoutMs = DEFAULT_AUTH_TIMEOUT_MS,
+  stdout = process.stdout,
+  fetchImpl = fetch,
+  sleepImpl = sleep,
+} = {}) {
+  const normalizedHost = normalizeHost(host);
+  const start = await readJsonResponse(await fetchImpl(`${normalizedHost}/api/cli/device-start`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'vibestats-cli',
+    },
+    body: '{}',
+  }), 'CLI device authorization failed');
+
+  if (!start.device_code || !start.user_code || !start.verification_uri) {
+    throw new Error('CLI device authorization failed: missing GitHub device code');
+  }
+
+  stdout.write('Authorize vibestats with GitHub device login.\n');
+  stdout.write(`Open: ${start.verification_uri}\n`);
+  stdout.write(`Enter code: ${start.user_code}\n`);
+  stdout.write('Waiting for approval...\n');
+
+  const expiresInMs = Number(start.expires_in || 900) * 1000;
+  const timeout = Number(timeoutMs) > 0 ? Number(timeoutMs) : DEFAULT_AUTH_TIMEOUT_MS;
+  const deadline = Date.now() + Math.min(timeout, expiresInMs);
+  let intervalMs = Math.max(1000, Number(start.interval || 5) * 1000);
+
+  while (Date.now() < deadline) {
+    await sleepImpl(intervalMs);
+    const res = await fetchImpl(`${normalizedHost}/api/cli/device-poll`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'vibestats-cli',
+      },
+      body: JSON.stringify({ device_code: start.device_code }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 202) {
+      if (body.status === 'slow_down') intervalMs += 5000;
+      continue;
+    }
+    if (!res.ok) throw new Error(body.error || `CLI device authorization failed with HTTP ${res.status}`);
+    if (!body.token) throw new Error('CLI device authorization failed: missing sync token');
+    return {
+      token: body.token,
+      host: body.host || normalizedHost,
+      expires_at: body.expires_at || '',
+      handle: body.handle || '',
+    };
+  }
+
+  throw new Error('Timed out waiting for GitHub device authorization. Run again and enter the code before it expires.');
+}
+
 export async function sync(options) {
   if (!options.file) throw new Error('Missing insights file path.');
 
@@ -368,7 +449,7 @@ export async function sync(options) {
   let host = normalizeHost(options.host || DEFAULT_HOST);
   let token = options.token || '';
   if (!token) {
-    const requestToken = options.requestToken || requestSyncToken;
+    const requestToken = options.requestToken || (options.authMode === 'device' ? requestDeviceSyncToken : requestSyncToken);
     const auth = await requestToken({
       host,
       openBrowser: options.openBrowser !== false,

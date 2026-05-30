@@ -89,6 +89,7 @@ function usage() {
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
+- CLI device-code auth start when --expect-ready is used
 - public auth/session/sync failure responses do not expose internal config names
 - reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
@@ -228,6 +229,23 @@ async function auditLaunch(options) {
     if (expectReady) {
       recorder.check(identity.profile_save_available === true, 'profile saves are ready', readinessSummary(identity));
       recorder.check(identity.missing.length === 0, 'identity status has no missing profile-save readiness groups', readinessSummary(identity));
+      try {
+        const result = await fetchText(options, '/api/cli/device-start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        const cache = result.response.headers.get('cache-control') || '';
+        const type = result.response.headers.get('content-type') || '';
+        const body = result.response.status === 200 ? JSON.parse(result.body) : {};
+        recorder.check(result.response.status === 200, 'CLI device auth starts', `${result.response.status} ${result.url}`);
+        recorder.check(type.includes('application/json'), 'CLI device auth start content type', type || '(none)');
+        recorder.check(cache.includes('no-store'), 'CLI device auth start disables public caching', cache || '(none)');
+        recorder.check(Boolean(body.device_code && body.user_code && body.verification_uri), 'CLI device auth start returns GitHub device instructions');
+        recorder.check(!hasSecretName(result.body), 'CLI device auth start does not expose secret env names');
+      } catch (err) {
+        recorder.fail('CLI device auth start fetch failed', err.message);
+      }
     }
     if (expectDigest) {
       recorder.check(identity.weekly_digest_available === true, 'weekly digest delivery is ready', readinessSummary(identity));
@@ -345,7 +363,7 @@ async function auditLaunch(options) {
       path: '/',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy npx reveal command', 'install-claude-command', 'Try the reveal demo', 'shouldAutoRunDemo()', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
+      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy npx reveal command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'install-claude-command', 'Try the reveal demo', 'shouldAutoRunDemo()', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
       mustNotInclude: ['agent-insights.json', 'npx vibestats sync'],
       checkRawLeaks: false,
     },
@@ -369,7 +387,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'id="privacy-cta"', 'id="match-intent-cta"'],
+      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'id="privacy-cta"', 'id="match-intent-cta"'],
     },
     {
       label: 'profile recap',
@@ -377,7 +395,7 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
       mustInclude: expectReady && profileHasUpload
-        ? ['Copy recap', 'Copy sync command', 'Copy /vibestats install', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
+        ? ['Copy recap', 'Copy sync command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'Copy /vibestats install', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
         : ['A privacy-preserving weekly recap'],
     },
     {
@@ -443,7 +461,7 @@ async function auditLaunch(options) {
       path: `/card?a=${encodeURIComponent(archetype)}&n=Launch&d=7&c=2&l=3&s=4`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: [`/?compareArchetype=${encodeURIComponent(archetype)}`, 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'install-claude-command'],
+      mustInclude: [`/?compareArchetype=${encodeURIComponent(archetype)}`, 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'install-claude-command'],
       mustNotInclude: "What's YOUR personality?",
     },
     {
@@ -451,14 +469,14 @@ async function auditLaunch(options) {
       path: '/wrapped',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
+      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join'],
     },
     {
       label: 'dashboard share route',
       path: '/dashboard',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
+      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join'],
       mustNotInclude: 'Claude Code Analytics',
     },
     {
@@ -466,7 +484,7 @@ async function auditLaunch(options) {
       path: '/genome',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy npx reveal command', 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
+      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy npx reveal command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
       mustNotInclude: ['>Quiz</a>', 'agent-insights.json'],
     },
     {
@@ -481,7 +499,7 @@ async function auditLaunch(options) {
       path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
+      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join'],
     },
     {
       label: 'browse API',
@@ -496,7 +514,7 @@ async function auditLaunch(options) {
       path: `/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings', 'Find your real match', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
+      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings', 'Find your real match', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join'],
     },
     {
       label: 'match API',
@@ -511,7 +529,7 @@ async function auditLaunch(options) {
       path: `/leaderboard/${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing', 'Where do you rank?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
+      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing', 'Where do you rank?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join'],
     },
     {
       label: 'leaderboard API',

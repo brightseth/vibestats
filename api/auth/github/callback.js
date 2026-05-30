@@ -6,7 +6,7 @@ import {
   originForRequest,
   setSessionCookie,
 } from '../../_lib/auth.js';
-import { sql } from '../../_lib/db.js';
+import { fetchGithubUser, upsertGithubUser } from '../../_lib/github-oauth.js';
 import { identityReadiness, identityUnavailableMessage } from '../../_lib/identity-readiness.js';
 import { NO_STORE_HEADERS, methodNotAllowed, safeReturnTo, setNoStore } from '../../_lib/http.js';
 
@@ -37,20 +37,7 @@ async function exchangeCode(req, code) {
     throw new Error(tokenBody.error_description || tokenBody.error || 'GitHub token exchange failed');
   }
 
-  const userRes = await fetch('https://api.github.com/user', {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${tokenBody.access_token}`,
-      'User-Agent': 'vibestats',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  });
-  const user = await userRes.json();
-  if (!userRes.ok || !user.id || !user.login) {
-    throw new Error(user.message || 'GitHub user fetch failed');
-  }
-
-  return user;
+  return fetchGithubUser(tokenBody.access_token);
 }
 
 export default async function handler(req, res) {
@@ -72,16 +59,7 @@ export default async function handler(req, res) {
 
   try {
     const ghUser = await exchangeCode(req, req.query.code);
-    const rows = await sql()`
-      insert into users (gh_id, gh_handle, avatar_url, privacy, last_seen_at)
-      values (${ghUser.id}, ${ghUser.login}, ${ghUser.avatar_url || null}, 'unlisted', now())
-      on conflict (gh_id) do update
-        set gh_handle = excluded.gh_handle,
-            avatar_url = excluded.avatar_url,
-            last_seen_at = now()
-      returning id, gh_id, gh_handle, avatar_url, privacy, created_at, last_seen_at
-    `;
-    const user = rows[0];
+    const user = await upsertGithubUser(ghUser);
     setSessionCookie(req, res, user);
     res.redirect(302, safeReturnTo(statePayload.returnTo, '/'));
   } catch (err) {

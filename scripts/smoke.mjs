@@ -20,6 +20,8 @@ const apiModules = [
   '../api/sync.js',
   '../api/sync-token.js',
   '../api/cli/local-token.js',
+  '../api/cli/device-start.js',
+  '../api/cli/device-poll.js',
   '../api/u/[handle].js',
   '../api/settings.js',
   '../api/settings/export.js',
@@ -29,6 +31,7 @@ const apiModules = [
   '../api/_lib/cache.js',
   '../api/_lib/evolution.js',
   '../api/_lib/export-upload.js',
+  '../api/_lib/github-oauth.js',
   '../api/_lib/profile-links.js',
   '../api/_lib/profile-settings.js',
   '../api/_lib/achievements.js',
@@ -172,6 +175,9 @@ async function assertRoutes() {
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
   const cliLocalTokenApi = await readFile('api/cli/local-token.js', 'utf8');
+  const cliDeviceStartApi = await readFile('api/cli/device-start.js', 'utf8');
+  const cliDevicePollApi = await readFile('api/cli/device-poll.js', 'utf8');
+  const githubOauthHelper = await readFile('api/_lib/github-oauth.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const profileLinksHelper = await readFile('api/_lib/profile-links.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
@@ -247,7 +253,7 @@ async function assertRoutes() {
   assert(leaderboardHtml.includes('function xShareUrl(entry, archetype)') && leaderboardHtml.includes('href="${esc(xShareUrl(entry, archetype))}"') && leaderboardHtml.includes('twitter.com/intent/tweet'), 'leaderboard rows should expose X sharing that clicks through to upload-to-compare');
   assert(leaderboardHtml.includes("document.execCommand('copy')"), 'leaderboard copy actions should fall back when Clipboard API is unavailable');
   assert(leaderboardHtml.includes("See how you'd pair:"), 'leaderboard invite text should drive recipients into comparison');
-  assert(leaderboardHtml.includes('class="reveal-strip"') && leaderboardHtml.includes('Where do you rank?') && leaderboardHtml.includes('data-copy-command="/insights"') && leaderboardHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'leaderboard page should offer a direct reveal command path even when the board is populated');
+  assert(leaderboardHtml.includes('class="reveal-strip"') && leaderboardHtml.includes('Where do you rank?') && leaderboardHtml.includes('data-copy-command="/insights"') && leaderboardHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'leaderboard page should offer a direct terminal-first reveal command path even when the board is populated');
   assert(leaderboardHtml.includes('Leaderboard database unavailable') && leaderboardHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'leaderboard UI should distinguish unavailable DB from an empty board');
   assert(!matchApi.includes('languages:'), 'match API should not expose public language counts');
   assert(matchApi.includes('updated: uploadRecency(row.uploaded_at)'), 'match API should bucket public upload freshness');
@@ -267,14 +273,14 @@ async function assertRoutes() {
   assert(browseHtml.includes('const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`)'), 'browse copied invites should canonicalize to vibestats.io');
   assert(browseHtml.includes('function xShareUrl(entry)') && browseHtml.includes('href="${esc(xShareUrl(entry))}"') && browseHtml.includes('twitter.com/intent/tweet'), 'browse rows should expose X sharing that clicks through to upload-to-compare');
   assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');
-  assert(browseHtml.includes('class="reveal-strip"') && browseHtml.includes('What are you?') && browseHtml.includes('data-copy-command="/insights"') && browseHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'browse page should offer a direct reveal command path even when the directory is populated');
+  assert(browseHtml.includes('class="reveal-strip"') && browseHtml.includes('What are you?') && browseHtml.includes('data-copy-command="/insights"') && browseHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'browse page should offer a direct terminal-first reveal command path even when the directory is populated');
   assert(browseHtml.includes('Profile database unavailable') && browseHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'browse UI should distinguish unavailable DB from an empty directory');
   assert(matchHtml.includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
   assert(matchHtml.includes('entry.facet_focus') && matchHtml.includes('Strongest goal facet'), 'match UI should expose facet-aware match reasons');
   assert(matchHtml.includes('const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));'), 'match copied intros should canonicalize comparison URLs to vibestats.io');
   assert(matchHtml.includes('url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}'), 'match X share URLs should canonicalize to vibestats.io');
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
-  assert(matchHtml.includes('class="reveal-strip"') && matchHtml.includes('Find your real match') && matchHtml.includes('data-copy-command="/insights"') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'match page should offer a direct reveal command path even when matches are populated');
+  assert(matchHtml.includes('class="reveal-strip"') && matchHtml.includes('Find your real match') && matchHtml.includes('data-copy-command="/insights"') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'match page should offer a direct terminal-first reveal command path even when matches are populated');
   assert(matchHtml.includes('Match database unavailable') && matchHtml.includes('Boolean(data.unavailable)'), 'match UI should distinguish unavailable DB from no active matches');
   assert(genomeHtml.includes('What are you?') && genomeHtml.includes('data-copy-command="/insights"') && genomeHtml.includes('Copy npx reveal command') && genomeHtml.includes('Raw Claude Code /insights data stays local'), 'genome page should convert community curiosity into reveal-first onboarding');
   assert(genomeHtml.includes("document.execCommand('copy')"), 'genome reveal commands should fall back when Clipboard API is unavailable');
@@ -303,7 +309,7 @@ async function assertRoutes() {
   assert(recapHtml.includes("fetch(`/api/u/${encodeURIComponent(handle)}`") && recapHtml.includes('Copy recap'), 'profile recap page should render from sanitized public profile JSON');
   assert(recapHtml.includes('Raw Claude Code /insights data stays local') && recapHtml.includes('facet shape'), 'profile recap should state derived-only privacy and facet proof');
   assert(recapHtml.includes('id="digest-cta"') && recapHtml.includes('profile.is_owner'), 'profile recap should give owners a path into digest consent');
-  assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'profile recap should let owners refresh the return surface with CLI sync');
+  assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'profile recap should let owners refresh the return surface with terminal-first CLI sync');
   assert(recapHtml.includes('id="copy-install"') && recapHtml.includes('install-claude-command'), 'profile recap should let owners install the Claude Code /vibestats return hook');
   assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
   assert(digestPreviewApi.includes('requireUser(req)') && digestPreviewApi.includes('buildWeeklyDigest({'), 'digest preview should be authenticated and reuse the weekly digest builder');
@@ -348,7 +354,8 @@ async function assertRoutes() {
   assert(cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Optional public discovery:') && cliBin.includes('Profiles stay unlisted unless you choose Public.') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface compare-first social share, opt-in discovery, recap, and README badge hooks');
   assert(cliBin.includes('Install /vibestats for future reveals:') && cliBin.includes('Reserve weekly digest:'), 'CLI sync success output should surface Claude Code and digest return hooks');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
-  assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when no token is supplied');
+  assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when browser auth is selected');
+  assert(cliBin.includes('requestDeviceSyncToken') && cliBin.includes('/api/cli/device-start') && cliBin.includes('/api/cli/device-poll'), 'CLI join should support GitHub device-code authorization from the terminal');
   assert(cliBin.includes('--no-open') && cliBin.includes('Opening browser to authorize vibestats CLI sync'), 'CLI sync should support manual browser auth fallback');
   assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
   assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
@@ -359,6 +366,9 @@ async function assertRoutes() {
   assert(cliLocalTokenApi.includes('Authorize CLI sync') && cliLocalTokenApi.includes('requireSameOrigin(req)'), 'CLI browser auth endpoint should require same-origin browser approval before minting a token');
   assert(cliLocalTokenApi.includes('createSyncToken(user)') && cliLocalTokenApi.includes('syncTokenExpiresAt()'), 'CLI browser auth endpoint should mint expiring revocable sync tokens');
   assert(cliLocalTokenApi.includes('Raw Claude Code') && cliLocalTokenApi.includes('data stays on your machine'), 'CLI browser auth page should preserve the privacy promise');
+  assert(cliDeviceStartApi.includes('requestGithubDeviceCode') && cliDeviceStartApi.includes("methodNotAllowed(res, ['POST']"), 'CLI device start endpoint should request GitHub device codes through a POST-only no-store API');
+  assert(cliDevicePollApi.includes('pollGithubDeviceToken') && cliDevicePollApi.includes('fetchGithubUser') && cliDevicePollApi.includes('createSyncToken(user)'), 'CLI device poll endpoint should exchange GitHub approval for a revocable sync token');
+  assert(githubOauthHelper.includes('GITHUB_DEVICE_GRANT_TYPE') && githubOauthHelper.includes('https://github.com/login/device/code') && githubOauthHelper.includes('https://github.com/login/oauth/access_token'), 'GitHub OAuth helper should implement the official device-code endpoints');
   assert(statsApi.includes('readJson(req, { maxBytes: 16 * 1024 })'), 'community stats API should bound JSON parsing before accepting aggregate metrics');
   assert(
     statsApi.indexOf('readJson(req, { maxBytes: 16 * 1024 })') < statsApi.indexOf('const ip ='),
@@ -374,7 +384,7 @@ async function assertRoutes() {
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
   assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
-  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
+  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to terminal-first npx path');
   assert(indexHtml.includes('function shouldAutoRunDemo()') && indexHtml.includes('setTimeout(runDemo, 120)'), 'demo-first URLs should auto-start the reveal instead of landing on manual upload');
   assert(indexHtml.includes('install-claude-command') && indexHtml.includes('Install /vibestats in Claude Code'), 'upload page should expose the installable Claude Code command path');
   assert(indexHtml.includes('Try the reveal demo') && indexHtml.includes('Copy npx reveal command') && indexHtml.includes('claim yours only when you want a public profile'), 'upload page should let cold visitors preview the reveal before asking them to publish');
@@ -426,7 +436,7 @@ async function assertRoutes() {
   assert(dashboardHtml.includes('url=https%3A%2F%2Fvibestats.io%2F%3FcompareArchetype%3Dorchestrator'), 'static dashboard X share should click through to Orchestrator comparison intake');
   assert(dashboardHtml.includes('href="/?compareArchetype=orchestrator"'), 'static dashboard final CTA should route to comparison intake');
   assert(dashboardHtml.includes('How would you pair with an Orchestrator?') && dashboardHtml.includes('What are you?'), 'static dashboard footer should use asymmetric comparison copy');
-  assert(dashboardHtml.includes('/insights') && dashboardHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'static dashboard should teach share recipients the reveal command directly');
+  assert(dashboardHtml.includes('/insights') && dashboardHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'static dashboard should teach share recipients the terminal-first reveal command directly');
   assert(dashboardHtml.includes("document.execCommand('copy')") && dashboardHtml.includes('[data-copy]'), 'static dashboard copy actions should fall back when Clipboard API is unavailable');
   assert(!dashboardHtml.includes('Claude Code Analytics'), 'static dashboard metadata should not revive the old analytics-first positioning');
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
@@ -521,7 +531,7 @@ async function assertRoutes() {
   assert((await readFile('db/migrations/0009_upload_archetype_canon.sql', 'utf8')).includes('uploads_archetype_check'), 'migrations should enforce the eight-archetype upload canon');
   assert((await readFile('db/migrations/0010_validate_contact_url_constraint.sql', 'utf8')).includes('validate constraint profile_settings_contact_url_protocol'), 'migrations should validate the HTTPS contact URL constraint');
   assert((await readFile('db/migrations/0011_upload_owner_not_null.sql', 'utf8')).includes('alter column user_id set not null'), 'migrations should prevent orphaned profile uploads');
-  assert(authCallbackApi.includes('gh_handle, avatar_url, privacy, last_seen_at') && authCallbackApi.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
+  assert(githubOauthHelper.includes('gh_handle, avatar_url, privacy, last_seen_at') && githubOauthHelper.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(authCallbackApi.includes('identityReadiness, identityUnavailableMessage'), 'GitHub OAuth callback should use the shared identity readiness gate');
   assert(authCallbackApi.indexOf('identityReadiness().available') < authCallbackApi.indexOf('const statePayload = decodeStatePayload'), 'GitHub OAuth callback should fail closed before reading signed state when identity is unavailable');
   assert(launchDoc.includes('vercel env ls --scope lets-vibe') && launchDoc.includes('npm run migrate'), 'launch checklist should cover Vercel env and migration gates');
@@ -557,7 +567,7 @@ async function assertRoutes() {
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
-  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
+  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before terminal-first publishing');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('--dry-run --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
   assert(claudeCommand.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code command should explicitly avoid the dead agent-insights path');
@@ -591,6 +601,7 @@ async function assertLaunchAuditHelpers() {
   assert(parsedCurl.response.headers.get('cache-control') === 'no-store', 'vercel curl parser should expose response headers');
   assert(parsedCurl.body === '{"ok":true}', 'vercel curl parser should isolate the response body');
   assert(launchAuditSource.includes("path: '/api/sync'") && launchAuditSource.includes("Authorization: 'Bearer a.b.c'"), 'launch audit should probe public sync failure without exposing env names');
+  assert(launchAuditSource.includes("'/api/cli/device-start'") && launchAuditSource.includes('CLI device auth starts'), 'launch audit should verify terminal-first device auth readiness');
   assert(launchAuditSource.includes("path: '/api/me'") && launchAuditSource.includes("Cookie: 'vibestats_auth=a.b.c'"), 'launch audit should probe session failure without exposing env names');
   assert(launchAuditSource.includes("label: 'weekly digest cron guard'"), 'launch audit should probe the weekly digest cron guard without exposing env names');
   console.log('ok launch audit supports protected Vercel previews');
@@ -831,6 +842,93 @@ async function assertCliLocalTokenEndpoint() {
   console.log('ok CLI browser auth endpoint guards local token minting');
 }
 
+async function assertCliDeviceAuthHelpers() {
+  const {
+    GITHUB_DEVICE_GRANT_TYPE,
+    fetchGithubUser,
+    pollGithubDeviceToken,
+    requestGithubDeviceCode,
+  } = await import('../api/_lib/github-oauth.js');
+  const { default: startHandler } = await import('../api/cli/device-start.js');
+  const { default: pollHandler } = await import('../api/cli/device-poll.js');
+  const keys = ['GITHUB_CLIENT_ID'];
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  try {
+    process.env.GITHUB_CLIENT_ID = 'github-client-id';
+    let deviceRequest = null;
+    const device = await requestGithubDeviceCode({
+      fetchImpl: async (url, options = {}) => {
+        deviceRequest = { url, options };
+        return {
+          ok: true,
+          async json() {
+            return {
+              device_code: 'device-code',
+              user_code: 'ABCD-1234',
+              verification_uri: 'https://github.com/login/device',
+              expires_in: 900,
+              interval: 5,
+            };
+          },
+        };
+      },
+    });
+    assert(device.user_code === 'ABCD-1234' && device.verification_uri === 'https://github.com/login/device', 'GitHub device helper should return terminal display fields');
+    assert(deviceRequest.url === 'https://github.com/login/device/code', 'GitHub device helper should request the official device code endpoint');
+    assert(JSON.parse(deviceRequest.options.body).client_id === 'github-client-id', 'GitHub device helper should use the configured OAuth client id');
+
+    let pollRequest = null;
+    const pending = await pollGithubDeviceToken('device-code', {
+      fetchImpl: async (url, options = {}) => {
+        pollRequest = { url, options };
+        return {
+          ok: true,
+          async json() {
+            return { error: 'authorization_pending' };
+          },
+        };
+      },
+    });
+    assert(pending.error === 'authorization_pending', 'GitHub device poll helper should expose pending authorization states');
+    const pollBody = JSON.parse(pollRequest.options.body);
+    assert(pollRequest.url === 'https://github.com/login/oauth/access_token' && pollBody.grant_type === GITHUB_DEVICE_GRANT_TYPE, 'GitHub device poll helper should use the official device grant');
+
+    let userRequest = null;
+    const user = await fetchGithubUser('github-access-token', {
+      fetchImpl: async (url, options = {}) => {
+        userRequest = { url, options };
+        return {
+          ok: true,
+          async json() {
+            return { id: 123, login: 'alex', avatar_url: 'https://example.invalid/avatar.png' };
+          },
+        };
+      },
+    });
+    assert(user.login === 'alex', 'GitHub user helper should return the authorized GitHub identity');
+    assert(userRequest.url === 'https://api.github.com/user' && userRequest.options.headers.Authorization === 'Bearer github-access-token', 'GitHub user helper should fetch identity with the device access token');
+
+    const startMethodRes = mockRes();
+    await startHandler({ method: 'GET', headers: { host: 'localhost:3000' } }, startMethodRes);
+    assert(startMethodRes.statusCode === 405 && startMethodRes.headers.Allow === 'POST', 'CLI device start endpoint should reject non-POST methods');
+    assertNoStore(startMethodRes, 'CLI device start method guard');
+
+    const pollMethodRes = mockRes();
+    await pollHandler({ method: 'GET', headers: { host: 'localhost:3000' } }, pollMethodRes);
+    assert(pollMethodRes.statusCode === 405 && pollMethodRes.headers.Allow === 'POST', 'CLI device poll endpoint should reject non-POST methods');
+    assertNoStore(pollMethodRes, 'CLI device poll method guard');
+  } finally {
+    for (const key of keys) {
+      if (previous[key] == null) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous[key];
+      }
+    }
+  }
+  console.log('ok CLI device auth helpers support terminal-first GitHub login');
+}
+
 async function assertProfileShareLoop() {
   const indexHtml = await readFile('home.html', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
@@ -850,7 +948,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('id="digest-cta"') && profileHtml.includes('reserve the weekly email'), 'owner profile should expose return-loop weekly email setup');
   assert(profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)') && profileHtml.includes('](${compareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes('id="reveal-panel"') && profileHtml.includes('renderRevealPanel(me, profile, latest)'), 'profile pages should show share recipients a direct reveal panel');
-  assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'profile reveal panel should carry the command path without sending visitors hunting');
+  assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'profile reveal panel should carry the terminal-first command path without sending visitors hunting');
   assert(profileHtml.includes('INSTALL_CLAUDE_COMMAND') && profileHtml.includes('install-claude-command'), 'profile reveal surfaces should let share recipients install the Claude Code command');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
@@ -974,7 +1072,7 @@ async function assertShareCardCta() {
   assert(statusCode === 200, 'share card should render HTTP 200');
   assert(body.includes('href="/?compareArchetype=deepdiver"'), 'share card CTA should send visitors into upload-to-compare');
   assert(body.includes('Compare with this archetype'), 'share card CTA should invite comparison instead of homepage upload');
-  assert(body.includes('What are you?') && body.includes('/insights') && body.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'share card should teach recipients the reveal command without another hop');
+  assert(body.includes('What are you?') && body.includes('/insights') && body.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'share card should teach recipients the terminal-first reveal command without another hop');
   assert(body.includes('data-copy=') && body.includes("document.execCommand('copy')"), 'share card reveal commands should be copyable with clipboard fallback');
   assert(body.includes('install-claude-command'), 'share card should expose the installable Claude Code /vibestats command');
   assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
@@ -1091,7 +1189,7 @@ async function assertWrappedShareLoop() {
   assert(wrappedHtml.includes('copyText(wrappedCompareUrl)'), 'wrapped copy link should copy the upload-to-compare target');
   assert(wrappedHtml.includes('Card: ${wrappedUrl}'), 'wrapped share text should retain the card as credential context');
   assert(wrappedHtml.includes("See how you'd pair with an Orchestrator"), 'wrapped share page should use comparison copy');
-  assert(wrappedHtml.includes('What are you?') && wrappedHtml.includes('/insights') && wrappedHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'wrapped share page should teach recipients the reveal command directly');
+  assert(wrappedHtml.includes('What are you?') && wrappedHtml.includes('/insights') && wrappedHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'wrapped share page should teach recipients the terminal-first reveal command directly');
   assert(wrappedHtml.includes("document.execCommand('copy')") && wrappedHtml.includes('[data-copy]'), 'wrapped reveal and compare copy actions should fall back when Clipboard API is unavailable');
   assert(!wrappedHtml.includes("What's YOUR vibecoding personality?<br>"), 'wrapped page should not end on the old generic CTA');
   console.log('ok wrapped share page routes visitors into comparison');
@@ -1376,7 +1474,7 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliShareText, cliXShareUrl, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliShareText, cliXShareUrl, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, parseArgs, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
@@ -1385,19 +1483,23 @@ async function assertCliDerivedPayload() {
   assert(parsedDefault.command === 'sync' && parsedDefault.options.dryRun === true, 'CLI should default to sync so the copied npx command needs no subcommand');
   const parsedJoin = parseArgs(['node', 'vibestats', 'join', '--dry-run']);
   const parsedOnboard = parseArgs(['node', 'vibestats', 'onboard', '--dry-run']);
-  assert(parsedJoin.command === 'join' && isSyncCommand(parsedJoin.command), 'CLI should accept join as a terminal-first sync alias');
-  assert(parsedOnboard.command === 'onboard' && isSyncCommand(parsedOnboard.command), 'CLI should accept onboard as a terminal-first sync alias');
+  assert(parsedJoin.command === 'join' && isSyncCommand(parsedJoin.command) && parsedJoin.options.authMode === 'device', 'CLI should accept join as a terminal-first device-auth sync alias');
+  assert(parsedOnboard.command === 'onboard' && isSyncCommand(parsedOnboard.command) && parsedOnboard.options.authMode === 'device', 'CLI should accept onboard as a terminal-first device-auth sync alias');
+  const parsedBrowser = parseArgs(['node', 'vibestats', 'join', '--browser']);
+  const parsedDevice = parseArgs(['node', 'vibestats', 'sync', '--device']);
+  assert(parsedBrowser.options.authMode === 'browser' && parsedDevice.options.authMode === 'device', 'CLI should let users choose browser or device auth explicitly');
   const parsedJson = parseArgs(['node', 'vibestats', '--dry-run', '--json']);
   assert(parsedJson.options.dryRun === true && parsedJson.options.json === true, 'CLI dry-run should offer a JSON escape hatch for payload audits');
   const parsedInstall = parseArgs(['node', 'vibestats', 'install-claude-command', '--force', '--path', '/tmp/vibestats.md']);
   assert(parsedInstall.command === 'install-claude-command' && parsedInstall.options.force === true && parsedInstall.options.path === '/tmp/vibestats.md', 'CLI should parse Claude command installation options');
   assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'CLI should expose the current GitHub-backed npx command');
+  assert(DEFAULT_NPX_JOIN_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'CLI should expose the current terminal-first join command');
   assert(DEFAULT_INSTALL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command', 'CLI should expose a copyable Claude Code command installer');
-  assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Use join/onboard when you want the terminal-first participation flow'), 'CLI help should frame sync as reveal-before-publish terminal onboarding');
+  assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Use join/onboard when you want the terminal-first participation flow') && cliSource.includes('GitHub device code by default'), 'CLI help should frame join as reveal-before-publish terminal onboarding');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
   assert(cliSource.includes('Use --dry-run to reveal locally') && cliSource.includes('Use --dry-run --json to print the exact derived payload'), 'CLI help should separate human reveal from payload JSON');
   const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
-  assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(`${DEFAULT_NPX_SYNC_COMMAND} --dry-run`), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
+  assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(`${DEFAULT_NPX_SYNC_COMMAND} --dry-run`) && missingAdvice.includes(DEFAULT_NPX_JOIN_COMMAND), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
   const cliShare = cliShareText({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
   assert(cliShare.includes('prolific Shipper') && cliShare.includes('What are you?') && cliShare.includes('compareTo=alex'), 'CLI share text should be copy-ready and compare-first');
   const cliXShare = cliXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
@@ -1561,6 +1663,54 @@ async function assertCliDerivedPayload() {
     const authResult = await authPromise;
     assert(authResult.token === 'browser-sync-token' && authResult.handle === 'alex', 'CLI browser auth should resolve the sync token without printing it');
     assert(!authOutput.join('').includes('browser-sync-token'), 'CLI browser auth output must not print the sync token');
+
+    const deviceOutput = [];
+    const deviceCalls = [];
+    const deviceAuth = await requestDeviceSyncToken({
+      host: 'https://vibestats.example',
+      timeoutMs: 5000,
+      sleepImpl: async () => {},
+      stdout: {
+        write(chunk) {
+          deviceOutput.push(String(chunk));
+          return true;
+        },
+      },
+      fetchImpl: async (url, options = {}) => {
+        deviceCalls.push({ url, options });
+        if (String(url).endsWith('/api/cli/device-start')) {
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return {
+                device_code: 'device-code',
+                user_code: 'ABCD-1234',
+                verification_uri: 'https://github.com/login/device',
+                expires_in: 900,
+                interval: 1,
+              };
+            },
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              token: 'device-sync-token',
+              host: 'https://vibestats.example',
+              expires_at: '2026-06-01T00:00:00.000Z',
+              handle: 'alex',
+            };
+          },
+        };
+      },
+    });
+    assert(deviceAuth.token === 'device-sync-token' && deviceAuth.handle === 'alex', 'CLI device auth should resolve a sync token after GitHub approval');
+    assert(deviceCalls[0].url === 'https://vibestats.example/api/cli/device-start' && deviceCalls[1].url === 'https://vibestats.example/api/cli/device-poll', 'CLI device auth should use vibestats device start and poll APIs');
+    assert(deviceOutput.join('').includes('Open: https://github.com/login/device') && deviceOutput.join('').includes('Enter code: ABCD-1234'), 'CLI device auth should print the terminal-friendly GitHub code instructions');
+    assert(!deviceOutput.join('').includes('device-sync-token'), 'CLI device auth output must not print the sync token');
 
     output.length = 0;
     let postedBody = '';
@@ -3011,6 +3161,8 @@ await assertRoutes();
 await assertLaunchAuditHelpers();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
+await assertCliLocalTokenEndpoint();
+await assertCliDeviceAuthHelpers();
 await assertProfileShareLoop();
 await assertCompareShareLoop();
 await assertShareCardCta();

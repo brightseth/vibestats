@@ -1,8 +1,9 @@
 import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
 const INSIGHTS_COMMAND = '/insights';
-const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
-const INSTALL_CLAUDE_COMMAND = `${REVEAL_COMMAND} install-claude-command`;
+const BASE_CLI_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+const REVEAL_COMMAND = `${BASE_CLI_COMMAND} join`;
+const INSTALL_CLAUDE_COMMAND = `${BASE_CLI_COMMAND} install-claude-command`;
 
 const ARCHETYPES = {
   orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)' },

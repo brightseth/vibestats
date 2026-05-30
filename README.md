@@ -127,10 +127,10 @@ npm run migrate
 
 Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured. Users can save digest consent before delivery is configured; those opt-ins become eligible once the email env is enabled.
 
-Run one-command local sync after signing in. The CLI opens a browser approval flow against your GitHub-backed vibestats session and creates a revocable token automatically. The `sync` subcommand still works, but the copied command omits it to keep first-run onboarding shorter:
+Run one-command local sync after `/insights`. The terminal-first `join` flow prints a GitHub device code, creates a revocable sync token automatically after approval, and never requires copying a token out of Settings. The `sync` subcommand still works and can force the older local browser callback with `--browser`:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity
+npx --yes github:brightseth/vibestats#feat/wave-1-identity join
 npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
 npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run --json
 npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command
@@ -152,7 +152,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
 npx --yes github:brightseth/vibestats#feat/wave-1-identity join
 ```
 
-`join` and `onboard` are aliases for the default sync flow. They reveal locally first, then open a GitHub-backed browser approval page only when publishing the derived profile.
+`join` and `onboard` are aliases for the terminal-first sync flow. They reveal locally first, then ask the user to open GitHub's device login page and enter a short code only when publishing the derived profile. Use `--browser` if you explicitly want the local callback approval flow instead.
 
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser reveal, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to reveal the derived result locally without a token or network request, `--dry-run --json` to inspect the exact derived payload, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints the profile URL, compare-first invite URL, copy/paste share line, X share URL, optional public-discovery opt-in link, match intent link, leaderboard/match return links, recap URL, and README badge Markdown.
 
