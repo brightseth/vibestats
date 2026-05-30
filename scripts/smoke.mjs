@@ -843,7 +843,10 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile X share should retain the profile as credential context');
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
-  assert(profileHtml.includes('id="sync-cta"') && profileHtml.includes('set up CLI sync'), 'owner profile should expose return-loop CLI sync setup');
+  assert(profileHtml.includes('id="privacy-cta"') && profileHtml.includes('/settings#privacy-settings'), 'owner profile should expose explicit public discovery opt-in');
+  assert(profileHtml.includes('id="match-intent-cta"') && profileHtml.includes('/settings#match-settings'), 'owner profile should expose match intent setup');
+  assert(profileHtml.includes('Your profile is unlisted. Share direct links freely'), 'owner profile should preserve unlisted privacy while offering public discovery');
+  assert(profileHtml.includes('id="sync-cta"') && profileHtml.includes('sync from the CLI'), 'owner profile should expose return-loop CLI sync setup');
   assert(profileHtml.includes('id="digest-cta"') && profileHtml.includes('reserve the weekly email'), 'owner profile should expose return-loop weekly email setup');
   assert(profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)') && profileHtml.includes('](${compareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes('id="reveal-panel"') && profileHtml.includes('renderRevealPanel(me, profile, latest)'), 'profile pages should show share recipients a direct reveal panel');

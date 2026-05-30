@@ -878,6 +878,8 @@
             <a class="btn" id="recap-cta" href="/">Recap</a>
             <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
             <a class="btn" id="browse-cta" href="/browse">Browse similar</a>
+            <a class="btn" id="privacy-cta" href="/settings#privacy-settings" style="display:none">Go public</a>
+            <a class="btn" id="match-intent-cta" href="/settings#match-settings" style="display:none">Set match intent</a>
             <a class="btn" id="sync-cta" href="/settings#cli-sync" style="display:none">Sync CLI</a>
             <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
           </div>
@@ -1381,6 +1383,8 @@
       const recapCta = document.getElementById('recap-cta');
       const leaderboardCta = document.getElementById('leaderboard-cta');
       const browseCta = document.getElementById('browse-cta');
+      const privacyCta = document.getElementById('privacy-cta');
+      const matchIntentCta = document.getElementById('match-intent-cta');
       const digestCta = document.getElementById('digest-cta');
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
@@ -1420,9 +1424,15 @@
         compareCta.href = `/compare?me=${encodeURIComponent(handle)}`;
         compareCta.textContent = 'Create a pairing link';
         recapCta.textContent = 'Share recap';
+        privacyCta.style.display = 'inline-flex';
+        privacyCta.textContent = profile.user.privacy === 'public' ? 'Public settings' : 'Go public';
+        matchIntentCta.style.display = 'inline-flex';
+        matchIntentCta.textContent = profile.match?.looking_for && profile.match.looking_for !== 'idle' ? 'Update match intent' : 'Set match intent';
         document.getElementById('sync-cta').style.display = 'inline-flex';
         digestCta.style.display = 'inline-flex';
-        note.textContent = 'Pin the README badge for ambient discovery, create pairing links, set up CLI sync, or reserve the weekly email.';
+        note.textContent = profile.user.privacy === 'public'
+          ? 'Pin the README badge for ambient discovery, create pairing links, set match intent, sync from the CLI, or reserve the weekly email.'
+          : 'Your profile is unlisted. Share direct links freely, or opt into public discovery before using browse, match, and leaderboards.';
       }
       renderReadmePanel(me, profile, latest, badgePath, uploadCompareUrl);
 
