@@ -264,6 +264,22 @@ async function auditCliPackage(options, recorder) {
 
 async function auditSshClaim(options, recorder) {
   try {
+    const manifest = await fetchText(options, '/api/ssh/manifest');
+    const manifestCache = manifest.response.headers.get('cache-control') || '';
+    const manifestType = manifest.response.headers.get('content-type') || '';
+    const manifestBody = JSON.parse(manifest.body || '{}');
+    recorder.check(manifest.response.status === 200, 'SSH shell manifest is reachable', `${manifest.response.status} ${manifest.url}`);
+    recorder.check(manifestType.includes('application/json'), 'SSH shell manifest content type', manifestType || '(none)');
+    recorder.check(manifestCache.includes('no-store'), 'SSH shell manifest disables public caching', manifestCache || '(none)');
+    recorder.check(manifestBody.schema_version === 'vibestats.ssh_shell.v1' && manifestBody.status?.hosted_on_vercel_functions === false, 'SSH shell manifest names the external TCP service boundary');
+    recorder.check(String(manifestBody.ssh?.command || '').startsWith('ssh ') && manifestBody.ssh?.apex_command_supported === false, 'SSH shell manifest exposes the dedicated SSH command');
+    recorder.check(manifestBody.privacy?.ssh_host_reads_local_files === false && manifestBody.privacy?.local_helper_uploads === 'derived-only', 'SSH shell manifest preserves local-only extraction');
+    recorder.check(Array.isArray(manifestBody.commands) && manifestBody.commands.some((item) => item.name === 'claim'), 'SSH shell manifest includes claim coordination command');
+    recorder.check(String(manifestBody.claim_flow?.local_command_template || '').includes('/cli.sh') && String(manifestBody.claim_flow?.local_command_template || '').includes('{code}'), 'SSH shell manifest prints no-npm helper template');
+    recorder.check(Array.isArray(manifestBody.viral_loops) && manifestBody.viral_loops.includes('compare_invite') && manifestBody.viral_loops.includes('terminal_share_kit'), 'SSH shell manifest drives comparison and terminal sharing');
+    recorder.check(!hasRawLeak(manifest.body), 'SSH shell manifest has no raw-insights field names');
+    recorder.check(!hasSecretName(manifest.body), 'SSH shell manifest does not expose secret env names');
+
     const start = await fetchText(options, '/api/ssh/claim-start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

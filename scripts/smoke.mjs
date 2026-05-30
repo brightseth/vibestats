@@ -21,6 +21,7 @@ const apiModules = [
   '../api/me.js',
   '../api/uploads.js',
   '../api/sync.js',
+  '../api/ssh/manifest.js',
   '../api/ssh/claim-start.js',
   '../api/ssh/claim-status.js',
   '../api/credential.js',
@@ -44,6 +45,7 @@ const apiModules = [
   '../api/_lib/github-oauth.js',
   '../api/_lib/profile-links.js',
   '../api/_lib/profile-settings.js',
+  '../api/_lib/ssh-shell.js',
   '../api/_lib/ssh-claims.js',
   '../api/_lib/achievements.js',
   '../api/_lib/public-profile.js',
@@ -199,6 +201,8 @@ async function assertRoutes() {
   const derivedProfileSpecApi = await readFile('api/derived-profile-spec.js', 'utf8');
   const githubOauthHelper = await readFile('api/_lib/github-oauth.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
+  const sshManifestApi = await readFile('api/ssh/manifest.js', 'utf8');
+  const sshShellHelper = await readFile('api/_lib/ssh-shell.js', 'utf8');
   const sshClaimStartApi = await readFile('api/ssh/claim-start.js', 'utf8');
   const sshClaimStatusApi = await readFile('api/ssh/claim-status.js', 'utf8');
   const sshClaimsHelper = await readFile('api/_lib/ssh-claims.js', 'utf8');
@@ -583,6 +587,9 @@ async function assertRoutes() {
   assert(launchAudit.includes('checkRawLeaks: false'), 'launch audit should not fail the upload page for local raw-parser field names');
   assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-device-flow') && launchAudit.includes('--expect-cli-package') && launchAudit.includes('--expect-ssh-claim') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
   assert(launchAudit.includes("label: 'no-npm CLI bootstrap'") && launchAudit.includes("path: '/cli.sh'") && launchAudit.includes('SSH claim start creates a session'), 'launch audit should verify the no-npm bootstrap and optional SSH claim-session loop');
+  assert(launchAudit.includes('/api/ssh/manifest') && launchAudit.includes('SSH shell manifest names the external TCP service boundary') && launchAudit.includes('terminal_share_kit'), 'launch audit should verify the SSH shell contract and terminal viral loop');
+  assert(sshManifestApi.includes('buildSshShellManifest') && sshManifestApi.includes("methodNotAllowed(res, ['GET']"), 'SSH manifest API should expose a GET-only shell contract');
+  assert(sshShellHelper.includes("SSH_SHELL_SCHEMA = 'vibestats.ssh_shell.v1'") && sshShellHelper.includes('external_tcp_service_required') && sshShellHelper.includes('ssh_host_reads_local_files: false') && sshShellHelper.includes('terminal_share_kit'), 'SSH shell helper should encode the external service, privacy boundary, and terminal sharing loop');
   assert(launchAudit.includes('cronSecret: process.env.CRON_SECRET') && launchAudit.includes('weekly digest dry run has cron secret'), 'launch audit should run a protected digest dry run when strict digest readiness is expected');
   assert(launchAudit.includes('weekly digest dry run returns readiness payload') && launchAudit.includes('body.resend_ready === true'), 'launch audit should require digest dry-run readiness payload');
   assert(launchAudit.includes('weekly digest dry run has at least one candidate') && launchAudit.includes('weekly digest dry run proves return-loop content'), 'launch audit should require digest dry-run content proof');
@@ -631,7 +638,7 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   const sshRouteDoc = await readFile('docs/SSH-ROUTE.md', 'utf8');
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, derived credential proof URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
-  assert(readme.includes('SSH claim-session primitive') && readme.includes('curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-ABCD-2345') && readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH claim-session handoff commands');
+  assert(readme.includes('versioned SSH shell contract') && readme.includes('/api/ssh/manifest') && readme.includes('curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-ABCD-2345') && readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH shell contract and claim-session handoff commands');
   assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
   assert(readme.includes('versioned Derived Profile Spec') && readme.includes('/api/derived-profile-spec') && readme.includes('future source slots'), 'README should document the source-agnostic derived profile spec');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
@@ -859,6 +866,23 @@ async function assertSshClaimHelpers() {
   }
   assert(invalid, 'SSH claim helper should reject non-code input');
   console.log('ok SSH claim helpers preserve local handoff shape');
+}
+
+async function assertSshShellManifest() {
+  const { DEFAULT_SSH_HOST, SSH_SHELL_SCHEMA, buildSshShellManifest } = await import('../api/_lib/ssh-shell.js');
+  const manifest = buildSshShellManifest('https://vibestats.example/');
+  const serialized = JSON.stringify(manifest);
+  assert(DEFAULT_SSH_HOST === 'ssh.vibestats.io', 'SSH shell manifest should default to the dedicated subdomain');
+  assert(manifest.schema_version === SSH_SHELL_SCHEMA && manifest.schema_version === 'vibestats.ssh_shell.v1', 'SSH shell manifest should be versioned');
+  assert(manifest.status.ssh_service === 'external_tcp_service_required' && manifest.status.hosted_on_vercel_functions === false, 'SSH shell manifest should not pretend Vercel hosts long-lived SSH');
+  assert(manifest.ssh.command === 'ssh ssh.vibestats.io' && manifest.ssh.apex_command_supported === false, 'SSH shell manifest should expose the dedicated SSH command');
+  assert(manifest.api.claim_start === 'https://vibestats.example/api/ssh/claim-start' && manifest.api.bootstrap === 'https://vibestats.example/cli.sh', 'SSH shell manifest should point the service at existing HTTP primitives');
+  assert(manifest.claim_flow.local_command_template.includes('/cli.sh') && manifest.claim_flow.local_command_template.includes('{code}') && manifest.claim_flow.steps.some((step) => step.includes('derived metrics')), 'SSH shell manifest should coordinate claims through the no-npm local helper');
+  assert(manifest.privacy.ssh_host_reads_local_files === false && manifest.privacy.local_helper_uploads === 'derived-only' && manifest.privacy.forbidden_inputs.includes('prompts'), 'SSH shell manifest should encode the raw-data privacy boundary');
+  assert(manifest.commands.some((item) => item.name === 'claim') && manifest.commands.some((item) => item.name === 'share HANDLE'), 'SSH shell manifest should cover claim and terminal share-kit flows');
+  assert(manifest.viral_loops.includes('compare_invite') && manifest.viral_loops.includes('terminal_share_kit'), 'SSH shell manifest should preserve compare-first viral loops');
+  assert(!serialized.includes('tool_usage') && !serialized.includes('language_usage') && !serialized.includes('rawJson'), 'SSH shell manifest should avoid raw-shaped public field names');
+  console.log('ok SSH shell manifest contract');
 }
 
 async function assertCliBootstrapScript() {
@@ -3898,10 +3922,11 @@ await assertApiImports();
 await assertRoutes();
 await assertLaunchAuditHelpers();
 await assertUpdateCliCommandScript();
-await assertShareKitScript();
-await assertDerivedProfileCredentialHelpers();
-await assertSshClaimHelpers();
-await assertCliBootstrapScript();
+  await assertShareKitScript();
+  await assertDerivedProfileCredentialHelpers();
+  await assertSshClaimHelpers();
+  await assertSshShellManifest();
+  await assertCliBootstrapScript();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
 await assertCliLocalTokenEndpoint();

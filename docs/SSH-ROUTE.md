@@ -149,13 +149,14 @@ ssh_claim_sessions
 
 Public API shape:
 
+- `GET /api/ssh/manifest` returns the versioned SSH shell command, privacy, API, claim-flow, and viral-loop contract for the external TCP service.
 - `POST /api/ssh/claim-start` creates a claim code.
 - `GET /api/ssh/claim-status?code=...` returns bounded status for the SSH TUI.
 - `POST /api/sync` accepts an optional `claim_code` when the local helper publishes derived metrics.
 - `vibestats claim CODE` is the local helper command shape for a waiting SSH session.
 - `GET /cli.sh` returns the no-npm bootstrap wrapper that downloads the repo tarball and runs the local helper with Node.
 
-The status API must never serialize raw input fields or secret env names.
+The manifest and status APIs must never serialize raw input fields or secret env names.
 
 ### Local Helper Shape
 
@@ -181,7 +182,7 @@ SSH coordinates the reveal. Local code does the extraction.
 
 ## MVP Build Order
 
-1. **Spec and copy guardrails.** Land this document, link it from the README/roadmap, and test that docs say SSH is not the extractor.
+1. **Spec and copy guardrails.** Land this document, link it from the README/roadmap, expose `/api/ssh/manifest`, and test that docs say SSH is not the extractor.
 2. **Read-only SSH TUI.** Browse public profiles, leaderboards, matchmaker, credential JSON links, and share kits using existing public APIs.
 3. **Claim-session API.** Add short-lived codes, status polling, and sync attachment. No raw payload fields.
 4. **Local helper command.** Add `claim CODE` to the existing CLI so a local publish can wake a waiting SSH session.
