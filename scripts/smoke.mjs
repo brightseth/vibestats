@@ -339,12 +339,13 @@ async function assertRoutes() {
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
   assert(badgeApi.includes('function sendBadgeNotFound') && badgeApi.includes('profileShareCacheControl(null)'), 'profile badge private 404 should not be cacheable');
   assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('recap_url'), 'profile links helper should expose compare-first and recap URLs');
+  assert(profileLinksHelper.includes('privacy_url') && profileLinksHelper.includes('match_settings_url') && profileLinksHelper.includes('leaderboard_url') && profileLinksHelper.includes('match_url'), 'profile links helper should expose opt-in discovery and return-loop URLs');
   assert(uploadsApi.includes('profileLinks(user, payload.archetype)'), 'browser profile saves should return compare-first profile links');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
-  assert(cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface compare-first social share, recap, and README badge hooks');
+  assert(cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Optional public discovery:') && cliBin.includes('Profiles stay unlisted unless you choose Public.') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface compare-first social share, opt-in discovery, recap, and README badge hooks');
   assert(cliBin.includes('Install /vibestats for future reveals:') && cliBin.includes('Reserve weekly digest:'), 'CLI sync success output should surface Claude Code and digest return hooks');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
   assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when no token is supplied');
@@ -403,6 +404,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes('renderDigestControls(settings, identityStatus)'), 'settings page should centralize digest control readiness state');
   assert(settingsHtml.includes('Digest consent saved. Delivery starts when weekly email infrastructure is enabled.'), 'settings page should explain saved digest consent before delivery is configured');
   assert(settingsHtml.includes('checkbox.disabled = false') && settingsHtml.includes('save.disabled = false'), 'settings page should allow digest opt-ins before delivery is configured');
+  assert(settingsHtml.includes('id="privacy-settings"'), 'settings page should expose a stable privacy opt-in anchor');
   assert(settingsHtml.includes('id="weekly-digest-row"'), 'settings page should expose a stable weekly digest anchor');
   assert(settingsHtml.includes('id="preview-digest"') && settingsHtml.includes('/api/digest/preview'), 'settings page should expose owner-only weekly digest preview');
   assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
@@ -487,6 +489,7 @@ async function assertRoutes() {
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
   assert(launchAudit.includes("RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage']"), 'launch audit should scan public surfaces for raw-field markers');
   assert(launchAudit.includes("path: '/wrapped'") && launchAudit.includes("path: '/dashboard'") && launchAudit.includes("path: `/card?a="), 'launch audit should cover static and dynamic share surfaces');
+  assert(launchAudit.includes("label: 'settings shell'") && launchAudit.includes('id="privacy-settings"') && launchAudit.includes('Unlisted profiles load by direct URL'), 'launch audit should verify settings anchors for CLI/public opt-in return loops');
   assert(
     launchAudit.includes("label: 'browse page'") && launchAudit.includes("label: 'match page'") && launchAudit.includes("label: 'leaderboard page'"),
     'launch audit should cover discovery, matchmaker, and scarcity surfaces',
@@ -543,7 +546,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('Identity is not production-ready until GitHub OAuth is added') && launchDoc.includes('preview identity audits will still fail until a strong session secret is also added to Preview'), 'launch checklist should record current identity env blockers');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   const readme = await readFile('README.md', 'utf8');
-  assert(readme.includes('A successful sync prints the profile URL, compare-first invite URL, copy/paste share line, X share URL, recap URL, and README badge Markdown.'), 'README should document CLI compare-first sync output');
+  assert(readme.includes('A successful sync prints the profile URL, compare-first invite URL, copy/paste share line, X share URL, optional public-discovery opt-in link, match intent link, leaderboard/match return links, recap URL, and README badge Markdown.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`join` and `onboard` are aliases'), 'README should document terminal-first CLI onboarding aliases');
   assert(readme.includes('Use `--dry-run` to reveal the derived result locally') && readme.includes('`--dry-run --json` to inspect the exact derived payload'), 'README should document human CLI reveal before payload JSON');
@@ -1565,6 +1568,11 @@ async function assertCliDerivedPayload() {
             compare_url: '/?compareTo=alex&compareArchetype=shipper',
             recap_url: '/u/alex/recap',
             badge_url: '/u/alex/badge.svg',
+            privacy_url: '/settings#privacy-settings',
+            match_settings_url: '/settings#match-settings',
+            weekly_digest_url: '/settings#weekly-digest-row',
+            leaderboard_url: '/leaderboard/shipper',
+            match_url: '/match?goal=pair-coding&archetype=shipper',
           };
         },
       };
@@ -1577,6 +1585,11 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes("Copy/paste share: I just revealed my Claude Code build profile: prolific Shipper. What are you? See how you'd pair with me: https://vibestats.example/?compareTo=alex&compareArchetype=shipper"), 'CLI sync should print a copy-ready compare-first share line');
     const printedXShare = output.join('').match(/Share on X: (https:\/\/twitter\.com\/intent\/tweet\?\S+)/)?.[1] || '';
     assert(printedXShare && new URL(printedXShare).searchParams.get('url')?.includes('compareTo=alex'), 'CLI sync should print a one-click X share URL');
+    assert(output.join('').includes('Optional public discovery: https://vibestats.example/settings#privacy-settings'), 'CLI sync should print the opt-in public discovery settings URL');
+    assert(output.join('').includes('Profiles stay unlisted unless you choose Public.'), 'CLI sync should preserve unlisted-by-default privacy copy');
+    assert(output.join('').includes('Set match intent: https://vibestats.example/settings#match-settings'), 'CLI sync should print the match intent setup URL');
+    assert(output.join('').includes('View your weekly board: https://vibestats.example/leaderboard/shipper'), 'CLI sync should print the archetype leaderboard return URL');
+    assert(output.join('').includes('Find complementary builders: https://vibestats.example/match?goal=pair-coding&archetype=shipper'), 'CLI sync should print the matchmaker return URL');
     assert(output.join('').includes('Share your recap: https://vibestats.example/u/alex/recap'), 'CLI sync should print recap return URL');
     assert(output.join('').includes('README badge Markdown: [![vibestats: @alex](https://vibestats.example/u/alex/badge.svg)](https://vibestats.example/?compareTo=alex&compareArchetype=shipper)'), 'CLI sync should print copyable README badge Markdown');
     assert(output.join('').includes('Install /vibestats for future reveals: npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command'), 'CLI sync should print the Claude Code command installer as a return hook');

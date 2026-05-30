@@ -396,7 +396,11 @@ export async function sync(options) {
   const compareUrl = apiUrl(host, body.compare_url, `/?compareArchetype=${encodeURIComponent(payload.archetype)}`);
   const recapUrl = apiUrl(host, body.recap_url, `${profilePath}/recap`);
   const badgeUrl = apiUrl(host, body.badge_url, `${profilePath}/badge.svg`);
-  const digestUrl = apiUrl(host, '/settings#weekly-digest-row');
+  const privacyUrl = apiUrl(host, body.privacy_url, '/settings#privacy-settings');
+  const matchSettingsUrl = apiUrl(host, body.match_settings_url, '/settings#match-settings');
+  const leaderboardUrl = apiUrl(host, body.leaderboard_url, `/leaderboard/${encodeURIComponent(payload.archetype)}`);
+  const matchUrl = apiUrl(host, body.match_url, `/match?goal=pair-coding&archetype=${encodeURIComponent(payload.archetype)}`);
+  const digestUrl = apiUrl(host, body.weekly_digest_url, '/settings#weekly-digest-row');
   const handle = profileHandle(profileUrl) || 'me';
   const badgeMarkdown = `[![vibestats: @${handle}](${badgeUrl})](${compareUrl})`;
   const shareText = cliShareText({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
@@ -405,6 +409,11 @@ export async function sync(options) {
   process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
   process.stdout.write(`Copy/paste share: ${shareText}\n`);
   process.stdout.write(`Share on X: ${xShare}\n`);
+  process.stdout.write(`Optional public discovery: ${privacyUrl}\n`);
+  process.stdout.write('Profiles stay unlisted unless you choose Public.\n');
+  process.stdout.write(`Set match intent: ${matchSettingsUrl}\n`);
+  process.stdout.write(`View your weekly board: ${leaderboardUrl}\n`);
+  process.stdout.write(`Find complementary builders: ${matchUrl}\n`);
   process.stdout.write(`Share your recap: ${recapUrl}\n`);
   process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
   process.stdout.write(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}\n`);

@@ -470,6 +470,13 @@ async function auditLaunch(options) {
       mustNotInclude: ['>Quiz</a>', 'agent-insights.json'],
     },
     {
+      label: 'settings shell',
+      path: '/settings',
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: ['id="privacy-settings"', 'Unlisted profiles load by direct URL', 'id="match-settings"', 'id="weekly-digest-row"', 'id="cli-sync"', 'install-claude-command'],
+    },
+    {
       label: 'browse page',
       path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
       expectedType: 'text/html',
