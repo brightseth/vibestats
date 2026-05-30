@@ -1321,6 +1321,13 @@
       runAnalysis(profile, { demo: true });
     }
 
+    function shouldAutoRunDemo() {
+      const params = new URLSearchParams(location.search);
+      if (!params.has('demo')) return false;
+      const value = String(params.get('demo') || '1').toLowerCase();
+      return value === '1' || value === 'true' || value === 'yes';
+    }
+
     // ========================================
     // DATA EXTRACTION
     // ========================================
@@ -2790,6 +2797,10 @@
     // ========================================
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.getElementById('tap-hint').textContent = isTouch ? 'tap to continue' : 'click to continue →';
+
+    if (shouldAutoRunDemo()) {
+      setTimeout(runDemo, 120);
+    }
 
     // ========================================
     // /VIBE FUNNEL TRACKING + PRESENCE
