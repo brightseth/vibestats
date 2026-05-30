@@ -256,6 +256,34 @@ export function cliRevealXShareUrl({ label, compareUrl } = {}) {
   return `https://twitter.com/intent/tweet?${params.toString()}`;
 }
 
+export function cliRevealTerminalCard(payload = {}, { host = DEFAULT_HOST } = {}) {
+  const archetype = ARCHETYPE_LABELS[payload.archetype] || payload.archetype || 'Unknown';
+  const label = revealLabel(payload);
+  const score = primaryScore(payload);
+  const metrics = payload.metrics || {};
+  const links = localRevealLinks(payload, host);
+  const moments = publicMoments(payload.raw_meta?.moments || [], { exact: true }).slice(0, 2);
+  const pattern = [
+    `${formatInt(metrics.sessions)} sessions`,
+    `${formatInt(metrics.days)} days`,
+    `${formatInt(metrics.commitsPerDay)} commits/day`,
+    `${formatInt(metrics.msgsPerSession)} messages/session`,
+  ].join(' | ');
+  const lines = [
+    '[vibestats]',
+    `${label}${score ? ` (${score}% ${archetype})` : ''}`,
+    pattern,
+  ];
+
+  if (moments.length) {
+    lines.push(`Moments: ${moments.map((moment) => `${moment.label}: ${moment.value}`).join(' | ')}`);
+  }
+
+  lines.push('Raw /insights stayed local. What are you?');
+  if (links?.compare) lines.push(links.compare);
+  return lines.join('\n');
+}
+
 export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   const archetype = ARCHETYPE_LABELS[payload.archetype] || payload.archetype || 'Unknown';
   const label = revealLabel(payload);
@@ -286,6 +314,7 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   if (links) {
     lines.push(
       `Share without claiming: ${links.compare}`,
+      `Pasteable terminal card:\n${cliRevealTerminalCard(payload, { host })}`,
       `Copy/paste reveal: ${cliRevealShareText({ label, compareUrl: links.compare })}`,
       `Share reveal on X: ${cliRevealXShareUrl({ label, compareUrl: links.compare })}`,
       `Preview a ${archetype} x ${links.complement} pairing: ${links.pairing}`,

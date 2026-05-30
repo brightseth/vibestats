@@ -50,7 +50,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
 
 7. Report the profile URL, compare invite URL, and any README badge, embed, or recap links printed by the CLI.
 
-If the user does not want to publish yet, keep the reveal useful: point them to the archetype-only compare link, copy-ready reveal text, X share URL, complementary pairing preview, and `/vibestats` install command printed by the CLI.
+If the user does not want to publish yet, keep the reveal useful: point them to the archetype-only compare link, pasteable terminal card, copy-ready reveal text, X share URL, complementary pairing preview, and `/vibestats` install command printed by the CLI.
 
 ## Privacy Rules
 
