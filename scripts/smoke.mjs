@@ -280,6 +280,7 @@ async function assertRoutes() {
   assert(recapApi.includes('profileShareCacheControl(user)'), 'profile recap should use shared profile cache policy');
   assert(recapHtml.includes("fetch(`/api/u/${encodeURIComponent(handle)}`") && recapHtml.includes('Copy recap'), 'profile recap page should render from sanitized public profile JSON');
   assert(recapHtml.includes('Raw Claude Code /insights data stays local') && recapHtml.includes('facet shape'), 'profile recap should state derived-only privacy and facet proof');
+  assert(recapHtml.includes('id="digest-cta"') && recapHtml.includes('profile.is_owner'), 'profile recap should give owners a path into digest consent');
   assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
   assert(comparePageApi.includes('compareMetadataForSubjects'), 'compare page API should expose dynamic comparison metadata helpers');
   assert(!comparePageApi.includes('readSession'), 'compare page metadata must not personalize public cached previews by session');
@@ -362,6 +363,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes('renderDigestControls(settings, identityStatus)'), 'settings page should centralize digest control readiness state');
   assert(settingsHtml.includes('Digest consent saved. Delivery starts when weekly email infrastructure is enabled.'), 'settings page should explain saved digest consent before delivery is configured');
   assert(settingsHtml.includes('checkbox.disabled = false') && settingsHtml.includes('save.disabled = false'), 'settings page should allow digest opt-ins before delivery is configured');
+  assert(settingsHtml.includes('id="weekly-digest-row"'), 'settings page should expose a stable weekly digest anchor');
   assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'settings UI should expose CLI sync command generation');
@@ -772,7 +774,8 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile X share should retain the profile as credential context');
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
-  assert(profileHtml.includes('id="sync-cta"') && profileHtml.includes('set up CLI sync for weekly profile updates'), 'owner profile should expose return-loop CLI sync setup');
+  assert(profileHtml.includes('id="sync-cta"') && profileHtml.includes('set up CLI sync'), 'owner profile should expose return-loop CLI sync setup');
+  assert(profileHtml.includes('id="digest-cta"') && profileHtml.includes('reserve the weekly email'), 'owner profile should expose return-loop weekly email setup');
   assert(profileHtml.includes('](${uploadCompareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes('id="reveal-panel"') && profileHtml.includes('renderRevealPanel(me, profile, latest)'), 'profile pages should show share recipients a direct reveal panel');
   assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'profile reveal panel should carry the command path without sending visitors hunting');

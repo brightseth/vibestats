@@ -318,6 +318,7 @@
             <button class="btn" id="copy-recap" type="button">Copy recap</button>
             <a class="btn" id="share-x" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener">Share on X</a>
             <a class="btn" id="profile-cta" href="/">Open profile</a>
+            <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
           </div>
           <div class="privacy">Raw Claude Code /insights data stays local. This recap uses only saved derived profile signals.</div>
         </section>
@@ -489,6 +490,7 @@
       document.getElementById('next-copy').textContent = `Open the compare loop to see how your local /insights data pairs with @${profile.user.gh_handle}.`;
       document.getElementById('compare-cta').href = comparePath;
       document.getElementById('profile-cta').href = profilePath;
+      if (profile.is_owner) document.getElementById('digest-cta').style.display = 'inline-flex';
       document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(invite)}&url=${encodeURIComponent(compareUrl)}`;
       document.getElementById('copy-recap').addEventListener('click', async (event) => {
         const button = event.currentTarget;

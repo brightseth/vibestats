@@ -813,6 +813,7 @@
             <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
             <a class="btn" id="browse-cta" href="/browse">Browse similar</a>
             <a class="btn" id="sync-cta" href="/settings#cli-sync" style="display:none">Sync CLI</a>
+            <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
           <section class="reveal-panel" id="reveal-panel" aria-label="Reveal your vibestats profile"></section>
@@ -1181,6 +1182,7 @@
       const recapCta = document.getElementById('recap-cta');
       const leaderboardCta = document.getElementById('leaderboard-cta');
       const browseCta = document.getElementById('browse-cta');
+      const digestCta = document.getElementById('digest-cta');
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
@@ -1219,7 +1221,8 @@
         compareCta.textContent = 'Create a pairing link';
         recapCta.textContent = 'Share recap';
         document.getElementById('sync-cta').style.display = 'inline-flex';
-        note.textContent = 'Pick another archetype to share the compatibility result, or set up CLI sync for weekly profile updates.';
+        digestCta.style.display = 'inline-flex';
+        note.textContent = 'Pick another archetype to share the compatibility result, set up CLI sync, or reserve the weekly email.';
       }
 
       copyBtn.addEventListener('click', async () => {
