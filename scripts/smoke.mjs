@@ -355,6 +355,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('Raw insights stay in your browser; only derived metrics save.') && profileHtml.includes('Copy pending profile'), 'empty profile state should preserve the privacy promise and copyable profile loop');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
   assert(profileHtml.includes('Reveal yours vs @${handle}') && profileHtml.includes('What are you? Run /insights, then the npx reveal command on the homepage'), 'profile pages should act as share-recipient landing pages with the reveal command');
+  assert(profileHtml.includes('id="readme-panel"') && profileHtml.includes('Put your vibestats badge in a GitHub README') && profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)'), 'owner profile should promote README badges as ambient compare-first distribution');
   assert(profileHtml.includes('id="moment-grid"') && profileHtml.includes('renderBehavioralMoments(latest)'), 'profile pages should render shareable derived behavioral moments');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
@@ -421,6 +422,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes("label: 'reveal homepage'") && launchAudit.includes('Try the reveal demo') && launchAudit.includes('agent-insights.json'), 'launch audit should prevent homepage onboarding regressions');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
+  assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge'), 'launch audit should verify the profile README-badge distribution surface');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
   assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare with me') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof');
   assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('Claude Code signal'), 'launch audit should require saved profile badges to expose scored credential proof');
@@ -778,7 +780,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
   assert(profileHtml.includes('id="sync-cta"') && profileHtml.includes('set up CLI sync'), 'owner profile should expose return-loop CLI sync setup');
   assert(profileHtml.includes('id="digest-cta"') && profileHtml.includes('reserve the weekly email'), 'owner profile should expose return-loop weekly email setup');
-  assert(profileHtml.includes('](${uploadCompareUrl})'), 'profile badge markdown should click through to upload-to-compare');
+  assert(profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)') && profileHtml.includes('](${compareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes('id="reveal-panel"') && profileHtml.includes('renderRevealPanel(me, profile, latest)'), 'profile pages should show share recipients a direct reveal panel');
   assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'profile reveal panel should carry the command path without sending visitors hunting');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
@@ -799,7 +801,8 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('Profile: ${profileShareUrl}'), 'saved result X share should retain the profile as credential context');
   assert(indexHtml.includes('Card: ${cardShareUrl}'), 'ephemeral result X share should retain the share card as credential context');
   assert(indexHtml.includes('id="copy-saved-badge"'), 'post-save save state should expose portable badge copy');
-  assert(indexHtml.includes('](${canonicalCompare})'), 'post-save badge markdown should click through to upload-to-compare');
+  assert(indexHtml.includes('Put the README badge in your GitHub repos') && indexHtml.includes('Copy README badge'), 'post-save profile flow should push README badges as an ambient distribution loop');
+  assert(indexHtml.includes('readmeBadgeMarkdown(handle, badgePath, canonicalCompare)') && indexHtml.includes('](${compareUrl})'), 'post-save badge markdown should click through to upload-to-compare');
   assert(indexHtml.includes('id="copy-saved-embed"'), 'post-save save state should expose portable embed copy');
   assert(indexHtml.includes('id="copy-saved-profile"'), 'post-save save state should expose profile URL copy');
   assert(indexHtml.includes('href="/settings#cli-sync"'), 'post-save save state should route owners into CLI sync setup');

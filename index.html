@@ -564,6 +564,12 @@
       text-align: center;
     }
     .profile-save-status a { color: #fff; text-decoration: none; word-break: break-word; }
+    .post-save-note {
+      margin-top: 8px;
+      color: var(--text-dim);
+      font-size: 11px;
+      line-height: 1.5;
+    }
     .post-save-actions {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2170,11 +2176,15 @@
       return `See how you'd pair with @${handle}, a ${label}:\n${canonicalVibestatsUrl(comparePath)}\nProfile: ${canonicalVibestatsUrl(profilePath)}`;
     }
 
+    function readmeBadgeMarkdown(handle, badgePath, compareUrl) {
+      return `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${compareUrl})`;
+    }
+
     function wirePostSaveActions({ profilePath, comparePath, badgePath, embedPath }, archetype, scores) {
       const handle = currentUser?.gh_handle || '';
       const canonicalProfile = canonicalVibestatsUrl(profilePath);
       const canonicalCompare = canonicalVibestatsUrl(comparePath);
-      const badgeMarkdown = `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${canonicalCompare})`;
+      const badgeMarkdown = readmeBadgeMarkdown(handle, badgePath, canonicalCompare);
       const embedHtml = `<iframe src="${canonicalVibestatsUrl(embedPath)}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
       document.getElementById('copy-saved-invite')?.addEventListener('click', (event) => {
         copyWithButton(event.currentTarget, postSaveInviteText(profilePath, comparePath, archetype, scores), 'Invite copied!', 'Copy invite');
@@ -2183,7 +2193,7 @@
         copyWithButton(event.currentTarget, canonicalProfile, 'Profile copied!', 'Copy profile');
       });
       document.getElementById('copy-saved-badge')?.addEventListener('click', (event) => {
-        copyWithButton(event.currentTarget, badgeMarkdown, 'Badge copied!', 'Copy badge');
+        copyWithButton(event.currentTarget, badgeMarkdown, 'Badge copied!', 'Copy README badge');
       });
       document.getElementById('copy-saved-embed')?.addEventListener('click', (event) => {
         copyWithButton(event.currentTarget, embedHtml, 'Embed copied!', 'Copy embed');
@@ -2208,12 +2218,13 @@
         </div>`;
       updateProfileSaveStatus(`
         Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a>
+        <div class="post-save-note">Put the README badge in your GitHub repos; every click opens your compare-first reveal path.</div>
         <div class="post-save-actions">
           <button type="button" id="copy-saved-invite">Copy invite</button>
           <button type="button" class="secondary" id="copy-saved-profile">Copy profile</button>
           <a href="${safePairingBuilderUrl}">Create pairing link</a>
           <a class="secondary" href="/settings#cli-sync">Set up CLI sync</a>
-          <button type="button" class="secondary" id="copy-saved-badge">Copy badge</button>
+          <button type="button" class="secondary" id="copy-saved-badge">Copy README badge</button>
           <button type="button" class="secondary" id="copy-saved-embed">Copy embed</button>
         </div>
         ${digestInline}

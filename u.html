@@ -317,6 +317,71 @@
       font-size: 12px;
       line-height: 1.5;
     }
+    .readme-panel {
+      display: none;
+      margin-top: 18px;
+      width: min(660px, 100%);
+      border: 1px solid rgba(34,211,238,0.2);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.07), rgba(107,143,255,0.05));
+      padding: 16px;
+      gap: 12px;
+    }
+    .readme-panel.visible { display: grid; }
+    .readme-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .readme-title {
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+    .readme-copy {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .readme-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .readme-preview img {
+      max-width: min(100%, 430px);
+      min-height: 32px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.16);
+    }
+    .readme-panel button {
+      min-height: 38px;
+      border: 1px solid rgba(34,211,238,0.34);
+      border-radius: 8px;
+      background: rgba(34,211,238,0.1);
+      color: #bdf3ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+    .readme-panel button:hover { border-color: rgba(34,211,238,0.65); color: #fff; }
+    .readme-code {
+      overflow-x: auto;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.24);
+      color: #dbe5ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 10px 12px;
+      white-space: nowrap;
+    }
     .reveal-panel {
       display: none;
       margin-top: 18px;
@@ -769,6 +834,7 @@
       .empty-profile-proof { grid-template-columns: 1fr; }
       .empty-profile-actions { align-items: stretch; flex-direction: column; }
       .avatar { width: 64px; height: 64px; border-radius: 14px; }
+      .readme-head { display: grid; }
       .summary-grid { grid-template-columns: 1fr; }
       .achievement-grid { grid-template-columns: 1fr; }
       .achievement-head { display: grid; }
@@ -807,7 +873,7 @@
             <a class="btn primary" id="compare-cta" href="/">Compare with this profile</a>
             <button class="btn" id="copy-profile" type="button">Copy invite</button>
             <a class="btn" id="share-x" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener">Share on X</a>
-            <button class="btn" id="copy-badge" type="button">Copy badge</button>
+            <button class="btn" id="copy-badge" type="button">Copy README badge</button>
             <button class="btn" id="copy-embed" type="button">Copy embed</button>
             <a class="btn" id="recap-cta" href="/">Recap</a>
             <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
@@ -816,6 +882,7 @@
             <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
+          <section class="readme-panel" id="readme-panel" aria-label="GitHub README badge distribution"></section>
           <section class="reveal-panel" id="reveal-panel" aria-label="Reveal your vibestats profile"></section>
           <section class="compat-panel" id="compat-panel"></section>
           <div class="summary-grid" id="summary-grid"></div>
@@ -943,6 +1010,10 @@
       return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:${proof ? `\n${proof}` : ''}\n${compareUrl}\nProfile: ${profileUrl}`;
     }
 
+    function readmeBadgeMarkdown(handle, badgePath, compareUrl) {
+      return `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${compareUrl})`;
+    }
+
     async function copyText(text) {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -1051,6 +1122,45 @@
           }
           setTimeout(() => { button.textContent = idle; }, 1400);
         });
+      });
+    }
+
+    function renderReadmePanel(me, profile, latest, badgePath, compareUrl) {
+      const panel = document.getElementById('readme-panel');
+      const handle = profile.user.gh_handle;
+      if (!panel || !sameHandle(me?.gh_handle, handle)) {
+        if (panel) {
+          panel.classList.remove('visible');
+          panel.innerHTML = '';
+        }
+        return;
+      }
+
+      const badgeUrl = canonicalVibestatsUrl(badgePath);
+      const markdown = readmeBadgeMarkdown(handle, badgePath, compareUrl);
+      panel.classList.add('visible');
+      panel.innerHTML = `
+        <div class="readme-head">
+          <div>
+            <div class="readme-title">Put your vibestats badge in a GitHub README</div>
+            <div class="readme-copy">Every repo becomes a quiet funnel: visitors see your ${esc(shareLabel(latest))}, click the badge, and land in the compare-first reveal path.</div>
+          </div>
+          <button type="button" id="copy-readme-badge">Copy Markdown</button>
+        </div>
+        <div class="readme-preview">
+          <img src="${esc(badgeUrl)}" alt="@${esc(handle)} vibestats README badge">
+        </div>
+        <div class="readme-code">${esc(markdown)}</div>
+      `;
+      panel.querySelector('#copy-readme-badge')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        try {
+          await copyText(markdown);
+          button.textContent = 'Markdown copied!';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = 'Copy Markdown'; }, 1500);
       });
     }
 
@@ -1196,6 +1306,7 @@
       const badgePath = `${profilePath}/badge.svg`;
       const embedPath = `${profilePath}/embed`;
       const recapPath = `${profilePath}/recap`;
+      const badgeMarkdown = readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl);
 
       compareCta.href = uploadComparePath;
       compareCta.textContent = `Reveal yours vs @${handle}`;
@@ -1222,8 +1333,9 @@
         recapCta.textContent = 'Share recap';
         document.getElementById('sync-cta').style.display = 'inline-flex';
         digestCta.style.display = 'inline-flex';
-        note.textContent = 'Pick another archetype to share the compatibility result, set up CLI sync, or reserve the weekly email.';
+        note.textContent = 'Pin the README badge for ambient discovery, create pairing links, set up CLI sync, or reserve the weekly email.';
       }
+      renderReadmePanel(me, profile, latest, badgePath, uploadCompareUrl);
 
       copyBtn.addEventListener('click', async () => {
         try {
@@ -1237,14 +1349,13 @@
       });
 
       copyBadgeBtn.addEventListener('click', async () => {
-        const markdown = `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${uploadCompareUrl})`;
         try {
-          await copyText(markdown);
+          await copyText(badgeMarkdown);
           copyBadgeBtn.textContent = 'Badge copied!';
-          setTimeout(() => { copyBadgeBtn.textContent = 'Copy badge'; }, 1500);
+          setTimeout(() => { copyBadgeBtn.textContent = 'Copy README badge'; }, 1500);
         } catch {
           copyBadgeBtn.textContent = 'Copy failed';
-          setTimeout(() => { copyBadgeBtn.textContent = 'Copy badge'; }, 1500);
+          setTimeout(() => { copyBadgeBtn.textContent = 'Copy README badge'; }, 1500);
         }
       });
 

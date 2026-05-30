@@ -369,6 +369,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
+      mustInclude: ['id="readme-panel"', 'Copy README badge'],
     },
     {
       label: 'profile recap',
