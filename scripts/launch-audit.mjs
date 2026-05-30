@@ -452,7 +452,7 @@ async function auditLaunch(options) {
       path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'compareTo=${encodeURIComponent(handle)}', 'Try sample pairing'],
+      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing'],
     },
     {
       label: 'browse API',
@@ -482,7 +482,7 @@ async function auditLaunch(options) {
       path: `/leaderboard/${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['public leaderboard', 'Copy invite', "See how you'd pair", 'Try sample pairing'],
+      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing'],
     },
     {
       label: 'leaderboard API',

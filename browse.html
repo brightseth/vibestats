@@ -403,6 +403,14 @@
       return `See how you'd pair with @${handle}, a ${label}:\n${compareUrl}\n${profileUrl}`;
     }
 
+    function xShareUrl(entry) {
+      const handle = entry.user?.gh_handle || 'this profile';
+      const label = entry.signature?.label || entry.archetype_label || entry.archetype;
+      const text = `See how you'd pair with @${handle}, a ${label} on vibestats.`;
+      const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`);
+      return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(compareUrl)}`;
+    }
+
     function emptyStateHtml({ unavailable = false } = {}) {
       const copy = unavailable
         ? 'Profile database unavailable.<br>Public browse results will appear once identity is configured.'
@@ -477,6 +485,7 @@
               <a class="btn primary" href="/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}">Compare</a>
               <a class="btn" href="${profilePath}">Profile</a>
               <button class="btn" type="button" data-share="${esc(shareText(entry))}">Copy share</button>
+              <a class="btn" href="${esc(xShareUrl(entry))}" target="_blank" rel="noopener">Share on X</a>
             </div>
           </article>
         `;

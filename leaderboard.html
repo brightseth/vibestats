@@ -404,6 +404,14 @@
       return `@${handle} is #${entry.rank} on the weekly ${arch.name} board with ${entry.score}% ${signature} signal. See how you'd pair:\n${compareUrl}\n${profileUrl}`;
     }
 
+    function xShareUrl(entry, archetype) {
+      const handle = entry.user?.gh_handle || 'this profile';
+      const arch = ARCHETYPES[entry.archetype || archetype] || ARCHETYPES[archetype] || ARCHETYPES.builder;
+      const text = `@${handle} is #${entry.rank} on the weekly ${arch.name} vibestats board. See how you'd pair.`;
+      const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}`);
+      return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(compareUrl)}`;
+    }
+
     function emptyStateHtml({ unavailable = false, archetype = archetypeFromLocation() } = {}) {
       const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
       const copy = unavailable
@@ -459,6 +467,7 @@
               <a class="btn primary" href="${comparePath}">Compare</a>
               <a class="btn" href="${profilePath}">Profile</a>
               <button class="btn" type="button" data-invite="${esc(inviteText(entry, archetype))}">Copy invite</button>
+              <a class="btn" href="${esc(xShareUrl(entry, archetype))}" target="_blank" rel="noopener">Share on X</a>
             </div>
           </article>
         `;

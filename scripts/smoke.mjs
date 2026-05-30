@@ -230,6 +230,7 @@ async function assertRoutes() {
   assert(leaderboardHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}'), 'leaderboard rows should route discovery into upload-to-compare');
   assert(leaderboardHtml.includes('const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype || archetype)}`)'), 'leaderboard copied invites should canonicalize to vibestats.io');
   assert(leaderboardHtml.includes('data-invite="${esc(inviteText(entry, archetype))}"'), 'leaderboard rows should expose copyable rank invite text');
+  assert(leaderboardHtml.includes('function xShareUrl(entry, archetype)') && leaderboardHtml.includes('href="${esc(xShareUrl(entry, archetype))}"') && leaderboardHtml.includes('twitter.com/intent/tweet'), 'leaderboard rows should expose X sharing that clicks through to upload-to-compare');
   assert(leaderboardHtml.includes("document.execCommand('copy')"), 'leaderboard copy actions should fall back when Clipboard API is unavailable');
   assert(leaderboardHtml.includes("See how you'd pair:"), 'leaderboard invite text should drive recipients into comparison');
   assert(leaderboardHtml.includes('Leaderboard database unavailable') && leaderboardHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'leaderboard UI should distinguish unavailable DB from an empty board');
@@ -249,6 +250,7 @@ async function assertRoutes() {
   assert(browseHtml.includes('raw insights JSON and language details stay out'), 'browse UI should state public browse privacy boundary');
   assert(browseHtml.includes('compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}'), 'browse share copy should drive recipients into upload-to-compare');
   assert(browseHtml.includes('const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(entry.archetype)}`)'), 'browse copied invites should canonicalize to vibestats.io');
+  assert(browseHtml.includes('function xShareUrl(entry)') && browseHtml.includes('href="${esc(xShareUrl(entry))}"') && browseHtml.includes('twitter.com/intent/tweet'), 'browse rows should expose X sharing that clicks through to upload-to-compare');
   assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');
   assert(browseHtml.includes('Profile database unavailable') && browseHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'browse UI should distinguish unavailable DB from an empty directory');
   assert(matchHtml.includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
@@ -444,6 +446,7 @@ async function assertRoutes() {
     launchAudit.includes("label: 'browse page'") && launchAudit.includes("label: 'match page'") && launchAudit.includes("label: 'leaderboard page'"),
     'launch audit should cover discovery, matchmaker, and scarcity surfaces',
   );
+  assert(launchAudit.includes("label: 'browse page'") && launchAudit.includes("label: 'leaderboard page'") && launchAudit.includes('twitter.com/intent/tweet'), 'launch audit should verify direct X sharing on discovery surfaces');
   assert(launchAudit.includes('Try sample pairing') && launchAudit.includes('/settings#match-settings'), 'launch audit should verify productive empty states on discovery surfaces');
   assert(
     launchAudit.includes("path: `/api/browse?") && launchAudit.includes("path: `/api/match?") && launchAudit.includes("path: `/api/leaderboard?"),
