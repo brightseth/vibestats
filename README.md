@@ -141,7 +141,7 @@ Settings still exposes a manual token command as a fallback. Sync tokens are rev
 npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --token "$VIBESTATS_SYNC_TOKEN"
 ```
 
-By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to inspect the derived payload locally without a token or network request, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints both the profile URL and a compare-first invite URL.
+By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to inspect the derived payload locally without a token or network request, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.
 
 Claude Code users can also invoke the project-local `/vibestats` command from `.claude/commands/vibestats.md`. It checks for `/insights` output, runs the CLI dry-run to reveal derived results first, and only publishes after the user explicitly asks to claim the profile.
 

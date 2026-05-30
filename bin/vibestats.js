@@ -78,6 +78,20 @@ export function normalizeHost(host) {
   return url.toString().replace(/\/+$/, '');
 }
 
+function apiUrl(host, value, fallbackPath = '') {
+  const target = value || fallbackPath || '/';
+  return new URL(target, `${normalizeHost(host)}/`).toString();
+}
+
+function profileHandle(profileUrl) {
+  try {
+    const parts = new URL(profileUrl).pathname.split('/').filter(Boolean);
+    return parts[0] === 'u' && parts[1] ? decodeURIComponent(parts[1]) : '';
+  } catch {
+    return '';
+  }
+}
+
 function randomNonce() {
   return randomBytes(24)
     .toString('base64')
@@ -247,14 +261,17 @@ export async function sync(options) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `Sync failed with HTTP ${res.status}`);
 
-  const profileUrl = body.profile_url?.startsWith('http')
-    ? body.profile_url
-    : `${host}${body.profile_url || ''}`;
-  const compareUrl = body.compare_url
-    ? (body.compare_url.startsWith('http') ? body.compare_url : `${host}${body.compare_url}`)
-    : `${host}/?compareArchetype=${encodeURIComponent(payload.archetype)}`;
+  const profileUrl = apiUrl(host, body.profile_url, '/');
+  const profilePath = new URL(profileUrl).pathname;
+  const compareUrl = apiUrl(host, body.compare_url, `/?compareArchetype=${encodeURIComponent(payload.archetype)}`);
+  const recapUrl = apiUrl(host, body.recap_url, `${profilePath}/recap`);
+  const badgeUrl = apiUrl(host, body.badge_url, `${profilePath}/badge.svg`);
+  const handle = profileHandle(profileUrl) || 'me';
+  const badgeMarkdown = `[![vibestats: @${handle}](${badgeUrl})](${compareUrl})`;
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
   process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
+  process.stdout.write(`Share your recap: ${recapUrl}\n`);
+  process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
   return body;
 }
 

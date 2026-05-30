@@ -311,13 +311,13 @@ async function assertRoutes() {
   assert(badgeApi.includes('select archetype, scores, raw_meta'), 'profile badge should fetch only derived badge fields');
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
   assert(badgeApi.includes('function sendBadgeNotFound') && badgeApi.includes('profileShareCacheControl(null)'), 'profile badge private 404 should not be cacheable');
-  assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype'), 'profile links helper should expose compare-first URLs');
+  assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('recap_url'), 'profile links helper should expose compare-first and recap URLs');
   assert(uploadsApi.includes('profileLinks(user, payload.archetype)'), 'browser profile saves should return compare-first profile links');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
-  assert(cliBin.includes('Invite people to compare:'), 'CLI sync success output should surface compare-first invite URL');
+  assert(cliBin.includes('Invite people to compare:') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface compare-first, recap, and README badge hooks');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
   assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when no token is supplied');
   assert(cliBin.includes('--no-open') && cliBin.includes('Opening browser to authorize vibestats CLI sync'), 'CLI sync should support manual browser auth fallback');
@@ -498,7 +498,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('Identity is not production-ready until GitHub OAuth is added') && launchDoc.includes('preview identity audits will still fail until a strong session secret is also added to Preview'), 'launch checklist should record current identity env blockers');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   const readme = await readFile('README.md', 'utf8');
-  assert(readme.includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
+  assert(readme.includes('A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
@@ -1446,6 +1446,8 @@ async function assertCliDerivedPayload() {
             ok: true,
             profile_url: '/u/alex',
             compare_url: '/?compareTo=alex&compareArchetype=shipper',
+            recap_url: '/u/alex/recap',
+            badge_url: '/u/alex/badge.svg',
           };
         },
       };
@@ -1455,6 +1457,8 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Revealed: prolific Shipper'), 'CLI sync should print the local reveal before publishing');
     assert(output.join('').includes('Raw Claude Code /insights data stayed local. Publishing only derived metrics.'), 'CLI sync should state the privacy boundary before publishing');
     assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
+    assert(output.join('').includes('Share your recap: https://vibestats.example/u/alex/recap'), 'CLI sync should print recap return URL');
+    assert(output.join('').includes('README badge Markdown: [![vibestats: @alex](https://vibestats.example/u/alex/badge.svg)](https://vibestats.example/?compareTo=alex&compareArchetype=shipper)'), 'CLI sync should print copyable README badge Markdown');
     assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI sync request must not post raw usage maps');
 
     output.length = 0;
