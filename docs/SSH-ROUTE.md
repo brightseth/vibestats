@@ -1,0 +1,195 @@
+# vibestats SSH Route
+
+## Product Call
+
+Treat SSH as a no-install terminal social shell and claim coordinator, not as the raw-data extractor.
+
+The command we want users to remember is:
+
+```bash
+ssh ssh.vibestats.io
+```
+
+`ssh vibestats.io` is only viable if the apex DNS and TCP routing can send port 22 to an SSH service while HTTP(S) still goes to Vercel. With the current Vercel apex setup, plan on a dedicated SSH subdomain first: `ssh ssh.vibestats.io`.
+
+## Why It Exists
+
+Many Claude Code users will try a terminal interaction before they install or trust an npm package. SSH can be the lowest-friction front door for:
+
+- viewing public profiles, leaderboards, matchmaker, and browse results;
+- generating profile share kits without opening the website;
+- explaining the raw-data privacy boundary in the medium where users already work;
+- starting a claim session that a local helper can complete.
+
+SSH does not remove the need for a local extractor. An SSH session runs on the vibestats server and cannot read the user's local `~/.claude/usage-data/` directory. Preserving the moat means raw `/insights` files never get pasted, uploaded, scp'd, or streamed to the SSH host.
+
+## Privacy Invariant
+
+The SSH host must never ask for raw `session-meta/*.json`, `facets/*.json`, `report.html`, prompts, session summaries, project paths, session ids, raw tool maps, or raw language maps.
+
+The only allowed publish path is:
+
+1. user runs `/insights` locally in Claude Code;
+2. a local helper reads `~/.claude/usage-data/`;
+3. the helper derives the same bounded profile payload as the web/CLI reveal;
+4. only derived fields are posted to vibestats;
+5. the SSH session receives a profile URL, credential URL, compare URL, and launch kit after the derived upload lands.
+
+If we add a pipe-based command later, it must pipe only the derived payload:
+
+```bash
+vibestats reveal --json | ssh ssh.vibestats.io claim --derived-only
+```
+
+Do not support:
+
+```bash
+tar cz ~/.claude/usage-data | ssh ssh.vibestats.io
+scp ~/.claude/usage-data/session-meta/*.json ssh.vibestats.io:
+```
+
+## User Flows
+
+### Visitor Flow
+
+1. User runs `ssh ssh.vibestats.io`.
+2. TUI opens to "What are you? Claude Code already knows."
+3. User can browse:
+   - `view brightseth`
+   - `leaderboard deepdiver`
+   - `match pair-coding`
+   - `compare builder shipper`
+4. Every public profile screen shows a compare-first reveal CTA and copyable local commands.
+
+### Claim Flow
+
+1. User chooses `claim`.
+2. SSH app creates a short-lived claim session:
+   - random code, e.g. `VIBE-7K2Q`;
+   - 10 minute expiry;
+   - no raw data fields;
+   - optional intended GitHub handle after auth.
+3. SSH app prints:
+
+```bash
+/insights
+npx --yes github:brightseth/vibestats#feat/wave-1-identity --claim VIBE-7K2Q
+```
+
+4. The local helper:
+   - runs on the user's machine;
+   - reads `~/.claude/usage-data/`;
+   - shows the local reveal first;
+   - asks for publish consent;
+   - completes GitHub identity approval;
+   - posts only derived metrics plus the claim code.
+5. SSH app polls the claim session and reveals:
+   - archetype + signature;
+   - rarity and leaderboard placement;
+   - `/u/<handle>`;
+   - `/u/<handle>/credential.json`;
+   - compare invite;
+   - README badge and embed snippets;
+   - match-intent prompt.
+
+### Returning Owner Flow
+
+1. User runs `ssh ssh.vibestats.io`.
+2. User signs in through GitHub Device Flow or a web handoff.
+3. TUI shows:
+   - latest profile;
+   - launch kit;
+   - match intent status;
+   - digest preview availability;
+   - "refresh after more Claude Code work" command.
+
+## Architecture
+
+### SSH Service
+
+Vercel Functions cannot host a long-lived SSH server. Ship this as a separate service on Fly.io, Railway, Render, a small VM, or a container behind a TCP load balancer.
+
+Implementation options:
+
+- Go: Charm `wish` + Bubble Tea for the TUI.
+- Node: `ssh2` server + Ink/Blessed-style rendering.
+
+Prefer Go if we want the app to feel native and durable under concurrent terminal sessions.
+
+### APIs To Reuse
+
+The SSH service should call existing HTTPS APIs where possible:
+
+- `GET /api/u/:handle`
+- `GET /u/:handle/credential.json`
+- `GET /api/browse`
+- `GET /api/match`
+- `GET /api/leaderboard`
+- `POST /api/match-intros`
+- `POST /api/sync` after local helper authorization
+- `POST /api/sync-settings` for match intent
+
+### New Backend Primitive
+
+Add claim sessions, backed by Postgres or Redis:
+
+```text
+claim_sessions
+- code_hash
+- state: pending | authorized | synced | expired | revoked
+- gh_handle nullable
+- sync_token_id nullable
+- profile_url nullable
+- compare_url nullable
+- credential_url nullable
+- created_at
+- expires_at
+- consumed_at nullable
+```
+
+Public API shape:
+
+- `POST /api/ssh/claim-start` creates a claim code.
+- `GET /api/ssh/claim-status?code=...` returns bounded status for the SSH TUI.
+- `POST /api/sync` accepts an optional `claim_code` when the local helper publishes derived metrics.
+
+The status API must never serialize raw input fields or secret env names.
+
+### Local Helper Shape
+
+Keep the current CLI as the first local helper:
+
+```bash
+npx --yes github:brightseth/vibestats#feat/wave-1-identity --claim VIBE-7K2Q
+```
+
+Later, reduce npm friction with a signed binary/bootstrap:
+
+```bash
+curl -fsSL https://vibestats.io/install | sh
+vibestats claim VIBE-7K2Q
+```
+
+SSH coordinates the reveal. Local code does the extraction.
+
+## MVP Build Order
+
+1. **Spec and copy guardrails.** Land this document, link it from the README/roadmap, and test that docs say SSH is not the extractor.
+2. **Read-only SSH TUI.** Browse public profiles, leaderboards, matchmaker, credential JSON links, and share kits using existing public APIs.
+3. **Claim-session API.** Add short-lived codes, status polling, and sync attachment. No raw payload fields.
+4. **Local helper flag.** Add `--claim CODE` to the existing CLI so a local publish can wake a waiting SSH session.
+5. **Reveal handoff.** SSH TUI updates live after sync and prints the launch kit.
+6. **Signed binary/bootstrap.** Only after the claim loop works, add non-npm installation so SSH can print a command that does not mention npm.
+7. **Ops hardening.** Rate limits, abuse handling, session expiry, host key pinning guidance, and launch audit checks against the SSH health endpoint.
+
+## Acceptance
+
+The first real success story should be:
+
+1. a cold Claude Code user runs `ssh ssh.vibestats.io`;
+2. browses Seth's profile and a leaderboard;
+3. starts claim from the SSH TUI;
+4. runs `/insights` plus one local helper command;
+5. sees their profile reveal inside the SSH session;
+6. copies a launch kit that drives friends into compare-first onboarding;
+7. raw Claude Code session data never leaves their machine.

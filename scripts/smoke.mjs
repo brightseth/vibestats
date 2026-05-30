@@ -609,6 +609,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('Identity is not production-ready until GitHub OAuth is added') && launchDoc.includes('preview identity audits will still fail until a strong session secret is also added to Preview'), 'launch checklist should record current identity env blockers');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   const readme = await readFile('README.md', 'utf8');
+  const sshRouteDoc = await readFile('docs/SSH-ROUTE.md', 'utf8');
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, derived credential proof URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
   assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
@@ -623,6 +624,8 @@ async function assertRoutes() {
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('derived credential proof URL') && readme.includes('README badge Markdown, and profile embed HTML'), 'README should document post-sync credential proof and portable distribution snippets');
+  assert(readme.includes('docs/SSH-ROUTE.md') && readme.includes('SSH should become a social shell and claim coordinator') && readme.includes('raw `/insights` files must never be pasted'), 'README should document the planned no-install SSH route without weakening local extraction');
+  assert(sshRouteDoc.includes('Treat SSH as a no-install terminal social shell and claim coordinator, not as the raw-data extractor.') && sshRouteDoc.includes('The SSH host must never ask for raw `session-meta/*.json`') && sshRouteDoc.includes('Vercel Functions cannot host a long-lived SSH server') && sshRouteDoc.includes('Add `--claim CODE` to the existing CLI'), 'SSH route spec should preserve local-only extraction and name the implementation shape');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');

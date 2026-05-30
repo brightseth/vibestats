@@ -21,6 +21,9 @@ The v1 card and viral loops are the wedge. The long-term product is the trusted 
 3. **Connections and match feedback graph.**
    Start logging intro, accept, and outcome edges early, even before the model is sophisticated. Outcome history cannot be backfilled. This is what eventually moves matching from hand-tuned compatibility to empirical complementarity.
 
+4. **No-install terminal social shell.**
+   Add an SSH/TUI route (`ssh ssh.vibestats.io`) for browsing, share kits, matchmaker discovery, and claim coordination without asking cold users to trust npm first. Keep extraction local; SSH is the product shell, not the raw `/insights` reader. See `docs/SSH-ROUTE.md`.
+
 ## Code Catches To Preserve
 
 - **Debugger score must not reward producing bugs.** Reframe around resolution, recovery, or debug patience before ranking makes the incentive visible.
@@ -37,6 +40,6 @@ The v1 card and viral loops are the wedge. The long-term product is the trusted 
 
 ## V1 Implication
 
-Keep shipping the current v1 path: terminal-first reveal, GitHub-claimed profiles, share-asymmetric comparison, public opt-in discovery, match intent, badges, embeds, and weekly return hooks.
+Keep shipping the current v1 path: terminal-first reveal, GitHub-claimed profiles, share-asymmetric comparison, public opt-in discovery, match intent, badges, embeds, and weekly return hooks. The SSH route is worth planning now because it reduces install friction, but it should not interrupt v1 unless it adds a claim-session primitive that still preserves local-only extraction.
 
 Only pull future work into v1 when it protects the privacy promise or prevents irreversible schema loss. The one likely early schema candidate is recording consented match-intro events once people can actually request intros.

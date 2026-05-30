@@ -172,6 +172,7 @@ create index on uploads(user_id, uploaded_at desc);
    - Opens browser approval against the user's GitHub-backed vibestats session, then POSTs to `/api/sync` with a revocable signed token. Manual Settings tokens remain a fallback.
    - Updates profile silently. **This unlocks weekly upload cadence without manual download/upload.**
 6. **Cross-link with Anthropic's `/insights`.** Detect when CC users run /insights and surface a one-line CTA: "Push to vibestats." (Coordinate with Anthropic if they'll embed a CTA. Otherwise just ship the CLI and let users discover it.)
+7. **SSH/TUI route.** `ssh ssh.vibestats.io` becomes a no-install terminal social shell for browsing profiles, leaderboards, matches, and share kits, plus a claim coordinator that prints a local helper command. The SSH host must not read raw `/insights`; local extraction remains the privacy boundary. See `docs/SSH-ROUTE.md`.
 
 **Non-goals:**
 - No in-app messaging. Link out.

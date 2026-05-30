@@ -38,7 +38,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 
 ## Where it's going
 
-A **public profile + matchmaker** for Claude Code users — see `docs/ROADMAP.md`.
+A **public profile + matchmaker** for Claude Code users — see `docs/ROADMAP.md`. The no-install terminal route is tracked in `docs/SSH-ROUTE.md`: SSH should become a social shell and claim coordinator, while local extraction remains the privacy boundary.
 
 The current product is a one-shot vanity moment. The next product is a **persistent identity** (`vibestats.io/u/<gh-handle>`) with an evolution timeline, leaderboards, and pair-finding. The vanity stays; the social tail gets built underneath it.
 
@@ -174,6 +174,8 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser reveal, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `reveal` to show the derived result locally without a token or network request; it also prints an archetype-only compare link, a pasteable terminal card, copy-ready reveal text, X share URL, complementary pairing preview, and `/vibestats` install command that can be used before claiming. Use the no-subcommand command in an interactive terminal for prompted claim/publish, or `sync` after a human has already approved publishing in Claude Code. Use `share --handle <saved-gh-handle>` to fetch a public profile and print the compare invite, X share URL, README badge, embed HTML, terminal onboarding commands, and privacy proof without opening the website. Use `intent pair-coding --contact-url https://x.com/<you> --public` to set a 7-day matchmaker intent from the terminal with a revocable sync token; it does not read `/insights` data. Use `reveal --json` to inspect the exact derived payload, or `share --handle <saved-gh-handle> --json` for a machine-readable share kit. Use `--file path/to/agent-insights.json` only for legacy JSON exports. `--dry-run` remains a legacy alias for `reveal`. A successful sync mints a GitHub-claimed, derived-only profile and prints the profile URL, derived credential proof URL, compare-first invite URL, copy/paste share line, X share URL, optional public-discovery opt-in link, match intent link, leaderboard/match return links, recap URL, README badge Markdown, and profile embed HTML.
 
 Claude Code users can also invoke the `/vibestats` command from `.claude/commands/vibestats.md`. Install it into `~/.claude/commands/vibestats.md` with `npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command`; use `--force` only if you want to replace an existing local command. It checks for `/insights` output, runs the CLI reveal to show derived results first, and only publishes after the user explicitly asks to claim the profile.
+
+Planned no-install route: `ssh ssh.vibestats.io` should become a terminal social shell for browsing profiles, leaderboards, matchmaker results, share kits, and claim status. It must not replace the local extractor: the SSH host cannot read `~/.claude/usage-data/`, and raw `/insights` files must never be pasted, streamed, scp'd, or uploaded to it. See `docs/SSH-ROUTE.md` for the hybrid SSH + local-helper plan.
 
 Run local smoke checks:
 
