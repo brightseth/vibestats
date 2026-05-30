@@ -114,7 +114,8 @@ export function homeMetadataForInvite({
     title: `See how you'd pair with @${handle} | vibestats`,
     description: [
       `@${handle} is ${profileLabel}.`,
-      proof ? `${proof}.` : activityProof ? `${activityProof}.` : '',
+      proof ? `${proof}.` : '',
+      activityProof ? `${activityProof}.` : '',
       `Claude Code already knows how you build. Run /insights, then reveal yours against @${handle}.`,
     ].filter(Boolean).join(' '),
     url: compareFirstUrl(origin, { handle, archetype: type }),

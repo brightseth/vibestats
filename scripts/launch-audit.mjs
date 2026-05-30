@@ -389,7 +389,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'id="privacy-cta"', 'id="match-intent-cta"', 'id="digest-preview-cta"'],
+      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'GitHub-claimed', 'derived-only', 'id="privacy-cta"', 'id="match-intent-cta"', 'id="digest-preview-cta"'],
     },
     {
       label: 'profile recap',
@@ -420,7 +420,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}/badge.svg`,
       expectedType: 'image/svg+xml',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: expectReady && profileHasUpload ? 'Claude Code signal' : null,
+      mustInclude: expectReady && profileHasUpload ? ['GitHub-claimed', 'derived-only signal'] : null,
     },
     {
       label: 'upload-to-compare route',

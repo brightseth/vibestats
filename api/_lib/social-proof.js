@@ -29,8 +29,13 @@ export function leaderboardProof(leaderboard) {
   return `#${fmt(leaderboard.rank)}${total} on weekly ${label} board`;
 }
 
+export function profileTrustProof() {
+  return 'GitHub-claimed, derived-only profile';
+}
+
 export function profileShareProof({ rarity = null, leaderboard = null } = {}) {
   return [
+    profileTrustProof(),
     rarityProof(rarity),
     leaderboardProof(leaderboard),
   ].filter(Boolean).join(' / ');

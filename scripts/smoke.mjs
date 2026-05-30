@@ -295,6 +295,7 @@ async function assertRoutes() {
   assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');
   assert(profileApi.includes('total_uploads: isOwner ? uploads.length : null'), 'profile API should keep exact history count owner-only');
   assert(profileHtml.includes('latest public result'), 'profile UI should not imply full history is visible to visitors');
+  assert(profileHtml.includes('GitHub-claimed') && profileHtml.includes('derived-only'), 'profile UI should visibly distinguish claimed GitHub identity from derived-only local profile data');
   assert(profileApi.includes("'Cache-Control': PRIVATE_PROFILE_CACHE"), 'profile JSON private 404 should not be cacheable');
   assert(profileHtmlApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })'), 'profile HTML OG metadata must use visitor-safe metric visibility');
   assert(profileHtmlApi.includes('profileShareCacheControl(user)'), 'profile HTML OG metadata should use shared profile cache policy');
@@ -491,7 +492,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'unknown profile fallback'") && launchAudit.includes('Copy unclaimed profile'), 'launch audit should verify missing profile reveal/claim fallback');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
   assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare with me') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof');
-  assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('Claude Code signal'), 'launch audit should require saved profile badges to expose scored credential proof');
+  assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('GitHub-claimed') && launchAudit.includes('derived-only'), 'launch audit should require saved profile badges to expose identity and derived-only credential proof');
   assert(launchAudit.includes("label: 'profile-backed pair route'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`'), 'launch audit should cover profile-backed pair URLs');
   assert(launchAudit.includes("label: 'profile recap'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/recap`'), 'launch audit should cover profile recap return URLs');
   assert(launchAudit.includes('Copy sync command') && launchAudit.includes('Run CLI sync after more Claude Code work'), 'launch audit should verify recap-to-sync return action');
@@ -952,6 +953,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('INSTALL_CLAUDE_COMMAND') && profileHtml.includes('install-claude-command'), 'profile reveal surfaces should let share recipients install the Claude Code command');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
+  assert(profileHtml.includes('GitHub-claimed, derived-only profile'), 'profile share copy should carry credential and privacy proof');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
   assert(indexHtml.includes('Only derived profile data is persisted here. Raw insights JSON is never stored.'), 'pending auth save must document derived-only storage');
   assert(indexHtml.includes('resumePendingProfileSave'), 'upload page should resume pending profile save after auth');
@@ -2361,6 +2363,8 @@ async function assertProfileMetadataHelpers() {
 
   assert(proof.includes('rare combo: 1 of 8 saved profiles this month'), 'profile metadata proof should include scarcity');
   assert(proof.includes('#4 of 25 on weekly Builder board'), 'profile metadata proof should include leaderboard rank');
+  assert(proof.includes('GitHub-claimed, derived-only profile'), 'profile metadata proof should identify claimed identity without implying raw-data storage');
+  assert(description.includes('GitHub-claimed, derived-only profile'), 'profile metadata should include credential and privacy proof');
   assert(description.includes("Compare your vibecoding personality with @brightseth."), 'profile metadata should preserve comparison CTA');
   assert(!description.includes('rawJson'), 'profile metadata must not leak raw JSON fields');
   console.log('ok profile metadata helpers include social proof without raw JSON');
@@ -2626,7 +2630,7 @@ async function assertBadgeFallback() {
       color: '#22c55e',
       score: 999,
     });
-    assert(scored.includes('100% Claude Code signal - BUILDER'), 'badge SVG should render clamped primary score as credential proof');
+    assert(scored.includes('100% GitHub-claimed, derived-only signal - BUILDER'), 'badge SVG should render clamped primary score as identity and privacy credential proof');
     assert(scored.includes('>100%</text>'), 'badge SVG should show the score pill');
     assert(!scored.includes('rawJson') && !scored.includes('tool_usage') && !scored.includes('language_usage'), 'badge SVG should not include raw insight markers');
 

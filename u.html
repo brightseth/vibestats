@@ -1004,6 +1004,7 @@
       const rarity = profile?.rarity?.count ? scarcityText(profile.rarity) : '';
       const fallbackRarity = !rank && !rarity ? scarcityText(profile?.rarity) : '';
       return [
+        'GitHub-claimed, derived-only profile',
         rarity || fallbackRarity,
         rank,
       ].filter(Boolean).join(' / ');
@@ -1707,6 +1708,8 @@
       document.getElementById('handle-meta').innerHTML = `
         <span>${historyVisible ? `${uploadCount} upload${uploadCount === 1 ? '' : 's'}` : 'latest public result'}</span>
         <span>${esc(uploadDateLabel(latest))}</span>
+        <span class="pill">GitHub-claimed</span>
+        <span class="pill">derived-only</span>
         ${streak && (streak.days > 1 || streak.upload_count > 1) ? `<span class="pill">${esc(streak.label)}</span>` : ''}
         ${profile.is_owner && profile.user.privacy ? `<span class="pill">${esc(profile.user.privacy)}</span>` : ''}
       `;

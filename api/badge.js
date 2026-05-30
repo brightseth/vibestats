@@ -41,8 +41,8 @@ export function badgeSvg({ handle, label = 'vibestats profile', archetype = 'vib
   const scoreValue = Number(score);
   const safeScore = Number.isFinite(scoreValue) ? esc(`${Math.max(0, Math.min(100, Math.round(scoreValue)))}%`) : '';
   const footer = safeScore
-    ? `${safeScore} Claude Code signal - ${safeArchetype}`
-    : `Claude Code signature - ${safeArchetype}`;
+    ? `${safeScore} GitHub-claimed, derived-only signal - ${safeArchetype}`
+    : `GitHub-claimed, derived-only signature - ${safeArchetype}`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="120" viewBox="0 0 520 120" role="img" aria-label="${safeHandle} ${safeLabel}">
   <defs>
