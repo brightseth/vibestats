@@ -282,6 +282,8 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
     'Raw Claude Code /insights data stayed local. No profile was published.',
     'No website upload required.',
     `To claim your GitHub-backed profile and share compare links, run: ${DEFAULT_NPX_JOIN_COMMAND}`,
+    `Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}`,
+    `Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_REVEAL_COMMAND}`,
     'For machine-readable derived payload: add --json to the reveal command.',
   );
 
