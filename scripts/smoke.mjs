@@ -55,6 +55,7 @@ const apiModules = [
   '../api/badge.js',
   '../api/embed.js',
   '../api/og.js',
+  '../scripts/share-kit.mjs',
 ];
 
 function assert(condition, message) {
@@ -198,6 +199,7 @@ async function assertRoutes() {
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const rewrites = config.rewrites || [];
   assert(packageJson.scripts?.dev === 'vercel dev' && packageJson.scripts?.serve === 'vercel dev', 'local dev should use Vercel routing now that / is rendered by an API function');
+  assert(packageJson.scripts?.['share:kit'] === 'node scripts/share-kit.mjs', 'package should expose the public profile share-kit generator');
   assert(
     rewrites.some((rewrite) => rewrite.source === '/' && rewrite.destination === '/api/home'),
     'homepage should rewrite to dynamic metadata renderer',
@@ -556,6 +558,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
   assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
   assert(launchDoc.includes('--expect-ready --expect-device-flow') && launchDoc.includes('Enable Device Flow'), 'launch checklist should document the strict terminal-first device-flow gate');
+  assert(launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document the first-profile share kit');
   assert(launchDoc.includes('VIBESTATS_CLI_PACKAGE') && launchDoc.includes('scoped package') && launchDoc.includes('static onboarding snippets'), 'launch checklist should document the public npm package command switchover');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-digest'), 'launch checklist should require strict device-flow and digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
@@ -571,6 +574,7 @@ async function assertRoutes() {
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub branch fallback'), 'README should document the public CLI package override before broad npm sharing');
+  assert(readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document the copy-ready share kit for minted profiles');
   assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, a pasteable terminal card, copy-ready reveal text, X share URL') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
@@ -634,6 +638,69 @@ async function assertUpdateCliCommandScript() {
   assert(report.replacements > 0 && home?.count > 0 && audit?.count > 0, 'CLI command update script should cover public static snippets and launch audit expectations');
   assert(TARGET_FILES.includes('README.md') && TARGET_FILES.includes('settings.html') && TARGET_FILES.includes('.claude/commands/vibestats.md'), 'CLI command update script should cover docs, settings, and Claude Code install command');
   console.log('ok CLI command update script supports npm package switchover');
+}
+
+async function assertShareKitScript() {
+  const { buildShareKit, fetchProfile, parseArgs, shareKitText } = await import('../scripts/share-kit.mjs');
+  const parsed = parseArgs(['--origin', 'https://vibestats.example/path', '--handle', '@alex', '--json']);
+  assert(parsed.origin === 'https://vibestats.example' && parsed.handle === 'alex' && parsed.json === true, 'share kit should parse origin, handle, and JSON mode');
+
+  const profile = {
+    user: { gh_handle: 'alex', avatar_url: 'https://example.invalid/avatar.png' },
+    uploads: [{
+      archetype: 'shipper',
+      raw_meta: {
+        signature: 'prolific Shipper',
+        signatureCombo: 'shipper+builder',
+      },
+      scores: { shipper: 92 },
+      metrics: {},
+    }],
+    rarity: { count: 2, tier: 'rare', window_days: 30 },
+    achievements: [{ id: 'rarity-rare', label: 'Rare signature' }],
+  };
+  const kit = buildShareKit(profile, { origin: 'https://vibestats.example', handle: 'alex' });
+  assert(kit.urls.profile === 'https://vibestats.example/u/alex', 'share kit should include the public profile URL');
+  assert(kit.urls.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper', 'share kit should route the primary invite into compare-first onboarding');
+  assert(kit.copy.share_text.includes('@alex is prolific Shipper') && kit.copy.share_text.includes('Raw /insights stayed local'), 'share kit should generate privacy-aware copy text');
+  assert(kit.copy.x_share_url.startsWith('https://twitter.com/intent/tweet?') && new URL(kit.copy.x_share_url).searchParams.get('url') === kit.urls.compare, 'share kit should generate an X intent URL that clicks into compare');
+  assert(kit.copy.readme_badge_markdown.includes('/u/alex/badge.svg') && kit.copy.readme_badge_markdown.includes(kit.urls.compare), 'share kit should generate compare-first README badge markdown');
+  assert(kit.copy.embed_html.includes('/u/alex/embed') && kit.copy.embed_html.includes('title="@alex on vibestats"'), 'share kit should generate a portable embed snippet');
+  assert(kit.copy.terminal_onboarding.includes('/insights') && kit.copy.terminal_onboarding.some((line) => line.includes('status')), 'share kit should include terminal onboarding commands');
+  assert(kit.privacy_proof.public_payload_has_no_raw_usage_fields === true, 'share kit should prove public profile payload has no raw usage fields');
+  const text = shareKitText(kit);
+  assert(text.includes('vibestats share kit: @alex') && text.includes('Compare invite: https://vibestats.example/?compareTo=alex&compareArchetype=shipper') && text.includes('Privacy proof:'), 'share kit text should be copy-ready and include privacy proof');
+
+  const fetched = await fetchProfile({
+    origin: 'https://vibestats.example',
+    handle: 'alex',
+    fetchImpl: async (url) => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return { ok: true, url };
+      },
+    }),
+  });
+  assert(fetched.ok === true && fetched.url === 'https://vibestats.example/api/u/alex', 'share kit should fetch public profile JSON by handle');
+  let failed = false;
+  try {
+    await fetchProfile({
+      origin: 'https://vibestats.example',
+      handle: 'missing',
+      fetchImpl: async () => ({
+        ok: false,
+        status: 503,
+        async json() {
+          return { error: 'Profile unavailable' };
+        },
+      }),
+    });
+  } catch (err) {
+    failed = String(err.message).includes('Profile unavailable');
+  }
+  assert(failed, 'share kit should fail clearly when the public profile API is unavailable');
+  console.log('ok share kit script generates privacy-safe launch assets');
 }
 
 async function assertIdentityReadiness() {
@@ -3346,6 +3413,7 @@ await assertApiImports();
 await assertRoutes();
 await assertLaunchAuditHelpers();
 await assertUpdateCliCommandScript();
+await assertShareKitScript();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
 await assertCliLocalTokenEndpoint();

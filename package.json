@@ -9,6 +9,7 @@
     "test": "node scripts/smoke.mjs",
     "doctor:identity": "node scripts/identity-doctor.mjs",
     "audit:launch": "node scripts/launch-audit.mjs",
+    "share:kit": "node scripts/share-kit.mjs",
     "dev": "vercel dev",
     "serve": "vercel dev",
     "migrate": "node scripts/migrate.mjs"

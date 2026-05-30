@@ -183,6 +183,13 @@ npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle>
 
 Use the stricter `--expect-device-flow` gate before broad terminal-first sharing. It fails until the GitHub OAuth App has Device Flow enabled; browser fallback still works without it.
 
+Generate a copy-ready share kit for a minted profile:
+
+```bash
+npm run share:kit -- --handle <saved-gh-handle>
+npm run share:kit -- --handle <saved-gh-handle> --json
+```
+
 For protected Vercel previews, run the same audit through `vercel curl`:
 
 ```bash
