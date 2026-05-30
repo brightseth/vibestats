@@ -2,7 +2,7 @@ import { createSyncToken, originForRequest, requireUser, syncTokenExpiresAt } fr
 import { sql } from './_lib/db.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, requireSameOrigin, safeErrorMessage } from './_lib/http.js';
 
-const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#v0.1.0';
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, "'\\''")}'`;

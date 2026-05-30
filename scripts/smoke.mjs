@@ -407,7 +407,7 @@ async function assertRoutes() {
   assert(badgeApi.includes('function sendBadgeNotFound') && badgeApi.includes('profileShareCacheControl(null)'), 'profile badge private 404 should not be cacheable');
   assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('recap_url') && profileLinksHelper.includes('credential_url'), 'profile links helper should expose compare-first, recap, and credential URLs');
   assert(profileLinksHelper.includes('privacy_url') && profileLinksHelper.includes('match_settings_url') && profileLinksHelper.includes('weekly_digest_preview_url') && profileLinksHelper.includes('leaderboard_url') && profileLinksHelper.includes('match_url'), 'profile links helper should expose opt-in discovery and return-loop URLs');
-  assert(uploadsApi.includes('profileLinks(user, payload.archetype)'), 'browser profile saves should return compare-first profile links');
+  assert(uploadsApi.includes('profileLinks(user, payload.archetype)') && uploadsApi.includes('claim_code') && uploadsApi.includes('attachClaimSession'), 'browser profile saves should return compare-first profile links and attach browser-claim race sessions');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
@@ -430,10 +430,11 @@ async function assertRoutes() {
   assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when browser auth is selected');
   assert(cliBin.includes('requestDeviceSyncToken') && cliBin.includes('/api/cli/device-start') && cliBin.includes('/api/cli/device-poll'), 'CLI join should support GitHub device-code authorization from the terminal');
   assert(cliBin.includes('--no-open') && cliBin.includes('Opening browser to authorize vibestats CLI sync'), 'CLI sync should support manual browser auth fallback');
+  assert(cliBin.includes('startBrowserClaimSession') && cliBin.includes('pollBrowserClaimSession') && cliBin.includes('vibestats profile claimed in browser'), 'CLI onboarding should race browser-side claiming against the terminal fallback');
   assert(cliBin.includes('printOnboardingStatus') && cliBin.includes('ready for reveal') && cliBin.includes('Status reads file names and counts only'), 'CLI should expose a privacy-preserving terminal onboarding preflight');
   assert(syncTokenApi.includes("if (!['POST', 'DELETE'].includes(req.method))"), 'sync token API should support generation and revocation');
   assert(syncTokenApi.includes('sync_token_invalidated_at'), 'sync token API should persist token revocation cutoff');
-  assert(syncTokenApi.includes("github:brightseth/vibestats#feat/wave-1-identity") && syncTokenApi.includes('VIBESTATS_CLI_PACKAGE'), 'sync token API should avoid the occupied unscoped npm package name while allowing package override');
+  assert(syncTokenApi.includes("github:brightseth/vibestats#v0.1.0") && syncTokenApi.includes('VIBESTATS_CLI_PACKAGE'), 'sync token API should avoid the occupied unscoped npm package name while allowing package override');
   assert(syncTokenApi.includes('${shellQuote(packageSpec)} --host') && !syncTokenApi.includes(' sync --host '), 'sync token API should generate the shorter one-command CLI form');
   assert(cliLocalTokenApi.includes("if (!['GET', 'POST'].includes(req.method))"), 'CLI browser auth endpoint should support approval page and token redirect');
   assert(cliLocalTokenApi.includes('allowedLocalCallback') && cliLocalTokenApi.includes('127.0.0.1') && cliLocalTokenApi.includes('localhost'), 'CLI browser auth endpoint should allow only local callbacks');
@@ -641,7 +642,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('--expect-ready --expect-device-flow') && launchDoc.includes('Enable Device Flow'), 'launch checklist should document the strict terminal-first device-flow gate');
   assert(launchDoc.includes('--expect-ready --expect-device-flow --expect-cli-package') && launchDoc.includes('prove npm visibility and executable CLI help'), 'launch checklist should document the strict public npm CLI package gate');
   assert(launchDoc.includes('--expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim') && launchDoc.includes('no-npm bootstrap and SSH claim-session start/status loop'), 'launch checklist should document the strict SSH claim gate after migration');
-  assert(launchDoc.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document terminal and maintainer first-profile share kits');
+  assert(launchDoc.includes('npx --yes github:brightseth/vibestats#v0.1.0 share --handle <saved-gh-handle>') && launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document terminal and maintainer first-profile share kits');
   assert(launchDoc.includes('unscoped `vibestats` package is owned by another publisher') && launchDoc.includes('npm pack --dry-run') && launchDoc.includes('npm publish --access public'), 'launch checklist should document the scoped npm publish gate');
   assert(launchDoc.includes('VIBESTATS_CLI_PACKAGE') && launchDoc.includes('scoped package') && launchDoc.includes('Product-facing web onboarding should keep using the no-npm `/cli.sh` helper'), 'launch checklist should document the public npm package fallback switchover without replacing no-npm web onboarding');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim --expect-digest'), 'launch checklist should require strict device-flow, CLI package, SSH claim, and digest audit once email is configured');
@@ -656,15 +657,15 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   const sshRouteDoc = await readFile('docs/SSH-ROUTE.md', 'utf8');
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile, recap, privacy proof, compare invite, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
-  assert(readme.includes('versioned SSH shell contract') && readme.includes('/api/ssh/manifest') && readme.includes('curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-ABCD-2345') && readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH shell contract and claim-session handoff commands');
+  assert(readme.includes('versioned SSH shell contract') && readme.includes('/api/ssh/manifest') && readme.includes('curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-ABCD-2345') && readme.includes('npx --yes github:brightseth/vibestats#v0.1.0 claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH shell contract and claim-session handoff commands');
   assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
   assert(readme.includes('versioned Derived Profile Spec') && readme.includes('/api/derived-profile-spec') && readme.includes('future source slots'), 'README should document the source-agnostic derived profile spec');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('This repo is packaged as `@lets-vibe/vibestats`') && readme.includes('npm pack --dry-run') && readme.includes('npm publish --access public'), 'README should document scoped npm package publication before broad sharing');
   assert(readme.includes('--expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim') && readme.includes('prove the no-npm `/cli.sh` bootstrap and SSH claim-session poll loop'), 'README should document the strict public CLI and SSH claim gates');
-  assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub branch fallback'), 'README should document the public CLI package override before broad npm sharing');
-  assert(readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document terminal and maintainer copy-ready share kits for minted profiles');
+  assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub release-tag fallback'), 'README should document the public CLI package override before broad npm sharing');
+  assert(readme.includes('npx --yes github:brightseth/vibestats#v0.1.0 share --handle <saved-gh-handle>') && readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document terminal and maintainer copy-ready share kits for minted profiles');
   assert(readme.includes('Use `share --handle <saved-gh-handle>`') && readme.includes('privacy proof without opening the website'), 'README should document the CLI share command for terminal-only distribution');
   assert(readme.includes('Use `intent pair-coding --contact-url https://x.com/<you> --public`') && readme.includes('does not read `/insights` data'), 'README should document terminal match-intent participation without raw insights access');
   assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, a pasteable terminal card, copy-ready reveal text, X share URL') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
@@ -678,7 +679,7 @@ async function assertRoutes() {
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
   assert((await readFile('.npmignore', 'utf8')).includes('!lib/share-kit.js'), 'npm package should include the shared CLI share-kit helper');
-  assert(claudeCommand.includes(NO_NPM_STATUS) && claudeCommand.includes(NO_NPM_REVEAL) && claudeCommand.includes(`${NO_NPM_CLI} sync`) && !claudeCommand.includes('feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should preflight, reveal locally, then explicit no-npm sync after human consent');
+  assert(claudeCommand.includes(NO_NPM_STATUS) && claudeCommand.includes(NO_NPM_REVEAL) && claudeCommand.includes(`${NO_NPM_CLI} sync`) && !claudeCommand.includes('github:brightseth/vibestats#v0.1.0 join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should preflight, reveal locally, then explicit no-npm sync after human consent');
   assert(claudeCommand.includes('intent pair-coding --contact-url') && claudeCommand.includes('does not read `/insights` data'), 'Claude Code command should let users opt into match intent without reading raw insights');
   assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('derived credential proof URL') && claudeCommand.includes('README badge, embed, or recap links'), 'Claude Code command should keep terminal-only onboarding and proof reporting explicit after the reveal');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('pasteable terminal card') && claudeCommand.includes('copy-ready reveal text, X share URL') && claudeCommand.includes('archetype-only compare link') && claudeCommand.includes('/vibestats` install command') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
@@ -1029,7 +1030,7 @@ async function assertSshShellService() {
           code: 'VIBE-ABCD-2345',
           expires_in_seconds: 600,
           local_command: "curl -fsSL 'https://vibestats.example/cli.sh' | sh -s -- claim 'VIBE-ABCD-2345' --host 'https://vibestats.example'",
-          npx_command: "npx --yes 'github:brightseth/vibestats#feat/wave-1-identity' claim 'VIBE-ABCD-2345' --host 'https://vibestats.example'",
+          npx_command: "npx --yes 'github:brightseth/vibestats#v0.1.0' claim 'VIBE-ABCD-2345' --host 'https://vibestats.example'",
         };
       }
       if (parsed.pathname === '/api/ssh/claim-status') {
@@ -1094,7 +1095,7 @@ async function assertSshShellService() {
 async function assertCliBootstrapScript() {
   const { bootstrapScript, githubTarballUrl } = await import('../api/cli/bootstrap.js');
   const script = bootstrapScript();
-  assert(githubTarballUrl() === 'https://codeload.github.com/brightseth/vibestats/tar.gz/refs/heads/feat/wave-1-identity', 'CLI bootstrap should default to the current GitHub branch tarball');
+  assert(githubTarballUrl() === 'https://codeload.github.com/brightseth/vibestats/tar.gz/refs/tags/v0.1.0', 'CLI bootstrap should default to the pinned GitHub release tag tarball');
   assert(script.startsWith('#!/bin/sh') && script.includes('set -eu'), 'CLI bootstrap should be a strict portable shell script');
   assert(script.includes('command -v node') && script.includes('Node.js 20+'), 'CLI bootstrap should require Node 20 before reading local insights');
   assert(script.includes('curl -fsSL "$tarball_url"') && script.includes('wget -qO "$archive"'), 'CLI bootstrap should support curl and wget without npm');
@@ -2020,7 +2021,7 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_LOCAL_INSTALL_COMMAND, DEFAULT_LOCAL_REVEAL_COMMAND, DEFAULT_LOCAL_STATUS_COMMAND, DEFAULT_LOCAL_SYNC_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, localHelperCommand, localWebPreviewUrl, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, printProfileShareKit, requestDeviceSyncToken, requestSyncToken, setMatchIntent, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_LOCAL_INSTALL_COMMAND, DEFAULT_LOCAL_REVEAL_COMMAND, DEFAULT_LOCAL_STATUS_COMMAND, DEFAULT_LOCAL_SYNC_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, localHelperCommand, localWebPreviewUrl, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, pollBrowserClaimSession, printOnboardingStatus, printProfileShareKit, requestDeviceSyncToken, requestSyncToken, setMatchIntent, startBrowserClaimSession, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
@@ -2056,11 +2057,11 @@ async function assertCliDerivedPayload() {
   assert(parsedRevealJson.options.dryRun === true && parsedRevealJson.options.json === true, 'CLI reveal should offer a JSON escape hatch for payload audits');
   const parsedInstall = parseArgs(['node', 'vibestats', 'install-claude-command', '--force', '--path', '/tmp/vibestats.md']);
   assert(parsedInstall.command === 'install-claude-command' && parsedInstall.options.force === true && parsedInstall.options.path === '/tmp/vibestats.md', 'CLI should parse Claude command installation options');
-  assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'CLI should expose the current GitHub-backed npx command');
-  assert(DEFAULT_NPX_REVEAL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'CLI should expose the current terminal-first reveal command');
-  assert(DEFAULT_NPX_STATUS_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'CLI should expose the current terminal readiness preflight command');
-  assert(DEFAULT_NPX_JOIN_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'CLI should expose the current terminal-first join command');
-  assert(DEFAULT_INSTALL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command', 'CLI should expose a copyable Claude Code command installer');
+  assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#v0.1.0', 'CLI should expose the current GitHub-backed npx command');
+  assert(DEFAULT_NPX_REVEAL_COMMAND === 'npx --yes github:brightseth/vibestats#v0.1.0 reveal', 'CLI should expose the current terminal-first reveal command');
+  assert(DEFAULT_NPX_STATUS_COMMAND === 'npx --yes github:brightseth/vibestats#v0.1.0 status', 'CLI should expose the current terminal readiness preflight command');
+  assert(DEFAULT_NPX_JOIN_COMMAND === 'npx --yes github:brightseth/vibestats#v0.1.0 join', 'CLI should expose the current terminal-first join command');
+  assert(DEFAULT_INSTALL_COMMAND === 'npx --yes github:brightseth/vibestats#v0.1.0 install-claude-command', 'CLI should expose a copyable Claude Code command installer');
   const { stdout: overrideHelp } = await execFileAsync(process.execPath, ['bin/vibestats.js', '--help'], {
     env: { ...process.env, VIBESTATS_CLI_PACKAGE: '@lets-vibe/vibestats' },
   });
@@ -2082,11 +2083,12 @@ async function assertCliDerivedPayload() {
   const revealXShare = cliRevealXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareArchetype=shipper' });
   const parsedRevealXShare = new URL(revealXShare);
   assert(parsedRevealXShare.origin === 'https://twitter.com' && parsedRevealXShare.searchParams.get('url')?.includes('compareArchetype=shipper') && !parsedRevealXShare.searchParams.get('url')?.includes('compareTo='), 'CLI reveal X share URL should use archetype-only comparison before claiming');
-  const webPreviewUrl = localWebPreviewUrl(insights, { host: 'https://vibestats.example' });
+  const webPreviewUrl = localWebPreviewUrl(insights, { host: 'https://vibestats.example', claimCode: 'VIBE-ABCD-2345' });
   const previewHash = new URL(webPreviewUrl).hash.replace(/^#vibestatsPreview=/, '');
   const decodedPreview = JSON.parse(Buffer.from(previewHash, 'base64url').toString('utf8'));
   assert(webPreviewUrl.startsWith('https://vibestats.example/#vibestatsPreview='), 'CLI local web preview should open vibestats with fragment-only local preview data');
   assert(decodedPreview.version === 'vibestats.local_preview.v1' && decodedPreview.insights.metrics.tool_usage.bash === 6000 && decodedPreview.insights.metrics.language_usage.typescript === 45000, 'CLI local web preview should carry bounded aggregate preview metrics for the web reveal');
+  assert(decodedPreview.claim_code === 'VIBE-ABCD-2345', 'CLI local web preview should carry only the short browser-claim race code in addition to derived preview metrics');
   assert(!JSON.stringify(decodedPreview).includes('private prompt'), 'CLI local web preview must not include raw prompts or session text');
   const revealTerminalCard = cliRevealTerminalCard(payload, { host: 'https://vibestats.example' });
   assert(revealTerminalCard.includes('[vibestats]') && revealTerminalCard.includes('prolific Shipper') && revealTerminalCard.includes('280 sessions |') && revealTerminalCard.includes('commits/day |') && revealTerminalCard.includes('Raw /insights stayed local. What are you?') && revealTerminalCard.includes('https://vibestats.example/?compareArchetype=shipper'), 'CLI reveal terminal card should be compact, pasteable, privacy-aware, and compare-first');
@@ -2548,12 +2550,78 @@ async function assertCliDerivedPayload() {
     const fallbackCallbackRes = await fetch(`${fallbackCallbackUrl.toString()}?${fallbackCallbackParams.toString()}`);
     assert(fallbackCallbackRes.ok, 'CLI device auth browser fallback should accept the matching local callback nonce');
     const fallbackAuth = await fallbackPromise;
-    assert(fallbackAuth.token === 'fallback-browser-sync-token', 'CLI device auth fallback should return the browser sync token');
-    assert(fallbackOutput.join('').includes('Falling back to browser approval.'), 'CLI device auth fallback should explain the temporary production config gap');
-    assert(!fallbackOutput.join('').includes('fallback-browser-sync-token'), 'CLI device auth fallback output must not print the sync token');
+	    assert(fallbackAuth.token === 'fallback-browser-sync-token', 'CLI device auth fallback should return the browser sync token');
+	    assert(fallbackOutput.join('').includes('Falling back to browser approval.'), 'CLI device auth fallback should explain the temporary production config gap');
+	    assert(!fallbackOutput.join('').includes('fallback-browser-sync-token'), 'CLI device auth fallback output must not print the sync token');
 
-    output.length = 0;
-    let postedBody = '';
+	    const startedClaim = await startBrowserClaimSession({
+	      host: 'https://vibestats.example',
+	      fetchImpl: async (url, options = {}) => {
+	        assert(url === 'https://vibestats.example/api/ssh/claim-start' && options.method === 'POST', 'browser claim race should start a bounded server-side claim session');
+	        return {
+	          ok: true,
+	          async json() {
+	            return {
+	              code: 'VIBE-ABCD-2345',
+	              status_url: 'https://vibestats.example/api/ssh/claim-status?code=VIBE-ABCD-2345',
+	              expires_at: '2026-06-01T00:00:00.000Z',
+	            };
+	          },
+	        };
+	      },
+	    });
+	    assert(startedClaim.code === 'VIBE-ABCD-2345', 'browser claim race should expose the sanitized claim code for the web-preview hash');
+	    let pollAttempts = 0;
+	    const polledClaim = await pollBrowserClaimSession({
+	      host: 'https://vibestats.example',
+	      code: startedClaim.code,
+	      timeoutMs: 1000,
+	      intervalMs: 1,
+	      sleepImpl: async () => {},
+	      fetchImpl: async (url) => {
+	        pollAttempts += 1;
+	        assert(String(url).includes('/api/ssh/claim-status?code=VIBE-ABCD-2345'), 'browser claim race should poll the no-store claim status endpoint');
+	        return {
+	          ok: true,
+	          async json() {
+	            return pollAttempts === 1
+	              ? { ok: true, state: 'pending' }
+	              : { ok: true, state: 'synced', gh_handle: 'alex', profile_url: '/u/alex', compare_url: '/?compareTo=alex&compareArchetype=shipper', recap_url: '/u/alex/recap', credential_url: '/u/alex/credential.json' };
+	          },
+	        };
+	      },
+	    });
+	    assert(polledClaim.state === 'synced' && polledClaim.gh_handle === 'alex', 'browser claim race should resolve when the browser save consumes the claim session');
+
+	    output.length = 0;
+	    const browserRaceOpenedUrls = [];
+	    const browserRaceResult = await sync({
+	      file,
+	      host: 'https://vibestats.example',
+	      dryRun: false,
+	      promptToPublish: true,
+	      open(url) {
+	        browserRaceOpenedUrls.push(url);
+	        return true;
+	      },
+	      startBrowserClaimSession: async () => ({ code: 'VIBE-ABCD-2345' }),
+	      pollBrowserClaimSession: async () => ({
+	        state: 'synced',
+	        gh_handle: 'alex',
+	        profile_url: '/u/alex',
+	        compare_url: '/?compareTo=alex&compareArchetype=shipper',
+	        recap_url: '/u/alex/recap',
+	        credential_url: '/u/alex/credential.json',
+	      }),
+	    });
+	    const browserPreviewPayload = JSON.parse(Buffer.from(new URL(browserRaceOpenedUrls[0]).hash.replace(/^#vibestatsPreview=/, ''), 'base64url').toString('utf8'));
+	    assert(browserRaceResult.via === 'browser' && browserRaceResult.profile_url === 'https://vibestats.example/u/alex', 'CLI onboarding should exit successfully when the browser claim wins the race');
+	    assert(browserPreviewPayload.claim_code === 'VIBE-ABCD-2345', 'CLI onboarding should embed the browser-claim race code in the fragment-only web preview');
+	    assert(output.join('').includes('Waiting for browser claim to finish') && output.join('').includes('vibestats profile claimed in browser'), 'CLI onboarding should wait for browser claim completion before offering terminal fallback');
+	    assert(output.join('').includes('Raw Claude Code /insights data stayed local. The browser published only derived metrics.'), 'CLI browser-claim race should keep the privacy proof in terminal output');
+
+	    output.length = 0;
+	    let postedBody = '';
     globalThis.fetch = async (url, options = {}) => {
       postedBody = String(options.body || '');
       const requestPayload = JSON.parse(postedBody || '{}');

@@ -17,7 +17,8 @@ const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
 export const DEFAULT_CLAUDE_COMMAND_PATH = join(homedir(), '.claude', 'commands', 'vibestats.md');
 const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
-const FALLBACK_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+const DEFAULT_BROWSER_CLAIM_WAIT_MS = 2 * 60 * 1000;
+const FALLBACK_CLI_PACKAGE = 'github:brightseth/vibestats#v0.1.0';
 const DEFAULT_CLI_PACKAGE = process.env.VIBESTATS_CLI_PACKAGE || FALLBACK_CLI_PACKAGE;
 export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE}`;
 export const DEFAULT_NPX_REVEAL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} reveal`;
@@ -308,9 +309,14 @@ function boundedMap(source = {}, maxEntries = 20, maxValue = 1000000) {
     .slice(0, maxEntries));
 }
 
-function localWebPreviewData(insights = {}) {
+function cleanPreviewClaimCode(value) {
+  const code = String(value || '').trim().toUpperCase();
+  return /^VIBE-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(code) ? code : '';
+}
+
+function localWebPreviewData(insights = {}, { claimCode = '' } = {}) {
   const metrics = insights.metrics || {};
-  return {
+  const preview = {
     version: 'vibestats.local_preview.v1',
     source: 'cli',
     insights: {
@@ -334,10 +340,13 @@ function localWebPreviewData(insights = {}) {
       },
     },
   };
+  const cleanClaimCode = cleanPreviewClaimCode(claimCode);
+  if (cleanClaimCode) preview.claim_code = cleanClaimCode;
+  return preview;
 }
 
-export function localWebPreviewUrl(insights = {}, { host = DEFAULT_HOST } = {}) {
-  const encoded = Buffer.from(JSON.stringify(localWebPreviewData(insights)), 'utf8').toString('base64url');
+export function localWebPreviewUrl(insights = {}, { host = DEFAULT_HOST, claimCode = '' } = {}) {
+  const encoded = Buffer.from(JSON.stringify(localWebPreviewData(insights, { claimCode })), 'utf8').toString('base64url');
   return `${normalizeHost(host)}/#vibestatsPreview=${encoded}`;
 }
 
@@ -965,6 +974,80 @@ export async function requestDeviceSyncToken({
   throw new Error('Timed out waiting for GitHub device authorization. Run again and enter the code before it expires.');
 }
 
+export async function startBrowserClaimSession({
+  host = DEFAULT_HOST,
+  fetchImpl = fetch,
+} = {}) {
+  const normalizedHost = normalizeHost(host);
+  const body = await readJsonResponse(await fetchImpl(`${normalizedHost}/api/ssh/claim-start`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'vibestats-cli',
+    },
+    body: '{}',
+  }), 'Browser claim session failed');
+  const code = cleanPreviewClaimCode(body.code);
+  if (!code) throw new Error('Browser claim session failed: missing claim code');
+  return {
+    code,
+    status_url: body.status_url || `${normalizedHost}/api/ssh/claim-status?code=${encodeURIComponent(code)}`,
+    expires_at: body.expires_at || '',
+    expires_in_seconds: Number(body.expires_in_seconds || 0),
+  };
+}
+
+export async function pollBrowserClaimSession({
+  host = DEFAULT_HOST,
+  code = '',
+  timeoutMs = DEFAULT_BROWSER_CLAIM_WAIT_MS,
+  intervalMs = 2500,
+  fetchImpl = fetch,
+  sleepImpl = sleep,
+} = {}) {
+  const cleanCode = cleanPreviewClaimCode(code);
+  if (!cleanCode) throw new Error('Missing browser claim code');
+
+  const normalizedHost = normalizeHost(host);
+  const deadline = Date.now() + Math.max(0, Number(timeoutMs) || 0);
+  const interval = Math.max(750, Number(intervalMs) || 2500);
+
+  while (Date.now() < deadline) {
+    await sleepImpl(interval);
+    const res = await fetchImpl(`${normalizedHost}/api/ssh/claim-status?code=${encodeURIComponent(cleanCode)}`, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'vibestats-cli',
+      },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if ([404, 410].includes(res.status)) return { state: 'expired', error: body.error || 'Claim session unavailable' };
+      throw new Error(body.error || `Browser claim status failed with HTTP ${res.status}`);
+    }
+    if (body.state && body.state !== 'pending') return body;
+  }
+
+  return { state: 'pending' };
+}
+
+function browserClaimResult(session = {}, { host = DEFAULT_HOST } = {}) {
+  const profileUrl = apiUrl(host, session.profile_url, '/');
+  const profilePath = new URL(profileUrl).pathname;
+  const recapUrl = apiUrl(host, session.recap_url, `${profilePath}/recap`);
+  return {
+    published: true,
+    via: 'browser',
+    handle: session.gh_handle || profileHandle(profileUrl) || '',
+    profile_url: profileUrl,
+    compare_url: apiUrl(host, session.compare_url, '/'),
+    recap_url: recapUrl,
+    credential_url: apiUrl(host, session.credential_url, `${profilePath}/credential.json`),
+    claim_session: session,
+  };
+}
+
 export async function sync(options) {
   if (!options.file) throw new Error('Missing insights file path.');
 
@@ -981,11 +1064,51 @@ export async function sync(options) {
   const score = Math.round(Number(payload.scores?.[payload.archetype] || 0));
   if (options.promptToPublish) {
     process.stdout.write(dryRunRevealText(payload, { host: options.host }));
+    let browserClaimSession = null;
+    let browserPreviewOpened = false;
     if (options.openBrowser !== false) {
-      const previewUrl = localWebPreviewUrl(insights, { host: options.host });
+      if (!options.assumeYes) {
+        try {
+          const startClaim = options.startBrowserClaimSession || startBrowserClaimSession;
+          browserClaimSession = await startClaim({ host: options.host });
+        } catch (err) {
+          process.stdout.write(`Browser claim handoff unavailable; terminal fallback is still available. ${err.message}\n`);
+        }
+      }
+      const previewUrl = localWebPreviewUrl(insights, { host: options.host, claimCode: browserClaimSession?.code });
       process.stdout.write('Opening web reveal preview in your browser.\n');
       const opened = (options.open || openBrowser)(previewUrl);
+      browserPreviewOpened = opened === true;
       if (!opened) process.stdout.write(`Browser did not open automatically. Open your reveal preview: ${previewUrl}\n`);
+    }
+    if (browserPreviewOpened && browserClaimSession?.code && !options.assumeYes) {
+      const waitMs = Math.min(
+        Number(options.authTimeoutMs) > 0 ? Number(options.authTimeoutMs) : DEFAULT_BROWSER_CLAIM_WAIT_MS,
+        DEFAULT_BROWSER_CLAIM_WAIT_MS,
+      );
+      process.stdout.write('Waiting for browser claim to finish. If it does not, this terminal will offer the fallback path.\n');
+      try {
+        const pollClaim = options.pollBrowserClaimSession || pollBrowserClaimSession;
+        const session = await pollClaim({
+          host: options.host,
+          code: browserClaimSession.code,
+          timeoutMs: waitMs,
+        });
+        if (session?.state === 'synced') {
+          const claimed = browserClaimResult(session, { host: options.host });
+          process.stdout.write(`${heading('vibestats profile claimed in browser').join('\n')}\n\n`);
+          process.stdout.write(`Profile: ${claimed.profile_url}\n`);
+          if (claimed.handle) process.stdout.write(`GitHub: @${claimed.handle}\n`);
+          process.stdout.write(`Wrapped recap: ${claimed.recap_url}\n`);
+          process.stdout.write(`Compare invite: ${claimed.compare_url}\n`);
+          process.stdout.write(`Privacy proof: ${claimed.credential_url}\n`);
+          process.stdout.write('Raw Claude Code /insights data stayed local. The browser published only derived metrics.\n');
+          return { ...claimed, payload };
+        }
+        process.stdout.write('Browser claim not finished yet; offering terminal fallback.\n');
+      } catch (err) {
+        process.stdout.write(`Browser claim status check failed; offering terminal fallback. ${err.message}\n`);
+      }
     }
     const publish = await confirmPublish({
       assumeYes: options.assumeYes,

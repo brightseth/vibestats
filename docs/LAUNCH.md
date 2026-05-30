@@ -107,11 +107,11 @@ npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle>
 After a saved profile is live, generate the launch/share kit for the first public posts:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>
+npx --yes github:brightseth/vibestats#v0.1.0 share --handle <saved-gh-handle>
 npm run share:kit -- --handle <saved-gh-handle>
 ```
 
-Before replacing the GitHub branch npx command with a public npm command, publish the scoped package and set `VIBESTATS_CLI_PACKAGE` in Vercel. The unscoped `vibestats` package is owned by another publisher; this repo's publishable package name is `@lets-vibe/vibestats`.
+Before replacing the pinned GitHub release-tag npx command with a public npm command, publish the scoped package and set `VIBESTATS_CLI_PACKAGE` in Vercel. The unscoped `vibestats` package is owned by another publisher; this repo's publishable package name is `@lets-vibe/vibestats`.
 
 ```bash
 npm pack --dry-run
@@ -119,7 +119,7 @@ npm run audit:package
 npm publish --access public
 ```
 
-Settings-generated npm fallback commands and CLI follow-up output use `VIBESTATS_CLI_PACKAGE`. Product-facing web onboarding should keep using the no-npm `/cli.sh` helper; use the update script only for fallback docs and stale branch-package snippets:
+Settings-generated npm fallback commands and CLI follow-up output use `VIBESTATS_CLI_PACKAGE`. Product-facing web onboarding should keep using the no-npm `/cli.sh` helper; use the update script only for fallback docs and stale GitHub-package snippets:
 
 ```bash
 node scripts/update-cli-command.mjs --package @lets-vibe/vibestats

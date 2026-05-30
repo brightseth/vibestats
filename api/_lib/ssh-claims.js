@@ -5,7 +5,7 @@ export const CLAIM_SESSION_TTL_SECONDS = 10 * 60;
 export const CLAIM_CODE_PATTERN = /^VIBE-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
 
 const CLAIM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#v0.1.0';
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
@@ -70,7 +70,10 @@ function publicClaimSession(row) {
     expires_at: row.expires_at,
   };
   if (row.gh_handle) out.gh_handle = row.gh_handle;
-  if (row.profile_url) out.profile_url = row.profile_url;
+  if (row.profile_url) {
+    out.profile_url = row.profile_url;
+    out.recap_url = `${String(row.profile_url).replace(/\/$/, '')}/recap`;
+  }
   if (row.compare_url) out.compare_url = row.compare_url;
   if (row.credential_url) out.credential_url = row.credential_url;
   if (row.consumed_at) out.consumed_at = row.consumed_at;

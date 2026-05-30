@@ -1,7 +1,8 @@
 import { NO_STORE_HEADERS, methodNotAllowed, setNoStore } from '../_lib/http.js';
 
 const DEFAULT_REPO = 'brightseth/vibestats';
-const DEFAULT_REF = 'feat/wave-1-identity';
+const DEFAULT_REF = 'v0.1.0';
+const DEFAULT_REF_TYPE = 'tags';
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
@@ -10,9 +11,10 @@ function shellQuote(value) {
 function githubTarballUrl() {
   const repo = process.env.VIBESTATS_BOOTSTRAP_REPO || DEFAULT_REPO;
   const ref = process.env.VIBESTATS_BOOTSTRAP_REF || DEFAULT_REF;
+  const refType = process.env.VIBESTATS_BOOTSTRAP_REF_TYPE === 'heads' ? 'heads' : DEFAULT_REF_TYPE;
   const explicit = process.env.VIBESTATS_BOOTSTRAP_TARBALL_URL;
   if (explicit) return explicit;
-  return `https://codeload.github.com/${repo}/tar.gz/refs/heads/${ref}`;
+  return `https://codeload.github.com/${repo}/tar.gz/refs/${refType}/${ref}`;
 }
 
 function bootstrapScript() {

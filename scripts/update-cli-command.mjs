@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
 
-const FALLBACK_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+const FALLBACK_PACKAGE = 'github:brightseth/vibestats#v0.1.0';
 const FALLBACK_COMMAND = `npx --yes ${FALLBACK_PACKAGE}`;
 const TARGET_FILES = [
   '.claude/commands/vibestats.md',

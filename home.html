@@ -2156,10 +2156,15 @@
       }
     }
 
-    function derivedUploadPayload(archetype, scores, insights) {
+    function cleanClaimCode(value) {
+      const code = String(value || '').trim().toUpperCase();
+      return /^VIBE-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(code) ? code : '';
+    }
+
+    function derivedUploadPayload(archetype, scores, insights, options = {}) {
       const signature = buildVibeSignature(scores, archetype);
       const moments = buildBehavioralMoments(insights);
-      return {
+      const payload = {
         archetype,
         scores,
         metrics: {
@@ -2182,6 +2187,9 @@
           ...(moments.length ? { moments } : {}),
         },
       };
+      const claimCode = cleanClaimCode(options.claimCode);
+      if (claimCode) payload.claim_code = claimCode;
+      return payload;
     }
 
     function updateProfileSaveStatus(html, className = '') {
@@ -2416,14 +2424,14 @@
       } catch (e) { /* localStorage unavailable */ }
     }
 
-    function stashPendingProfileSave(archetype, scores, insights) {
+    function stashPendingProfileSave(archetype, scores, insights, options = {}) {
       const intent = comparisonIntent();
       const pending = {
         createdAt: Date.now(),
         compareTo: intent?.kind === 'profile' ? intent.handle : null,
         compareArchetype: intent?.archetype || null,
         // Only derived profile data is persisted here. Raw insights JSON is never stored.
-        payload: derivedUploadPayload(archetype, scores, insights),
+        payload: derivedUploadPayload(archetype, scores, insights, { claimCode: options.claimCode }),
       };
       try {
         localStorage.setItem(PENDING_UPLOAD_KEY, JSON.stringify(pending));
@@ -2496,14 +2504,14 @@
       }
     }
 
-    function renderLocalPreviewClaim(archetype, scores, insights) {
+    function renderLocalPreviewClaim(archetype, scores, insights, options = {}) {
       if (!identityStatus.profile_save_available) {
         updateProfileSaveStatus('Local web preview from terminal. Profile claiming is not configured on this deployment yet; nothing was published.', 'muted');
         return;
       }
 
       if (!currentUser) {
-        const stashed = stashPendingProfileSave(archetype, scores, insights);
+        const stashed = stashPendingProfileSave(archetype, scores, insights, { claimCode: options.claimCode });
         const authHref = `/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}`;
         updateProfileSaveStatus(`
           <strong>Nothing published yet.</strong>
@@ -2532,7 +2540,7 @@
         button.disabled = true;
         button.textContent = 'Claiming...';
         try {
-          const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights));
+          const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights, { claimCode: options.claimCode }));
           const recapPath = pathFromSaveUrl(body.recap_url, body.profile_url || `/u/${encodeURIComponent(currentUser.gh_handle)}`);
           updateProfileSaveStatus(`Claimed. Opening your wrapped recap...<br><a href="${safeHtml(recapPath)}">Open now</a>`);
           setTimeout(() => { location.href = recapPath; }, 650);
@@ -2547,7 +2555,7 @@
     async function saveProfileUpload(archetype, scores, insights, options = {}) {
       await authReady;
       if (options.localPreview) {
-        renderLocalPreviewClaim(archetype, scores, insights);
+        renderLocalPreviewClaim(archetype, scores, insights, options);
         return;
       }
       if (options.demo) {
@@ -2730,6 +2738,7 @@
       const scores = scoreArchetypes(data);
       const archetype = getTopArchetype(scores);
       const insights = extractInsights(data);
+      const localClaimCode = cleanClaimCode(options.claimCode || data?._vibestats?.claim_code);
 
       // Wait for aggregate stats to finish
       await statsPromise;
@@ -2752,7 +2761,7 @@
       // Save to history + submit aggregate stats (after showing results)
       saveToHistory(archetype, scores, insights);
       if (!options.localPreview) submitStats(archetype, insights);
-      saveProfileUpload(archetype, scores, insights, options);
+      saveProfileUpload(archetype, scores, insights, { ...options, claimCode: localClaimCode });
     }
 
     function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -2937,6 +2946,9 @@
         const raw = preview.insights || {};
         const metrics = raw.metrics || {};
         return {
+          _vibestats: {
+            claim_code: cleanClaimCode(preview.claim_code),
+          },
           meta: {
             user: String(raw.meta?.user || 'Local terminal reveal').replace(/\s+/g, ' ').trim().slice(0, 80),
             date_range: String(raw.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32),

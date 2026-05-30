@@ -216,7 +216,7 @@ curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-7K2Q-M9PA
 Keep npx as a fallback while the package is unpublished or users prefer npm's cache:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-7K2Q-M9PA
+npx --yes github:brightseth/vibestats#v0.1.0 claim VIBE-7K2Q-M9PA
 ```
 
 Later, reduce shell-bootstrap friction with a signed binary:
