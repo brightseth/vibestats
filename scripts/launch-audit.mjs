@@ -91,7 +91,7 @@ Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
 - public auth/session/sync failure responses do not expose internal config names
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
-- card, wrapped, dashboard, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
+- card, wrapped, dashboard, profile recap, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
 - protected weekly digest dry run when --expect-digest is used with CRON_SECRET
 - obvious raw-insights field leaks in public profile/share HTML/SVG responses`;
@@ -359,6 +359,15 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
+    },
+    {
+      label: 'profile recap',
+      path: `/u/${encodeURIComponent(handle)}/recap`,
+      expectedType: 'text/html',
+      allowStatuses: expectReady ? [200] : [200, 404],
+      mustInclude: expectReady && profileHasUpload
+        ? ['Copy recap', 'facet shape', 'Raw Claude Code /insights data stays local']
+        : ['A privacy-preserving weekly recap'],
     },
     {
       label: 'unknown profile fallback',

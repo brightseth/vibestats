@@ -15,6 +15,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **Collectible profile badges** named from public-safe rarity, leaderboard, facet, moment, streak, and evolution signals.
 - **A facet radar** (7 derived axes) so profiles show a personality shape, not just one label.
 - **Facet-aware comparisons and matches** so pair scores use the profile shape, not only the top archetype.
+- **A profile recap surface** (`/u/<handle>/recap`) for shareable weekly-style return moments without email delivery.
 - **Profile evolution badges** that show score movement or archetype shifts between saved uploads.
 - **A scored breakdown** across all 8 (sigmoid + power-law normalized).
 - **A Spotify-Wrapped-style tap-through** (`/wrapped`).

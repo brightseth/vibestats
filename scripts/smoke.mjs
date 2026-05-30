@@ -5,10 +5,11 @@ import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret-with-at-least-32-bytes';
 
-const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare-template.html', 'leaderboard.html', 'match.html', 'browse.html'];
+const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare-template.html', 'leaderboard.html', 'match.html', 'browse.html', 'recap.html'];
 const apiModules = [
   '../api/compare-page.js',
   '../api/profile.js',
+  '../api/recap.js',
   '../api/auth/github/start.js',
   '../api/auth/github/callback.js',
   '../api/auth/logout.js',
@@ -148,6 +149,8 @@ async function assertRoutes() {
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
   const compareHtml = await readFile('compare-template.html', 'utf8');
+  const recapApi = await readFile('api/recap.js', 'utf8');
+  const recapHtml = await readFile('recap.html', 'utf8');
   const ogApi = await readFile('api/og.js', 'utf8');
   const cacheHelper = await readFile('api/_lib/cache.js', 'utf8');
   const publicProfileHelper = await readFile('api/_lib/public-profile.js', 'utf8');
@@ -183,6 +186,10 @@ async function assertRoutes() {
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/api/compare-page?a=:other&b=:handle'),
     'person-backed pair route should rewrite to dynamic compare page',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/u/:handle/recap' && rewrite.destination === '/api/recap?handle=:handle'),
+    'profile recap route should rewrite to dynamic recap page',
   );
   assert(
     rewrites.some((rewrite) => rewrite.source === '/compare' && rewrite.destination === '/api/compare-page'),
@@ -268,6 +275,12 @@ async function assertRoutes() {
   assert(profileHtmlApi.includes('weeklyLeaderboardRank(user, latest)'), 'profile HTML OG metadata should include public leaderboard proof');
   assert(profileHtmlApi.includes('rarityForSignature(signature)'), 'profile HTML OG metadata should include signature scarcity proof');
   assert(profileHtmlApi.includes('profileDescription({'), 'profile HTML OG metadata should centralize comparison-oriented share copy');
+  assert(recapApi.includes('recapDescription({') && recapApi.includes('profileShareProof({ rarity, leaderboard })'), 'profile recap metadata should include return-loop social proof');
+  assert(recapApi.includes('readSession(req)') && recapApi.includes("user.privacy === 'private' && !isOwner"), 'profile recap should preserve private-profile access rules');
+  assert(recapApi.includes('profileShareCacheControl(user)'), 'profile recap should use shared profile cache policy');
+  assert(recapHtml.includes("fetch(`/api/u/${encodeURIComponent(handle)}`") && recapHtml.includes('Copy recap'), 'profile recap page should render from sanitized public profile JSON');
+  assert(recapHtml.includes('Raw Claude Code /insights data stays local') && recapHtml.includes('facet shape'), 'profile recap should state derived-only privacy and facet proof');
+  assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
   assert(comparePageApi.includes('compareMetadataForSubjects'), 'compare page API should expose dynamic comparison metadata helpers');
   assert(!comparePageApi.includes('readSession'), 'compare page metadata must not personalize public cached previews by session');
   assert(comparePageApi.includes("user.privacy !== 'private'"), 'compare page metadata must not expose private profiles');
@@ -407,6 +420,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare with me') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof');
   assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('Claude Code signal'), 'launch audit should require saved profile badges to expose scored credential proof');
   assert(launchAudit.includes("label: 'profile-backed pair route'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`'), 'launch audit should cover profile-backed pair URLs');
+  assert(launchAudit.includes("label: 'profile recap'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/recap`'), 'launch audit should cover profile recap return URLs');
   assert(launchAudit.includes('Open the pairing, then claim yours') && launchAudit.includes('/?compareTo='), 'launch audit should verify dynamic pair metadata when identity is ready');
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
   assert(launchAudit.includes("RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage']"), 'launch audit should scan public surfaces for raw-field markers');
@@ -451,6 +465,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('vercel ls vibestats --scope lets-vibe'), 'launch checklist should require checking canonical Vercel preview status');
   assert(launchDoc.includes('vercel curl /api/identity-status --deployment <preview-url> --scope lets-vibe'), 'launch checklist should document protected-preview runtime proof');
   assert(launchDoc.includes('npm run audit:launch -- --deployment <preview-url> --scope lets-vibe --handle <saved-gh-handle>'), 'launch checklist should document protected-preview launch audit');
+  assert(launchDoc.includes('profile/embed/badge/card/recap share surfaces') && launchDoc.includes('/u/<gh-handle>/recap'), 'launch checklist should include recap return surface proof');
   assert(launchDoc.includes('browse/match/leaderboard surfaces'), 'launch checklist should include discovery and scarcity launch surfaces');
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
   assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
@@ -468,6 +483,7 @@ async function assertRoutes() {
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
+  assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
@@ -1987,6 +2003,24 @@ async function assertProfileMetadataHelpers() {
   console.log('ok profile metadata helpers include social proof without raw JSON');
 }
 
+async function assertRecapMetadataHelpers() {
+  const { recapDescription } = await import('../api/recap.js');
+  const description = recapDescription({
+    handle: 'brightseth',
+    signature: 'high-velocity Deep Diver',
+    arch: { name: 'THE DEEP DIVER' },
+    rarity: { count: 1, tier: 'rare' },
+    leaderboard: { rank: 3, total: 12, label: 'deepdiver' },
+  });
+
+  assert(description.includes('high-velocity Deep Diver'), 'recap metadata should include the profile signature');
+  assert(description.includes('rare combo: 1 of 1 saved profile this month'), 'recap metadata should include scarcity proof');
+  assert(description.includes("See how you'd pair with @brightseth."), 'recap metadata should preserve comparison CTA');
+  assert(description.includes('Raw insights stay local'), 'recap metadata should state the privacy boundary');
+  assert(!description.includes('rawJson'), 'recap metadata must not leak raw JSON fields');
+  console.log('ok recap metadata helpers include return-loop proof without raw JSON');
+}
+
 async function assertProfileCacheHelpers() {
   const { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } = await import('../api/_lib/cache.js');
   assert(profileShareCacheControl({ privacy: 'public' }).includes('s-maxage=300'), 'public profiles should allow short shared cache');
@@ -2264,6 +2298,19 @@ async function assertProfileShareSurfaceGuards() {
       req: { method: 'POST', query: { a: 'builder', b: 'shipper' }, headers: { host: 'localhost:3000' } },
       status: 405,
       allow: 'GET',
+    },
+    {
+      label: 'profile recap method guard',
+      module: '../api/recap.js',
+      req: { method: 'POST', query: { handle: 'brightseth' }, headers: { host: 'localhost:3000' } },
+      status: 405,
+      allow: 'GET',
+    },
+    {
+      label: 'profile recap invalid handle',
+      module: '../api/recap.js',
+      req: { method: 'GET', query: { handle: 'bad_handle' }, headers: { host: 'localhost:3000' } },
+      status: 404,
     },
     {
       label: 'profile badge method guard',
@@ -2742,6 +2789,7 @@ await assertEvolutionHelpers();
 await assertStreakHelpers();
 await assertDigestHelpers();
 await assertProfileMetadataHelpers();
+await assertRecapMetadataHelpers();
 await assertProfileCacheHelpers();
 await assertCompareMetadataHelpers();
 await assertProfileFallback();

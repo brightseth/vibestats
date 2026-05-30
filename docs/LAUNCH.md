@@ -90,7 +90,7 @@ Run the full launch audit against the public origin after a saved profile exists
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
 ```
 
-This checks identity readiness, no-store fallback headers, profile/embed/badge/card share surfaces, compare-first routes, browse/match/leaderboard surfaces, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
+This checks identity readiness, no-store fallback headers, profile/embed/badge/card/recap share surfaces, compare-first routes, browse/match/leaderboard surfaces, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
 
 `--expect-ready` requires more than a GitHub-created user row. The handle must have at least one saved derived upload, because the viral profile, embed, badge, pair metadata, rarity, leaderboard, evolution, and streak proofs all hang off the minted signature.
 
@@ -126,6 +126,7 @@ Before undrafting or merging the PR, prove these paths on the deployed app:
 - GitHub sign-in returns to vibestats and sets a session.
 - Uploading an insights file with profile save enabled stores only derived fields.
 - `/u/<gh-handle>` renders the saved profile.
+- `/u/<gh-handle>/recap` renders a derived weekly-style return surface.
 - Profile share CTA routes a new visitor to `/?compareTo=<handle>&compareArchetype=<type>`.
 - Upload-to-compare saves the visitor profile and lands on `/u/<host>/pair/<visitor>`.
 - Profile JSON includes evolution, day-based streak, rarity, and leaderboard fields.

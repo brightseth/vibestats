@@ -809,6 +809,7 @@
             <a class="btn" id="share-x" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener">Share on X</a>
             <button class="btn" id="copy-badge" type="button">Copy badge</button>
             <button class="btn" id="copy-embed" type="button">Copy embed</button>
+            <a class="btn" id="recap-cta" href="/">Recap</a>
             <a class="btn" id="leaderboard-cta" href="/leaderboard">Leaderboard</a>
             <a class="btn" id="browse-cta" href="/browse">Browse similar</a>
             <a class="btn" id="sync-cta" href="/settings#cli-sync" style="display:none">Sync CLI</a>
@@ -1177,6 +1178,7 @@
       const shareX = document.getElementById('share-x');
       const copyBadgeBtn = document.getElementById('copy-badge');
       const copyEmbedBtn = document.getElementById('copy-embed');
+      const recapCta = document.getElementById('recap-cta');
       const leaderboardCta = document.getElementById('leaderboard-cta');
       const browseCta = document.getElementById('browse-cta');
       const note = document.getElementById('viral-note');
@@ -1191,9 +1193,12 @@
       const tweetText = `See how you'd pair with @${handle}, a ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} Profile: ${profileUrl}`;
       const badgePath = `${profilePath}/badge.svg`;
       const embedPath = `${profilePath}/embed`;
+      const recapPath = `${profilePath}/recap`;
 
       compareCta.href = uploadComparePath;
       compareCta.textContent = `Reveal yours vs @${handle}`;
+      recapCta.href = recapPath;
+      recapCta.textContent = 'Weekly recap';
       leaderboardCta.href = `/leaderboard/${encodeURIComponent(hostArchetype)}`;
       leaderboardCta.textContent = `${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'Archetype'} board`;
       browseCta.href = `/browse?archetype=${encodeURIComponent(hostArchetype)}`;
@@ -1212,6 +1217,7 @@
       } else if (me && me.gh_handle === handle) {
         compareCta.href = `/compare?me=${encodeURIComponent(handle)}`;
         compareCta.textContent = 'Create a pairing link';
+        recapCta.textContent = 'Share recap';
         document.getElementById('sync-cta').style.display = 'inline-flex';
         note.textContent = 'Pick another archetype to share the compatibility result, or set up CLI sync for weekly profile updates.';
       }
