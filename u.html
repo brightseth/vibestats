@@ -432,6 +432,72 @@
       gap: 10px;
       margin-top: 28px;
     }
+    .achievement-panel {
+      display: none;
+      margin-top: 16px;
+      border: 1px solid rgba(107,143,255,0.2);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 18px;
+    }
+    .achievement-panel.visible { display: block; }
+    .achievement-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .achievement-title {
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .achievement-note {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: right;
+    }
+    .achievement-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .achievement {
+      min-height: 104px;
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+    }
+    .achievement.scarcity { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+    .achievement.rank { border-color: rgba(34,197,94,0.28); background: rgba(34,197,94,0.08); }
+    .achievement.moment, .achievement.facet { border-color: rgba(107,143,255,0.24); background: rgba(107,143,255,0.07); }
+    .achievement-label {
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .achievement-value {
+      margin-top: 8px;
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+    .achievement-detail {
+      margin-top: 8px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.4;
+    }
     .moment-grid {
       display: none;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -687,6 +753,7 @@
       .hero, .spark-section { grid-template-columns: 1fr; }
       .card { position: relative; top: auto; }
       .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .achievement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .moment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .facet-body { grid-template-columns: 1fr; }
       .reveal-command { grid-template-columns: 1fr; }
@@ -703,6 +770,9 @@
       .empty-profile-actions { align-items: stretch; flex-direction: column; }
       .avatar { width: 64px; height: 64px; border-radius: 14px; }
       .summary-grid { grid-template-columns: 1fr; }
+      .achievement-grid { grid-template-columns: 1fr; }
+      .achievement-head { display: grid; }
+      .achievement-note { text-align: left; }
       .moment-grid { grid-template-columns: 1fr; }
       .timeline-row { grid-template-columns: 82px 1fr 42px; }
     }
@@ -747,6 +817,7 @@
           <section class="reveal-panel" id="reveal-panel" aria-label="Reveal your vibestats profile"></section>
           <section class="compat-panel" id="compat-panel"></section>
           <div class="summary-grid" id="summary-grid"></div>
+          <section class="achievement-panel" id="achievement-panel" aria-label="Collectible achievements"></section>
           <div class="moment-grid" id="moment-grid" aria-label="Behavioral moments"></div>
           <section class="facet-panel" id="facet-panel" aria-label="Facet radar"></section>
         </div>
@@ -1207,6 +1278,35 @@
       `).join('');
     }
 
+    function renderAchievements(profile) {
+      const panel = document.getElementById('achievement-panel');
+      const achievements = Array.isArray(profile?.achievements) ? profile.achievements.slice(0, 5) : [];
+      if (!panel || !achievements.length) {
+        if (panel) {
+          panel.classList.remove('visible');
+          panel.innerHTML = '';
+        }
+        return;
+      }
+
+      panel.classList.add('visible');
+      panel.innerHTML = `
+        <div class="achievement-head">
+          <div class="achievement-title">Collectible profile badges</div>
+          <div class="achievement-note">named from derived public signals<br>raw /insights data stays local</div>
+        </div>
+        <div class="achievement-grid">
+          ${achievements.map((badge) => `
+            <div class="achievement ${esc(badge.tone || 'proof')}">
+              <div class="achievement-label">${esc(badge.label || 'Badge')}</div>
+              <div class="achievement-value">${esc(badge.value || '')}</div>
+              <div class="achievement-detail">${esc(badge.detail || 'Derived public profile signal')}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
     function radarPoint(index, total, value, radius = 82, center = 100) {
       const angle = -Math.PI / 2 + (Math.PI * 2 * index) / total;
       const distance = radius * Math.max(0, Math.min(100, Number(value) || 0)) / 100;
@@ -1431,6 +1531,7 @@
       `).join('');
 
       renderBehavioralMoments(latest);
+      renderAchievements(profile);
       renderFacetRadar(latest);
       renderRevealPanel(me, profile, latest);
       renderSparkline(profile.uploads, latest.archetype, arch.color, { historyVisible });

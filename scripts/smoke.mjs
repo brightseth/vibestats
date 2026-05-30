@@ -28,6 +28,7 @@ const apiModules = [
   '../api/_lib/export-upload.js',
   '../api/_lib/profile-links.js',
   '../api/_lib/profile-settings.js',
+  '../api/_lib/achievements.js',
   '../api/_lib/public-profile.js',
   '../api/_lib/social-proof.js',
   '../api/_lib/signatures.js',
@@ -239,7 +240,8 @@ async function assertRoutes() {
   assert(profileApi.includes("json(res, 404, { error: 'Profile not found' }, { 'Cache-Control': PRIVATE_PROFILE_CACHE })"), 'profile JSON API unknown handles should not be cached before a profile is created');
   assert(profileApi.includes('weeklyLeaderboardRank'), 'profile API should include public weekly rank');
   assert(profileApi.includes('profileEvolution'), 'profile API should include derived evolution badge');
-  assert(profileApi.includes('profileStreak') && profileApi.includes('streak: profileStreak(uploads, { isOwner })'), 'profile API should include derived day-based streaks');
+  assert(profileApi.includes('const streak = profileStreak(uploads, { isOwner })') && profileApi.includes('streak,'), 'profile API should include derived day-based streaks');
+  assert(profileApi.includes('publicAchievements({'), 'profile API should include public-safe collectible achievements');
   assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');
   assert(profileApi.includes('total_uploads: isOwner ? uploads.length : null'), 'profile API should keep exact history count owner-only');
   assert(profileHtml.includes('latest public result'), 'profile UI should not imply full history is visible to visitors');
@@ -446,6 +448,7 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   assert(readme.includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
+  assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
@@ -459,6 +462,8 @@ async function assertRoutes() {
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
   assert(profileHtml.includes('id="facet-panel"') && profileHtml.includes('renderFacetRadar(latest)'), 'profile UI should render a derived facet radar');
   assert(profileHtml.includes('derived from public archetype scores') && profileHtml.includes('raw /insights data stays local'), 'profile facet radar should state its privacy boundary');
+  assert(profileHtml.includes('id="achievement-panel"') && profileHtml.includes('renderAchievements(profile)'), 'profile UI should render collectible achievement badges');
+  assert(profileHtml.includes('Collectible profile badges') && profileHtml.includes('named from derived public signals'), 'profile achievements should state their derived-data boundary');
   assert(profileHtml.includes('owner history private'), 'profile UI should not render a fake history chart for visitors');
   assert(profileHtml.includes("historyVisible ? `${uploads.length} total` : 'latest only'"), 'profile UI should label visitor timeline as latest-only');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
@@ -1044,6 +1049,40 @@ async function assertFacetRadar() {
   assert(facets.some((facet) => facet.id === 'shipping_velocity' && facet.value > 70), 'facet radar should derive shipping velocity from public scores');
   assert(!JSON.stringify(facets).includes('rawJson'), 'facet radar must not echo unknown score fields');
   console.log('ok facet radar stays derived from public scores');
+}
+
+async function assertPublicAchievements() {
+  const { publicAchievements } = await import('../api/_lib/achievements.js');
+  const achievements = publicAchievements({
+    upload: {
+      raw_meta: {
+        moments: [
+          { id: 'terminal_commands', value: 2450, prompt: 'private prompt should drop' },
+          { id: 'unknown', value: 99999 },
+        ],
+      },
+    },
+    publicUpload: {
+      archetype: 'builder',
+      scores: { builder: 92 },
+      facets: [
+        { id: 'build_energy', label: 'Build energy', value: 81, detail: 'Builds' },
+        { id: 'deep_focus', label: 'Deep focus', value: 42, detail: 'Focus' },
+      ],
+    },
+    signature: { label: 'high-velocity Builder' },
+    rarity: { count: 8, tier: 'rare', window_days: 30 },
+    leaderboard: { rank: 4, label: 'builder' },
+    streak: { active: true, days: 14, upload_count: 3, label: '14-day streak', detail: '3 saved results in this streak' },
+    evolution: { type: 'score-gain', label: '+6 Builder points', detail: 'vs last upload' },
+  });
+  assert(achievements.length <= 5, 'public achievements should keep a tight collectible set');
+  assert(achievements[0].id === 'rarity-rare', 'public achievements should prioritize rare signature scarcity');
+  assert(achievements.some((badge) => badge.id === 'facet-build_energy' && badge.value === '81%'), 'public achievements should include the strongest derived facet');
+  assert(achievements.some((badge) => badge.id === 'moment-terminal_commands' && badge.value === '1k+ commands'), 'public achievements should bucket derived moments');
+  assert(!JSON.stringify(achievements).includes('2450'), 'public achievements should not expose exact moment counts by default');
+  assert(!JSON.stringify(achievements).includes('private prompt'), 'public achievements must not echo arbitrary moment text');
+  console.log('ok public achievements stay collectible and privacy-safe');
 }
 
 async function assertUploadSanitizer() {
@@ -2660,6 +2699,7 @@ await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
 await assertBehavioralMoments();
 await assertFacetRadar();
+await assertPublicAchievements();
 await assertUploadSanitizer();
 await assertExportUploadSanitizer();
 await assertCliDerivedPayload();

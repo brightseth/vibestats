@@ -1,4 +1,5 @@
 import { readSession } from '../_lib/auth.js';
+import { publicAchievements } from '../_lib/achievements.js';
 import { PRIVATE_PROFILE_CACHE } from '../_lib/cache.js';
 import { publicUser, sql } from '../_lib/db.js';
 import { profileEvolution } from '../_lib/evolution.js';
@@ -85,6 +86,10 @@ export default async function handler(req, res) {
       rarity = profileRarityPayload(latestSignature, count, { isOwner });
     }
 
+    const leaderboard = await weeklyLeaderboardRank(user, uploads[0]);
+    const evolution = profileEvolution(uploads, { isOwner });
+    const streak = profileStreak(uploads, { isOwner });
+
     json(res, 200, {
       user: publicUser(user, { includePrivacy: isOwner, includeActivity: isOwner }),
       is_owner: Boolean(isOwner),
@@ -96,9 +101,18 @@ export default async function handler(req, res) {
       },
       uploads: serializedUploads,
       rarity,
-      leaderboard: await weeklyLeaderboardRank(user, uploads[0]),
-      evolution: profileEvolution(uploads, { isOwner }),
-      streak: profileStreak(uploads, { isOwner }),
+      leaderboard,
+      evolution,
+      streak,
+      achievements: publicAchievements({
+        upload: uploads[0],
+        publicUpload: serializedUploads[0],
+        signature: latestSignature,
+        rarity,
+        leaderboard,
+        evolution,
+        streak,
+      }),
     }, {
       'Cache-Control': 'no-store',
     });
