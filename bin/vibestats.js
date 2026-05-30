@@ -501,6 +501,7 @@ export async function sync(options) {
   const leaderboardUrl = apiUrl(host, body.leaderboard_url, `/leaderboard/${encodeURIComponent(payload.archetype)}`);
   const matchUrl = apiUrl(host, body.match_url, `/match?goal=pair-coding&archetype=${encodeURIComponent(payload.archetype)}`);
   const digestUrl = apiUrl(host, body.weekly_digest_url, '/settings#weekly-digest-row');
+  const digestPreviewUrl = apiUrl(host, body.weekly_digest_preview_url, '/api/digest/preview');
   const handle = profileHandle(profileUrl) || 'me';
   const badgeMarkdown = `[![vibestats: @${handle}](${badgeUrl})](${compareUrl})`;
   const shareText = cliShareText({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
@@ -518,6 +519,7 @@ export async function sync(options) {
   process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
   process.stdout.write(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}\n`);
   process.stdout.write(`Reserve weekly digest: ${digestUrl}\n`);
+  process.stdout.write(`Preview weekly digest: ${digestPreviewUrl}\n`);
   return body;
 }
 

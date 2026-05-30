@@ -11,6 +11,7 @@ export function profileLinks(user, archetype) {
     privacy_url: '/settings#privacy-settings',
     match_settings_url: '/settings#match-settings',
     weekly_digest_url: '/settings#weekly-digest-row',
+    weekly_digest_preview_url: '/api/digest/preview',
     leaderboard_url: `/leaderboard/${type}`,
     match_url: `/match?goal=pair-coding&archetype=${type}`,
   };

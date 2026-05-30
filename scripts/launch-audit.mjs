@@ -389,7 +389,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'id="privacy-cta"', 'id="match-intent-cta"'],
+      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'id="privacy-cta"', 'id="match-intent-cta"', 'id="digest-preview-cta"'],
     },
     {
       label: 'profile recap',
@@ -494,7 +494,7 @@ async function auditLaunch(options) {
       path: '/settings',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['id="privacy-settings"', 'Unlisted profiles load by direct URL', 'id="match-settings"', 'id="weekly-digest-row"', 'id="cli-sync"', 'install-claude-command'],
+      mustInclude: ['id="privacy-settings"', 'Unlisted profiles load by direct URL', 'id="match-settings"', 'id="weekly-digest-row"', 'id="preview-digest"', 'id="cli-sync"', 'terminal-first GitHub approval', 'install-claude-command'],
     },
     {
       label: 'browse page',

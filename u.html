@@ -882,6 +882,7 @@
             <a class="btn" id="match-intent-cta" href="/settings#match-settings" style="display:none">Set match intent</a>
             <a class="btn" id="sync-cta" href="/settings#cli-sync" style="display:none">Sync CLI</a>
             <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
+            <a class="btn" id="digest-preview-cta" href="/api/digest/preview" target="_blank" rel="noopener" style="display:none">Preview digest</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
           <section class="readme-panel" id="readme-panel" aria-label="GitHub README badge distribution"></section>
@@ -1386,6 +1387,7 @@
       const privacyCta = document.getElementById('privacy-cta');
       const matchIntentCta = document.getElementById('match-intent-cta');
       const digestCta = document.getElementById('digest-cta');
+      const digestPreviewCta = document.getElementById('digest-preview-cta');
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
@@ -1430,8 +1432,9 @@
         matchIntentCta.textContent = profile.match?.looking_for && profile.match.looking_for !== 'idle' ? 'Update match intent' : 'Set match intent';
         document.getElementById('sync-cta').style.display = 'inline-flex';
         digestCta.style.display = 'inline-flex';
+        digestPreviewCta.style.display = 'inline-flex';
         note.textContent = profile.user.privacy === 'public'
-          ? 'Pin the README badge for ambient discovery, create pairing links, set match intent, sync from the CLI, or reserve the weekly email.'
+          ? 'Pin the README badge for ambient discovery, create pairing links, set match intent, sync from the CLI, or preview the weekly email.'
           : 'Your profile is unlisted. Share direct links freely, or opt into public discovery before using browse, match, and leaderboards.';
       }
       renderReadmePanel(me, profile, latest, badgePath, uploadCompareUrl);
