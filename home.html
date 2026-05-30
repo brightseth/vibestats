@@ -226,6 +226,27 @@
     }
     .file-path code { color: var(--accent); }
 
+    .legacy-upload {
+      width: min(500px, 90vw);
+      margin-top: 18px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-align: left;
+    }
+    .legacy-upload summary {
+      cursor: pointer;
+      text-align: center;
+      list-style: none;
+    }
+    .legacy-upload summary::-webkit-details-marker { display: none; }
+    .legacy-upload summary:hover { color: var(--text-muted); }
+    .legacy-upload .drop-zone {
+      width: 100%;
+      margin-top: 12px;
+      padding: 28px 24px;
+    }
+
     .upload-error {
       margin-top: 16px; padding: 12px 20px;
       background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
@@ -609,6 +630,11 @@
       cursor: pointer;
       text-decoration: none;
     }
+    .post-save-actions .primary {
+      border-color: rgba(34,211,238,0.55);
+      background: linear-gradient(135deg, rgba(107,143,255,0.24), rgba(34,211,238,0.12));
+      color: #fff;
+    }
     .post-save-actions button.secondary,
     .post-save-actions a.secondary {
       border-color: rgba(255,255,255,0.12);
@@ -814,7 +840,7 @@
     <div class="upload-logo">vibestats</div>
     <h1 class="upload-title">What kind of coder are you? Claude Code already knows.</h1>
     <p class="upload-sub">
-      You already took the test by coding. Reveal your archetype from Claude Code `/insights`; raw session data stays on your machine.
+      You already took the test by coding. Reveal your archetype from Claude Code <code>/insights</code>; raw session data stays on your machine.
     </p>
     <div class="privacy-note">
       Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
@@ -825,10 +851,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Try the reveal demo
       </button>
-      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status', this)">Copy status preflight</button>
-      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal', this)">Copy no-npm reveal command</button>
+      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this)">Copy reveal command</button>
+      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command', this)">Install /vibestats</button>
     </div>
-    <div class="demo-hint hero-demo-hint">No sign-in or upload required for the demo. See the archetype reveal first; claim yours only when you want a public profile.</div>
+    <div class="demo-hint hero-demo-hint">No sign-in or upload required for the demo. The command reveals first, opens the web preview, then lets you claim only when you are ready.</div>
 
     <div class="reveal-steps" aria-label="Reveal your vibestats profile">
       <div class="reveal-step">
@@ -842,34 +868,26 @@
       <div class="reveal-step">
         <span class="reveal-step-num">2</span>
         <span>
-          <span class="reveal-step-label">Check terminal readiness</span>
-          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
-        </span>
-        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status', this)">Copy</button>
-      </div>
-      <div class="reveal-step">
-        <span class="reveal-step-num">3</span>
-        <span>
-          <span class="reveal-step-label">Reveal locally</span>
-          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
-        </span>
-        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal', this)">Copy</button>
-      </div>
-      <div class="reveal-step">
-        <span class="reveal-step-num">4</span>
-        <span>
-          <span class="reveal-step-label">Claim when ready</span>
+          <span class="reveal-step-label">Reveal, preview, then claim</span>
           <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
         </span>
         <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this)">Copy</button>
       </div>
       <div class="reveal-step">
-        <span class="reveal-step-num">+</span>
+        <span class="reveal-step-num">3</span>
         <span>
           <span class="reveal-step-label">Install /vibestats in Claude Code</span>
           <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
         </span>
         <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command', this)">Copy</button>
+      </div>
+      <div class="reveal-step">
+        <span class="reveal-step-num">?</span>
+        <span>
+          <span class="reveal-step-label">Troubleshooting preflight</span>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
+        </span>
+        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status', this)">Copy</button>
       </div>
     </div>
 
@@ -880,18 +898,15 @@
       </label>
     </div>
 
-    <div class="drop-zone" id="drop-zone">
-      <div class="drop-zone-icon">&#x1F4C4;</div>
-      <div class="drop-zone-text">Drop a legacy insights JSON here</div>
-      <div class="drop-zone-hint">or click to browse and reveal locally</div>
-      <input type="file" accept=".json" id="file-input">
-    </div>
-
-    <div class="file-path" onclick="copyPath()">
-      <span class="label">No file hunting</span>
-      <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
-      <span class="subcopy">Click to copy. The CLI checks the real ~/.claude/usage-data/ output with file counts first; reveal reads locally and prints the claim command when you want persistence.</span>
-    </div>
+    <details class="legacy-upload">
+      <summary>Have a legacy JSON export?</summary>
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-zone-icon">&#x1F4C4;</div>
+        <div class="drop-zone-text">Drop a legacy insights JSON here</div>
+        <div class="drop-zone-hint">or click to browse and reveal locally</div>
+        <input type="file" accept=".json" id="file-input">
+      </div>
+    </details>
 
     <div class="upload-error" id="upload-error"></div>
 
@@ -2473,7 +2488,7 @@
           ? `/u/${encodeURIComponent(pending.compareTo)}/pair/${encodeURIComponent(currentUser.gh_handle)}`
           : pending.compareArchetype
           ? `/compare?a=${encodeURIComponent(currentUser.gh_handle)}&b=${encodeURIComponent(pending.compareArchetype)}`
-          : (body.profile_url || `/u/${encodeURIComponent(currentUser.gh_handle)}`);
+          : pathFromSaveUrl(body.recap_url, body.profile_url || `/u/${encodeURIComponent(currentUser.gh_handle)}`);
         showInfo('Saved derived metrics. Opening your result...');
         setTimeout(() => { location.href = destination; }, 650);
       } catch (err) {
@@ -2481,10 +2496,58 @@
       }
     }
 
+    function renderLocalPreviewClaim(archetype, scores, insights) {
+      if (!identityStatus.profile_save_available) {
+        updateProfileSaveStatus('Local web preview from terminal. Profile claiming is not configured on this deployment yet; nothing was published.', 'muted');
+        return;
+      }
+
+      if (!currentUser) {
+        const stashed = stashPendingProfileSave(archetype, scores, insights);
+        const authHref = `/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}`;
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">Claim this profile from the browser when the reveal lands. Raw /insights stayed local; this page only has derived preview metrics.</div>
+          <div class="post-save-actions">
+            <a class="primary" href="${authHref}">${stashed ? 'Claim with GitHub' : 'Sign in with GitHub'}</a>
+            <button type="button" class="secondary" id="copy-local-preview-share">Copy reveal link</button>
+          </div>
+        `);
+        document.getElementById('copy-local-preview-share')?.addEventListener('click', (event) => {
+          copyWithButton(event.currentTarget, canonicalVibestatsUrl(comparisonDestination(archetype) || `/?compareArchetype=${encodeURIComponent(archetype)}`), 'Link copied!', 'Copy reveal link');
+        });
+        return;
+      }
+
+      updateProfileSaveStatus(`
+        <strong>Nothing published yet.</strong>
+        <div class="post-save-note">Save this derived result to @${safeHtml(currentUser.gh_handle)} and open your wrapped recap. Raw /insights stayed local.</div>
+        <div class="post-save-actions">
+          <button type="button" class="primary" id="claim-local-preview">Claim this profile</button>
+          <a class="secondary" href="/settings#privacy-settings">Privacy settings</a>
+        </div>
+      `);
+      document.getElementById('claim-local-preview')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = 'Claiming...';
+        try {
+          const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights));
+          const recapPath = pathFromSaveUrl(body.recap_url, body.profile_url || `/u/${encodeURIComponent(currentUser.gh_handle)}`);
+          updateProfileSaveStatus(`Claimed. Opening your wrapped recap...<br><a href="${safeHtml(recapPath)}">Open now</a>`);
+          setTimeout(() => { location.href = recapPath; }, 650);
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = 'Claim this profile';
+          updateProfileSaveStatus(safeHtml(err.message), 'error');
+        }
+      });
+    }
+
     async function saveProfileUpload(archetype, scores, insights, options = {}) {
       await authReady;
       if (options.localPreview) {
-        updateProfileSaveStatus(`Local web preview from terminal. Nothing was published; return to the terminal to claim this GitHub-backed profile.${comparisonReturnLink(archetype)}`, 'muted');
+        renderLocalPreviewClaim(archetype, scores, insights);
         return;
       }
       if (options.demo) {

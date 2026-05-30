@@ -18,6 +18,10 @@ function githubTarballUrl() {
 function bootstrapScript() {
   const tarballUrl = shellQuote(githubTarballUrl());
   return `#!/bin/sh
+# vibestats local helper
+# Inspect first: curl -fsSL https://vibestats.io/cli.sh | less
+# Source: https://github.com/brightseth/vibestats
+# Raw Claude Code /insights data stays on this machine.
 set -eu
 
 tarball_url=${tarballUrl}

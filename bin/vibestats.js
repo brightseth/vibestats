@@ -56,15 +56,17 @@ const COMPLEMENTARY_ARCHETYPES = {
 
 function usage() {
   return `Usage:
-  vibestats [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
-  vibestats status [--file PATH] [--dir PATH] [--json]
-  vibestats reveal [--file PATH] [--dir PATH] [--json]
+  vibestats                 reveal locally, open the web preview, then ask before publishing
+  vibestats reveal          local reveal only; no sign-in and no publish
+  vibestats status          troubleshoot /insights readiness
+  vibestats install-claude-command [--force] [--path PATH]
+
+Advanced:
   vibestats claim CODE [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--yes]
   vibestats share --handle HANDLE [--host URL] [--json]
   vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle> [--contact-url URL] [--public] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
   vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--claim CODE] [--device|--browser] [--no-open] [--dry-run] [--yes]
   vibestats [sync|join|onboard] --dry-run --json
-  vibestats install-claude-command [--force] [--path PATH]
 
 Environment:
   VIBESTATS_SYNC_TOKEN  optional signed sync token from vibestats settings
@@ -75,7 +77,7 @@ The CLI reads Claude Code /insights output locally and sends only derived metric
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 Use status to check local /insights readiness without reading raw session JSON.
 It reveals your archetype locally before asking for approval to publish it.
-Run without a subcommand for the terminal-first participation flow: local reveal, then GitHub approval.
+Run without a subcommand for the main flow: local reveal, browser preview, then GitHub-backed claim if you opt in.
 Use reveal for a local result with no sign-in and no network publish.
 Use share to fetch a public profile and print its compare link, badge, embed, and privacy proof.
 Use intent to set or clear your short-lived matchmaker availability from the terminal.
@@ -470,8 +472,8 @@ export async function confirmPublish({
       '',
       'Claim this GitHub-backed profile on vibestats?',
       '  Raw /insights stays local. Only derived metrics are published.',
-      '  The browser will open your wrapped recap after sync.',
-      'Publish now? [y/N] ',
+      '  You can claim from the browser preview, or use this terminal fallback.',
+      'Publish from terminal now? [y/N] ',
     ].join('\n'));
     return /^(y|yes)$/i.test(answer.trim());
   } finally {
@@ -1030,51 +1032,43 @@ export async function sync(options) {
   const compareUrl = apiUrl(host, body.compare_url, `/?compareArchetype=${encodeURIComponent(payload.archetype)}`);
   const recapUrl = apiUrl(host, body.recap_url, `${profilePath}/recap`);
   const credentialUrl = apiUrl(host, body.credential_url, `${profilePath}/credential.json`);
-  const badgeUrl = apiUrl(host, body.badge_url, `${profilePath}/badge.svg`);
-  const embedUrl = apiUrl(host, body.embed_url, `${profilePath}/embed`);
   const privacyUrl = apiUrl(host, body.privacy_url, '/settings#privacy-settings');
   const matchSettingsUrl = apiUrl(host, body.match_settings_url, '/settings#match-settings');
   const leaderboardUrl = apiUrl(host, body.leaderboard_url, `/leaderboard/${encodeURIComponent(payload.archetype)}`);
   const matchUrl = apiUrl(host, body.match_url, `/match?goal=pair-coding&archetype=${encodeURIComponent(payload.archetype)}`);
   const digestUrl = apiUrl(host, body.weekly_digest_url, '/settings#weekly-digest-row');
-  const digestPreviewUrl = apiUrl(host, body.weekly_digest_preview_url, '/api/digest/preview');
   const handle = profileHandle(profileUrl) || 'me';
-  const badgeMarkdown = `[![vibestats: @${handle}](${badgeUrl})](${compareUrl})`;
-  const embedHtml = `<iframe src="${embedUrl}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
   const shareText = cliShareText({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   const xShare = cliXShareUrl({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   process.stdout.write(`${heading('vibestats profile claimed').join('\n')}\n\n`);
   process.stdout.write(`Profile\n`);
-  process.stdout.write(`  Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
+  process.stdout.write(`  Claimed: ${payload.raw_meta.signature || payload.archetype}\n`);
+  process.stdout.write(`  Profile: ${profileUrl}\n`);
   process.stdout.write('  Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.\n');
   if (body.claim_session?.state === 'synced') {
     process.stdout.write(`  Updated SSH claim session for @${body.claim_session.gh_handle || handle}.\n`);
   }
-  process.stdout.write(`  Share your recap: ${recapUrl}\n`);
+  process.stdout.write(`  Wrapped recap: ${recapUrl}\n`);
   if (options.openBrowser !== false) {
     process.stdout.write(`  Opening wrapped recap: ${recapUrl}\n`);
     const opened = (options.open || openBrowser)(recapUrl);
     if (!opened) process.stdout.write(`  Browser did not open automatically. Open your wrapped recap: ${recapUrl}\n`);
   }
-  process.stdout.write(`  Verify derived credential: ${credentialUrl}\n`);
+  process.stdout.write(`  Privacy proof: ${credentialUrl}\n`);
 
   process.stdout.write(`\nShare\n`);
-  process.stdout.write(`  Invite people to compare: ${compareUrl}\n`);
-  process.stdout.write(`  Copy/paste share: ${shareText}\n`);
+  process.stdout.write(`  Compare invite: ${compareUrl}\n`);
+  process.stdout.write(`  Copy/paste: ${shareText}\n`);
   process.stdout.write(`  Share on X: ${xShare}\n`);
-  process.stdout.write(`  README badge Markdown: ${badgeMarkdown}\n`);
-  process.stdout.write(`  Profile embed HTML: ${embedHtml}\n`);
+  process.stdout.write(`  Full launch kit: ${localHelperCommand(`share --handle ${handle}`, { host })}\n`);
 
   process.stdout.write(`\nNext\n`);
-  process.stdout.write(`  Optional public discovery: ${privacyUrl}\n`);
-  process.stdout.write('  Profiles stay unlisted unless you choose Public.\n');
-  process.stdout.write(`  Set match intent: ${matchSettingsUrl}\n`);
-  process.stdout.write(`  Set match intent from terminal: ${localHelperCommand(`intent pair-coding --contact-url https://x.com/${handle} --public`, { host })}\n`);
-  process.stdout.write(`  View your weekly board: ${leaderboardUrl}\n`);
-  process.stdout.write(`  Find complementary builders: ${matchUrl}\n`);
+  process.stdout.write(`  Public discovery: ${privacyUrl}\n`);
+  process.stdout.write(`  Match intent: ${matchSettingsUrl}\n`);
+  process.stdout.write(`  Weekly board: ${leaderboardUrl}\n`);
+  process.stdout.write(`  Matchmaker: ${matchUrl}\n`);
   process.stdout.write(`  Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}\n`);
-  process.stdout.write(`  Reserve weekly digest: ${digestUrl}\n`);
-  process.stdout.write(`  Preview weekly digest: ${digestPreviewUrl}\n`);
+  process.stdout.write(`  Weekly digest: ${digestUrl}\n`);
   return body;
 }
 
