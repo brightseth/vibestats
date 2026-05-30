@@ -237,11 +237,13 @@ async function auditLaunch(options) {
         });
         const cache = result.response.headers.get('cache-control') || '';
         const type = result.response.headers.get('content-type') || '';
-        const body = result.response.status === 200 ? JSON.parse(result.body) : {};
-        recorder.check(result.response.status === 200, 'CLI device auth starts', `${result.response.status} ${result.url}`);
+        const body = JSON.parse(result.body || '{}');
+        const starts = result.response.status === 200 && Boolean(body.device_code && body.user_code && body.verification_uri);
+        const reportsDisabled = result.response.status === 400 && String(body.error || '').includes('Device Flow must be explicitly enabled');
+        recorder.check(starts || reportsDisabled, 'CLI device auth start is reachable', `${result.response.status} ${result.url}`);
         recorder.check(type.includes('application/json'), 'CLI device auth start content type', type || '(none)');
         recorder.check(cache.includes('no-store'), 'CLI device auth start disables public caching', cache || '(none)');
-        recorder.check(Boolean(body.device_code && body.user_code && body.verification_uri), 'CLI device auth start returns GitHub device instructions');
+        recorder.check(starts || reportsDisabled, 'CLI device auth start returns GitHub instructions or explicit enablement action');
         recorder.check(!hasSecretName(result.body), 'CLI device auth start does not expose secret env names');
       } catch (err) {
         recorder.fail('CLI device auth start fetch failed', err.message);

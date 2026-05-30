@@ -269,6 +269,10 @@ async function readJsonResponse(res, fallback) {
   return body;
 }
 
+function isDeviceFlowDisabled(err) {
+  return String(err?.message || '').includes('Device Flow must be explicitly enabled');
+}
+
 export function openBrowser(url) {
   const commands = {
     darwin: ['open', [url]],
@@ -370,21 +374,36 @@ export async function requestSyncToken({
 
 export async function requestDeviceSyncToken({
   host = DEFAULT_HOST,
+  open = openBrowser,
+  openBrowser: shouldOpenBrowser = true,
   timeoutMs = DEFAULT_AUTH_TIMEOUT_MS,
   stdout = process.stdout,
   fetchImpl = fetch,
   sleepImpl = sleep,
 } = {}) {
   const normalizedHost = normalizeHost(host);
-  const start = await readJsonResponse(await fetchImpl(`${normalizedHost}/api/cli/device-start`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'User-Agent': 'vibestats-cli',
-    },
-    body: '{}',
-  }), 'CLI device authorization failed');
+  let start;
+  try {
+    start = await readJsonResponse(await fetchImpl(`${normalizedHost}/api/cli/device-start`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'vibestats-cli',
+      },
+      body: '{}',
+    }), 'CLI device authorization failed');
+  } catch (err) {
+    if (!isDeviceFlowDisabled(err)) throw err;
+    stdout.write('GitHub device login is not enabled for vibestats yet. Falling back to browser approval.\n');
+    return requestSyncToken({
+      host: normalizedHost,
+      open,
+      openBrowser: shouldOpenBrowser,
+      timeoutMs,
+      stdout,
+    });
+  }
 
   if (!start.device_code || !start.user_code || !start.verification_uri) {
     throw new Error('CLI device authorization failed: missing GitHub device code');

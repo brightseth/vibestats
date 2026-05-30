@@ -601,7 +601,7 @@ async function assertLaunchAuditHelpers() {
   assert(parsedCurl.response.headers.get('cache-control') === 'no-store', 'vercel curl parser should expose response headers');
   assert(parsedCurl.body === '{"ok":true}', 'vercel curl parser should isolate the response body');
   assert(launchAuditSource.includes("path: '/api/sync'") && launchAuditSource.includes("Authorization: 'Bearer a.b.c'"), 'launch audit should probe public sync failure without exposing env names');
-  assert(launchAuditSource.includes("'/api/cli/device-start'") && launchAuditSource.includes('CLI device auth starts'), 'launch audit should verify terminal-first device auth readiness');
+  assert(launchAuditSource.includes("'/api/cli/device-start'") && launchAuditSource.includes('CLI device auth start is reachable'), 'launch audit should verify terminal-first device auth readiness or explicit enablement action');
   assert(launchAuditSource.includes("path: '/api/me'") && launchAuditSource.includes("Cookie: 'vibestats_auth=a.b.c'"), 'launch audit should probe session failure without exposing env names');
   assert(launchAuditSource.includes("label: 'weekly digest cron guard'"), 'launch audit should probe the weekly digest cron guard without exposing env names');
   console.log('ok launch audit supports protected Vercel previews');
@@ -1711,6 +1711,47 @@ async function assertCliDerivedPayload() {
     assert(deviceCalls[0].url === 'https://vibestats.example/api/cli/device-start' && deviceCalls[1].url === 'https://vibestats.example/api/cli/device-poll', 'CLI device auth should use vibestats device start and poll APIs');
     assert(deviceOutput.join('').includes('Open: https://github.com/login/device') && deviceOutput.join('').includes('Enter code: ABCD-1234'), 'CLI device auth should print the terminal-friendly GitHub code instructions');
     assert(!deviceOutput.join('').includes('device-sync-token'), 'CLI device auth output must not print the sync token');
+
+    const fallbackOutput = [];
+    const fallbackPromise = requestDeviceSyncToken({
+      host: 'https://vibestats.example',
+      openBrowser: false,
+      timeoutMs: 5000,
+      stdout: {
+        write(chunk) {
+          fallbackOutput.push(String(chunk));
+          return true;
+        },
+      },
+      fetchImpl: async () => ({
+        ok: false,
+        status: 400,
+        async json() {
+          return { error: 'Device Flow must be explicitly enabled for this App' };
+        },
+      }),
+    });
+    for (let i = 0; i < 20 && !fallbackOutput.join('').includes('Authorize here: '); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    const fallbackAuthUrlText = fallbackOutput.join('').match(/Authorize here: (https?:\/\/\S+)/)?.[1] || '';
+    assert(fallbackAuthUrlText, 'CLI device auth should fall back to browser auth when the GitHub app has Device Flow disabled');
+    const parsedFallbackAuthUrl = new URL(fallbackAuthUrlText);
+    const fallbackCallbackUrl = new URL(parsedFallbackAuthUrl.searchParams.get('callback'));
+    const fallbackNonce = parsedFallbackAuthUrl.searchParams.get('nonce');
+    const fallbackCallbackParams = new URLSearchParams({
+      token: 'fallback-browser-sync-token',
+      host: 'https://vibestats.example',
+      expires_at: '2026-06-01T00:00:00.000Z',
+      handle: 'alex',
+      nonce: fallbackNonce,
+    });
+    const fallbackCallbackRes = await fetch(`${fallbackCallbackUrl.toString()}?${fallbackCallbackParams.toString()}`);
+    assert(fallbackCallbackRes.ok, 'CLI device auth browser fallback should accept the matching local callback nonce');
+    const fallbackAuth = await fallbackPromise;
+    assert(fallbackAuth.token === 'fallback-browser-sync-token', 'CLI device auth fallback should return the browser sync token');
+    assert(fallbackOutput.join('').includes('Falling back to browser approval.'), 'CLI device auth fallback should explain the temporary production config gap');
+    assert(!fallbackOutput.join('').includes('fallback-browser-sync-token'), 'CLI device auth fallback output must not print the sync token');
 
     output.length = 0;
     let postedBody = '';
