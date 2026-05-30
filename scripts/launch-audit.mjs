@@ -413,7 +413,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}/embed`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: expectReady && profileHasUpload ? ['Compare with me', '<span>signal</span>'] : null,
+      mustInclude: expectReady && profileHasUpload ? ['Compare + reveal yours', 'Run /insights, then reveal yours', '<span>signal</span>'] : null,
     },
     {
       label: 'profile badge',

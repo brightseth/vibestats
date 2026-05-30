@@ -492,7 +492,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge and share-recipient reveal surfaces');
   assert(launchAudit.includes("label: 'unknown profile fallback'") && launchAudit.includes('Copy unclaimed profile'), 'launch audit should verify missing profile reveal/claim fallback');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
-  assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare with me') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof');
+  assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare + reveal yours') && launchAudit.includes('Run /insights, then reveal yours') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof and reveal copy');
   assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('GitHub-claimed') && launchAudit.includes('derived-only'), 'launch audit should require saved profile badges to expose identity and derived-only credential proof');
   assert(launchAudit.includes("label: 'profile-backed pair route'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`'), 'launch audit should cover profile-backed pair URLs');
   assert(launchAudit.includes("label: 'profile recap'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/recap`'), 'launch audit should cover profile recap return URLs');
@@ -2736,6 +2736,7 @@ async function assertEmbedFallback() {
     assert(csp.includes('frame-ancestors https:'), 'embed CSP should allow HTTPS framing');
     assert(body.includes('@brightseth'), 'embed fallback should include handle');
     assert(body.includes('VIBESTATS PROFILE'), 'embed fallback should render a neutral profile card');
+    assert(body.includes('Run /insights to mint this profile.') && body.includes('Open profile'), 'embed fallback should teach the terminal reveal path for unminted profiles');
     console.log('ok embed fallback renders frameable profile card without DB');
   } finally {
     console.error = originalError;

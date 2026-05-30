@@ -72,6 +72,9 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
     ? `${origin}/?compareTo=${encodeURIComponent(user.gh_handle)}&compareArchetype=${encodeURIComponent(latest.archetype)}`
     : profileUrl;
   const actionLabel = hasLatest ? `Compare with @${user.gh_handle}` : `Open @${user.gh_handle} on vibestats`;
+  const revealLine = hasLatest
+    ? 'What are you? Run /insights, then reveal yours.'
+    : 'Run /insights to mint this profile.';
   const avatar = user.avatar_url
     ? `<img class="avatar" src="${esc(user.avatar_url)}" alt="@${esc(user.gh_handle)}">`
     : '<div class="avatar fallback" aria-hidden="true">VS</div>';
@@ -215,6 +218,13 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
     .tagline {
       color: var(--muted);
     }
+    .reveal-line {
+      margin-top: 10px;
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+    }
     .metrics {
       position: relative;
       z-index: 1;
@@ -289,13 +299,14 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
       <div class="label">Claude Code signature</div>
       <h1>${esc(arch.name)}</h1>
       <div class="signature">${esc(signature)} <span class="tagline">/ ${esc(arch.tagline)}</span></div>
+      <div class="reveal-line">${esc(revealLine)}</div>
     </div>
     <div class="metrics">
       ${metricCards({ score, latest, visibility })}
     </div>
     <div class="foot">
       <div class="rarity">${esc(rarityLine)}</div>
-      <div class="cta">${hasLatest ? 'Compare with me' : 'Open profile'}</div>
+      <div class="cta">${hasLatest ? 'Compare + reveal yours' : 'Open profile'}</div>
     </div>
   </a>
 </body>
