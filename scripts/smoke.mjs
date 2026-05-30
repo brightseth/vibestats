@@ -372,10 +372,14 @@ async function assertRoutes() {
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
+  assert(settingsHtml.includes('id="match-settings"'), 'settings UI should expose a direct anchor for match intent setup');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
   assert(settingsHtml.includes('--dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
   assert(settingsHtml.includes('local Claude Code `/insights` directory') && settingsHtml.includes('keeps raw session data on disk'), 'settings UI should explain the CLI /insights extractor privacy boundary');
   assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
+  assert(browseHtml.includes('emptyStateHtml({ unavailable') && browseHtml.includes('Try sample pairing') && browseHtml.includes('Reveal yours'), 'browse empty states should route visitors into reveal and comparison');
+  assert(matchHtml.includes('emptyStateHtml({ unavailable') && matchHtml.includes('/settings#match-settings') && matchHtml.includes('Try sample pairing'), 'match empty states should route visitors into intent setup and comparison');
+  assert(leaderboardHtml.includes('emptyStateHtml({ unavailable') && leaderboardHtml.includes('Try sample pairing') && leaderboardHtml.includes('Go public'), 'leaderboard empty states should route visitors into identity and comparison');
   assert(dashboardHtml.includes('url=https%3A%2F%2Fvibestats.io%2F%3FcompareArchetype%3Dorchestrator'), 'static dashboard X share should click through to Orchestrator comparison intake');
   assert(dashboardHtml.includes('href="/?compareArchetype=orchestrator"'), 'static dashboard final CTA should route to comparison intake');
   assert(dashboardHtml.includes('How would you pair with an Orchestrator?'), 'static dashboard footer should use asymmetric comparison copy');
@@ -440,6 +444,7 @@ async function assertRoutes() {
     launchAudit.includes("label: 'browse page'") && launchAudit.includes("label: 'match page'") && launchAudit.includes("label: 'leaderboard page'"),
     'launch audit should cover discovery, matchmaker, and scarcity surfaces',
   );
+  assert(launchAudit.includes('Try sample pairing') && launchAudit.includes('/settings#match-settings'), 'launch audit should verify productive empty states on discovery surfaces');
   assert(
     launchAudit.includes("path: `/api/browse?") && launchAudit.includes("path: `/api/match?") && launchAudit.includes("path: `/api/leaderboard?"),
     'launch audit should cover public discovery JSON APIs',

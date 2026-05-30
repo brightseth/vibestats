@@ -260,6 +260,19 @@
       text-align: center;
       line-height: 1.7;
     }
+    .empty-content {
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+      max-width: 520px;
+      padding: 18px;
+    }
+    .empty-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     @media (max-width: 820px) {
       .topbar, .hero, .entry {
         align-items: stretch;
@@ -390,6 +403,24 @@
       return `See how you'd pair with @${handle}, a ${label}:\n${compareUrl}\n${profileUrl}`;
     }
 
+    function emptyStateHtml({ unavailable = false } = {}) {
+      const copy = unavailable
+        ? 'Profile database unavailable.<br>Public browse results will appear once identity is configured.'
+        : 'No public profiles match these filters yet.<br>Reveal yours, go public, or try a sample pairing while the directory warms up.';
+      return `
+        <div class="empty">
+          <div class="empty-content">
+            <div>${copy}</div>
+            <div class="empty-actions">
+              <a class="btn primary" href="/">Reveal yours</a>
+              <a class="btn" href="/compare?a=orchestrator&b=shipper">Try sample pairing</a>
+              <a class="btn" href="/browse">Browse all</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     async function copyText(button, text, resetLabel) {
       try {
         if (navigator.clipboard?.writeText) {
@@ -415,9 +446,7 @@
     function renderEntries(entries, unavailable = false) {
       const list = document.getElementById('list');
       if (!entries.length) {
-        list.innerHTML = unavailable
-          ? '<div class="empty">Profile database unavailable.<br>Public browse results will appear once identity is configured.</div>'
-          : '<div class="empty">No public profiles match these filters yet.<br>Save your profile, switch it to public, and claim the first slot.</div>';
+        list.innerHTML = emptyStateHtml({ unavailable });
         return;
       }
 
@@ -482,7 +511,16 @@
         document.getElementById('total-label').textContent = data.unavailable ? 'database unavailable' : `${data.filters?.archetype_label || 'public'} profiles`;
         renderEntries(data.entries || [], Boolean(data.unavailable));
       } catch (err) {
-        document.getElementById('list').innerHTML = `<div class="empty">Browse unavailable.<br>${esc(err.message)}</div>`;
+        document.getElementById('list').innerHTML = `
+          <div class="empty">
+            <div class="empty-content">
+              <div>Browse unavailable.<br>${esc(err.message)}</div>
+              <div class="empty-actions">
+                <a class="btn primary" href="/">Reveal yours</a>
+                <a class="btn" href="/compare?a=orchestrator&b=shipper">Try sample pairing</a>
+              </div>
+            </div>
+          </div>`;
       }
     }
 

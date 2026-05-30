@@ -267,6 +267,19 @@
       text-align: center;
       line-height: 1.7;
     }
+    .empty-content {
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+      max-width: 540px;
+      padding: 18px;
+    }
+    .empty-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     @media (max-width: 760px) {
       .topbar, .hero, .entry {
         align-items: stretch;
@@ -391,13 +404,30 @@
       return `@${handle} is #${entry.rank} on the weekly ${arch.name} board with ${entry.score}% ${signature} signal. See how you'd pair:\n${compareUrl}\n${profileUrl}`;
     }
 
+    function emptyStateHtml({ unavailable = false, archetype = archetypeFromLocation() } = {}) {
+      const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
+      const copy = unavailable
+        ? 'Leaderboard database unavailable.<br>Public rankings will appear once identity is configured.'
+        : `No public ${arch.name} profiles this week yet.<br>Reveal yours, go public, or try a sample pairing while the board warms up.`;
+      return `
+        <div class="empty">
+          <div class="empty-content">
+            <div>${copy}</div>
+            <div class="empty-actions">
+              <a class="btn primary" href="/">Reveal yours</a>
+              <a class="btn" href="/settings">Go public</a>
+              <a class="btn" href="/compare?a=${encodeURIComponent(archetype)}&b=shipper">Try sample pairing</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderEntries(entries, unavailable = false) {
       const list = document.getElementById('list');
       const archetype = archetypeFromLocation();
       if (!entries.length) {
-        list.innerHTML = unavailable
-          ? '<div class="empty">Leaderboard database unavailable.<br>Public rankings will appear once identity is configured.</div>'
-          : '<div class="empty">No public profiles in this archetype yet.<br>Set your profile to public from Settings to join the board.</div>';
+        list.innerHTML = emptyStateHtml({ unavailable, archetype });
         return;
       }
 
@@ -457,7 +487,16 @@
         document.getElementById('total-label').textContent = data.unavailable ? 'database unavailable' : 'public profiles this week';
         renderEntries(data.entries || [], Boolean(data.unavailable));
       } catch (err) {
-        document.getElementById('list').innerHTML = `<div class="empty">Leaderboard unavailable.<br>${esc(err.message)}</div>`;
+        document.getElementById('list').innerHTML = `
+          <div class="empty">
+            <div class="empty-content">
+              <div>Leaderboard unavailable.<br>${esc(err.message)}</div>
+              <div class="empty-actions">
+                <a class="btn primary" href="/">Reveal yours</a>
+                <a class="btn" href="/compare?a=${encodeURIComponent(archetype)}&b=shipper">Try sample pairing</a>
+              </div>
+            </div>
+          </div>`;
       }
     }
 

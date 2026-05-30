@@ -257,6 +257,19 @@
       text-align: center;
       line-height: 1.7;
     }
+    .empty-content {
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+      max-width: 540px;
+      padding: 18px;
+    }
+    .empty-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     @media (max-width: 760px) {
       .topbar, .hero, .entry { align-items: stretch; flex-direction: column; }
       h1 { font-size: 34px; line-height: 1.08; }
@@ -388,6 +401,24 @@
       return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}`;
     }
 
+    function emptyStateHtml({ unavailable = false } = {}) {
+      const copy = unavailable
+        ? 'Match database unavailable.<br>Goal-aware matches will appear once identity is configured.'
+        : 'No active public matches for this goal yet.<br>Reveal yours, set intent, or try a sample pairing while the match pool warms up.';
+      return `
+        <div class="empty">
+          <div class="empty-content">
+            <div>${copy}</div>
+            <div class="empty-actions">
+              <a class="btn primary" href="/">Reveal yours</a>
+              <a class="btn" href="/settings#match-settings">Set intent</a>
+              <a class="btn" href="/compare?a=builder&b=sprinter">Try sample pairing</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     async function copyText(button, text, resetLabel) {
       try {
         if (navigator.clipboard?.writeText) {
@@ -413,9 +444,7 @@
     function renderEntries(entries, goalLabel, seekerArchetype, unavailable = false) {
       const list = document.getElementById('list');
       if (!entries.length) {
-        list.innerHTML = unavailable
-          ? '<div class="empty">Match database unavailable.<br>Goal-aware matches will appear once identity is configured.</div>'
-          : '<div class="empty">No active public matches for this goal yet.<br>Set your intent from Settings and make your profile public to appear here.</div>';
+        list.innerHTML = emptyStateHtml({ unavailable });
         return;
       }
 
@@ -482,7 +511,16 @@
         if (!res.ok) throw new Error(data.error || 'Match unavailable');
         renderEntries(data.entries || [], data.goal_label || label, data.seeker_archetype || state.archetype, Boolean(data.unavailable));
       } catch (err) {
-        document.getElementById('list').innerHTML = `<div class="empty">Match unavailable.<br>${esc(err.message)}</div>`;
+        document.getElementById('list').innerHTML = `
+          <div class="empty">
+            <div class="empty-content">
+              <div>Match unavailable.<br>${esc(err.message)}</div>
+              <div class="empty-actions">
+                <a class="btn primary" href="/">Reveal yours</a>
+                <a class="btn" href="/compare?a=builder&b=sprinter">Try sample pairing</a>
+              </div>
+            </div>
+          </div>`;
       }
     }
 
