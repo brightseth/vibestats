@@ -96,8 +96,16 @@ This checks identity readiness, no-store fallback headers, profile/embed/badge/c
 
 `--expect-ready` requires more than a GitHub-created user row. The handle must have at least one saved derived upload, because the viral profile, embed, badge, pair metadata, rarity, leaderboard, evolution, and streak proofs all hang off the minted signature.
 
+For broad terminal-first sharing, require GitHub Device Flow too. Without this, the CLI still falls back to browser approval, but the copied one-command onboarding path is not as clean:
+
 ```bash
-CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest
+npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow
+```
+
+`--expect-device-flow` fails unless `/api/cli/device-start` returns a live GitHub `user_code` and `verification_uri`. If it fails with "Device Flow must be explicitly enabled", turn on **Enable Device Flow** in the GitHub OAuth App settings and rerun the audit; no Vercel redeploy should be needed.
+
+```bash
+CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-digest
 ```
 
 `--expect-digest` also runs the protected weekly digest dry run and fails if `CRON_SECRET` is not present in the local shell. The audit does not print the secret value.

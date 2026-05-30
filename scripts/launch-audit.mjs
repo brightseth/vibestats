@@ -25,6 +25,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     handle: DEFAULT_HANDLE,
     archetype: DEFAULT_ARCHETYPE,
     expectReady: false,
+    expectDeviceFlow: false,
     expectDigest: false,
     cronSecret: process.env.CRON_SECRET || '',
     vercelDeployment: process.env.VERCEL_DEPLOYMENT_URL || '',
@@ -46,6 +47,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg === '--archetype') options.archetype = argv[++i];
     else if (arg.startsWith('--archetype=')) options.archetype = arg.slice('--archetype='.length);
     else if (arg === '--expect-ready') options.expectReady = true;
+    else if (arg === '--expect-device-flow') options.expectDeviceFlow = true;
     else if (arg === '--expect-digest') options.expectDigest = true;
     else if (arg === '--vercel-deployment' || arg === '--deployment') options.vercelDeployment = argv[++i];
     else if (arg.startsWith('--vercel-deployment=')) options.vercelDeployment = arg.slice('--vercel-deployment='.length);
@@ -83,13 +85,13 @@ function normalizeOrigin(value) {
 }
 
 function usage() {
-  return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-digest]
+  return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-device-flow] [--expect-digest]
        npm run audit:launch -- --deployment https://preview.vercel.app --scope lets-vibe --handle brightseth
-       CRON_SECRET=... npm run audit:launch -- --origin https://vibestats.io --handle brightseth --expect-ready --expect-digest
+       CRON_SECRET=... npm run audit:launch -- --origin https://vibestats.io --handle brightseth --expect-ready --expect-device-flow --expect-digest
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
-- CLI device-code auth start when --expect-ready is used
+- CLI device-code auth start when --expect-ready is used; --expect-device-flow requires a live GitHub device code instead of browser fallback
 - public auth/session/sync failure responses do not expose internal config names
 - reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
@@ -211,7 +213,7 @@ function createRecorder() {
 
 async function auditLaunch(options) {
   const recorder = createRecorder();
-  const { origin, handle, archetype, expectReady, expectDigest } = options;
+  const { origin, handle, archetype, expectReady, expectDeviceFlow, expectDigest } = options;
   const missingHandle = `audit-missing-${Date.now().toString(36)}`.slice(0, 39);
   const comparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
 
@@ -229,6 +231,8 @@ async function auditLaunch(options) {
     if (expectReady) {
       recorder.check(identity.profile_save_available === true, 'profile saves are ready', readinessSummary(identity));
       recorder.check(identity.missing.length === 0, 'identity status has no missing profile-save readiness groups', readinessSummary(identity));
+    }
+    if (expectReady || expectDeviceFlow) {
       try {
         const result = await fetchText(options, '/api/cli/device-start', {
           method: 'POST',
@@ -240,10 +244,14 @@ async function auditLaunch(options) {
         const body = JSON.parse(result.body || '{}');
         const starts = result.response.status === 200 && Boolean(body.device_code && body.user_code && body.verification_uri);
         const reportsDisabled = result.response.status === 400 && String(body.error || '').includes('Device Flow must be explicitly enabled');
-        recorder.check(starts || reportsDisabled, 'CLI device auth start is reachable', `${result.response.status} ${result.url}`);
+        recorder.check(starts || (!expectDeviceFlow && reportsDisabled), 'CLI device auth start is reachable', `${result.response.status} ${result.url}`);
         recorder.check(type.includes('application/json'), 'CLI device auth start content type', type || '(none)');
         recorder.check(cache.includes('no-store'), 'CLI device auth start disables public caching', cache || '(none)');
-        recorder.check(starts || reportsDisabled, 'CLI device auth start returns GitHub instructions or explicit enablement action');
+        recorder.check(
+          expectDeviceFlow ? starts : starts || reportsDisabled,
+          expectDeviceFlow ? 'CLI device auth start returns live GitHub device code' : 'CLI device auth start returns GitHub instructions or explicit enablement action',
+          expectDeviceFlow ? `${result.response.status} ${body.error || body.verification_uri || result.url}` : '',
+        );
         recorder.check(!hasSecretName(result.body), 'CLI device auth start does not expose secret env names');
       } catch (err) {
         recorder.fail('CLI device auth start fetch failed', err.message);
