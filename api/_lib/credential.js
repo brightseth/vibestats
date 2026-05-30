@@ -5,6 +5,47 @@ import { signatureFromUpload } from './signatures.js';
 export const DERIVED_PROFILE_SCHEMA = 'vibestats.derived_profile.v1';
 const RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage'];
 
+const DERIVED_PROFILE_SPEC_BODY = Object.freeze({
+  schema_version: DERIVED_PROFILE_SCHEMA,
+  purpose: 'A public, source-agnostic build identity claim derived locally from coding-agent activity.',
+  trust_tier: 'github_claimed_derived',
+  current_source: {
+    id: 'claude_code_insights',
+    label: 'Claude Code /insights',
+    local_inputs: ['session metadata files', 'facet summaries', 'report HTML'],
+    extractor_location: 'user machine',
+    raw_data_boundary: 'local-only',
+  },
+  future_sources: ['codex', 'cursor', 'aider', 'git', 'terminal'],
+  public_claims: [
+    'github-claimed subject',
+    'primary archetype',
+    'derived signature',
+    'public score vector',
+    'facet radar',
+    'coarse activity buckets',
+    'rarity cohort',
+    'leaderboard proof',
+    'collectible badges',
+  ],
+  synced_fields: 'derived-only',
+  forbidden_synced_fields: [
+    'prompts',
+    'session summaries',
+    'project paths',
+    'session ids',
+    'raw tool-count maps',
+    'raw language-count maps',
+    'free-text goals',
+    'free-text friction details',
+    'credentials or API keys',
+  ],
+  matching_contract: {
+    allowed_signals: ['archetype', 'scores', 'facets', 'coarse activity', 'explicit match intent', 'bounded outcome events'],
+    forbidden_signals: ['single hireable score', 'private repo access', 'employer people search', 'raw work transcript'],
+  },
+});
+
 function absoluteUrl(origin, path) {
   return new URL(path, `${origin}/`).toString();
 }
@@ -37,6 +78,22 @@ export function sha256Hex(value) {
 export function publicPayloadHasNoRawUsageFields(value) {
   const text = JSON.stringify(value || {});
   return RAW_LEAK_PATTERNS.every((pattern) => !text.includes(pattern));
+}
+
+export function derivedProfileSpec(origin = 'https://vibestats.io') {
+  const promises = absoluteUrl(origin, '/promises');
+  return cleanObject({
+    ...DERIVED_PROFILE_SPEC_BODY,
+    links: {
+      promises,
+      spec: absoluteUrl(origin, '/api/derived-profile-spec'),
+    },
+    privacy: {
+      raw_source_data: 'local-only',
+      public_profile_fields: 'bounded-derived-only',
+      deletion_model: 'builder-owned',
+    },
+  });
 }
 
 export function buildDerivedProfileCredential({
@@ -103,6 +160,19 @@ export function buildDerivedProfileCredential({
       no_raw_usage_fields: true,
       no_single_hireable_score: true,
       no_employer_people_search: true,
+    },
+    method: {
+      spec_version: DERIVED_PROFILE_SCHEMA,
+      spec_url: absoluteUrl(origin, '/api/derived-profile-spec'),
+      trust_tier: 'github_claimed_derived',
+      derived_locally: true,
+      source: {
+        id: DERIVED_PROFILE_SPEC_BODY.current_source.id,
+        label: DERIVED_PROFILE_SPEC_BODY.current_source.label,
+        raw_data_boundary: DERIVED_PROFILE_SPEC_BODY.current_source.raw_data_boundary,
+      },
+      synced_fields: DERIVED_PROFILE_SPEC_BODY.synced_fields,
+      future_source_ready: true,
     },
   });
 

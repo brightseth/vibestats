@@ -28,7 +28,7 @@ The v1 card and viral loops are the wedge. The long-term product is the trusted 
 
 - **Debugger score must not reward producing bugs.** Reframe around resolution, recovery, or debug patience before ranking makes the incentive visible.
 - **Never sync free-text friction or goal details.** Those fields can contain project names and secrets. Only fixed derived vectors, bounded histograms, and categorical aggregates should cross the boundary.
-- **Stop discarding matchable signal, but do it with a spec.** Ship a versioned Derived Profile Spec before expanding beyond the current coarse metrics. The spec is the trust contract for source fusion and matching.
+- **Stop discarding matchable signal, but do it with a spec.** Ship a versioned Derived Profile Spec before expanding beyond the current coarse metrics. The spec is the trust contract for source fusion and matching. V1 now exposes `/api/derived-profile-spec` and every credential links back to it.
 
 ## Product Constraints
 

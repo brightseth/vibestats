@@ -536,7 +536,15 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}/credential.json`,
       expectedType: 'application/json',
       allowStatuses: expectReady ? [200] : [200, 404, 503],
-      mustInclude: expectReady ? ['"schema_version":"vibestats.derived_profile.v1"', '"github_claimed":true', '"raw_claude_code_sessions":"local-only"', '"synced_profile_fields":"derived-only"', '"no_single_hireable_score":true', '"content_hash":"sha256:', '"verification_url"'] : null,
+      mustInclude: expectReady ? ['"schema_version":"vibestats.derived_profile.v1"', '"github_claimed":true', '"raw_claude_code_sessions":"local-only"', '"synced_profile_fields":"derived-only"', '"no_single_hireable_score":true', '"spec_url":"', '"/api/derived-profile-spec"', '"future_source_ready":true', '"content_hash":"sha256:', '"verification_url"'] : null,
+    },
+    {
+      label: 'derived profile spec',
+      path: '/api/derived-profile-spec',
+      expectedType: 'application/json',
+      allowStatuses: [200],
+      mustInclude: ['"schema_version":"vibestats.derived_profile.v1"', '"trust_tier":"github_claimed_derived"', '"raw_data_boundary":"local-only"', '"future_sources"', '"codex"', '"bounded outcome events"', '"single hireable score"'],
+      mustNotInclude: ['tool_usage', 'language_usage', 'rawJson'],
     },
     {
       label: 'profile page',

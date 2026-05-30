@@ -24,6 +24,7 @@ const apiModules = [
   '../api/ssh/claim-start.js',
   '../api/ssh/claim-status.js',
   '../api/credential.js',
+  '../api/derived-profile-spec.js',
   '../api/sync-settings.js',
   '../api/sync-token.js',
   '../api/cli/bootstrap.js',
@@ -195,6 +196,7 @@ async function assertRoutes() {
   const cliDeviceStartApi = await readFile('api/cli/device-start.js', 'utf8');
   const cliDevicePollApi = await readFile('api/cli/device-poll.js', 'utf8');
   const cliBootstrapApi = await readFile('api/cli/bootstrap.js', 'utf8');
+  const derivedProfileSpecApi = await readFile('api/derived-profile-spec.js', 'utf8');
   const githubOauthHelper = await readFile('api/_lib/github-oauth.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const sshClaimStartApi = await readFile('api/ssh/claim-start.js', 'utf8');
@@ -396,6 +398,7 @@ async function assertRoutes() {
   assert(sshClaimStatusApi.includes('getClaimSessionStatus') && sshClaimStatusApi.includes("req.query?.code") && sshClaimStatusApi.includes('NO_STORE_HEADERS'), 'SSH claim status API should expose bounded no-store polling by claim code');
   assert(sshClaimsHelper.includes('CLAIM_CODE_PATTERN') && sshClaimsHelper.includes('code_hash') && sshClaimsHelper.includes('raw_claude_code_sessions') === false && sshClaimsHelper.includes('/cli.sh') && sshClaimsHelper.includes('claimNpxCommand') && sshClaimsHelper.includes('user_id'), 'SSH claim helper should hash claim codes, prefer no-npm bootstrap, and avoid raw-insights payload fields');
   assert(cliBootstrapApi.includes('text/x-shellscript') && cliBootstrapApi.includes('codeload.github.com') && cliBootstrapApi.includes('node "$run_dir/bin/vibestats.js" "$@"') && cliBootstrapApi.includes('Raw /insights data has not left this machine'), 'CLI bootstrap API should serve a no-npm local helper wrapper that preserves the privacy boundary');
+  assert(derivedProfileSpecApi.includes('derivedProfileSpec(originForRequest(req))') && derivedProfileSpecApi.includes('public, max-age=300') && !derivedProfileSpecApi.includes('readSession'), 'derived profile spec API should expose a public source-agnostic schema without personalization');
   assert(syncSettingsApi.includes('readSyncSession') && syncSettingsApi.includes('syncTokenIsRevoked'), 'CLI sync settings API should require revocable signed sync token sessions');
   assert(syncSettingsApi.includes('cleanLookingFor') && syncSettingsApi.includes('cleanContactUrl') && syncSettingsApi.includes('lookingForExpiry(7)'), 'CLI sync settings API should only accept sanitized short-lived match intent fields');
   assert(syncSettingsApi.includes("privacy = 'public'") && syncSettingsApi.includes('make_public === true'), 'CLI sync settings API should require explicit public opt-in for match discovery');
@@ -630,6 +633,7 @@ async function assertRoutes() {
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, derived credential proof URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
   assert(readme.includes('SSH claim-session primitive') && readme.includes('curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-ABCD-2345') && readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH claim-session handoff commands');
   assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
+  assert(readme.includes('versioned Derived Profile Spec') && readme.includes('/api/derived-profile-spec') && readme.includes('future source slots'), 'README should document the source-agnostic derived profile spec');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('This repo is packaged as `@lets-vibe/vibestats`') && readme.includes('npm pack --dry-run') && readme.includes('npm publish --access public'), 'README should document scoped npm package publication before broad sharing');
@@ -784,6 +788,7 @@ async function assertDerivedProfileCredentialHelpers() {
     DERIVED_PROFILE_SCHEMA,
     buildDerivedProfileCredential,
     canonicalJson,
+    derivedProfileSpec,
     publicPayloadHasNoRawUsageFields,
     sha256Hex,
   } = await import('../api/_lib/credential.js');
@@ -812,8 +817,16 @@ async function assertDerivedProfileCredentialHelpers() {
   assert(credential.subject.github_anchor === 'https://github.com/alex' && credential.subject.github_claimed === true, 'derived credential should anchor to the claimed GitHub handle');
   assert(credential.links.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper', 'derived credential should drive verification readers into comparison');
   assert(credential.privacy.raw_claude_code_sessions === 'local-only' && credential.privacy.synced_profile_fields === 'derived-only' && credential.privacy.no_single_hireable_score === true, 'derived credential should encode the privacy and anti-coercion promises');
+  assert(credential.method.spec_url === 'https://vibestats.example/api/derived-profile-spec' && credential.method.source.id === 'claude_code_insights' && credential.method.future_source_ready === true, 'derived credential should link the source-agnostic public spec and current local source evidence');
+  const spec = derivedProfileSpec('https://vibestats.example');
+  assert(spec.schema_version === DERIVED_PROFILE_SCHEMA && spec.trust_tier === 'github_claimed_derived', 'derived profile spec should name the credential schema and trust tier');
+  assert(spec.current_source.id === 'claude_code_insights' && spec.current_source.raw_data_boundary === 'local-only', 'derived profile spec should preserve the Claude Code local-only source boundary');
+  assert(spec.future_sources.includes('codex') && spec.future_sources.includes('cursor') && spec.matching_contract.allowed_signals.includes('bounded outcome events'), 'derived profile spec should reserve source-agnostic and match-feedback expansion slots');
+  assert(spec.forbidden_synced_fields.includes('prompts') && spec.forbidden_synced_fields.includes('credentials or API keys'), 'derived profile spec should explicitly reject sensitive raw fields');
   assert(publicPayloadHasNoRawUsageFields(credential), 'derived credential should not expose raw usage field names');
+  assert(publicPayloadHasNoRawUsageFields(spec), 'derived profile spec should not expose raw usage field names');
   assert(!JSON.stringify(credential).includes('tool_usage') && !JSON.stringify(credential).includes('language_usage') && !JSON.stringify(credential).includes('rawJson'), 'derived credential should strip raw-shaped input fields');
+  assert(!JSON.stringify(spec).includes('tool_usage') && !JSON.stringify(spec).includes('language_usage') && !JSON.stringify(spec).includes('rawJson'), 'derived profile spec should avoid raw-shaped public field names');
   console.log('ok derived profile credential helpers');
 }
 
