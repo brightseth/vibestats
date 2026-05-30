@@ -5,6 +5,7 @@ export function profileLinks(user, archetype) {
     profile_url: `/u/${handle}`,
     compare_url: `/?compareTo=${handle}&compareArchetype=${type}`,
     recap_url: `/u/${handle}/recap`,
+    credential_url: `/u/${handle}/credential.json`,
     badge_url: `/u/${handle}/badge.svg`,
     embed_url: `/u/${handle}/embed`,
     settings_url: '/settings',

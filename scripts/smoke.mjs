@@ -21,6 +21,7 @@ const apiModules = [
   '../api/me.js',
   '../api/uploads.js',
   '../api/sync.js',
+  '../api/credential.js',
   '../api/sync-settings.js',
   '../api/sync-token.js',
   '../api/cli/local-token.js',
@@ -33,6 +34,7 @@ const apiModules = [
   '../api/digest/preview.js',
   '../api/digest/unsubscribe.js',
   '../api/_lib/cache.js',
+  '../api/_lib/credential.js',
   '../api/_lib/evolution.js',
   '../api/_lib/export-upload.js',
   '../api/_lib/github-oauth.js',
@@ -158,6 +160,8 @@ async function assertRoutes() {
   const matchApi = await readFile('api/match.js', 'utf8');
   const matchHtml = await readFile('match.html', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
+  const credentialApi = await readFile('api/credential.js', 'utf8');
+  const credentialHelper = await readFile('api/_lib/credential.js', 'utf8');
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
   const compareHtml = await readFile('compare-template.html', 'utf8');
   const genomeHtml = await readFile('genome.html', 'utf8');
@@ -208,6 +212,10 @@ async function assertRoutes() {
   assert(
     rewrites.some((rewrite) => rewrite.source === '/' && rewrite.destination === '/api/home'),
     'homepage should rewrite to dynamic metadata renderer',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/u/:handle/credential.json' && rewrite.destination === '/api/credential?handle=:handle'),
+    'profile credential route should expose a derived-only machine-readable proof',
   );
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/api/compare-page?a=:other&b=:handle'),
@@ -313,6 +321,9 @@ async function assertRoutes() {
   assert(profileApi.includes('publicAchievements({'), 'profile API should include public-safe collectible achievements');
   assert(profileApi.includes('const visibleUploads = isOwner ? uploads : uploads.slice(0, 1)'), 'profile API should not expose full upload history to visitors');
   assert(profileApi.includes('total_uploads: isOwner ? uploads.length : null'), 'profile API should keep exact history count owner-only');
+  assert(credentialApi.includes('buildDerivedProfileCredential') && credentialApi.includes('metricVisibility(settingsRows[0] || {}, { isOwner: false })') && credentialApi.includes('profileShareCacheControl(user)'), 'credential API should reuse visitor-safe visibility and profile cache policy');
+  assert(credentialApi.includes("user.privacy === 'private' && !isOwner") && credentialApi.includes('PRIVATE_PROFILE_CACHE'), 'credential API should hide private profiles with no-store cache policy');
+  assert(credentialHelper.includes("DERIVED_PROFILE_SCHEMA = 'vibestats.derived_profile.v1'") && credentialHelper.includes('content_hash') && credentialHelper.includes("raw_claude_code_sessions: 'local-only'") && credentialHelper.includes('no_single_hireable_score: true'), 'credential helper should define a versioned derived-only credential contract');
   assert(profileHtml.includes('latest public result'), 'profile UI should not imply full history is visible to visitors');
   assert(profileHtml.includes('GitHub-claimed') && profileHtml.includes('derived-only'), 'profile UI should visibly distinguish claimed GitHub identity from derived-only local profile data');
   assert(profileApi.includes("'Cache-Control': PRIVATE_PROFILE_CACHE"), 'profile JSON private 404 should not be cacheable');
@@ -365,7 +376,7 @@ async function assertRoutes() {
   assert(badgeApi.includes('select archetype, scores, raw_meta'), 'profile badge should fetch only derived badge fields');
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
   assert(badgeApi.includes('function sendBadgeNotFound') && badgeApi.includes('profileShareCacheControl(null)'), 'profile badge private 404 should not be cacheable');
-  assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('recap_url'), 'profile links helper should expose compare-first and recap URLs');
+  assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('recap_url') && profileLinksHelper.includes('credential_url'), 'profile links helper should expose compare-first, recap, and credential URLs');
   assert(profileLinksHelper.includes('privacy_url') && profileLinksHelper.includes('match_settings_url') && profileLinksHelper.includes('weekly_digest_preview_url') && profileLinksHelper.includes('leaderboard_url') && profileLinksHelper.includes('match_url'), 'profile links helper should expose opt-in discovery and return-loop URLs');
   assert(uploadsApi.includes('profileLinks(user, payload.archetype)'), 'browser profile saves should return compare-first profile links');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
@@ -520,6 +531,7 @@ async function assertRoutes() {
   assert(launchAudit.includes('install-claude-command'), 'launch audit should require the Claude Code command installer on the homepage');
   assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
+  assert(launchAudit.includes("label: 'profile credential'") && launchAudit.includes('"schema_version":"vibestats.derived_profile.v1"') && launchAudit.includes('"content_hash":"sha256:'), 'launch audit should verify the derived profile credential JSON');
   assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge and share-recipient reveal surfaces');
   assert(launchAudit.includes("label: 'unknown profile fallback'") && launchAudit.includes('Copy unclaimed profile'), 'launch audit should verify missing profile reveal/claim fallback');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
@@ -597,6 +609,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   const readme = await readFile('README.md', 'utf8');
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
+  assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('This repo is packaged as `@lets-vibe/vibestats`') && readme.includes('npm pack --dry-run') && readme.includes('npm publish --access public'), 'README should document scoped npm package publication before broad sharing');
@@ -701,6 +714,7 @@ async function assertShareKitScript() {
   const kit = buildShareKit(profile, { origin: 'https://vibestats.example', handle: 'alex' });
   assert(kit.urls.profile === 'https://vibestats.example/u/alex', 'share kit should include the public profile URL');
   assert(kit.urls.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper', 'share kit should route the primary invite into compare-first onboarding');
+  assert(kit.urls.credential === 'https://vibestats.example/u/alex/credential.json', 'share kit should include the public derived credential URL');
   assert(kit.copy.share_text.includes('@alex is prolific Shipper') && kit.copy.share_text.includes('Raw /insights stayed local'), 'share kit should generate privacy-aware copy text');
   assert(kit.copy.x_share_url.startsWith('https://twitter.com/intent/tweet?') && new URL(kit.copy.x_share_url).searchParams.get('url') === kit.urls.compare, 'share kit should generate an X intent URL that clicks into compare');
   assert(kit.copy.readme_badge_markdown.includes('/u/alex/badge.svg') && kit.copy.readme_badge_markdown.includes(kit.urls.compare), 'share kit should generate compare-first README badge markdown');
@@ -708,7 +722,7 @@ async function assertShareKitScript() {
   assert(kit.copy.terminal_onboarding.includes('/insights') && kit.copy.terminal_onboarding.some((line) => line.includes('status')), 'share kit should include terminal onboarding commands');
   assert(kit.privacy_proof.public_payload_has_no_raw_usage_fields === true, 'share kit should prove public profile payload has no raw usage fields');
   const text = shareKitText(kit);
-  assert(text.includes('vibestats share kit: @alex') && text.includes('Compare invite: https://vibestats.example/?compareTo=alex&compareArchetype=shipper') && text.includes('Privacy proof:'), 'share kit text should be copy-ready and include privacy proof');
+  assert(text.includes('vibestats share kit: @alex') && text.includes('Compare invite: https://vibestats.example/?compareTo=alex&compareArchetype=shipper') && text.includes('Credential: https://vibestats.example/u/alex/credential.json') && text.includes('Privacy proof:'), 'share kit text should be copy-ready and include credential/privacy proof');
 
   const fetched = await fetchProfile({
     origin: 'https://vibestats.example',
@@ -740,6 +754,44 @@ async function assertShareKitScript() {
   }
   assert(failed, 'share kit should fail clearly when the public profile API is unavailable');
   console.log('ok share kit script generates privacy-safe launch assets');
+}
+
+async function assertDerivedProfileCredentialHelpers() {
+  const {
+    DERIVED_PROFILE_SCHEMA,
+    buildDerivedProfileCredential,
+    canonicalJson,
+    publicPayloadHasNoRawUsageFields,
+    sha256Hex,
+  } = await import('../api/_lib/credential.js');
+  const credential = buildDerivedProfileCredential({
+    origin: 'https://vibestats.example',
+    user: { gh_handle: 'alex' },
+    upload: {
+      archetype: 'shipper',
+      scores: { shipper: 92, builder: 81, orchestrator: 43 },
+      metrics: { days: 180, commitsPerDay: 12.4, sessions: 140, languages: 12 },
+      raw_meta: {
+        tool_usage: { Bash: 120 },
+        language_usage: { JavaScript: 4000 },
+        rawJson: true,
+      },
+      uploaded_at: '2026-05-30T12:00:00.000Z',
+    },
+    rarity: { count: 2, tier: 'rare', window_days: 30 },
+    leaderboard: { rank: 4, total: 32, label: 'shipper' },
+    achievements: [{ id: 'rarity-rare', label: 'Rare signature', value: '1 of 2', detail: '30-day cohort' }],
+  });
+  const { verification, ...body } = credential;
+  const expectedHash = sha256Hex(canonicalJson(body));
+  assert(credential.schema_version === DERIVED_PROFILE_SCHEMA, 'derived credential should publish its schema version');
+  assert(verification.content_hash === `sha256:${expectedHash}`, 'derived credential hash should cover the canonical credential body');
+  assert(credential.subject.github_anchor === 'https://github.com/alex' && credential.subject.github_claimed === true, 'derived credential should anchor to the claimed GitHub handle');
+  assert(credential.links.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper', 'derived credential should drive verification readers into comparison');
+  assert(credential.privacy.raw_claude_code_sessions === 'local-only' && credential.privacy.synced_profile_fields === 'derived-only' && credential.privacy.no_single_hireable_score === true, 'derived credential should encode the privacy and anti-coercion promises');
+  assert(publicPayloadHasNoRawUsageFields(credential), 'derived credential should not expose raw usage field names');
+  assert(!JSON.stringify(credential).includes('tool_usage') && !JSON.stringify(credential).includes('language_usage') && !JSON.stringify(credential).includes('rawJson'), 'derived credential should strip raw-shaped input fields');
+  console.log('ok derived profile credential helpers');
 }
 
 async function assertIdentityReadiness() {
@@ -1071,6 +1123,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes("return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();"), 'profile outgoing share URLs should canonicalize to vibestats.io');
   assert(profileHtml.includes('const uploadCompareUrl = canonicalVibestatsUrl(uploadComparePath);'), 'profile copied invites should use canonical compare URLs');
   assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile)'), 'profile copy action should use direct asymmetric compare invite text');
+  assert(profileHtml.includes('id="credential-cta"') && profileHtml.includes('`${profilePath}/credential.json`'), 'profile UI should link to the derived credential JSON');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile invite copy should retain the profile as credential context');
   assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');
   assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');
@@ -3702,6 +3755,7 @@ await assertRoutes();
 await assertLaunchAuditHelpers();
 await assertUpdateCliCommandScript();
 await assertShareKitScript();
+await assertDerivedProfileCredentialHelpers();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
 await assertCliLocalTokenEndpoint();

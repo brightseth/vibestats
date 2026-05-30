@@ -106,7 +106,7 @@ Checks the deployed identity loop without printing secrets:
 - public auth/session/sync failure responses do not expose internal config names
 - reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
 - promises page privacy, derived-only, and anti-coercion public contract
-- profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
+- profile shell, saved profile JSON, derived credential JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, profile recap, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
 - bounded match-intro event recording when profile saves are ready
@@ -477,6 +477,13 @@ async function auditLaunch(options) {
       allowStatuses: [200],
       mustInclude: ['Raw Claude Code sessions stay local.', 'Only derived metrics sync.', 'Profiles start unlisted.', 'No single hireable score.', 'No employer people search', 'bounded match-intro events', 'No free-text goals or friction'],
       mustNotInclude: ['tool_usage', 'language_usage', 'rawJson'],
+    },
+    {
+      label: 'profile credential',
+      path: `/u/${encodeURIComponent(handle)}/credential.json`,
+      expectedType: 'application/json',
+      allowStatuses: expectReady ? [200] : [200, 404, 503],
+      mustInclude: expectReady ? ['"schema_version":"vibestats.derived_profile.v1"', '"github_claimed":true', '"raw_claude_code_sessions":"local-only"', '"synced_profile_fields":"derived-only"', '"no_single_hireable_score":true', '"content_hash":"sha256:', '"verification_url"'] : null,
     },
     {
       label: 'profile page',

@@ -7,6 +7,7 @@
   ],
   "rewrites": [
     { "source": "/", "destination": "/api/home" },
+    { "source": "/u/:handle/credential.json", "destination": "/api/credential?handle=:handle" },
     { "source": "/u/:handle/badge.svg", "destination": "/api/badge?handle=:handle" },
     { "source": "/u/:handle/embed", "destination": "/api/embed?handle=:handle" },
     { "source": "/u/:handle/pair/:other", "destination": "/api/compare-page?a=:other&b=:handle" },
