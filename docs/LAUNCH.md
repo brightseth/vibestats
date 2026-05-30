@@ -104,7 +104,12 @@ npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle>
 
 `--expect-device-flow` fails unless `/api/cli/device-start` returns a live GitHub `user_code` and `verification_uri`. If it fails with "Device Flow must be explicitly enabled", turn on **Enable Device Flow** in the GitHub OAuth App settings and rerun the audit; no Vercel redeploy should be needed.
 
-Before replacing the GitHub branch npx command with a public npm command, publish a scoped package and set `VIBESTATS_CLI_PACKAGE` in Vercel. Settings-generated sync-token commands and CLI follow-up output use this override; static onboarding snippets still need to be updated in the same release so public pages, audits, and README copy agree.
+Before replacing the GitHub branch npx command with a public npm command, publish a scoped package and set `VIBESTATS_CLI_PACKAGE` in Vercel. Settings-generated sync-token commands and CLI follow-up output use this override; update static onboarding snippets in the same release so public pages, audits, and README copy agree:
+
+```bash
+node scripts/update-cli-command.mjs --package @lets-vibe/vibestats
+node scripts/update-cli-command.mjs --package @lets-vibe/vibestats --write
+```
 
 ```bash
 CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-digest

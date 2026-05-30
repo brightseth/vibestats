@@ -623,6 +623,19 @@ async function assertLaunchAuditHelpers() {
   console.log('ok launch audit supports protected Vercel previews');
 }
 
+async function assertUpdateCliCommandScript() {
+  const { FALLBACK_COMMAND, TARGET_FILES, parseArgs, updateCliCommand } = await import('../scripts/update-cli-command.mjs');
+  const parsed = parseArgs(['--package', '@lets-vibe/vibestats', '--write']);
+  assert(parsed.packageSpec === '@lets-vibe/vibestats' && parsed.write === true, 'CLI command update script should parse package and write mode');
+  const report = await updateCliCommand({ packageSpec: '@lets-vibe/vibestats', write: false });
+  const home = report.files.find((item) => item.file === 'home.html');
+  const audit = report.files.find((item) => item.file === 'scripts/launch-audit.mjs');
+  assert(report.write === false && report.from === FALLBACK_COMMAND && report.to === 'npx --yes @lets-vibe/vibestats', 'CLI command update script should default to dry-run replacement reporting');
+  assert(report.replacements > 0 && home?.count > 0 && audit?.count > 0, 'CLI command update script should cover public static snippets and launch audit expectations');
+  assert(TARGET_FILES.includes('README.md') && TARGET_FILES.includes('settings.html') && TARGET_FILES.includes('.claude/commands/vibestats.md'), 'CLI command update script should cover docs, settings, and Claude Code install command');
+  console.log('ok CLI command update script supports npm package switchover');
+}
+
 async function assertIdentityReadiness() {
   const keys = [
     'DATABASE_URL',
@@ -3332,6 +3345,7 @@ await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
 await assertLaunchAuditHelpers();
+await assertUpdateCliCommandScript();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
 await assertCliLocalTokenEndpoint();

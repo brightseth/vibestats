@@ -138,7 +138,12 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-comman
 ```
 
 The unscoped npm package name `vibestats` is currently owned by another publisher, so do not use `npx vibestats` for this project until a scoped package is published or package ownership changes.
-When a scoped package is ready, set `VIBESTATS_CLI_PACKAGE` so Settings-generated token commands and CLI follow-up output print the public package spec instead of the GitHub branch fallback. Static onboarding copy should be updated in the same release.
+When a scoped package is ready, set `VIBESTATS_CLI_PACKAGE` so Settings-generated token commands and CLI follow-up output print the public package spec instead of the GitHub branch fallback. Then update static onboarding copy in the same release:
+
+```bash
+node scripts/update-cli-command.mjs --package @lets-vibe/vibestats
+node scripts/update-cli-command.mjs --package @lets-vibe/vibestats --write
+```
 
 Settings still exposes a manual token command as a fallback. Sync tokens are revocable from Settings:
 
