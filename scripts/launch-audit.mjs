@@ -443,7 +443,7 @@ async function auditLaunch(options) {
       path: `/card?a=${encodeURIComponent(archetype)}&n=Launch&d=7&c=2&l=3&s=4`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: `/?compareArchetype=${encodeURIComponent(archetype)}`,
+      mustInclude: [`/?compareArchetype=${encodeURIComponent(archetype)}`, 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'install-claude-command'],
       mustNotInclude: "What's YOUR personality?",
     },
     {

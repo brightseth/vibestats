@@ -947,6 +947,9 @@ async function assertShareCardCta() {
   assert(statusCode === 200, 'share card should render HTTP 200');
   assert(body.includes('href="/?compareArchetype=deepdiver"'), 'share card CTA should send visitors into upload-to-compare');
   assert(body.includes('Compare with this archetype'), 'share card CTA should invite comparison instead of homepage upload');
+  assert(body.includes('What are you?') && body.includes('/insights') && body.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'share card should teach recipients the reveal command without another hop');
+  assert(body.includes('data-copy=') && body.includes("document.execCommand('copy')"), 'share card reveal commands should be copyable with clipboard fallback');
+  assert(body.includes('install-claude-command'), 'share card should expose the installable Claude Code /vibestats command');
   assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
   assert(body.includes('archetype=deepdiver'), 'share card /vibe CTA should use the sanitized archetype key');
   assert(!body.includes('raw-json-should-not-propagate'), 'share card HTML should only use sanitized allowlisted query params');

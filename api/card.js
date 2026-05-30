@@ -1,5 +1,9 @@
 import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
+const INSIGHTS_COMMAND = '/insights';
+const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+const INSTALL_CLAUDE_COMMAND = `${REVEAL_COMMAND} install-claude-command`;
+
 const ARCHETYPES = {
   orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)' },
   shipper: { name: 'THE SHIPPER', tagline: "Done is better than perfect. You live this.", color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)' },
@@ -96,9 +100,9 @@ export default function handler(req, res) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>${displayName} is ${esc(arch.name)} | vibestats</title>
-  <meta name="description" content="${displayName} — ${esc(arch.tagline)} ${displayDays} days of vibecoding. See how you'd pair with this archetype.">
+  <meta name="description" content="${displayName} — ${esc(arch.tagline)} Claude Code already knows how you build. Run /insights, reveal yours, and compare with this archetype.">
   <meta property="og:title" content="${displayName} is ${esc(arch.name)} | vibestats">
-  <meta property="og:description" content="${esc(arch.tagline)} — ${displayCommits} commits/day across ${displayLangs} languages. ${displayDays} days of vibecoding.">
+  <meta property="og:description" content="${esc(arch.tagline)} — ${displayCommits} commits/day across ${displayLangs} languages. Run /insights, then reveal yours.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${cardUrl}">
   <meta property="og:image" content="${ogImageUrl}">
@@ -106,7 +110,7 @@ export default function handler(req, res) {
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${displayName} is ${esc(arch.name)}">
-  <meta name="twitter:description" content="${esc(arch.tagline)} — ${displayDays} days of vibecoding. See how you'd pair.">
+  <meta name="twitter:description" content="${esc(arch.tagline)} — Claude Code already knows how you build. Run /insights, then reveal yours.">
   <meta name="twitter:image" content="${ogImageUrl}">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
@@ -188,6 +192,26 @@ export default function handler(req, res) {
       -webkit-tap-highlight-color: transparent;
     }
     .cta:hover { border-color: var(--accent); background: rgba(107,143,255,0.12); }
+    .reveal-panel {
+      width: min(560px, 92vw); margin-top: 22px; padding: 18px;
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+      background: rgba(255,255,255,0.025); text-align: left;
+    }
+    .reveal-title { font-size: 14px; color: #fff; font-weight: 700; margin-bottom: 6px; }
+    .reveal-copy { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+    .reveal-command {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+      align-items: center; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .reveal-command code {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #dbe7ff;
+      overflow-wrap: anywhere;
+    }
+    .reveal-command button {
+      min-height: 34px; border: 1px solid rgba(107,143,255,0.35); border-radius: 6px;
+      background: rgba(107,143,255,0.10); color: #8aadff; padding: 0 10px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; cursor: pointer;
+    }
     .footer {
       margin-top: 24px; font-family: 'JetBrains Mono', monospace;
       font-size: 10px; color: var(--text-dim);
@@ -201,6 +225,8 @@ export default function handler(req, res) {
         width: 100%; justify-content: center; text-align: center;
         padding-left: 16px; padding-right: 16px;
       }
+      .reveal-command { grid-template-columns: 1fr; }
+      .reveal-command button { justify-self: start; }
     }
   </style>
 </head>
@@ -222,8 +248,51 @@ export default function handler(req, res) {
     <div class="brand">vibestats.io</div>
   </div>
   <a class="cta" href="/?compareArchetype=${encodeURIComponent(archetypeKey)}">Compare with this archetype &rarr;</a>
+  <div class="reveal-panel" aria-label="Reveal your own vibestats">
+    <div class="reveal-title">What are you?</div>
+    <div class="reveal-copy">Claude Code has already captured your build fingerprint. Reveal yours from local /insights data; raw sessions stay on your machine.</div>
+    <div class="reveal-command">
+      <code>${esc(INSIGHTS_COMMAND)}</code>
+      <button type="button" data-copy="${esc(INSIGHTS_COMMAND)}">Copy</button>
+    </div>
+    <div class="reveal-command">
+      <code>${esc(REVEAL_COMMAND)}</code>
+      <button type="button" data-copy="${esc(REVEAL_COMMAND)}">Copy</button>
+    </div>
+    <div class="reveal-command">
+      <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>
+      <button type="button" data-copy="${esc(INSTALL_CLAUDE_COMMAND)}">Copy install</button>
+    </div>
+  </div>
   <a class="cta" href="https://www.slashvibe.dev/join?ref=vibestats_card&archetype=${archetypeKey}" target="_blank" rel="noopener" style="margin-top:12px;background:linear-gradient(135deg,rgba(107,143,255,0.2),rgba(167,139,250,0.15));border-color:rgba(107,143,255,0.5)">Find other ${archLabel}s on /vibe &rarr;</a>
   <script>
+    async function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+    document.querySelectorAll('[data-copy]').forEach(function(button) {
+      button.addEventListener('click', async function() {
+        var idle = button.textContent;
+        try {
+          await copyText(button.getAttribute('data-copy') || '');
+          button.textContent = 'Copied';
+        } catch(e) {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(function() { button.textContent = idle; }, 1400);
+      });
+    });
     (async function() {
       try {
         var r = await fetch('https://www.slashvibe.dev/api/archetype-stats');
