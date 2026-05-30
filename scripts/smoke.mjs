@@ -50,6 +50,7 @@ const apiModules = [
   '../api/_lib/digest.js',
   '../api/leaderboard.js',
   '../api/match.js',
+  '../api/match-intros.js',
   '../api/browse.js',
   '../api/stats.js',
   '../api/card.js',
@@ -180,6 +181,7 @@ async function assertRoutes() {
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
   const syncSettingsApi = await readFile('api/sync-settings.js', 'utf8');
+  const matchIntrosApi = await readFile('api/match-intros.js', 'utf8');
   const cliLocalTokenApi = await readFile('api/cli/local-token.js', 'utf8');
   const cliDeviceStartApi = await readFile('api/cli/device-start.js', 'utf8');
   const cliDevicePollApi = await readFile('api/cli/device-poll.js', 'utf8');
@@ -268,6 +270,9 @@ async function assertRoutes() {
   assert(matchApi.includes('goalFit({') && matchApi.includes('candidateFacets'), 'match API should use shared facet-aware goal fit scoring');
   assert(matchApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'match API method errors should not be cached');
   assert(!matchApi.includes('s-maxage='), 'match API profile lists should not be publicly cached');
+  assert(matchIntrosApi.includes('requireSameOrigin(req)') && matchIntrosApi.includes('readJson(req, { maxBytes: 2 * 1024 })'), 'match intro event API should require same-origin bounded JSON writes');
+  assert(matchIntrosApi.includes("action in ('compare_click', 'contact_click', 'copy_intro', 'share_x')") || matchIntrosApi.includes("['compare_click', 'contact_click', 'copy_intro', 'share_x']"), 'match intro event API should store bounded action enums only');
+  assert(!matchIntrosApi.includes('contact_url') && !matchIntrosApi.includes('intro_text') && !matchIntrosApi.includes('user-agent'), 'match intro event API must not store contact URLs, intro text, or request headers');
   assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
   assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
   assert(browseApi.includes('updated: uploadRecency(row.uploaded_at)'), 'browse API should bucket public upload freshness');
@@ -287,6 +292,7 @@ async function assertRoutes() {
   assert(matchHtml.includes('const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));'), 'match copied intros should canonicalize comparison URLs to vibestats.io');
   assert(matchHtml.includes('url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}'), 'match X share URLs should canonicalize to vibestats.io');
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
+  assert(matchHtml.includes("fetch('/api/match-intros'") && matchHtml.includes('data-match-action="copy_intro"') && matchHtml.includes('data-match-action="contact_click"') && matchHtml.includes('data-match-action="compare_click"') && matchHtml.includes('data-match-action="share_x"'), 'match UI should log bounded intro intent events for future match feedback without blocking navigation');
   assert(matchHtml.includes('class="reveal-strip"') && matchHtml.includes('Find your real match') && matchHtml.includes('data-copy-command="/insights"') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && matchHtml.includes('Copy status') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && matchHtml.includes('data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity"') && matchHtml.includes('install-claude-command'), 'match page should offer a direct terminal-first status, reveal, claim, and Claude Code install hook even when matches are populated');
   assert(matchHtml.includes('Match database unavailable') && matchHtml.includes('Boolean(data.unavailable)'), 'match UI should distinguish unavailable DB from no active matches');
   assert(genomeHtml.includes('What are you?') && genomeHtml.includes('data-copy-command="/insights"') && genomeHtml.includes('Copy status preflight') && genomeHtml.includes('Copy npx reveal command') && genomeHtml.includes('Copy claim command') && genomeHtml.includes('data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity"') && genomeHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && genomeHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && genomeHtml.includes('install-claude-command') && genomeHtml.includes('Raw Claude Code /insights data stays local'), 'genome page should convert community curiosity into status-first onboarding with claim and Claude Code install hooks');
@@ -643,6 +649,7 @@ async function assertLaunchAuditHelpers() {
   assert(launchAuditSource.includes("'/api/cli/device-start'") && launchAuditSource.includes('CLI device auth start is reachable') && launchAuditSource.includes('CLI device auth start returns live GitHub device code'), 'launch audit should verify terminal-first device auth readiness or explicit enablement action');
   assert(launchAuditSource.includes("path: '/api/me'") && launchAuditSource.includes("Cookie: 'vibestats_auth=a.b.c'"), 'launch audit should probe session failure without exposing env names');
   assert(launchAuditSource.includes("label: 'weekly digest cron guard'"), 'launch audit should probe the weekly digest cron guard without exposing env names');
+  assert(launchAuditSource.includes("'/api/match-intros'") && launchAuditSource.includes('match intro event recording status') && launchAuditSource.includes("action: 'compare_click'"), 'launch audit should probe bounded match-intro event recording without sending free text');
   assert(launchAuditSource.includes('auditCliPackage') && launchAuditSource.includes("execFileAsync('npm', ['view', packageSpec") && launchAuditSource.includes("execFileAsync('npm', ['exec', '--yes', '--package', packageSpec"), 'launch audit should verify the public npm CLI package when strict package readiness is expected');
   console.log('ok launch audit supports protected Vercel previews');
 }
@@ -1347,6 +1354,40 @@ async function assertMatchmakingHelpers() {
   assert(strong.reason.includes('Builder + Shipper'), 'goal fit reason should name the visitor/candidate pairing');
   assert(strong.facet_focus?.id && strong.reason.includes('Facet fit'), 'goal fit should use derived facet radar signals');
   console.log('ok goal-driven matchmaking helpers');
+}
+
+async function assertMatchIntroEventHelpers() {
+  const { cleanMatchIntroEvent } = await import('../api/match-intros.js');
+  const event = cleanMatchIntroEvent({
+    target_handle: '@BrightSeth',
+    goal: 'pair-coding',
+    seeker_archetype: 'Builder',
+    target_archetype: 'shipper',
+    action: 'copy_intro',
+    source: 'match',
+    intro_text: 'private intro copy should never be persisted',
+    contact_url: 'https://x.com/brightseth',
+  });
+  assert(event.target_handle === 'BrightSeth', 'match intro events should normalize public target handles');
+  assert(event.seeker_archetype === 'builder' && event.target_archetype === 'shipper', 'match intro events should normalize archetypes');
+  assert(event.action === 'copy_intro' && event.source === 'match', 'match intro events should keep bounded action/source enums');
+  assert(!Object.hasOwn(event, 'intro_text') && !Object.hasOwn(event, 'contact_url'), 'match intro events must discard free-text intro copy and contact URLs');
+
+  for (const body of [
+    { target_handle: 'bad handle', goal: 'pair-coding', action: 'copy_intro' },
+    { target_handle: 'brightseth', goal: 'idle', action: 'copy_intro' },
+    { target_handle: 'brightseth', goal: 'pair-coding', action: 'send_dm' },
+    { target_handle: 'brightseth', goal: 'pair-coding', action: 'copy_intro', seeker_archetype: 'growth-hacker' },
+  ]) {
+    let rejected = false;
+    try {
+      cleanMatchIntroEvent(body);
+    } catch (err) {
+      rejected = err.statusCode === 400;
+    }
+    assert(rejected, 'match intro events should reject unbounded or non-canonical fields');
+  }
+  console.log('ok match intro events stay bounded and privacy-safe');
 }
 
 async function assertBehavioralMoments() {
@@ -3365,6 +3406,37 @@ async function assertPrivateApiNoStore() {
         allow: 'POST',
       },
       {
+        label: '/api/match-intros invalid payload',
+        module: '../api/match-intros.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' }, body: {} },
+        status: 400,
+      },
+      {
+        label: '/api/match-intros storage fallback',
+        module: '../api/match-intros.js',
+        req: {
+          method: 'POST',
+          query: {},
+          headers: { host: 'localhost:3000' },
+          body: {
+            target_handle: 'brightseth',
+            goal: 'pair-coding',
+            seeker_archetype: 'builder',
+            target_archetype: 'shipper',
+            action: 'copy_intro',
+            source: 'match',
+          },
+        },
+        status: 202,
+      },
+      {
+        label: '/api/match-intros method guard',
+        module: '../api/match-intros.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'POST',
+      },
+      {
         label: '/api/sync-token unauthenticated',
         module: '../api/sync-token.js',
         req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
@@ -3609,6 +3681,7 @@ await assertOgFallback();
 await assertStatsApiGuards();
 await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
+await assertMatchIntroEventHelpers();
 await assertBehavioralMoments();
 await assertFacetRadar();
 await assertPublicAchievements();

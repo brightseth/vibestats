@@ -108,6 +108,7 @@ Checks the deployed identity loop without printing secrets:
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, profile recap, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
+- bounded match-intro event recording when profile saves are ready
 - protected weekly digest dry run when --expect-digest is used with CRON_SECRET
 - obvious raw-insights field leaks in public profile/share HTML/SVG responses`;
 }
@@ -364,6 +365,32 @@ async function auditLaunch(options) {
     } catch (err) {
       recorder.fail(`${item.label} fetch failed`, err.message);
     }
+  }
+
+  try {
+    const result = await fetchText(options, '/api/match-intros', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target_handle: missingHandle,
+        goal: 'pair-coding',
+        seeker_archetype: archetype,
+        target_archetype: archetype,
+        action: 'compare_click',
+        source: 'match',
+      }),
+    });
+    const cache = result.response.headers.get('cache-control') || '';
+    const type = result.response.headers.get('content-type') || '';
+    const body = JSON.parse(result.body || '{}');
+    recorder.check(expectReady ? result.response.status === 200 : [200, 202].includes(result.response.status), 'match intro event recording status', `${result.response.status} ${result.url}`);
+    recorder.check(type.includes('application/json'), 'match intro event recording content type', type || '(none)');
+    recorder.check(cache.includes('no-store'), 'match intro event recording disables public caching', cache || '(none)');
+    recorder.check(body.ok === true && (body.recorded === true || (!expectReady && body.recorded === false)), 'match intro event recording reports bounded result', result.body);
+    recorder.check(!hasRawLeak(result.body), 'match intro event recording has no raw-insights field names');
+    recorder.check(!hasSecretName(result.body), 'match intro event recording does not expose secret env names');
+  } catch (err) {
+    recorder.fail('match intro event recording fetch failed', err.message);
   }
 
   if (expectDigest) {

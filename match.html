@@ -475,6 +475,22 @@
       return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}`;
     }
 
+    function logMatchEvent({ handle, targetArchetype, goal, seekerArchetype, action }) {
+      if (!handle || !action) return;
+      fetch('/api/match-intros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_handle: handle,
+          target_archetype: targetArchetype || null,
+          seeker_archetype: seekerArchetype && seekerArchetype !== 'any' ? seekerArchetype : null,
+          goal,
+          action,
+          source: 'match',
+        }),
+      }).catch(() => {});
+    }
+
     function emptyStateHtml({ unavailable = false } = {}) {
       const copy = unavailable
         ? 'Match database unavailable.<br>Goal-aware matches will appear once identity is configured.'
@@ -521,7 +537,7 @@
       });
     });
 
-    function renderEntries(entries, goalLabel, seekerArchetype, unavailable = false) {
+    function renderEntries(entries, goal, goalLabel, seekerArchetype, unavailable = false) {
       const list = document.getElementById('list');
       if (!entries.length) {
         list.innerHTML = emptyStateHtml({ unavailable });
@@ -557,14 +573,26 @@
               <div class="metric"><strong>${esc(activity.depth || 'private')}</strong>history</div>
             </div>
             <div class="actions">
-              <a class="btn primary" href="${esc(comparison)}">Compare</a>
-              <a class="btn" href="${esc(contactUrl)}" target="${contactUrl.startsWith('/') ? '_self' : '_blank'}" rel="noopener">Contact</a>
-              <button class="btn" type="button" data-intro="${esc(intro)}">Copy intro</button>
-              <a class="btn" href="${esc(xShareUrl(entry, goalLabel, seekerArchetype))}" target="_blank" rel="noopener">Share on X</a>
+              <a class="btn primary" href="${esc(comparison)}" data-match-action="compare_click" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Compare</a>
+              <a class="btn" href="${esc(contactUrl)}" target="${contactUrl.startsWith('/') ? '_self' : '_blank'}" rel="noopener" data-match-action="contact_click" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Contact</a>
+              <button class="btn" type="button" data-intro="${esc(intro)}" data-match-action="copy_intro" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Copy intro</button>
+              <a class="btn" href="${esc(xShareUrl(entry, goalLabel, seekerArchetype))}" target="_blank" rel="noopener" data-match-action="share_x" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Share on X</a>
             </div>
           </article>
         `;
       }).join('');
+
+      list.querySelectorAll('[data-match-action]').forEach((element) => {
+        element.addEventListener('click', () => {
+          logMatchEvent({
+            handle: element.getAttribute('data-target-handle'),
+            targetArchetype: element.getAttribute('data-target-archetype'),
+            goal,
+            seekerArchetype,
+            action: element.getAttribute('data-match-action'),
+          });
+        });
+      });
 
       list.querySelectorAll('[data-intro]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -589,7 +617,7 @@
         const res = await fetch(`/api/match?${params.toString()}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Match unavailable');
-        renderEntries(data.entries || [], data.goal_label || label, data.seeker_archetype || state.archetype, Boolean(data.unavailable));
+        renderEntries(data.entries || [], data.goal || state.goal, data.goal_label || label, data.seeker_archetype || state.archetype, Boolean(data.unavailable));
       } catch (err) {
         document.getElementById('list').innerHTML = `
           <div class="empty">
