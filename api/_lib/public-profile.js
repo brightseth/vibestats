@@ -1,4 +1,5 @@
 import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
+import { publicMoments } from './moments.js';
 
 const OWNER_RAW_META_KEYS = [
   'dateRange',
@@ -110,7 +111,7 @@ export function visibleMetrics(metrics = {}, visibility = {}) {
   return out;
 }
 
-export function publicRawMeta(rawMeta = {}, { isOwner = false, signature = null } = {}) {
+export function publicRawMeta(rawMeta = {}, { isOwner = false, signature = null, visibility = {} } = {}) {
   const out = {};
   for (const key of isOwner ? OWNER_RAW_META_KEYS : []) {
     const value = rawMeta?.[key];
@@ -120,6 +121,8 @@ export function publicRawMeta(rawMeta = {}, { isOwner = false, signature = null 
   if (signature?.combo) out.signatureCombo = signature.combo;
   if (ARCHETYPE_KEYS.includes(signature?.secondary)) out.secondaryArchetype = signature.secondary;
   if (isOwner && signature?.fingerprint) out.signatureFingerprint = signature.fingerprint;
+  const moments = publicMoments(rawMeta?.moments, { exact: Boolean(isOwner || visibility.show_raw_counts) });
+  if (moments.length) out.moments = moments;
   return out;
 }
 
@@ -131,7 +134,7 @@ export function publicUpload(upload = {}, visibility = {}, { isOwner = false } =
     metrics: visibleMetrics(upload.metrics || {}, visibility),
     activity: publicActivity(upload.metrics || {}),
     updated: uploadRecency(upload.uploaded_at),
-    raw_meta: publicRawMeta(upload.raw_meta || {}, { isOwner, signature }),
+    raw_meta: publicRawMeta(upload.raw_meta || {}, { isOwner, signature, visibility }),
   };
   if (isOwner) out.uploaded_at = upload.uploaded_at;
   if (isOwner) out.id = upload.id;

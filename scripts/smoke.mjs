@@ -34,6 +34,7 @@ const apiModules = [
   '../api/_lib/streak.js',
   '../api/_lib/matchmaking.js',
   '../api/_lib/leaderboard-rank.js',
+  '../api/_lib/moments.js',
   '../api/_lib/digest.js',
   '../api/leaderboard.js',
   '../api/match.js',
@@ -308,6 +309,7 @@ async function assertRoutes() {
   assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
   assert(!indexHtml.includes('npx vibestats sync'), 'upload page should not advertise the occupied unscoped npm package name');
   assert(indexHtml.includes('No file hunting') && indexHtml.includes('real ~/.claude/usage-data/ output'), 'upload page should steer cold users away from manual file hunting');
+  assert(indexHtml.includes('buildBehavioralMoments(insights)') && indexHtml.includes('longestSessionMinutes'), 'upload page should save derived behavioral moments from local reveal data');
   assert(indexHtml.includes('weekly_digest_available: body.weekly_digest_available === true'), 'upload page should preserve digest delivery readiness from identity status');
   assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should only show inline digest opt-in when delivery is configured');
   assert(indexHtml.includes('Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.'), 'upload page should explain pending digest delivery without offering a dead opt-in');
@@ -317,6 +319,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('Raw insights stay in your browser; only derived metrics save.') && profileHtml.includes('Copy pending profile'), 'empty profile state should preserve the privacy promise and copyable profile loop');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
   assert(profileHtml.includes('Reveal yours vs @${handle}') && profileHtml.includes('What are you? Run /insights, then the npx reveal command on the homepage'), 'profile pages should act as share-recipient landing pages with the reveal command');
+  assert(profileHtml.includes('id="moment-grid"') && profileHtml.includes('renderBehavioralMoments(latest)'), 'profile pages should render shareable derived behavioral moments');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
@@ -349,7 +352,7 @@ async function assertRoutes() {
   assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
-  assert(npmIgnore.includes('!bin/vibestats.js') && npmIgnore.includes('!lib/claude-insights-extractor.js') && npmIgnore.includes('!lib/insights-derived.js') && npmIgnore.includes('!api/_lib/signatures.js'), 'npm package allowlist should include the CLI and derived scoring helpers');
+  assert(npmIgnore.includes('!bin/vibestats.js') && npmIgnore.includes('!lib/claude-insights-extractor.js') && npmIgnore.includes('!lib/insights-derived.js') && npmIgnore.includes('!api/_lib/moments.js') && npmIgnore.includes('!api/_lib/signatures.js'), 'npm package allowlist should include the CLI and derived scoring helpers');
   assert(packageJson.scripts?.['audit:launch'] === 'node scripts/launch-audit.mjs', 'package should expose launch audit script');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
   assert(identityDoctor.includes('AUTH_SECRET') && identityDoctor.includes('NEXTAUTH_SECRET'), 'identity doctor should accept session secret aliases used by runtime');
@@ -981,6 +984,37 @@ async function assertMatchmakingHelpers() {
   console.log('ok goal-driven matchmaking helpers');
 }
 
+async function assertBehavioralMoments() {
+  const { buildBehavioralMoments, publicMoments, sanitizeMoments } = await import('../api/_lib/moments.js');
+  const moments = buildBehavioralMoments({
+    metrics: {
+      longest_session_minutes: 640,
+      files_modified: 88,
+      lines_changed: 12000,
+      task_agent_sessions: 5,
+      buggy_code_events: 7,
+      tool_usage: { bash: 2450, read: 99 },
+    },
+  });
+  assert(moments.length === 3, 'behavioral moments should keep the top three derived moments');
+  assert(moments.some((moment) => moment.id === 'longest_session_minutes'), 'behavioral moments should include marathon sessions');
+  assert(!JSON.stringify(moments).includes('read') && !JSON.stringify(moments).includes('tool_usage'), 'behavioral moments must not expose raw tool maps');
+  const sanitized = sanitizeMoments([
+    { id: 'terminal_commands', value: 2450, prompt: 'private prompt' },
+    { id: 'unknown', value: 999999 },
+    { id: 'files_modified', value: -10 },
+    { id: 'longest_session_minutes', value: 999999 },
+  ]);
+  assert(sanitized.length === 2, 'moment sanitizer should keep only known thresholded moment ids');
+  assert(sanitized[1].value === 4320, 'moment sanitizer should clamp extreme values');
+  assert(!JSON.stringify(sanitized).includes('private prompt'), 'moment sanitizer must not echo arbitrary text');
+  const publicView = publicMoments([{ id: 'terminal_commands', value: 2450 }]);
+  const exactView = publicMoments([{ id: 'terminal_commands', value: 2450 }], { exact: true });
+  assert(publicView[0].value === '1k+ commands', 'public moments should bucket values by default');
+  assert(exactView[0].value === '2,450 Bash commands', 'owner/raw-count moments should expose exact derived values');
+  console.log('ok behavioral moments stay derived and bucketed');
+}
+
 async function assertUploadSanitizer() {
   const { sanitizeUploadPayload } = await import('../api/_lib/uploads.js');
   const payload = sanitizeUploadPayload({
@@ -1011,6 +1045,10 @@ async function assertUploadSanitizer() {
       dateRange: '2026-01-01 to 2026-01-09',
       source: 'rawJson',
       version: 'rawJson',
+      moments: [
+        { id: 'terminal_commands', value: 2450, prompt: 'private prompt should drop' },
+        { id: 'unknown', value: 99999 },
+      ],
       signature: 'rawJson Builder',
       signatureCombo: 'rawJson+builder',
       signatureFingerprint: 'rawJson:90s',
@@ -1031,9 +1069,11 @@ async function assertUploadSanitizer() {
   assert(payload.raw_meta.signatureCombo === 'shipper+builder', 'signature combo should be derived from sanitized scores');
   assert(payload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'signature fingerprint should be derived from sanitized scores');
   assert(payload.raw_meta.secondaryArchetype === 'shipper', 'secondary archetype metadata should be derived from sanitized scores');
+  assert(payload.raw_meta.moments?.[0]?.id === 'terminal_commands' && payload.raw_meta.moments[0].value === 2450, 'upload sanitizer should keep only safe derived behavioral moment ids and values');
   assert(payload.raw_meta.source === 'browser', 'browser upload source should be assigned by the endpoint sanitizer');
   assert(payload.raw_meta.version === 'wave-1', 'upload metadata version should be assigned by the endpoint sanitizer');
   assert(!('rawJson' in payload.raw_meta), 'raw_meta allowlist must drop unknown fields');
+  assert(!JSON.stringify(payload.raw_meta).includes('private prompt'), 'upload sanitizer must not echo arbitrary moment text');
   assert(!JSON.stringify(payload.raw_meta).includes('rawJson'), 'upload sanitizer must not trust client-supplied signature metadata');
 
   const cliPayload = sanitizeUploadPayload({ ...payload, raw_meta: { source: 'browser' } }, { source: 'cli' });
@@ -1075,6 +1115,10 @@ async function assertExportUploadSanitizer() {
       signatureCombo: 'architect+builder',
       signatureFingerprint: 'architect+builder+shipper:90s',
       secondaryArchetype: 'architect',
+      moments: [
+        { id: 'terminal_commands', value: 2450, prompt: 'private prompt should drop' },
+        { id: 'unknown', value: 99999 },
+      ],
       rawJson: { should: 'drop' },
       language_usage: { typescript: 9000 },
     },
@@ -1090,6 +1134,8 @@ async function assertExportUploadSanitizer() {
   assert(upload.raw_meta.signatureCombo === 'shipper+builder', 'export upload should derive signature combos from scores');
   assert(upload.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'export upload should derive signature fingerprints from scores');
   assert(upload.raw_meta.secondaryArchetype === 'shipper', 'export upload should derive secondary archetype from scores');
+  assert(upload.raw_meta.moments?.[0]?.id === 'terminal_commands', 'export upload should retain sanitized derived behavioral moments');
+  assert(!JSON.stringify(upload.raw_meta).includes('private prompt'), 'export upload must not echo arbitrary moment text');
   assert(!JSON.stringify(upload).includes('spoofed'), 'export upload must not echo stored spoofed signature text');
   assert(!JSON.stringify(upload).includes('tool_usage'), 'export upload must not include raw tool usage');
   assert(!JSON.stringify(upload).includes('language_usage'), 'export upload must not include raw language usage');
@@ -1109,6 +1155,10 @@ async function assertCliDerivedPayload() {
       satisfaction_rate: 0.85,
       multi_clauding_rate: 0.03,
       buggy_code_events: 8,
+      longest_session_minutes: 640,
+      files_modified: 88,
+      lines_changed: 12000,
+      task_agent_sessions: 9,
       tool_usage: { bash: 6000, read: 4000, edit: 5500, write: 4200, grep: 300 },
       language_usage: { typescript: 45000, javascript: 8000, css: 2000 },
     },
@@ -1118,6 +1168,8 @@ async function assertCliDerivedPayload() {
   assert(payload.metrics.sessions === 280, 'CLI derived payload should include derived session count');
   assert(payload.raw_meta.source === 'cli', 'CLI derived payload should mark source as cli');
   assert(payload.raw_meta.signatureFingerprint, 'CLI derived payload should include rarity fingerprint');
+  assert(payload.raw_meta.moments?.length === 3, 'CLI derived payload should include top derived behavioral moments');
+  assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
   const { DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, isDirectRun, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
@@ -1158,6 +1210,10 @@ async function assertCliDerivedPayload() {
       languages: { TypeScript: 12, Markdown: 4 },
       git_commits: 2,
       uses_task_agent: true,
+      duration_minutes: 180,
+      files_modified: 12,
+      lines_added: 900,
+      lines_removed: 150,
       first_prompt: 'private prompt should never leave disk',
     }), 'utf8');
     await writeFile(join(usageDir, 'session-meta', 'two.json'), JSON.stringify({
@@ -1170,6 +1226,10 @@ async function assertCliDerivedPayload() {
       languages: { JavaScript: 8, JSON: 5 },
       git_commits: 1,
       uses_task_agent: false,
+      duration_minutes: 55,
+      files_modified: 4,
+      lines_added: 200,
+      lines_removed: 50,
       first_prompt: 'another private prompt',
     }), 'utf8');
     await writeFile(join(usageDir, 'facets', 'one.json'), JSON.stringify({
@@ -1187,6 +1247,10 @@ async function assertCliDerivedPayload() {
     assert(extracted.metrics.tool_usage.bash === 12 && extracted.metrics.tool_usage.read === 10 && extracted.metrics.tool_usage.edit === 7 && extracted.metrics.tool_usage.grep === 4, 'Claude /insights extractor should normalize tool counts');
     assert(extracted.metrics.language_usage.typescript === 12 && extracted.metrics.language_usage.javascript === 8, 'Claude /insights extractor should normalize language counts');
     assert(extracted.metrics.multi_clauding_rate === 0.5, 'Claude /insights extractor should derive task-agent session rate');
+    assert(extracted.metrics.task_agent_sessions === 1, 'Claude /insights extractor should count task-agent sessions for derived moments');
+    assert(extracted.metrics.longest_session_minutes === 180, 'Claude /insights extractor should derive longest session length');
+    assert(extracted.metrics.files_modified === 16, 'Claude /insights extractor should derive files-modified count');
+    assert(extracted.metrics.lines_changed === 1300, 'Claude /insights extractor should derive line-change count');
     assert(extracted.metrics.buggy_code_events === 2, 'Claude /insights extractor should derive friction counts from facets');
 
     await writeFile(file, JSON.stringify(insights), 'utf8');
@@ -1199,6 +1263,7 @@ async function assertCliDerivedPayload() {
     output.length = 0;
     const usageResult = await sync({ file: usageDir, host: 'https://example.invalid', token: '', dryRun: true });
     assert(usageResult.payload.metrics.sessions === 2, 'CLI dry-run should parse real /insights directories');
+    assert(usageResult.payload.raw_meta.moments?.some((moment) => moment.id === 'longest_session_minutes'), 'CLI dry-run from /insights directory should derive behavioral moments');
     assert(!output.join('').includes('tool_usage') && !output.join('').includes('underlying_goal'), 'CLI dry-run from /insights directory must not print raw usage maps or facet details');
 
     const authOutput = [];
@@ -1475,6 +1540,10 @@ async function assertPublicProfileHelpers() {
       dateRange: 'private range',
       source: 'browser',
       version: 'wave-1',
+      moments: [
+        { id: 'terminal_commands', value: 2450, prompt: 'private prompt should drop' },
+        { id: 'unknown', value: 99999 },
+      ],
       rawJson: { should: 'drop' },
       tool_usage: { bash: 9000 },
       language_usage: { typescript: 5000 },
@@ -1492,6 +1561,8 @@ async function assertPublicProfileHelpers() {
   assert(privateView.raw_meta.signatureCombo === 'shipper+builder', 'visitor upload payload should derive signature combos from scores');
   assert(privateView.raw_meta.secondaryArchetype === 'shipper', 'visitor upload payload should derive secondary archetype from scores');
   assert(!('signatureFingerprint' in privateView.raw_meta), 'visitor upload payload should hide internal rarity fingerprint');
+  assert(privateView.raw_meta.moments?.[0]?.value === '1k+ commands', 'visitor upload payload should expose bucketed behavioral moments');
+  assert(!JSON.stringify(privateView.raw_meta.moments).includes('2450'), 'visitor behavioral moments should hide exact counts by default');
   assert(!Object.hasOwn(privateView, 'uploaded_at'), 'visitor upload payload must not expose exact upload timestamp');
   assert(privateView.updated.label === 'updated this week', 'visitor upload payload should expose bucketed freshness');
   assert(!('dateRange' in privateView.raw_meta), 'visitor upload payload should omit raw date metadata');
@@ -1500,6 +1571,7 @@ async function assertPublicProfileHelpers() {
   const countsView = publicUpload(upload, metricVisibility({ show_raw_counts: true, show_languages: true }), { isOwner: false });
   assert(countsView.metrics.days === 31, 'opt-in public view should expose raw counts');
   assert(countsView.metrics.languages === 6, 'opt-in public view should expose language count');
+  assert(countsView.raw_meta.moments?.[0]?.value === '2,450 Bash commands', 'opt-in public raw counts should expose exact derived moment values');
   const ownerView = publicUpload(upload, metricVisibility({}, { isOwner: true }), { isOwner: true });
   assert(ownerView.id === 'upload-1', 'owner upload payload should retain upload id');
   assert(!JSON.stringify(ownerView.scores).includes('rawJson'), 'owner upload payload must not echo unknown score fields');
@@ -1507,7 +1579,9 @@ async function assertPublicProfileHelpers() {
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
   assert(ownerView.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'owner upload payload should retain internal rarity fingerprint');
   assert(ownerView.raw_meta.source === 'browser' && ownerView.raw_meta.version === 'wave-1', 'owner upload payload should retain derived source metadata');
+  assert(ownerView.raw_meta.moments?.[0]?.value === '2,450 Bash commands', 'owner upload payload should retain exact derived behavioral moments');
   assert(!JSON.stringify(ownerView.raw_meta).includes('spoofed'), 'owner upload payload must not echo stored spoofed signature text');
+  assert(!JSON.stringify(ownerView.raw_meta).includes('private prompt'), 'owner upload payload must not echo arbitrary stored moment text');
   assert(!JSON.stringify(ownerView).includes('tool_usage'), 'owner upload payload must not echo raw tool usage from stored metadata');
   assert(!JSON.stringify(ownerView).includes('language_usage'), 'owner upload payload must not echo raw language usage from stored metadata');
   assert(!JSON.stringify(ownerView).includes('rawJson'), 'owner upload payload must not echo raw JSON fields from stored metadata');
@@ -2545,6 +2619,7 @@ await assertOgFallback();
 await assertStatsApiGuards();
 await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
+await assertBehavioralMoments();
 await assertUploadSanitizer();
 await assertExportUploadSanitizer();
 await assertCliDerivedPayload();

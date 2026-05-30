@@ -8,4 +8,5 @@
 !lib/insights-derived.js
 !api
 !api/_lib
+!api/_lib/moments.js
 !api/_lib/signatures.js

@@ -1,4 +1,5 @@
 import { ARCHETYPE_KEYS, signatureFromUpload, topArchetype } from './signatures.js';
+import { sanitizeMoments } from './moments.js';
 
 export { ARCHETYPE_KEYS };
 
@@ -69,6 +70,8 @@ export function sanitizeUploadPayload(body = {}, { source = 'browser' } = {}) {
   if (ARCHETYPE_KEYS.includes(signature?.secondary) && signature.secondary !== archetype) {
     rawMeta.secondaryArchetype = signature.secondary;
   }
+  const moments = sanitizeMoments(sourceMeta.moments);
+  if (moments.length) rawMeta.moments = moments;
 
   return { archetype, scores, metrics, raw_meta: rawMeta };
 }

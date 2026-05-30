@@ -1280,6 +1280,9 @@
       const langTotal = langs.reduce((s, [,v]) => s + v, 0) || 1;
 
       const codeLangs = Object.keys(langUsage).filter(l => !NON_CODE_LANGS.has(l.toLowerCase()));
+      const taskAgentSessions = m.task_agent_sessions != null
+        ? Math.round(Number(m.task_agent_sessions) || 0)
+        : Math.round(sessions * Number(m.multi_clauding_rate || 0));
 
       return {
         name: (data.meta && data.meta.user) || 'Anonymous Vibecoder',
@@ -1289,6 +1292,11 @@
         messages,
         commits,
         bash, edit, write, read, grep,
+        terminalCommands: bash,
+        longestSessionMinutes: Math.round(Number(m.longest_session_minutes || m.longestSessionMinutes || 0) || 0),
+        filesModified: Math.round(Number(m.files_modified || m.filesModified || 0) || 0),
+        linesChanged: Math.round(Number(m.lines_changed || m.linesChanged || 0) || 0),
+        taskAgentSessions,
         commitsPerDay: Math.round(commits / days),
         messagesPerDay: Math.round(messages / days),
         commandsPerDay: Math.round(bash / days),
@@ -1991,6 +1999,28 @@
       return currentUser;
     }
 
+    function boundedMoment(id, value, threshold, weight = 1, max = 1000000) {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n) || n < threshold) return null;
+      const safeValue = Math.min(Math.max(Math.round(n), 0), max);
+      return { id, value: safeValue, score: (safeValue / threshold) * weight };
+    }
+
+    function buildBehavioralMoments(insights) {
+      return [
+        boundedMoment('longest_session_minutes', insights.longestSessionMinutes, 60, 1.25, 60 * 72),
+        boundedMoment('terminal_commands', insights.terminalCommands, 100, 1.1, 1000000),
+        boundedMoment('files_modified', insights.filesModified, 10, 0.9, 100000),
+        boundedMoment('lines_changed', insights.linesChanged, 500, 0.85, 5000000),
+        boundedMoment('task_agent_sessions', insights.taskAgentSessions, 2, 1, 100000),
+        boundedMoment('debug_events', insights.frictionEvents, 2, 0.7, 100000),
+      ]
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map(({ id, value }) => ({ id, value }));
+    }
+
     function renderAuth() {
       const returnTo = encodeURIComponent(location.pathname + location.search);
       const saveToggle = document.getElementById('save-toggle-row');
@@ -2020,6 +2050,7 @@
 
     function derivedUploadPayload(archetype, scores, insights) {
       const signature = buildVibeSignature(scores, archetype);
+      const moments = buildBehavioralMoments(insights);
       return {
         archetype,
         scores,
@@ -2040,6 +2071,7 @@
             secondaryArchetype: signature.secondary,
             signatureFingerprint: signature.fingerprint,
           } : {}),
+          ...(moments.length ? { moments } : {}),
         },
       };
     }

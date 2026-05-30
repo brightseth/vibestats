@@ -373,6 +373,13 @@
       gap: 10px;
       margin-top: 28px;
     }
+    .moment-grid {
+      display: none;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .moment-grid.visible { display: grid; }
     .metric {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -380,15 +387,36 @@
       padding: 14px;
       min-height: 92px;
     }
+    .moment {
+      min-height: 92px;
+      padding: 14px;
+      border: 1px solid rgba(107,143,255,0.2);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(107,143,255,0.08), rgba(255,255,255,0.03));
+    }
     .metric-value {
       font-family: var(--mono);
       font-size: 22px;
       color: #fff;
       font-weight: 800;
     }
+    .moment-value {
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 17px;
+      line-height: 1.25;
+      margin-top: 6px;
+    }
     .metric-label {
       margin-top: 6px;
       color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .moment-label {
+      color: #c8d5ff;
+      font-family: var(--mono);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.07em;
@@ -398,6 +426,13 @@
       color: var(--text-muted);
       font-family: var(--mono);
       font-size: 11px;
+    }
+    .moment-detail {
+      margin-top: 8px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.4;
     }
     .card {
       background: linear-gradient(145deg, #0d0d18, #12121f);
@@ -523,6 +558,7 @@
       .hero, .spark-section { grid-template-columns: 1fr; }
       .card { position: relative; top: auto; }
       .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .moment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .identity { align-items: flex-start; }
     }
     @media (max-width: 520px) {
@@ -535,6 +571,7 @@
       .empty-profile-actions { align-items: stretch; flex-direction: column; }
       .avatar { width: 64px; height: 64px; border-radius: 14px; }
       .summary-grid { grid-template-columns: 1fr; }
+      .moment-grid { grid-template-columns: 1fr; }
       .timeline-row { grid-template-columns: 82px 1fr 42px; }
     }
   </style>
@@ -577,6 +614,7 @@
           <div class="viral-note" id="viral-note"></div>
           <section class="compat-panel" id="compat-panel"></section>
           <div class="summary-grid" id="summary-grid"></div>
+          <div class="moment-grid" id="moment-grid" aria-label="Behavioral moments"></div>
         </div>
 
         <aside class="card" id="archetype-card">
@@ -975,6 +1013,24 @@
       return 'near average';
     }
 
+    function renderBehavioralMoments(upload) {
+      const grid = document.getElementById('moment-grid');
+      const moments = Array.isArray(upload?.raw_meta?.moments) ? upload.raw_meta.moments.slice(0, 3) : [];
+      if (!moments.length) {
+        grid.classList.remove('visible');
+        grid.innerHTML = '';
+        return;
+      }
+      grid.classList.add('visible');
+      grid.innerHTML = moments.map((moment) => `
+        <div class="moment">
+          <div class="moment-label">${esc(moment.label || 'Moment')}</div>
+          <div class="moment-value">${esc(moment.value || '')}</div>
+          <div class="moment-detail">${esc(moment.detail || 'Derived Claude Code signal')}</div>
+        </div>
+      `).join('');
+    }
+
     function renderSparkline(uploads, archetype, color, { historyVisible = true } = {}) {
       const svg = document.getElementById('sparkline');
       if (!historyVisible) {
@@ -1128,6 +1184,7 @@
         </div>
       `).join('');
 
+      renderBehavioralMoments(latest);
       renderSparkline(profile.uploads, latest.archetype, arch.color, { historyVisible });
       renderTimeline(profile.uploads, arch.color, { historyVisible });
       renderViralActions(me, profile, latest);

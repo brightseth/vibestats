@@ -1,4 +1,5 @@
 import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
+import { sanitizeMoments } from './moments.js';
 
 const METRIC_KEYS = [
   'commitsPerDay',
@@ -47,6 +48,8 @@ function exportRawMeta(rawMeta = {}, signature = null) {
   if (signature?.combo) out.signatureCombo = signature.combo;
   if (signature?.fingerprint) out.signatureFingerprint = signature.fingerprint;
   if (ARCHETYPE_KEYS.includes(signature?.secondary)) out.secondaryArchetype = signature.secondary;
+  const moments = sanitizeMoments(rawMeta?.moments);
+  if (moments.length) out.moments = moments;
   return out;
 }
 
