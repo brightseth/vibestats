@@ -462,6 +462,9 @@ async function assertRoutes() {
   assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
+  assert(packageJson.name === '@lets-vibe/vibestats' && packageJson.publishConfig?.access === 'public', 'package should be publish-ready under the public @lets-vibe scope');
+  assert(packageJson.engines?.node === '>=20', 'package should declare the Node runtime needed by the ESM/fetch CLI');
+  assert(JSON.parse(await readFile('package-lock.json', 'utf8')).packages?.['']?.name === '@lets-vibe/vibestats', 'package lock should match the scoped npm package name');
   assert(npmIgnore.includes('!bin/vibestats.js') && npmIgnore.includes('!lib/claude-insights-extractor.js') && npmIgnore.includes('!lib/insights-derived.js') && npmIgnore.includes('!api/_lib/moments.js') && npmIgnore.includes('!api/_lib/signatures.js'), 'npm package allowlist should include the CLI and derived scoring helpers');
   assert(npmIgnore.includes('!.claude/commands/vibestats.md'), 'npm package allowlist should include the installable Claude Code /vibestats command');
   assert(packageJson.scripts?.['audit:launch'] === 'node scripts/launch-audit.mjs', 'package should expose launch audit script');
@@ -559,6 +562,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
   assert(launchDoc.includes('--expect-ready --expect-device-flow') && launchDoc.includes('Enable Device Flow'), 'launch checklist should document the strict terminal-first device-flow gate');
   assert(launchDoc.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document terminal and maintainer first-profile share kits');
+  assert(launchDoc.includes('unscoped `vibestats` package is owned by another publisher') && launchDoc.includes('npm pack --dry-run') && launchDoc.includes('npm publish --access public'), 'launch checklist should document the scoped npm publish gate');
   assert(launchDoc.includes('VIBESTATS_CLI_PACKAGE') && launchDoc.includes('scoped package') && launchDoc.includes('static onboarding snippets'), 'launch checklist should document the public npm package command switchover');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-digest'), 'launch checklist should require strict device-flow and digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
@@ -573,6 +577,7 @@ async function assertRoutes() {
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
+  assert(readme.includes('This repo is packaged as `@lets-vibe/vibestats`') && readme.includes('npm pack --dry-run') && readme.includes('npm publish --access public'), 'README should document scoped npm package publication before broad sharing');
   assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub branch fallback'), 'README should document the public CLI package override before broad npm sharing');
   assert(readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document terminal and maintainer copy-ready share kits for minted profiles');
   assert(readme.includes('Use `share --handle <saved-gh-handle>`') && readme.includes('privacy proof without opening the website'), 'README should document the CLI share command for terminal-only distribution');

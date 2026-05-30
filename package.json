@@ -1,9 +1,30 @@
 {
-  "name": "vibestats",
+  "name": "@lets-vibe/vibestats",
   "version": "0.1.0",
+  "description": "Privacy-preserving Claude Code /insights reveal and profile sync CLI.",
   "type": "module",
   "bin": {
     "vibestats": "./bin/vibestats.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brightseth/vibestats.git"
+  },
+  "homepage": "https://vibestats.io",
+  "bugs": {
+    "url": "https://github.com/brightseth/vibestats/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "insights",
+    "vibecoding",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
     "test": "node scripts/smoke.mjs",

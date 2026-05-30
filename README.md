@@ -138,8 +138,14 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal --json
 npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command
 ```
 
-The unscoped npm package name `vibestats` is currently owned by another publisher, so do not use `npx vibestats` for this project until a scoped package is published or package ownership changes.
-When a scoped package is ready, set `VIBESTATS_CLI_PACKAGE` so Settings-generated token commands and CLI follow-up output print the public package spec instead of the GitHub branch fallback. Then update static onboarding copy in the same release:
+The unscoped npm package name `vibestats` is currently owned by another publisher, so do not use `npx vibestats` for this project. This repo is packaged as `@lets-vibe/vibestats` with public publish metadata; before broad sharing, publish the scoped package and prove the tarball:
+
+```bash
+npm pack --dry-run
+npm publish --access public
+```
+
+After publishing, set `VIBESTATS_CLI_PACKAGE=@lets-vibe/vibestats` so Settings-generated token commands and CLI follow-up output print the public package spec instead of the GitHub branch fallback. Then update static onboarding copy in the same release:
 
 ```bash
 node scripts/update-cli-command.mjs --package @lets-vibe/vibestats

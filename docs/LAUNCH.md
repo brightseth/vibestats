@@ -111,7 +111,14 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved
 npm run share:kit -- --handle <saved-gh-handle>
 ```
 
-Before replacing the GitHub branch npx command with a public npm command, publish a scoped package and set `VIBESTATS_CLI_PACKAGE` in Vercel. Settings-generated sync-token commands and CLI follow-up output use this override; update static onboarding snippets in the same release so public pages, audits, and README copy agree:
+Before replacing the GitHub branch npx command with a public npm command, publish the scoped package and set `VIBESTATS_CLI_PACKAGE` in Vercel. The unscoped `vibestats` package is owned by another publisher; this repo's publishable package name is `@lets-vibe/vibestats`.
+
+```bash
+npm pack --dry-run
+npm publish --access public
+```
+
+Settings-generated sync-token commands and CLI follow-up output use `VIBESTATS_CLI_PACKAGE`; update static onboarding snippets in the same release so public pages, audits, and README copy agree:
 
 ```bash
 node scripts/update-cli-command.mjs --package @lets-vibe/vibestats
