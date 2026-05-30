@@ -318,6 +318,7 @@
             <button class="btn" id="copy-recap" type="button">Copy recap</button>
             <a class="btn" id="share-x" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener">Share on X</a>
             <a class="btn" id="profile-cta" href="/">Open profile</a>
+            <button class="btn" id="copy-sync" type="button" style="display:none">Copy sync command</button>
             <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
           </div>
           <div class="privacy">Raw Claude Code /insights data stays local. This recap uses only saved derived profile signals.</div>
@@ -382,6 +383,8 @@
     function canonicalUrl(path) {
       return new URL(path || '/', 'https://vibestats.io').toString();
     }
+
+    const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity sync';
 
     function profileProofLine(profile, latest) {
       const proof = [];
@@ -487,10 +490,15 @@
       document.getElementById('return-copy').textContent = pulse.copy;
       document.getElementById('activity-value').textContent = latest.activity?.cadence || 'activity private';
       document.getElementById('activity-copy').textContent = `${latest.activity?.days || 'fresh profile'} / ${latest.activity?.depth || 'history private'}`;
-      document.getElementById('next-copy').textContent = `Open the compare loop to see how your local /insights data pairs with @${profile.user.gh_handle}.`;
+      document.getElementById('next-copy').textContent = profile.is_owner
+        ? 'Run CLI sync after more Claude Code work to refresh this recap. Raw /insights data stays local.'
+        : `Open the compare loop to see how your local /insights data pairs with @${profile.user.gh_handle}.`;
       document.getElementById('compare-cta').href = comparePath;
       document.getElementById('profile-cta').href = profilePath;
-      if (profile.is_owner) document.getElementById('digest-cta').style.display = 'inline-flex';
+      if (profile.is_owner) {
+        document.getElementById('digest-cta').style.display = 'inline-flex';
+        document.getElementById('copy-sync').style.display = 'inline-flex';
+      }
       document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(invite)}&url=${encodeURIComponent(compareUrl)}`;
       document.getElementById('copy-recap').addEventListener('click', async (event) => {
         const button = event.currentTarget;
@@ -501,6 +509,16 @@
           button.textContent = 'Copy failed';
         }
         setTimeout(() => { button.textContent = 'Copy recap'; }, 1500);
+      });
+      document.getElementById('copy-sync').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        try {
+          await copyText(SYNC_COMMAND);
+          button.textContent = 'Sync copied!';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = 'Copy sync command'; }, 1500);
       });
       renderFacets(latest);
       document.getElementById('loading').style.display = 'none';
