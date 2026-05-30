@@ -3,6 +3,7 @@ import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 const INSIGHTS_COMMAND = '/insights';
 const BASE_CLI_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
 const CLAIM_COMMAND = BASE_CLI_COMMAND;
+const STATUS_COMMAND = `${BASE_CLI_COMMAND} status`;
 const REVEAL_COMMAND = `${BASE_CLI_COMMAND} reveal`;
 const INSTALL_CLAUDE_COMMAND = `${BASE_CLI_COMMAND} install-claude-command`;
 
@@ -102,9 +103,9 @@ export default function handler(req, res) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>${displayName} is ${esc(arch.name)} | vibestats</title>
-  <meta name="description" content="${displayName} — ${esc(arch.tagline)} Claude Code already knows how you build. Run /insights, reveal yours, and compare with this archetype.">
+  <meta name="description" content="${displayName} — ${esc(arch.tagline)} Claude Code already knows how you build. Run /insights, check status, reveal yours, and compare with this archetype.">
   <meta property="og:title" content="${displayName} is ${esc(arch.name)} | vibestats">
-  <meta property="og:description" content="${esc(arch.tagline)} — ${displayCommits} commits/day across ${displayLangs} languages. Run /insights, then reveal yours.">
+  <meta property="og:description" content="${esc(arch.tagline)} — ${displayCommits} commits/day across ${displayLangs} languages. Run /insights, check status, then reveal yours.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${cardUrl}">
   <meta property="og:image" content="${ogImageUrl}">
@@ -112,7 +113,7 @@ export default function handler(req, res) {
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${displayName} is ${esc(arch.name)}">
-  <meta name="twitter:description" content="${esc(arch.tagline)} — Claude Code already knows how you build. Run /insights, then reveal yours.">
+  <meta name="twitter:description" content="${esc(arch.tagline)} — Claude Code already knows how you build. Run /insights, check status, then reveal yours.">
   <meta name="twitter:image" content="${ogImageUrl}">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
@@ -256,6 +257,10 @@ export default function handler(req, res) {
     <div class="reveal-command">
       <code>${esc(INSIGHTS_COMMAND)}</code>
       <button type="button" data-copy="${esc(INSIGHTS_COMMAND)}">Copy</button>
+    </div>
+    <div class="reveal-command">
+      <code>${esc(STATUS_COMMAND)}</code>
+      <button type="button" data-copy="${esc(STATUS_COMMAND)}">Copy status</button>
     </div>
     <div class="reveal-command">
       <code>${esc(REVEAL_COMMAND)}</code>
