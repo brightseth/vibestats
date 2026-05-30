@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>The Coding Genome | vibestats</title>
-  <meta name="description" content="How the Claude Code community codes. Live archetype distribution, community averages, and the coding genome barcode. Updated in real time.">
+  <meta name="description" content="How the Claude Code community codes. See the live genome, then run /insights to reveal where your derived profile lands.">
   <meta property="og:title" content="The Coding Genome | vibestats">
-  <meta property="og:description" content="How the Claude Code community codes. Live archetype distribution, community averages, and genome barcode.">
+  <meta property="og:description" content="Claude Code already knows how you build. See the live genome, then run /insights to reveal where you land.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vibestats.io/genome">
   <meta property="og:image" content="https://vibestats.io/og-card.png">
@@ -102,6 +102,44 @@
     }
 
     @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ---- Reveal Path ---- */
+    .reveal-strip {
+      width: 100%; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.75fr) minmax(180px, 0.75fr);
+      gap: 14px; align-items: stretch; padding: 20px;
+      background: linear-gradient(135deg, rgba(107,143,255,0.16), rgba(34,197,94,0.08));
+      border: 1px solid rgba(107,143,255,0.28); border-radius: 16px;
+      margin: 0 0 56px; text-align: left;
+    }
+    .reveal-title {
+      font-size: clamp(20px, 3vw, 28px); color: #fff; font-weight: 900;
+      letter-spacing: -0.02em; margin: 2px 0 8px;
+    }
+    .reveal-copy { color: var(--text-muted); line-height: 1.55; font-size: 14px; max-width: 620px; }
+    .command-card {
+      display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+      min-height: 128px; padding: 16px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.24);
+    }
+    .command-card span {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .command-card code {
+      display: block; color: #fff; font-family: var(--mono); font-size: 12px;
+      line-height: 1.45; overflow-wrap: anywhere;
+    }
+    .command-copy {
+      align-self: flex-start; padding: 8px 12px; border-radius: 10px;
+      border: 1px solid rgba(107,143,255,0.35); background: rgba(107,143,255,0.12);
+      color: #9bb4ff; font-family: var(--mono); font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .command-copy:hover { color: #fff; border-color: var(--accent); transform: translateY(-1px); }
+    .privacy-note {
+      grid-column: 1 / -1; color: var(--text-dim); font-family: var(--mono);
+      font-size: 11px; line-height: 1.5; padding-top: 4px;
+    }
 
     /* ---- Skeleton ---- */
     .skeleton {
@@ -321,6 +359,7 @@
       .nav { padding: 16px 20px; }
       .nav-links { gap: 16px; }
       .hero { padding: 40px 0 32px; }
+      .reveal-strip { grid-template-columns: 1fr; }
       .avg-grid { grid-template-columns: repeat(3, 1fr); }
       .profile-grid { grid-template-columns: repeat(2, 1fr); }
       .dist-row { grid-template-columns: 90px 1fr 50px; gap: 8px; }
@@ -356,7 +395,7 @@
   <nav class="nav">
     <a class="nav-logo" href="/">vibestats</a>
     <div class="nav-links">
-      <a href="/">Quiz</a>
+      <a href="/">Reveal</a>
       <a href="/compare">Compare</a>
       <a href="/genome" class="active">Genome</a>
     </div>
@@ -373,6 +412,25 @@
         <span class="count" id="hero-total">&mdash;</span>
         <span class="count-label">coders mapped</span>
       </div>
+    </section>
+
+    <section class="reveal-strip" aria-label="Reveal your place in the genome">
+      <div>
+        <div class="section-label">your place in the genome</div>
+        <h2 class="reveal-title">What are you?</h2>
+        <p class="reveal-copy">Claude Code already knows how you build. Run <code>/insights</code>, then reveal where your derived profile lands in the live community genome.</p>
+      </div>
+      <div class="command-card">
+        <span>Step 1 in Claude Code</span>
+        <code>/insights</code>
+        <button class="command-copy" type="button" data-copy-command="/insights">Copy /insights</button>
+      </div>
+      <div class="command-card">
+        <span>Step 2 in terminal</span>
+        <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+        <button class="command-copy" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy npx reveal command</button>
+      </div>
+      <div class="privacy-note">Raw Claude Code /insights data stays local. vibestats stores derived profile metrics only when you choose to claim a public identity.</div>
     </section>
 
     <!-- Archetype Distribution -->
@@ -429,8 +487,8 @@
     <!-- CTAs -->
     <section class="section" style="text-align:center">
       <div class="cta-row">
-        <a class="cta-btn cta-primary" href="/">Discover your archetype &rarr;</a>
-        <a class="cta-btn cta-secondary" href="/compare">Compare with a friend</a>
+        <a class="cta-btn cta-primary" href="/">Reveal yours &rarr;</a>
+        <a class="cta-btn cta-secondary" href="/compare?a=orchestrator&b=shipper">Try sample pairing</a>
         <a class="cta-btn cta-vibe" href="https://www.slashvibe.dev/join?ref=vibestats_genome" target="_blank" rel="noopener">Join the community on /vibe &rarr;</a>
       </div>
     </section>
@@ -575,6 +633,37 @@
         renderErrorState();
       }
     }
+
+    function copyText(text) {
+      if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        return Promise.resolve();
+      } finally {
+        textarea.remove();
+      }
+    }
+
+    document.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-copy-command]');
+      if (!button) return;
+      const original = button.textContent;
+      try {
+        await copyText(button.dataset.copyCommand);
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = original; }, 1200);
+      } catch (err) {
+        button.textContent = 'Copy failed';
+        setTimeout(() => { button.textContent = original; }, 1200);
+      }
+    });
 
     /* ===== Render: Hero Count ===== */
     function renderHeroCount(total) {

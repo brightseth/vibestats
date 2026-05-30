@@ -462,6 +462,14 @@ async function auditLaunch(options) {
       mustNotInclude: 'Claude Code Analytics',
     },
     {
+      label: 'genome page',
+      path: '/genome',
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy npx reveal command', 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
+      mustNotInclude: ['>Quiz</a>', 'agent-insights.json'],
+    },
+    {
       label: 'browse page',
       path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
       expectedType: 'text/html',

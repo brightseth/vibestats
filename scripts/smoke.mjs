@@ -5,7 +5,7 @@ import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret-with-at-least-32-bytes';
 
-const htmlFiles = ['home.html', 'u.html', 'settings.html', 'compare-template.html', 'leaderboard.html', 'match.html', 'browse.html', 'recap.html'];
+const htmlFiles = ['home.html', 'u.html', 'settings.html', 'compare-template.html', 'genome.html', 'leaderboard.html', 'match.html', 'browse.html', 'recap.html'];
 const apiModules = [
   '../api/home.js',
   '../api/compare-page.js',
@@ -151,6 +151,7 @@ async function assertRoutes() {
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
   const compareHtml = await readFile('compare-template.html', 'utf8');
+  const genomeHtml = await readFile('genome.html', 'utf8');
   const recapApi = await readFile('api/recap.js', 'utf8');
   const recapHtml = await readFile('recap.html', 'utf8');
   const ogApi = await readFile('api/og.js', 'utf8');
@@ -203,6 +204,10 @@ async function assertRoutes() {
   assert(
     rewrites.some((rewrite) => rewrite.source === '/compare' && rewrite.destination === '/api/compare-page'),
     'compare route should rewrite to dynamic compare page',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/genome' && rewrite.destination === '/genome.html'),
+    'genome route should be explicit because leaderboard links to it as a public viral surface',
   );
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/embed' && rewrite.destination === '/api/embed?handle=:handle'),
@@ -271,6 +276,9 @@ async function assertRoutes() {
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
   assert(matchHtml.includes('class="reveal-strip"') && matchHtml.includes('Find your real match') && matchHtml.includes('data-copy-command="/insights"') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'match page should offer a direct reveal command path even when matches are populated');
   assert(matchHtml.includes('Match database unavailable') && matchHtml.includes('Boolean(data.unavailable)'), 'match UI should distinguish unavailable DB from no active matches');
+  assert(genomeHtml.includes('What are you?') && genomeHtml.includes('data-copy-command="/insights"') && genomeHtml.includes('Copy npx reveal command') && genomeHtml.includes('Raw Claude Code /insights data stays local'), 'genome page should convert community curiosity into reveal-first onboarding');
+  assert(genomeHtml.includes("document.execCommand('copy')"), 'genome reveal commands should fall back when Clipboard API is unavailable');
+  assert(!genomeHtml.includes('>Quiz</a>'), 'genome nav should not use stale quiz framing');
   assert(profileApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'profile JSON API method errors should not be cached');
   assert(profileApi.includes("json(res, 400, { error: 'Invalid handle' }, NO_STORE_HEADERS)"), 'profile JSON API invalid handles should not be cached');
   assert(profileApi.includes("json(res, 404, { error: 'Profile not found' }, { 'Cache-Control': PRIVATE_PROFILE_CACHE })"), 'profile JSON API unknown handles should not be cached before a profile is created');
