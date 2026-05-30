@@ -35,7 +35,7 @@ function sendHtml(res, status, title, message) {
   <main>
     <h1>${esc(title)}</h1>
     <p>${esc(message)}</p>
-    <p><a href="/settings">Open settings</a> / <a href="/">Upload new stats</a></p>
+    <p><a href="/settings">Open settings</a> / <a href="/">Reveal new stats</a></p>
   </main>
 </body>
 </html>`);

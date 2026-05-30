@@ -389,7 +389,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('function renderUnknownProfile') && profileHtml.includes('profile unclaimed') && profileHtml.includes('Copy unclaimed profile'), 'profile page should turn missing handles into reveal/claim landing states');
   assert(profileHtml.includes('renderUnknownProfile(me, profileHandle, identityStatus)') && profileHtml.includes('Only @${handle} can claim this exact URL with GitHub'), 'missing profile state should preserve GitHub-backed handle ownership');
   assert(profileHtml.includes('Raw sessions stay on your machine; only derived metrics save.'), 'missing profile state should preserve the raw-session privacy promise');
-  assert(profileHtml.includes('sameHandle(me?.gh_handle, handle)') && profileHtml.includes("isOwner ? 'Upload insights' : 'Mint yours'"), 'empty profile state should use owner-aware minting actions');
+  assert(profileHtml.includes('sameHandle(me?.gh_handle, handle)') && profileHtml.includes("isOwner ? 'Reveal signature' : 'Mint yours'"), 'empty profile state should use owner-aware reveal actions');
   assert(profileHtml.includes('Raw insights stay in your browser; only derived metrics save.') && profileHtml.includes('Copy pending profile'), 'empty profile state should preserve the privacy promise and copyable profile loop');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
   assert(profileHtml.includes('Reveal yours vs @${handle}') && profileHtml.includes('What are you? Run /insights, then the npx reveal command on the homepage'), 'profile pages should act as share-recipient landing pages with the reveal command');

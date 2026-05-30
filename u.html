@@ -1193,14 +1193,14 @@
       const nav = document.getElementById('nav');
       if (me) {
         nav.innerHTML = `
-          <a class="btn" href="/">Upload</a>
+          <a class="btn" href="/">Reveal</a>
           <a class="btn" href="/browse">Browse</a>
           <a class="btn" href="/settings">Settings</a>
           <a class="btn primary" href="/u/${encodeURIComponent(me.gh_handle)}">@${esc(me.gh_handle)}</a>
         `;
       } else {
         nav.innerHTML = `
-          <a class="btn" href="/">Upload</a>
+          <a class="btn" href="/">Reveal</a>
           <a class="btn" href="/browse">Browse</a>
           ${identityStatus.profile_save_available === true
             ? `<a class="btn primary" href="/api/auth/github/start?returnTo=${encodeURIComponent(`/u/${profileHandle}`)}">Sign in with GitHub</a>`
@@ -1316,8 +1316,8 @@
         ? `@${handle} is claimed. Mint the signature.`
         : `@${handle} is claimed. Signature pending.`;
       const copy = isOwner
-        ? 'Upload Claude Code insights once to turn this handle into a shareable profile with comparisons, rarity, and weekly rank.'
-        : 'This handle exists, but it needs one saved upload before comparison, rarity, and leaderboard proof appear.';
+        ? 'Reveal from Claude Code insights once to turn this handle into a shareable profile with comparisons, rarity, and weekly rank.'
+        : 'This handle exists, but it needs one saved reveal before comparison, rarity, and leaderboard proof appear.';
       const authAction = !isOwner && identityStatus.profile_save_available === true && !me
         ? `<a class="btn" href="/api/auth/github/start?returnTo=${encodeURIComponent('/')}">Sign in with GitHub</a>`
         : '';
@@ -1334,11 +1334,11 @@
           <p class="empty-profile-copy">${esc(copy)} Raw insights stay in your browser; only derived metrics save.</p>
           <div class="empty-profile-proof" aria-label="Profile minting status">
             <div class="empty-proof-item"><strong>GitHub identity</strong><span>@${esc(handle)} is reserved as a persistent profile URL.</span></div>
-            <div class="empty-proof-item"><strong>Signature pending</strong><span>One derived upload unlocks the profile card, embed, badge, and pairing links.</span></div>
+            <div class="empty-proof-item"><strong>Signature pending</strong><span>One derived reveal unlocks the profile card, embed, badge, and pairing links.</span></div>
             <div class="empty-proof-item"><strong>Privacy intact</strong><span>No raw insights JSON is stored after the browser analysis finishes.</span></div>
           </div>
           <div class="empty-profile-actions">
-            <a class="btn primary" href="/">${isOwner ? 'Upload insights' : 'Mint yours'}</a>
+            <a class="btn primary" href="/">${isOwner ? 'Reveal signature' : 'Mint yours'}</a>
             <button class="btn" id="copy-empty-profile" type="button">Copy pending profile</button>
             <a class="btn" href="/browse">Browse minted profiles</a>
             ${authAction}

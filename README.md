@@ -1,6 +1,6 @@
 # vibestats
 
-**Find your vibecoding personality.** Upload Claude Code `/insights` data or run the vibestats CLI, get an archetype + a shareable card.
+**Find your vibecoding personality.** Run Claude Code `/insights`, reveal with the vibestats CLI or legacy JSON drop, then get an archetype + a shareable card.
 
 Live: [vibestats.io](https://vibestats.io)
 
@@ -54,7 +54,7 @@ The current product is a one-shot vanity moment. The next product is a **persist
 
 ```
 vibestats/
-├── home.html          # upload + archetype reveal, served through /api/home for dynamic share previews
+├── home.html          # reveal + archetype result, served through /api/home for dynamic share previews
 ├── wrapped.html       # Spotify-Wrapped tap-through
 ├── dashboard.html     # detailed metric view
 ├── compare-template.html # two-profile side-by-side, served through `/api/compare-page`
@@ -144,7 +144,7 @@ Settings still exposes a manual token command as a fallback. Sync tokens are rev
 npx --yes github:brightseth/vibestats#feat/wave-1-identity --token "$VIBESTATS_SYNC_TOKEN"
 ```
 
-By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to reveal the derived result locally without a token or network request, `--dry-run --json` to inspect the exact derived payload, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.
+By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser reveal, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to reveal the derived result locally without a token or network request, `--dry-run --json` to inspect the exact derived payload, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.
 
 Claude Code users can also invoke the `/vibestats` command from `.claude/commands/vibestats.md`. Install it into `~/.claude/commands/vibestats.md` with `npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command`; use `--force` only if you want to replace an existing local command. It checks for `/insights` output, runs the CLI dry-run to reveal derived results first, and only publishes after the user explicitly asks to claim the profile.
 
