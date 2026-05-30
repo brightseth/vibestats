@@ -31,6 +31,16 @@ const ARCHETYPE_LABELS = {
   deepdiver: 'Deep Diver',
   builder: 'Builder',
 };
+const COMPLEMENTARY_ARCHETYPES = {
+  orchestrator: 'deepdiver',
+  shipper: 'debugger',
+  architect: 'builder',
+  debugger: 'shipper',
+  polyglot: 'builder',
+  sprinter: 'architect',
+  deepdiver: 'orchestrator',
+  builder: 'architect',
+};
 
 function usage() {
   return `Usage:
@@ -187,6 +197,23 @@ function compactShareLabel(value) {
   return String(value || 'Claude Code profile').replace(/\s+/g, ' ').trim();
 }
 
+function localRevealLinks(payload = {}, host = DEFAULT_HOST) {
+  const archetype = payload?.archetype;
+  if (!ARCHETYPE_LABELS[archetype]) return null;
+  let origin = DEFAULT_HOST;
+  try {
+    origin = normalizeHost(host || DEFAULT_HOST);
+  } catch {
+    origin = DEFAULT_HOST;
+  }
+  const complement = COMPLEMENTARY_ARCHETYPES[archetype] || 'builder';
+  return {
+    compare: `${origin}/?compareArchetype=${encodeURIComponent(archetype)}`,
+    pairing: `${origin}/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(complement)}`,
+    complement: ARCHETYPE_LABELS[complement] || complement,
+  };
+}
+
 export function cliShareText({ label, compareUrl } = {}) {
   const shareLabel = compactShareLabel(label);
   return `I just claimed my Claude Code build profile: ${shareLabel}. Raw /insights stayed local. What are you? See how you'd pair with me: ${compareUrl}`;
@@ -201,11 +228,12 @@ export function cliXShareUrl({ label, compareUrl } = {}) {
   return `https://twitter.com/intent/tweet?${params.toString()}`;
 }
 
-export function dryRunRevealText(payload = {}) {
+export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   const archetype = ARCHETYPE_LABELS[payload.archetype] || payload.archetype || 'Unknown';
   const score = primaryScore(payload);
   const metrics = payload.metrics || {};
   const moments = publicMoments(payload.raw_meta?.moments || [], { exact: true });
+  const links = localRevealLinks(payload, host);
   const metricLine = [
     `${formatInt(metrics.sessions)} sessions`,
     `${formatInt(metrics.days)} days`,
@@ -224,6 +252,13 @@ export function dryRunRevealText(payload = {}) {
     for (const moment of moments) {
       lines.push(`- ${moment.label}: ${moment.value}`);
     }
+  }
+
+  if (links) {
+    lines.push(
+      `Share without claiming: ${links.compare}`,
+      `Preview a ${archetype} x ${links.complement} pairing: ${links.pairing}`,
+    );
   }
 
   lines.push(
@@ -462,7 +497,7 @@ export async function sync(options) {
 
   if (options.dryRun) {
     if (options.json) process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
-    else process.stdout.write(dryRunRevealText(payload));
+    else process.stdout.write(dryRunRevealText(payload, { host: options.host }));
     return { dry_run: true, payload };
   }
 

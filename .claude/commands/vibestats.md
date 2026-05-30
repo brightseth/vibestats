@@ -45,6 +45,8 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity join
 
 7. Report the profile URL, compare invite URL, and any README badge or recap links printed by the CLI.
 
+If the user does not want to publish yet, keep the reveal useful: point them to the archetype-only compare link and complementary pairing preview printed by the CLI.
+
 ## Privacy Rules
 
 - Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/` or `~/.claude/usage-data/facets/`.

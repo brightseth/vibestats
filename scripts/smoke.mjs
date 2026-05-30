@@ -562,7 +562,7 @@ async function assertRoutes() {
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required'), 'README should document terminal-first CLI reveal and join without manual website upload');
-  assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
+  assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link and complementary pairing preview') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
@@ -571,7 +571,7 @@ async function assertRoutes() {
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before terminal-first publishing');
   assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('README badge or recap links'), 'Claude Code command should keep terminal-only onboarding explicit after the reveal');
-  assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
+  assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('archetype-only compare link and complementary pairing preview') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
   assert(claudeCommand.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code command should explicitly avoid the dead agent-insights path');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
@@ -1516,6 +1516,8 @@ async function assertCliDerivedPayload() {
   assert(parsedCliXShare.origin === 'https://twitter.com' && parsedCliXShare.pathname === '/intent/tweet' && parsedCliXShare.searchParams.get('text')?.includes('What are you?') && parsedCliXShare.searchParams.get('url')?.includes('compareTo=alex'), 'CLI X share URL should send recipients into compare-first onboarding');
   const revealText = dryRunRevealText(payload);
   assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
+  assert(revealText.includes('Share without claiming: https://vibestats.io/?compareArchetype=shipper'), 'CLI dry-run reveal should print an archetype-only compare link before publishing');
+  assert(revealText.includes('Preview a Shipper x Debugger pairing: https://vibestats.io/compare?a=shipper&b=debugger'), 'CLI dry-run reveal should print a complementary pairing preview before publishing');
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
   assert(revealText.includes('No website upload required.') && revealText.includes(DEFAULT_NPX_JOIN_COMMAND), 'CLI dry-run reveal should hand off to exact terminal-first claim command');
   assert(revealText.includes('For machine-readable derived payload: add --json to the reveal command.'), 'CLI dry-run reveal should point auditors to JSON mode');
@@ -1600,6 +1602,8 @@ async function assertCliDerivedPayload() {
     const result = await sync({ file, host: 'https://example.invalid', token: '', dryRun: true });
     assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
     assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Revealed: prolific Shipper'), 'CLI dry-run should print a local reveal before auth');
+    assert(output.join('').includes('Share without claiming: https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should respect the selected host for local compare links');
+    assert(output.join('').includes('Preview a Shipper x Debugger pairing: https://example.invalid/compare?a=shipper&b=debugger'), 'CLI dry-run should respect the selected host for local pairing previews');
     assert(!output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should not dump payload JSON by default');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
     assert(!output.join('').includes('private prompt') && !output.join('').includes('/private/project'), 'CLI dry-run output must not print raw Claude Code session details');
