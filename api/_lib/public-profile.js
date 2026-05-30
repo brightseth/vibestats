@@ -1,4 +1,5 @@
 import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
+import { publicFacetRadar } from './facets.js';
 import { publicMoments } from './moments.js';
 
 const OWNER_RAW_META_KEYS = [
@@ -128,9 +129,11 @@ export function publicRawMeta(rawMeta = {}, { isOwner = false, signature = null,
 
 export function publicUpload(upload = {}, visibility = {}, { isOwner = false } = {}) {
   const signature = signatureFromUpload(upload);
+  const scores = publicScores(upload.scores || {});
   const out = {
     archetype: upload.archetype,
-    scores: publicScores(upload.scores || {}),
+    scores,
+    facets: publicFacetRadar(scores),
     metrics: visibleMetrics(upload.metrics || {}, visibility),
     activity: publicActivity(upload.metrics || {}),
     updated: uploadRecency(upload.uploaded_at),

@@ -34,6 +34,7 @@ const apiModules = [
   '../api/_lib/streak.js',
   '../api/_lib/matchmaking.js',
   '../api/_lib/leaderboard-rank.js',
+  '../api/_lib/facets.js',
   '../api/_lib/moments.js',
   '../api/_lib/digest.js',
   '../api/leaderboard.js',
@@ -445,6 +446,7 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   assert(readme.includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
+  assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
@@ -455,6 +457,8 @@ async function assertRoutes() {
   assert(profileHtml.includes('const streak = profile.streak || null') && profileHtml.includes('${esc(streak.label)}'), 'profile UI should render server-derived day streaks');
   assert(!profileHtml.includes('function uploadStreak(uploads)'), 'profile UI should not recompute hidden history streaks from visitor uploads');
   assert(profileHtml.includes('/browse?archetype=${encodeURIComponent(hostArchetype)}'), 'profile UI should link to filtered directory');
+  assert(profileHtml.includes('id="facet-panel"') && profileHtml.includes('renderFacetRadar(latest)'), 'profile UI should render a derived facet radar');
+  assert(profileHtml.includes('derived from public archetype scores') && profileHtml.includes('raw /insights data stays local'), 'profile facet radar should state its privacy boundary');
   assert(profileHtml.includes('owner history private'), 'profile UI should not render a fake history chart for visitors');
   assert(profileHtml.includes("historyVisible ? `${uploads.length} total` : 'latest only'"), 'profile UI should label visitor timeline as latest-only');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
@@ -1022,6 +1026,26 @@ async function assertBehavioralMoments() {
   console.log('ok behavioral moments stay derived and bucketed');
 }
 
+async function assertFacetRadar() {
+  const { publicFacetRadar } = await import('../api/_lib/facets.js');
+  const facets = publicFacetRadar({
+    builder: 999,
+    shipper: 80,
+    sprinter: 70,
+    architect: 50,
+    orchestrator: -10,
+    debugger: 35,
+    polyglot: 20,
+    deepdiver: 60,
+    rawJson: 100,
+  });
+  assert(facets.length === 7, 'facet radar should expose the seven derived axes');
+  assert(facets.every((facet) => Number.isInteger(facet.value) && facet.value >= 0 && facet.value <= 100), 'facet radar values should be clamped public scores');
+  assert(facets.some((facet) => facet.id === 'shipping_velocity' && facet.value > 70), 'facet radar should derive shipping velocity from public scores');
+  assert(!JSON.stringify(facets).includes('rawJson'), 'facet radar must not echo unknown score fields');
+  console.log('ok facet radar stays derived from public scores');
+}
+
 async function assertUploadSanitizer() {
   const { sanitizeUploadPayload } = await import('../api/_lib/uploads.js');
   const payload = sanitizeUploadPayload({
@@ -1566,6 +1590,9 @@ async function assertPublicProfileHelpers() {
   assert(privateView.scores.builder === 100, 'visitor upload payload should clamp public archetype scores');
   assert(privateView.scores._percentiles.builder === 4, 'visitor upload payload should retain canonical percentiles');
   assert(!JSON.stringify(privateView.scores).includes('rawJson'), 'visitor upload payload must not echo unknown score fields');
+  assert(privateView.facets?.length === 7, 'visitor upload payload should include derived facet radar axes');
+  assert(privateView.facets.every((facet) => facet.value >= 0 && facet.value <= 100), 'visitor facet radar should use clamped public score values');
+  assert(!JSON.stringify(privateView.facets).includes('rawJson'), 'visitor facet radar must not echo unknown score fields');
   assert(Object.keys(privateView.metrics).length === 0, 'visitor upload payload should hide exact metrics by default');
   assert(privateView.activity.cadence === 'high-velocity cadence', 'visitor upload payload should include coarse activity');
   assert(privateView.raw_meta.signature === 'high-velocity Builder', 'visitor upload payload should derive signature metadata from scores');
@@ -1586,6 +1613,7 @@ async function assertPublicProfileHelpers() {
   const ownerView = publicUpload(upload, metricVisibility({}, { isOwner: true }), { isOwner: true });
   assert(ownerView.id === 'upload-1', 'owner upload payload should retain upload id');
   assert(!JSON.stringify(ownerView.scores).includes('rawJson'), 'owner upload payload must not echo unknown score fields');
+  assert(ownerView.facets?.length === 7, 'owner upload payload should include the same derived facet radar');
   assert(ownerView.uploaded_at === recentUploadAt, 'owner upload payload should retain exact upload timestamp');
   assert(ownerView.raw_meta.dateRange === 'private range', 'owner upload payload should retain full derived metadata');
   assert(ownerView.raw_meta.signatureFingerprint === 'builder+shipper+orchestrator:90s', 'owner upload payload should retain internal rarity fingerprint');
@@ -2631,6 +2659,7 @@ await assertStatsApiGuards();
 await assertWrappedShareLoop();
 await assertMatchmakingHelpers();
 await assertBehavioralMoments();
+await assertFacetRadar();
 await assertUploadSanitizer();
 await assertExportUploadSanitizer();
 await assertCliDerivedPayload();

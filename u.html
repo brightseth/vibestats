@@ -493,6 +493,76 @@
       font-size: 11px;
       line-height: 1.4;
     }
+    .facet-panel {
+      display: none;
+      margin-top: 16px;
+      border: 1px solid rgba(107,143,255,0.2);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 18px;
+    }
+    .facet-panel.visible { display: block; }
+    .facet-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .facet-title {
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .facet-note {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: right;
+    }
+    .facet-body {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: center;
+    }
+    .facet-radar {
+      width: 100%;
+      aspect-ratio: 1;
+      display: block;
+    }
+    .facet-list {
+      display: grid;
+      gap: 9px;
+    }
+    .facet-row {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 42px;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .facet-bar {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .facet-bar span {
+      display: block;
+      width: var(--w);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+    }
+    .facet-score {
+      color: #fff;
+      text-align: right;
+      font-weight: 800;
+    }
     .card {
       background: linear-gradient(145deg, #0d0d18, #12121f);
       border: 1px solid rgba(107,143,255,0.25);
@@ -618,6 +688,7 @@
       .card { position: relative; top: auto; }
       .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .moment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .facet-body { grid-template-columns: 1fr; }
       .reveal-command { grid-template-columns: 1fr; }
       .reveal-command button { justify-self: start; }
       .identity { align-items: flex-start; }
@@ -677,6 +748,7 @@
           <section class="compat-panel" id="compat-panel"></section>
           <div class="summary-grid" id="summary-grid"></div>
           <div class="moment-grid" id="moment-grid" aria-label="Behavioral moments"></div>
+          <section class="facet-panel" id="facet-panel" aria-label="Facet radar"></section>
         </div>
 
         <aside class="card" id="archetype-card">
@@ -1135,6 +1207,76 @@
       `).join('');
     }
 
+    function radarPoint(index, total, value, radius = 82, center = 100) {
+      const angle = -Math.PI / 2 + (Math.PI * 2 * index) / total;
+      const distance = radius * Math.max(0, Math.min(100, Number(value) || 0)) / 100;
+      return {
+        x: center + Math.cos(angle) * distance,
+        y: center + Math.sin(angle) * distance,
+      };
+    }
+
+    function renderFacetRadar(upload) {
+      const panel = document.getElementById('facet-panel');
+      const facets = Array.isArray(upload?.facets) ? upload.facets.slice(0, 7) : [];
+      if (!panel || facets.length < 3) {
+        if (panel) {
+          panel.classList.remove('visible');
+          panel.innerHTML = '';
+        }
+        return;
+      }
+
+      const total = facets.length;
+      const rings = [25, 50, 75, 100].map((value) => {
+        const points = facets.map((_, index) => radarPoint(index, total, value));
+        return `<polygon points="${points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"></polygon>`;
+      }).join('');
+      const spokes = facets.map((_, index) => {
+        const point = radarPoint(index, total, 100);
+        return `<line x1="100" y1="100" x2="${point.x.toFixed(1)}" y2="${point.y.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"></line>`;
+      }).join('');
+      const polygonPoints = facets.map((facet, index) => {
+        const point = radarPoint(index, total, facet.value);
+        return `${point.x.toFixed(1)},${point.y.toFixed(1)}`;
+      }).join(' ');
+      const labels = facets.map((facet, index) => {
+        const point = radarPoint(index, total, 113);
+        const anchor = point.x < 84 ? 'end' : point.x > 116 ? 'start' : 'middle';
+        return `<text x="${point.x.toFixed(1)}" y="${point.y.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" fill="rgba(224,224,224,0.72)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="7">${esc(String(facet.label || '').split(' ')[0] || '')}</text>`;
+      }).join('');
+      const sorted = facets.slice().sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
+
+      panel.classList.add('visible');
+      panel.innerHTML = `
+        <div class="facet-head">
+          <div class="facet-title">Facet radar</div>
+          <div class="facet-note">derived from public archetype scores<br>raw /insights data stays local</div>
+        </div>
+        <div class="facet-body">
+          <svg class="facet-radar" viewBox="-28 -24 256 248" role="img" aria-label="Facet radar chart">
+            ${rings}
+            ${spokes}
+            <polygon points="${polygonPoints}" fill="rgba(107,143,255,0.22)" stroke="var(--accent)" stroke-width="2"></polygon>
+            ${facets.map((facet, index) => {
+              const point = radarPoint(index, total, facet.value);
+              return `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3" fill="#fff"><title>${esc(facet.label)} ${esc(facet.value)}%</title></circle>`;
+            }).join('')}
+            ${labels}
+          </svg>
+          <div class="facet-list">
+            ${sorted.map((facet) => `
+              <div class="facet-row" title="${esc(facet.detail || '')}">
+                <span>${esc(facet.label)}</span>
+                <div class="facet-bar"><span style="--w:${Math.max(0, Math.min(100, Number(facet.value) || 0))}%"></span></div>
+                <span class="facet-score">${esc(facet.value)}%</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     function renderSparkline(uploads, archetype, color, { historyVisible = true } = {}) {
       const svg = document.getElementById('sparkline');
       if (!historyVisible) {
@@ -1289,6 +1431,7 @@
       `).join('');
 
       renderBehavioralMoments(latest);
+      renderFacetRadar(latest);
       renderRevealPanel(me, profile, latest);
       renderSparkline(profile.uploads, latest.archetype, arch.color, { historyVisible });
       renderTimeline(profile.uploads, arch.color, { historyVisible });
