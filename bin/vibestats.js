@@ -559,6 +559,7 @@ export async function sync(options) {
   const compareUrl = apiUrl(host, body.compare_url, `/?compareArchetype=${encodeURIComponent(payload.archetype)}`);
   const recapUrl = apiUrl(host, body.recap_url, `${profilePath}/recap`);
   const badgeUrl = apiUrl(host, body.badge_url, `${profilePath}/badge.svg`);
+  const embedUrl = apiUrl(host, body.embed_url, `${profilePath}/embed`);
   const privacyUrl = apiUrl(host, body.privacy_url, '/settings#privacy-settings');
   const matchSettingsUrl = apiUrl(host, body.match_settings_url, '/settings#match-settings');
   const leaderboardUrl = apiUrl(host, body.leaderboard_url, `/leaderboard/${encodeURIComponent(payload.archetype)}`);
@@ -567,6 +568,7 @@ export async function sync(options) {
   const digestPreviewUrl = apiUrl(host, body.weekly_digest_preview_url, '/api/digest/preview');
   const handle = profileHandle(profileUrl) || 'me';
   const badgeMarkdown = `[![vibestats: @${handle}](${badgeUrl})](${compareUrl})`;
+  const embedHtml = `<iframe src="${embedUrl}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
   const shareText = cliShareText({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   const xShare = cliXShareUrl({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
@@ -581,6 +583,7 @@ export async function sync(options) {
   process.stdout.write(`Find complementary builders: ${matchUrl}\n`);
   process.stdout.write(`Share your recap: ${recapUrl}\n`);
   process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
+  process.stdout.write(`Profile embed HTML: ${embedHtml}\n`);
   process.stdout.write(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}\n`);
   process.stdout.write(`Reserve weekly digest: ${digestUrl}\n`);
   process.stdout.write(`Preview weekly digest: ${digestPreviewUrl}\n`);

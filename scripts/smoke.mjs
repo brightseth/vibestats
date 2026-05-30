@@ -353,7 +353,7 @@ async function assertRoutes() {
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
-  assert(cliBin.includes('Minted GitHub-claimed, derived-only profile') && cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Optional public discovery:') && cliBin.includes('Profiles stay unlisted unless you choose Public.') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface claimed identity, compare-first social share, opt-in discovery, recap, and README badge hooks');
+  assert(cliBin.includes('Minted GitHub-claimed, derived-only profile') && cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Optional public discovery:') && cliBin.includes('Profiles stay unlisted unless you choose Public.') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:') && cliBin.includes('Profile embed HTML:'), 'CLI sync success output should surface claimed identity, compare-first social share, opt-in discovery, recap, README badge, and embed hooks');
   assert(cliBin.includes('Install /vibestats for future reveals:') && cliBin.includes('Reserve weekly digest:') && cliBin.includes('Preview weekly digest:'), 'CLI sync success output should surface Claude Code and digest return hooks');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
   assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when browser auth is selected');
@@ -566,6 +566,7 @@ async function assertRoutes() {
   assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, copy-ready reveal text, X share URL, complementary pairing preview, and `/vibestats` install command') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
+  assert(readme.includes('README badge Markdown, and profile embed HTML'), 'README should document post-sync portable distribution snippets');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
@@ -1800,6 +1801,7 @@ async function assertCliDerivedPayload() {
             compare_url: '/?compareTo=alex&compareArchetype=shipper',
             recap_url: '/u/alex/recap',
             badge_url: '/u/alex/badge.svg',
+            embed_url: '/u/alex/embed',
             privacy_url: '/settings#privacy-settings',
             match_settings_url: '/settings#match-settings',
             weekly_digest_url: '/settings#weekly-digest-row',
@@ -1826,6 +1828,7 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Find complementary builders: https://vibestats.example/match?goal=pair-coding&archetype=shipper'), 'CLI sync should print the matchmaker return URL');
     assert(output.join('').includes('Share your recap: https://vibestats.example/u/alex/recap'), 'CLI sync should print recap return URL');
     assert(output.join('').includes('README badge Markdown: [![vibestats: @alex](https://vibestats.example/u/alex/badge.svg)](https://vibestats.example/?compareTo=alex&compareArchetype=shipper)'), 'CLI sync should print copyable README badge Markdown');
+    assert(output.join('').includes('Profile embed HTML: <iframe src="https://vibestats.example/u/alex/embed" width="600" height="320" loading="lazy" title="@alex on vibestats"'), 'CLI sync should print copyable profile embed HTML');
     assert(output.join('').includes('Install /vibestats for future reveals: npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command'), 'CLI sync should print the Claude Code command installer as a return hook');
     assert(output.join('').includes('Reserve weekly digest: https://vibestats.example/settings#weekly-digest-row'), 'CLI sync should print the weekly digest setup link as a return hook');
     assert(output.join('').includes('Preview weekly digest: https://vibestats.example/api/digest/preview'), 'CLI sync should print the weekly digest preview as an immediate return hook');
