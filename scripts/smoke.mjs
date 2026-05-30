@@ -566,6 +566,7 @@ async function assertRoutes() {
   assert(identityDoctor.includes('uploads.user_id not null'), 'identity doctor schema check should verify uploads cannot be orphaned');
   assert(identityDoctor.includes('users_privacy_check'), 'identity doctor schema check should verify the profile privacy enum');
   assert(identityDoctor.includes('uploads_archetype_check'), 'identity doctor schema check should verify the saved upload archetype canon');
+  assert(identityDoctor.includes('reveal_snapshots') && identityDoctor.includes('reveal_snapshots_archetype_check'), 'identity doctor schema check should verify anonymous reveal snapshot storage');
   assert(identityDoctor.includes('profile_settings_looking_for_check'), 'identity doctor schema check should verify match intent enum constraint');
   assert(identityDoctor.includes('profile_settings_contact_url_len'), 'identity doctor schema check should verify contact URL length constraint');
   assert(identityDoctor.includes('profile_settings_contact_url_protocol'), 'identity doctor schema check should verify HTTPS contact URL constraint');
