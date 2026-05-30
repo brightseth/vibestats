@@ -1061,9 +1061,11 @@ async function assertWrappedShareLoop() {
   assert(wrappedHtml.includes('/?compareArchetype=orchestrator'), 'wrapped CTA should route to upload-to-compare');
   assert(wrappedHtml.includes('wrappedCompareUrl'), 'wrapped page should centralize the compare-first share target');
   assert(wrappedHtml.includes("'&url=' + encodeURIComponent(wrappedCompareUrl)"), 'wrapped X share should click through directly to upload-to-compare');
-  assert(wrappedHtml.includes('navigator.clipboard.writeText(wrappedCompareUrl)'), 'wrapped copy link should copy the upload-to-compare target');
+  assert(wrappedHtml.includes('copyText(wrappedCompareUrl)'), 'wrapped copy link should copy the upload-to-compare target');
   assert(wrappedHtml.includes('Card: ${wrappedUrl}'), 'wrapped share text should retain the card as credential context');
   assert(wrappedHtml.includes("See how you'd pair with an Orchestrator"), 'wrapped share page should use comparison copy');
+  assert(wrappedHtml.includes('What are you?') && wrappedHtml.includes('/insights') && wrappedHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'wrapped share page should teach recipients the reveal command directly');
+  assert(wrappedHtml.includes("document.execCommand('copy')") && wrappedHtml.includes('[data-copy]'), 'wrapped reveal and compare copy actions should fall back when Clipboard API is unavailable');
   assert(!wrappedHtml.includes("What's YOUR vibecoding personality?<br>"), 'wrapped page should not end on the old generic CTA');
   console.log('ok wrapped share page routes visitors into comparison');
 }

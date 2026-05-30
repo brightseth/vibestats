@@ -451,7 +451,7 @@ async function auditLaunch(options) {
       path: '/wrapped',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator'],
+      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
     },
     {
       label: 'dashboard share route',

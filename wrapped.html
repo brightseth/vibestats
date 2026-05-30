@@ -422,6 +422,25 @@
       color: var(--accent); text-decoration: none;
       border-bottom: 1px solid rgba(107,143,255,0.3);
     }
+    .reveal-panel {
+      width: min(540px, 90vw); margin: 18px auto 0; padding: 14px 16px;
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+      background: rgba(255,255,255,0.025); text-align: left;
+    }
+    .reveal-title { font-size: 13px; color: #fff; font-weight: 700; margin-bottom: 4px; }
+    .reveal-copy { font-family: var(--mono); font-size: 10px; color: var(--text-dim); line-height: 1.5; margin-bottom: 8px; }
+    .reveal-command {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+      align-items: center; padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .reveal-command code {
+      font-family: var(--mono); font-size: 10px; color: #dbe7ff; overflow-wrap: anywhere;
+    }
+    .reveal-command button {
+      min-height: 30px; border: 1px solid rgba(107,143,255,0.35); border-radius: 6px;
+      background: rgba(107,143,255,0.10); color: #8aadff; padding: 0 9px;
+      font-family: var(--mono); font-size: 10px; cursor: pointer;
+    }
 
     /* Back to dashboard link */
     .back-link {
@@ -629,6 +648,18 @@
         See how you'd pair with an Orchestrator<br>
         <a href="/?compareArchetype=orchestrator">Compare archetypes &rarr;</a>
       </div>
+      <div class="reveal-panel anim d5">
+        <div class="reveal-title">What are you?</div>
+        <div class="reveal-copy">Claude Code already has your build fingerprint. Run /insights, then reveal yours from local data.</div>
+        <div class="reveal-command">
+          <code>/insights</code>
+          <button type="button" data-copy="/insights">Copy</button>
+        </div>
+        <div class="reveal-command">
+          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+          <button type="button" data-copy="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy</button>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -695,7 +726,7 @@
     // Tap/click to advance
     document.getElementById('slides').addEventListener('click', (e) => {
       // Don't advance if clicking share buttons or links
-      if (e.target.closest('.share-btn, .share-row, .cta-generate, a')) return;
+      if (e.target.closest('.share-btn, .share-row, .cta-generate, .reveal-panel, a')) return;
 
       const rect = document.getElementById('slides').getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -806,9 +837,38 @@ Card: ${wrappedUrl}
     document.getElementById('share-x').href =
       'https://twitter.com/intent/tweet?text=' + encodeURIComponent(tweetText) + '&url=' + encodeURIComponent(wrappedCompareUrl);
 
+    async function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    document.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const idle = button.textContent;
+        try {
+          await copyText(button.getAttribute('data-copy') || '');
+          button.textContent = 'Copied';
+        } catch (e) {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = idle; }, 1400);
+      });
+    });
+
     // Copy link
     function copyLink() {
-      navigator.clipboard.writeText(wrappedCompareUrl).then(() => {
+      copyText(wrappedCompareUrl).then(() => {
         const btn = document.getElementById('copy-link');
         btn.classList.add('copied');
         btn.textContent = 'Copied!';
