@@ -4,7 +4,9 @@ Use this when vibestats is being shared outside the first dogfood circle.
 
 ## Hard Gate
 
-Do not post publicly until any credential that passed through chat, screenshots, shell history, or another non-secret channel has been rotated in the upstream provider. Also confirm no real secret value appears in git history. Rotation alone is not enough if the old value is still committed.
+Anonymous reveal links and existing profile links are safe to share before GitHub secret rotation is confirmed: viewing those pages does not touch GitHub OAuth, and anonymous reveal publishing does not require auth.
+
+Do not actively promote "claim your GitHub profile" until any credential that passed through chat, screenshots, shell history, or another non-secret channel has been rotated in the upstream provider. Also confirm no real secret value appears in git history. Rotation alone is not enough if the old value is still committed.
 
 ## Claims To Avoid
 
@@ -38,15 +40,33 @@ Raw /insights stays local. You can share anonymously, no GitHub required.
 
 ## Anonymous Reveal Post
 
+Mint a fresh anonymous reveal URL at blast time so the 30-day expiration window covers the campaign. Do not reuse old testing slugs in public launch copy.
+
 ```text
 You do not need GitHub to share a vibestats reveal.
 
 Anonymous example:
-https://vibestats.io/r/9ac12gLL8ZoX
+<fresh-launch-reveal-url>
 
 Public unlisted link, expires in 30 days. Raw /insights never leaves your machine.
 
 What are you?
+```
+
+## Anonymous Link Takedown
+
+Support owner: the launch driver on call, currently Seth or Samer, must have production DB env access before each share batch starts.
+
+Response target: delete requested anonymous reveal links within 15 minutes during launch windows.
+
+```bash
+npm run reveal:delete -- <reveal-slug>
+```
+
+Confirm the page returns 404 after deletion:
+
+```bash
+curl -I https://vibestats.io/r/<reveal-slug>
 ```
 
 ## DM Batch

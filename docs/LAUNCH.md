@@ -17,7 +17,7 @@ Required for GitHub-backed profiles:
 - `GITHUB_CLIENT_SECRET`
 - One session secret: `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET` with at least 32 bytes
 
-Hard launch gate: rotate any credential that passed through chat, screenshots, shell history, or another non-secret channel before broad sharing. Rotation must be verified in the upstream provider and the old value must not appear in git history. Do not treat this as a nice-to-have launch caveat.
+Hard GitHub-claim gate: rotate any credential that passed through chat, screenshots, shell history, or another non-secret channel before actively promoting "claim your GitHub profile." Rotation must be verified in the upstream provider and the old value must not appear in git history. Do not treat this as a nice-to-have launch caveat.
 
 Required for anonymous reveal links:
 
@@ -26,7 +26,9 @@ Required for anonymous reveal links:
 
 Anonymous reveal links intentionally do not require GitHub OAuth or a signed session. They are unlisted `/r/<slug>` pages that store only sanitized derived metrics for 30 days and never enter browse, match, or leaderboard surfaces.
 
-Manual anonymous-link takedown is available for support requests:
+For public posts, mint a fresh anonymous reveal slug at blast time so the 30-day expiration window covers the campaign. Do not reuse old testing slugs in launch copy.
+
+Manual anonymous-link takedown is available for support requests. The launch driver on call, currently Seth or Samer, should have production DB env access before each share batch starts and delete requested links within 15 minutes during launch windows:
 
 ```bash
 npm run reveal:delete -- <reveal-slug>
