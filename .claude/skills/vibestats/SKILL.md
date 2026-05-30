@@ -1,0 +1,55 @@
+---
+name: vibestats
+description: Reveal and optionally publish a privacy-preserving vibestats profile from Claude Code /insights.
+allowed-tools: Bash
+---
+
+# vibestats Reveal
+
+Use this when the user wants to find out their vibecoding personality from Claude Code.
+
+The core promise is: reveal first, publish only if the user chooses, and never expose raw Claude Code session data.
+
+## Commands
+
+Use these exact commands:
+
+```bash
+/insights
+npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run
+npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
+```
+
+## Flow
+
+1. Check whether Claude Code `/insights` output appears to exist at `~/.claude/usage-data/`.
+   - It should have `session-meta/`, usually `facets/`, and often `report.html`.
+   - Use directory existence or file counts only. Do not print or inspect raw session JSON.
+2. If `/insights` output is missing, tell the user to run `/insights` in Claude Code, then rerun `/vibestats`.
+3. If it exists, run:
+
+```bash
+npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run
+```
+
+4. Summarize only the derived reveal:
+   - archetype
+   - signature, if present
+   - behavioral moments, if present
+   - coarse derived metrics such as sessions, days, languages, commits per day, messages per session
+5. Ask whether to publish/claim the result.
+6. Only after the user agrees, run:
+
+```bash
+npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
+```
+
+7. Report the profile URL and compare invite URL printed by the CLI.
+
+## Privacy Rules
+
+- Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/` or `~/.claude/usage-data/facets/`.
+- Do not mention `agent-insights.json` as the normal path. That was a legacy/dead path.
+- Treat the vibestats CLI as the only extractor. It computes locally and uploads only derived metrics.
+- If the user asks what was uploaded, answer from the CLI dry-run payload shape only: archetype, scores, five profile metrics, signature metadata, and sanitized behavioral moment ids/values.
+- If publishing fails, keep the reveal useful. The user can still share their archetype manually or retry `sync`.
