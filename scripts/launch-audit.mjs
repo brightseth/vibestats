@@ -668,7 +668,7 @@ async function auditLaunch(options) {
       path: '/genome',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy status preflight', 'Copy no-npm reveal command', 'Copy claim command', NO_NPM_STATUS, NO_NPM_REVEAL, NO_NPM_INSTALL, 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
+      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'profiles modeled', 'Launch baseline; live submissions update this as people reveal.', 'Copy status preflight', 'Copy reveal command', 'Copy claim command', NO_NPM_STATUS, NO_NPM_REVEAL, NO_NPM_INSTALL, 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
       mustNotInclude: ['>Quiz</a>', 'agent-insights.json'],
     },
     {
