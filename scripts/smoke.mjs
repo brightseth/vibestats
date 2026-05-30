@@ -444,6 +444,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
   assert(profileHtml.includes('Reveal yours vs @${handle}') && profileHtml.includes('What are you? Run /insights, check status, then reveal from your terminal.'), 'profile pages should act as share-recipient landing pages with the status and reveal commands');
   assert(profileHtml.includes('id="readme-panel"') && profileHtml.includes('Put your vibestats badge in a GitHub README') && profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)'), 'owner profile should promote README badges as ambient compare-first distribution');
+  assert(profileHtml.includes('id="launch-kit-panel"') && profileHtml.includes('Owner launch kit') && profileHtml.includes('Copy launch kit') && profileHtml.includes('Copy terminal commands'), 'owner profile should expose one copy-ready launch kit for distribution');
   assert(profileHtml.includes('id="moment-grid"') && profileHtml.includes('renderBehavioralMoments(latest)'), 'profile pages should render shareable derived behavioral moments');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
   assert(indexHtml.includes('/promises') && settingsHtml.includes('/promises') && profileHtml.includes('/promises'), 'homepage, settings, and profile nav should link to public promises');
@@ -1126,6 +1127,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('id="credential-cta"') && profileHtml.includes('`${profilePath}/credential.json`'), 'profile UI should link to the derived credential JSON');
   assert(profileHtml.includes('id="credential-panel"') && profileHtml.includes('Verified derived profile') && profileHtml.includes('Copy credential proof') && profileHtml.includes('raw sessions stayed local') && profileHtml.includes('content hash'), 'profile UI should render human-readable credential proof');
   assert(profileHtml.includes('renderCredentialPanel(profile, latest, credentialPath, uploadCompareUrl)'), 'profile UI should render the credential proof after wiring viral actions');
+  assert(profileHtml.includes('renderLaunchKitPanel(me, profile, latest') && profileHtml.includes('Credential proof: ${credentialUrl}') && profileHtml.includes('Privacy proof: raw /insights stays local; public profile is derived-only.'), 'profile UI should render an owner-only launch kit with credential and privacy proof');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile invite copy should retain the profile as credential context');
   assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');
   assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');
