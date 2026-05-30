@@ -317,6 +317,65 @@
       font-size: 12px;
       line-height: 1.5;
     }
+    .reveal-panel {
+      display: none;
+      margin-top: 18px;
+      width: min(660px, 100%);
+      border: 1px solid rgba(107,143,255,0.22);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(107,143,255,0.08), rgba(255,255,255,0.03));
+      padding: 16px;
+      gap: 12px;
+    }
+    .reveal-panel.visible { display: grid; }
+    .reveal-panel-title {
+      color: #fff;
+      font-weight: 800;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+    .reveal-panel-copy {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .reveal-command-grid {
+      display: grid;
+      gap: 8px;
+    }
+    .reveal-command {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+    }
+    .reveal-command code {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      overflow-x: auto;
+      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.24);
+      color: #dbe5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 10px 12px;
+    }
+    .reveal-command button {
+      min-height: 40px;
+      border: 1px solid rgba(107,143,255,0.32);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.12);
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+    .reveal-command button:hover { border-color: rgba(107,143,255,0.6); color: #fff; }
     .compat-panel {
       display: none;
       margin-top: 20px;
@@ -559,6 +618,8 @@
       .card { position: relative; top: auto; }
       .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .moment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .reveal-command { grid-template-columns: 1fr; }
+      .reveal-command button { justify-self: start; }
       .identity { align-items: flex-start; }
     }
     @media (max-width: 520px) {
@@ -612,6 +673,7 @@
             <a class="btn" id="sync-cta" href="/settings#cli-sync" style="display:none">Sync CLI</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
+          <section class="reveal-panel" id="reveal-panel" aria-label="Reveal your vibestats profile"></section>
           <section class="compat-panel" id="compat-panel"></section>
           <div class="summary-grid" id="summary-grid"></div>
           <div class="moment-grid" id="moment-grid" aria-label="Behavioral moments"></div>
@@ -671,6 +733,8 @@
       debugger: 'Debugger', polyglot: 'Polyglot', sprinter: 'Sprinter',
       deepdiver: 'Deep Diver', builder: 'Builder',
     };
+    const INSIGHTS_COMMAND = '/insights';
+    const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity sync';
 
     function canonicalVibestatsUrl(pathOrUrl) {
       try {
@@ -803,6 +867,46 @@
         <span class="intent-pill">looking for ${esc(match.looking_for_label || match.looking_for)}</span>
         <a class="signature-detail" href="${esc(contactHref)}"${contactAttrs}>Contact @${esc(handle)}</a>
       `;
+    }
+
+    function renderRevealPanel(me, profile, latest) {
+      const panel = document.getElementById('reveal-panel');
+      const handle = profile.user.gh_handle;
+      if (!panel || sameHandle(me?.gh_handle, handle)) {
+        if (panel) {
+          panel.classList.remove('visible');
+          panel.innerHTML = '';
+        }
+        return;
+      }
+
+      panel.classList.add('visible');
+      panel.innerHTML = `
+        <div class="reveal-panel-title">@${esc(handle)} is ${esc(shareLabel(latest))}. What are you?</div>
+        <div class="reveal-panel-copy">Claude Code has already captured your build fingerprint. Reveal yours from local /insights data; raw sessions stay on your machine.</div>
+        <div class="reveal-command-grid">
+          <div class="reveal-command">
+            <code>${esc(INSIGHTS_COMMAND)}</code>
+            <button type="button" data-copy-reveal="${esc(INSIGHTS_COMMAND)}" data-label="Copy">Copy</button>
+          </div>
+          <div class="reveal-command">
+            <code>${esc(REVEAL_COMMAND)}</code>
+            <button type="button" data-copy-reveal="${esc(REVEAL_COMMAND)}" data-label="Copy">Copy</button>
+          </div>
+        </div>
+      `;
+      panel.querySelectorAll('[data-copy-reveal]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const idle = button.getAttribute('data-label') || 'Copy';
+          try {
+            await copyText(button.getAttribute('data-copy-reveal') || '');
+            button.textContent = 'Copied';
+          } catch {
+            button.textContent = 'Copy failed';
+          }
+          setTimeout(() => { button.textContent = idle; }, 1400);
+        });
+      });
     }
 
     async function fetchMe() {
@@ -1185,6 +1289,7 @@
       `).join('');
 
       renderBehavioralMoments(latest);
+      renderRevealPanel(me, profile, latest);
       renderSparkline(profile.uploads, latest.archetype, arch.color, { historyVisible });
       renderTimeline(profile.uploads, arch.color, { historyVisible });
       renderViralActions(me, profile, latest);

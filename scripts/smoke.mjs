@@ -724,6 +724,8 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('Copy invite'), 'profile share button should invite comparison');
   assert(profileHtml.includes('id="sync-cta"') && profileHtml.includes('set up CLI sync for weekly profile updates'), 'owner profile should expose return-loop CLI sync setup');
   assert(profileHtml.includes('](${uploadCompareUrl})'), 'profile badge markdown should click through to upload-to-compare');
+  assert(profileHtml.includes('id="reveal-panel"') && profileHtml.includes('renderRevealPanel(me, profile, latest)'), 'profile pages should show share recipients a direct reveal panel');
+  assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'profile reveal panel should carry the command path without sending visitors hunting');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
@@ -1144,6 +1146,7 @@ async function assertExportUploadSanitizer() {
 }
 
 async function assertCliDerivedPayload() {
+  const cliSource = await readFile('bin/vibestats.js', 'utf8');
   const { derivedUploadPayloadFromInsights } = await import('../lib/insights-derived.js');
   const { insightsFromClaudeUsageDirectory } = await import('../lib/claude-insights-extractor.js');
   const insights = {
@@ -1177,6 +1180,7 @@ async function assertCliDerivedPayload() {
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
   assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity sync', 'CLI should expose the current GitHub-backed npx command');
+  assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.'), 'CLI help should frame sync as reveal-before-publish');
   const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
   assert(parsedNoOpen.options.openBrowser === false && parsedNoOpen.options.authTimeoutMs === 1000, 'CLI sync should parse manual browser auth options');
   assert(normalizeHost('https://vibestats.example/path?q=1#x') === 'https://vibestats.example', 'CLI sync should normalize host URLs before auth and sync');
@@ -1318,6 +1322,8 @@ async function assertCliDerivedPayload() {
     };
     const syncResult = await sync({ file, host: 'https://vibestats.example', token: 'sync-token', dryRun: false });
     assert(syncResult.compare_url.includes('compareTo=alex'), 'CLI sync should receive compare-first URL from API');
+    assert(output.join('').includes('Revealed: prolific Shipper'), 'CLI sync should print the local reveal before publishing');
+    assert(output.join('').includes('Raw Claude Code /insights data stayed local. Publishing only derived metrics.'), 'CLI sync should state the privacy boundary before publishing');
     assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
     assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI sync request must not post raw usage maps');
 

@@ -14,6 +14,16 @@ const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
 export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE} sync`;
+const ARCHETYPE_LABELS = {
+  orchestrator: 'Orchestrator',
+  shipper: 'Shipper',
+  architect: 'Architect',
+  debugger: 'Debugger',
+  polyglot: 'Polyglot',
+  sprinter: 'Sprinter',
+  deepdiver: 'Deep Diver',
+  builder: 'Builder',
+};
 
 function usage() {
   return `Usage:
@@ -25,6 +35,7 @@ Environment:
 
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
+It reveals your archetype locally before asking for approval to publish it.
 Without --token it opens a browser approval flow against your GitHub-backed vibestats session.
 Current public install command: ${DEFAULT_NPX_SYNC_COMMAND}
 Use --dry-run to print the derived payload without signing in or sending it.`;
@@ -204,6 +215,11 @@ export async function sync(options) {
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
     return { dry_run: true, payload };
   }
+
+  const label = payload.raw_meta?.signature || ARCHETYPE_LABELS[payload.archetype] || payload.archetype;
+  const score = Math.round(Number(payload.scores?.[payload.archetype] || 0));
+  process.stdout.write(`Revealed: ${label}${score ? ` (${score}% ${ARCHETYPE_LABELS[payload.archetype] || payload.archetype})` : ''}.\n`);
+  process.stdout.write('Raw Claude Code /insights data stayed local. Publishing only derived metrics.\n');
 
   let host = normalizeHost(options.host || DEFAULT_HOST);
   let token = options.token || '';
