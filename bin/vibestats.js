@@ -981,7 +981,7 @@ export async function sync(options) {
     process.stdout.write(dryRunRevealText(payload, { host: options.host }));
     if (options.openBrowser !== false) {
       const previewUrl = localWebPreviewUrl(insights, { host: options.host });
-      process.stdout.write(`Opening web reveal preview: ${previewUrl}\n`);
+      process.stdout.write('Opening web reveal preview in your browser.\n');
       const opened = (options.open || openBrowser)(previewUrl);
       if (!opened) process.stdout.write(`Browser did not open automatically. Open your reveal preview: ${previewUrl}\n`);
     }

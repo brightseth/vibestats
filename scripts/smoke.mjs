@@ -2644,7 +2644,7 @@ async function assertCliDerivedPayload() {
     assert(consentedOnboardResult.ok === true, 'CLI default onboarding should publish after explicit yes consent');
     assert(onboardOpenedUrls[0]?.includes('https://vibestats.example/#vibestatsPreview=') && onboardOpenedUrls[1] === 'https://vibestats.example/u/alex/recap', 'CLI default onboarding should open the local web reveal before publishing and the claimed recap after publishing');
     assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Publishing the derived profile now. Raw Claude Code /insights data stays local.'), 'CLI default onboarding should print the full local reveal before consented publishing');
-    assert(output.join('').includes('Opening web reveal preview: https://vibestats.example/#vibestatsPreview='), 'CLI default onboarding should explain that it opened a local web reveal before the publish prompt');
+    assert(output.join('').includes('Opening web reveal preview in your browser.') && !output.join('').includes('#vibestatsPreview='), 'CLI default onboarding should explain that it opened a local web reveal without dumping the encoded preview URL');
     assert(output.join('').includes('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.'), 'CLI default onboarding should keep the claimed profile proof after publishing');
 
     output.length = 0;
