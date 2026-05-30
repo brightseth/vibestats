@@ -124,6 +124,31 @@ Production must set a stable host key:
 SSH_HOST_KEY="$(cat ./vibestats_ssh_host_key)" VIBESTATS_URL=https://vibestats.io PORT=22 npm run ssh:dev
 ```
 
+Fly deploy path for a real cross-computer test:
+
+```bash
+fly auth login
+fly apps create vibestats-ssh
+ssh-keygen -t rsa -b 4096 -m PEM -f /tmp/vibestats_ssh_host_key -N ''
+fly secrets set --config fly.ssh.toml SSH_HOST_KEY="$(cat /tmp/vibestats_ssh_host_key)"
+fly deploy --config fly.ssh.toml
+fly ips list --config fly.ssh.toml
+```
+
+Then create DNS:
+
+```text
+ssh.vibestats.io A/AAAA -> the Fly app IPs
+```
+
+Verify from another computer:
+
+```bash
+ssh ssh.vibestats.io help
+ssh ssh.vibestats.io 'view brightseth'
+ssh ssh.vibestats.io claim
+```
+
 Implementation options:
 
 - Go: Charm `wish` + Bubble Tea for the TUI.

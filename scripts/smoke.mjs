@@ -217,6 +217,8 @@ async function assertRoutes() {
   const launchAudit = await readFile('scripts/launch-audit.mjs', 'utf8');
   const launchDoc = await readFile('docs/LAUNCH.md', 'utf8');
   const envExample = await readFile('.env.example', 'utf8');
+  const flySshConfig = await readFile('fly.ssh.toml', 'utf8');
+  const sshDockerfile = await readFile('services/ssh-shell/Dockerfile', 'utf8');
   const npmIgnore = await readFile('.npmignore', 'utf8');
   const claudeCommand = await readFile('.claude/commands/vibestats.md', 'utf8');
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
@@ -224,6 +226,8 @@ async function assertRoutes() {
   assert(packageJson.scripts?.dev === 'vercel dev' && packageJson.scripts?.serve === 'vercel dev', 'local dev should use Vercel routing now that / is rendered by an API function');
   assert(packageJson.scripts?.['share:kit'] === 'node scripts/share-kit.mjs', 'package should expose the public profile share-kit generator');
   assert(packageJson.scripts?.['ssh:dev'] === 'node services/ssh-shell/server.js' && packageJson.dependencies?.ssh2, 'package should expose the deployable SSH shell service');
+  assert(flySshConfig.includes('app = "vibestats-ssh"') && flySshConfig.includes('internal_port = 2222') && flySshConfig.includes('port = 22') && flySshConfig.includes('VIBESTATS_URL = "https://vibestats.io"'), 'Fly config should expose the SSH shell as a public TCP service');
+  assert(sshDockerfile.includes('FROM node:22-slim') && sshDockerfile.includes('npm ci --omit=dev') && sshDockerfile.includes('COPY services ./services') && sshDockerfile.includes('CMD ["npm", "run", "ssh:dev"]'), 'SSH Dockerfile should run the standalone SSH shell service');
   assert(
     rewrites.some((rewrite) => rewrite.source === '/' && rewrite.destination === '/api/home'),
     'homepage should rewrite to dynamic metadata renderer',

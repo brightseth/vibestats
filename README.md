@@ -189,6 +189,14 @@ ssh -p 2222 localhost
 ```
 
 For production, deploy `services/ssh-shell/server.js` as a separate TCP service and set a stable `SSH_HOST_KEY`.
+The repo includes `fly.ssh.toml` and `services/ssh-shell/Dockerfile` for the first public cross-computer test:
+
+```bash
+fly apps create vibestats-ssh
+ssh-keygen -t rsa -b 4096 -m PEM -f /tmp/vibestats_ssh_host_key -N ''
+fly secrets set --config fly.ssh.toml SSH_HOST_KEY="$(cat /tmp/vibestats_ssh_host_key)"
+fly deploy --config fly.ssh.toml
+```
 
 Run local smoke checks:
 
