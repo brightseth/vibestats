@@ -562,7 +562,7 @@ async function assertRoutes() {
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required'), 'README should document terminal-first CLI reveal and join without manual website upload');
-  assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link and complementary pairing preview') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
+  assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, copy-ready reveal text, X share URL, and complementary pairing preview') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
@@ -571,7 +571,7 @@ async function assertRoutes() {
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before terminal-first publishing');
   assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('README badge or recap links'), 'Claude Code command should keep terminal-only onboarding explicit after the reveal');
-  assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('archetype-only compare link and complementary pairing preview') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
+  assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('copy-ready reveal text, X share URL') && claudeCommand.includes('archetype-only compare link') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
   assert(claudeCommand.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code command should explicitly avoid the dead agent-insights path');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
@@ -1478,7 +1478,7 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliShareText, cliXShareUrl, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, parseArgs, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealXShareUrl, cliShareText, cliXShareUrl, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, parseArgs, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
@@ -1514,9 +1514,16 @@ async function assertCliDerivedPayload() {
   const cliXShare = cliXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
   const parsedCliXShare = new URL(cliXShare);
   assert(parsedCliXShare.origin === 'https://twitter.com' && parsedCliXShare.pathname === '/intent/tweet' && parsedCliXShare.searchParams.get('text')?.includes('What are you?') && parsedCliXShare.searchParams.get('url')?.includes('compareTo=alex'), 'CLI X share URL should send recipients into compare-first onboarding');
+  const revealShare = cliRevealShareText({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareArchetype=shipper' });
+  assert(revealShare.includes('prolific Shipper') && revealShare.includes('Raw /insights stayed on my machine') && revealShare.includes('compareArchetype=shipper') && !revealShare.includes('compareTo='), 'CLI reveal share text should be copy-ready without claiming identity');
+  const revealXShare = cliRevealXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareArchetype=shipper' });
+  const parsedRevealXShare = new URL(revealXShare);
+  assert(parsedRevealXShare.origin === 'https://twitter.com' && parsedRevealXShare.searchParams.get('url')?.includes('compareArchetype=shipper') && !parsedRevealXShare.searchParams.get('url')?.includes('compareTo='), 'CLI reveal X share URL should use archetype-only comparison before claiming');
   const revealText = dryRunRevealText(payload);
   assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
   assert(revealText.includes('Share without claiming: https://vibestats.io/?compareArchetype=shipper'), 'CLI dry-run reveal should print an archetype-only compare link before publishing');
+  assert(revealText.includes('Copy/paste reveal: I just revealed my Claude Code build profile locally: prolific Shipper. Raw /insights stayed on my machine. What are you? Compare with my archetype: https://vibestats.io/?compareArchetype=shipper'), 'CLI dry-run reveal should print copy-ready share text before publishing');
+  assert(revealText.includes('Share reveal on X: https://twitter.com/intent/tweet?'), 'CLI dry-run reveal should print one-click X share before publishing');
   assert(revealText.includes('Preview a Shipper x Debugger pairing: https://vibestats.io/compare?a=shipper&b=debugger'), 'CLI dry-run reveal should print a complementary pairing preview before publishing');
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
   assert(revealText.includes('No website upload required.') && revealText.includes(DEFAULT_NPX_JOIN_COMMAND), 'CLI dry-run reveal should hand off to exact terminal-first claim command');
@@ -1603,6 +1610,8 @@ async function assertCliDerivedPayload() {
     assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
     assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Revealed: prolific Shipper'), 'CLI dry-run should print a local reveal before auth');
     assert(output.join('').includes('Share without claiming: https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should respect the selected host for local compare links');
+    assert(output.join('').includes('Copy/paste reveal: I just revealed my Claude Code build profile locally: prolific Shipper. Raw /insights stayed on my machine. What are you? Compare with my archetype: https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should respect the selected host for copy-ready reveal text');
+    assert(output.join('').includes('Share reveal on X: https://twitter.com/intent/tweet?'), 'CLI dry-run should print one-click X sharing for local reveal');
     assert(output.join('').includes('Preview a Shipper x Debugger pairing: https://example.invalid/compare?a=shipper&b=debugger'), 'CLI dry-run should respect the selected host for local pairing previews');
     assert(!output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should not dump payload JSON by default');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');

@@ -228,8 +228,23 @@ export function cliXShareUrl({ label, compareUrl } = {}) {
   return `https://twitter.com/intent/tweet?${params.toString()}`;
 }
 
+export function cliRevealShareText({ label, compareUrl } = {}) {
+  const shareLabel = compactShareLabel(label);
+  return `I just revealed my Claude Code build profile locally: ${shareLabel}. Raw /insights stayed on my machine. What are you? Compare with my archetype: ${compareUrl}`;
+}
+
+export function cliRevealXShareUrl({ label, compareUrl } = {}) {
+  const shareLabel = compactShareLabel(label);
+  const params = new URLSearchParams({
+    text: `I just revealed my Claude Code build profile locally: ${shareLabel}. Raw /insights stayed on my machine. What are you?`,
+    url: compareUrl || DEFAULT_HOST,
+  });
+  return `https://twitter.com/intent/tweet?${params.toString()}`;
+}
+
 export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   const archetype = ARCHETYPE_LABELS[payload.archetype] || payload.archetype || 'Unknown';
+  const label = revealLabel(payload);
   const score = primaryScore(payload);
   const metrics = payload.metrics || {};
   const moments = publicMoments(payload.raw_meta?.moments || [], { exact: true });
@@ -243,7 +258,7 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   ].join(' · ');
   const lines = [
     'vibestats local reveal',
-    `Revealed: ${revealLabel(payload)}${score ? ` (${score}% ${archetype})` : ''}.`,
+    `Revealed: ${label}${score ? ` (${score}% ${archetype})` : ''}.`,
     `Pattern: ${metricLine}.`,
   ];
 
@@ -257,6 +272,8 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   if (links) {
     lines.push(
       `Share without claiming: ${links.compare}`,
+      `Copy/paste reveal: ${cliRevealShareText({ label, compareUrl: links.compare })}`,
+      `Share reveal on X: ${cliRevealXShareUrl({ label, compareUrl: links.compare })}`,
       `Preview a ${archetype} x ${links.complement} pairing: ${links.pairing}`,
     );
   }
