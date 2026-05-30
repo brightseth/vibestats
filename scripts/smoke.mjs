@@ -24,6 +24,7 @@ const apiModules = [
   '../api/settings.js',
   '../api/settings/export.js',
   '../api/cron/weekly-digest.js',
+  '../api/digest/preview.js',
   '../api/digest/unsubscribe.js',
   '../api/_lib/cache.js',
   '../api/_lib/evolution.js',
@@ -165,6 +166,7 @@ async function assertRoutes() {
   const settingsApi = await readFile('api/settings.js', 'utf8');
   const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
   const weeklyDigestApi = await readFile('api/cron/weekly-digest.js', 'utf8');
+  const digestPreviewApi = await readFile('api/digest/preview.js', 'utf8');
   const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
@@ -292,6 +294,9 @@ async function assertRoutes() {
   assert(recapHtml.includes('id="digest-cta"') && recapHtml.includes('profile.is_owner'), 'profile recap should give owners a path into digest consent');
   assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'profile recap should let owners refresh the return surface with CLI sync');
   assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
+  assert(digestPreviewApi.includes('requireUser(req)') && digestPreviewApi.includes('buildWeeklyDigest({'), 'digest preview should be authenticated and reuse the weekly digest builder');
+  assert(digestPreviewApi.includes('rarityForSignature(signature)') && digestPreviewApi.includes('weeklyLeaderboardRank(user, latest)'), 'digest preview should include scarcity and leaderboard proof');
+  assert(digestPreviewApi.includes("res.setHeader('Cache-Control', NO_STORE_HEADERS['Cache-Control'])"), 'digest preview should disable public caching');
   assert(homeApi.includes('homeMetadataForInvite') && homeApi.includes('Run /insights, then reveal yours against @${handle}'), 'homepage API should render compare-first share-recipient metadata');
   assert(homeApi.includes("user.privacy === 'private'") && homeApi.includes('profileShareCacheControl(cacheUser)'), 'homepage API should avoid private profile previews and preserve profile cache policy');
   assert(homeApi.includes('profileShareProof({ rarity, leaderboard })') && homeApi.includes('rarityForSignature(signature)') && homeApi.includes('weeklyLeaderboardRank(user, latest)'), 'homepage API should include profile social proof in compare-first unfurls');
@@ -381,6 +386,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes('Digest consent saved. Delivery starts when weekly email infrastructure is enabled.'), 'settings page should explain saved digest consent before delivery is configured');
   assert(settingsHtml.includes('checkbox.disabled = false') && settingsHtml.includes('save.disabled = false'), 'settings page should allow digest opt-ins before delivery is configured');
   assert(settingsHtml.includes('id="weekly-digest-row"'), 'settings page should expose a stable weekly digest anchor');
+  assert(settingsHtml.includes('id="preview-digest"') && settingsHtml.includes('/api/digest/preview'), 'settings page should expose owner-only weekly digest preview');
   assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'settings UI should expose CLI sync command generation');
@@ -2616,6 +2622,12 @@ async function assertPrivateApiNoStore() {
         status: 401,
       },
       {
+        label: '/api/digest/preview unauthenticated',
+        module: '../api/digest/preview.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
         label: '/api/uploads unauthenticated',
         module: '../api/uploads.js',
         req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
@@ -2746,6 +2758,13 @@ async function assertPublicApiErrorsHideInternalConfig() {
         req: { method: 'GET', query: {}, headers: { host: 'localhost:3000', cookie } },
         status: 500,
         error: 'Export failed',
+      },
+      {
+        label: '/api/digest/preview secret failure',
+        module: '../api/digest/preview.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000', cookie } },
+        status: 500,
+        error: 'Digest preview failed',
       },
       {
         label: '/api/sync-token secret failure',
