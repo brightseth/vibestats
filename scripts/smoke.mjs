@@ -21,6 +21,7 @@ const apiModules = [
   '../api/me.js',
   '../api/uploads.js',
   '../api/sync.js',
+  '../api/sync-settings.js',
   '../api/sync-token.js',
   '../api/cli/local-token.js',
   '../api/cli/device-start.js',
@@ -178,6 +179,7 @@ async function assertRoutes() {
   const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
+  const syncSettingsApi = await readFile('api/sync-settings.js', 'utf8');
   const cliLocalTokenApi = await readFile('api/cli/local-token.js', 'utf8');
   const cliDeviceStartApi = await readFile('api/cli/device-start.js', 'utf8');
   const cliDevicePollApi = await readFile('api/cli/device-poll.js', 'utf8');
@@ -358,7 +360,12 @@ async function assertRoutes() {
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
+  assert(syncSettingsApi.includes('readSyncSession') && syncSettingsApi.includes('syncTokenIsRevoked'), 'CLI sync settings API should require revocable signed sync token sessions');
+  assert(syncSettingsApi.includes('cleanLookingFor') && syncSettingsApi.includes('cleanContactUrl') && syncSettingsApi.includes('lookingForExpiry(7)'), 'CLI sync settings API should only accept sanitized short-lived match intent fields');
+  assert(syncSettingsApi.includes("privacy = 'public'") && syncSettingsApi.includes('make_public === true'), 'CLI sync settings API should require explicit public opt-in for match discovery');
+  assert(!syncSettingsApi.includes('sanitizeUploadPayload') && !syncSettingsApi.includes('raw_meta'), 'CLI sync settings API must not accept or process upload payloads');
   assert(cliBin.includes('Minted GitHub-claimed, derived-only profile') && cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Optional public discovery:') && cliBin.includes('Profiles stay unlisted unless you choose Public.') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:') && cliBin.includes('Profile embed HTML:'), 'CLI sync success output should surface claimed identity, compare-first social share, opt-in discovery, recap, README badge, and embed hooks');
+  assert(cliBin.includes('vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle>') && cliBin.includes('setMatchIntent') && cliBin.includes('/api/sync-settings'), 'CLI should expose terminal match-intent participation through the sync settings API');
   assert(cliBin.includes('Install /vibestats for future reveals:') && cliBin.includes('Reserve weekly digest:') && cliBin.includes('Preview weekly digest:'), 'CLI sync success output should surface Claude Code and digest return hooks');
   assert(cliBin.includes('VIBESTATS_CLI_PACKAGE') && cliBin.includes('FALLBACK_CLI_PACKAGE'), 'CLI should allow printed npx commands to switch to a public package once one is published');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
@@ -429,6 +436,7 @@ async function assertRoutes() {
   assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && settingsHtml.includes('placeholder="npx --yes github:brightseth/vibestats#feat/wave-1-identity"') && settingsHtml.includes('terminal-first GitHub approval'), 'settings UI should expose terminal-first CLI status, reveal, and one-command sync generation');
+  assert(settingsHtml.includes('intent pair-coding --contact-url https://x.com/you --public'), 'settings UI should expose terminal-first match-intent participation');
   assert(settingsHtml.includes('install-claude-command'), 'settings UI should expose the installable Claude Code command path');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="match-settings"'), 'settings UI should expose a direct anchor for match intent setup');
@@ -583,6 +591,7 @@ async function assertRoutes() {
   assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub branch fallback'), 'README should document the public CLI package override before broad npm sharing');
   assert(readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document terminal and maintainer copy-ready share kits for minted profiles');
   assert(readme.includes('Use `share --handle <saved-gh-handle>`') && readme.includes('privacy proof without opening the website'), 'README should document the CLI share command for terminal-only distribution');
+  assert(readme.includes('Use `intent pair-coding --contact-url https://x.com/<you> --public`') && readme.includes('does not read `/insights` data'), 'README should document terminal match-intent participation without raw insights access');
   assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, a pasteable terminal card, copy-ready reveal text, X share URL') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
@@ -593,6 +602,7 @@ async function assertRoutes() {
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
   assert((await readFile('.npmignore', 'utf8')).includes('!lib/share-kit.js'), 'npm package should include the shared CLI share-kit helper');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync') && !claudeCommand.includes('feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should preflight, reveal locally, then explicit sync after human consent');
+  assert(claudeCommand.includes('intent pair-coding --contact-url') && claudeCommand.includes('does not read `/insights` data'), 'Claude Code command should let users opt into match intent without reading raw insights');
   assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('README badge, embed, or recap links'), 'Claude Code command should keep terminal-only onboarding explicit after the reveal');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('pasteable terminal card') && claudeCommand.includes('copy-ready reveal text, X share URL') && claudeCommand.includes('archetype-only compare link') && claudeCommand.includes('/vibestats` install command') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
@@ -1582,7 +1592,7 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, printProfileShareKit, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, printProfileShareKit, requestDeviceSyncToken, requestSyncToken, setMatchIntent, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
@@ -1597,6 +1607,8 @@ async function assertCliDerivedPayload() {
   assert(parsedStatus.command === 'status' && parsedStatus.options.json === true && !isSyncCommand(parsedStatus.command), 'CLI should accept status as a terminal preflight without publishing');
   const parsedShare = parseArgs(['node', 'vibestats', 'share', '--handle', '@alex', '--host=https://vibestats.example', '--json']);
   assert(parsedShare.command === 'share' && parsedShare.options.handle === 'alex' && parsedShare.options.host === 'https://vibestats.example' && parsedShare.options.json === true && !isSyncCommand(parsedShare.command), 'CLI should accept share as a terminal profile distribution command without publishing');
+  const parsedIntent = parseArgs(['node', 'vibestats', 'intent', 'pair-coding', '--contact-url', 'https://x.com/alex', '--public', '--device']);
+  assert(parsedIntent.command === 'intent' && parsedIntent.options.intent === 'pair-coding' && parsedIntent.options.contactUrl === 'https://x.com/alex' && parsedIntent.options.makePublic === true && parsedIntent.options.authMode === 'device' && !isSyncCommand(parsedIntent.command), 'CLI should parse terminal match intent without treating it as a sync command');
   const parsedJoin = parseArgs(['node', 'vibestats', 'join', '--dry-run']);
   const parsedOnboard = parseArgs(['node', 'vibestats', 'onboard', '--dry-run']);
   assert(parsedJoin.command === 'join' && isSyncCommand(parsedJoin.command) && parsedJoin.options.authMode === 'device', 'CLI should accept join as a terminal-first device-auth sync alias');
@@ -1623,6 +1635,7 @@ async function assertCliDerivedPayload() {
   assert(overrideHelp.includes('Current public claim command: npx --yes @lets-vibe/vibestats') && overrideHelp.includes('Current public status command: npx --yes @lets-vibe/vibestats status'), 'CLI should honor VIBESTATS_CLI_PACKAGE in printed follow-up commands');
   assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the terminal-first participation flow') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default') && cliSource.includes('Use --yes with join/onboard to publish after reveal without prompting'), 'CLI help should frame the no-subcommand path as status, reveal-before-publish terminal onboarding');
   assert(cliSource.includes('vibestats share --handle HANDLE [--host URL] [--json]') && cliSource.includes('Use share to fetch a public profile'), 'CLI help should expose terminal profile share-kit generation');
+  assert(cliSource.includes('vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle>') && cliSource.includes('Use intent to set or clear your short-lived matchmaker availability from the terminal'), 'CLI help should expose terminal match-intent participation');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
   assert(cliSource.includes('Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}') && cliSource.includes('Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}') && cliSource.includes('Use --dry-run as a legacy alias for reveal') && cliSource.includes('Use reveal --json to print the exact derived payload'), 'CLI help should separate one-command claim, human reveal, and payload JSON');
   const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
@@ -1813,6 +1826,90 @@ async function assertCliDerivedPayload() {
     });
     const shareKitJson = JSON.parse(output.join(''));
     assert(shareKitJson.copy.readme_badge_markdown.includes('/u/alex/badge.svg') && shareKitJson.copy.terminal_onboarding.includes(DEFAULT_INSTALL_COMMAND), 'CLI share JSON should expose portable distribution snippets and the Claude Code install hook');
+
+    output.length = 0;
+    let intentPostedBody = '';
+    const intentResult = await setMatchIntent({
+      host: 'https://vibestats.example',
+      token: 'sync-token',
+      intent: 'pair-coding',
+      contactUrl: 'https://x.com/alex',
+      makePublic: true,
+    }, {
+      stdout: {
+        write(chunk) {
+          output.push(String(chunk));
+          return true;
+        },
+      },
+      fetchImpl: async (url, options = {}) => {
+        intentPostedBody = String(options.body || '');
+        assert(url === 'https://vibestats.example/api/sync-settings', 'CLI intent should post to the sync settings API on the selected host');
+        assert(options.headers?.Authorization === 'Bearer sync-token', 'CLI intent should use the revocable sync token as bearer auth');
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              ok: true,
+              user: { gh_handle: 'alex', privacy: 'public' },
+              settings: {
+                looking_for: 'pair-coding',
+                looking_for_label: 'Pair coding',
+                looking_for_expires_at: '2026-06-01T00:00:00.000Z',
+                contact_url: 'https://x.com/alex',
+              },
+              links: {
+                match_url: '/match?goal=pair-coding&archetype=shipper',
+                browse_url: '/browse?intent=pair-coding',
+                settings_url: '/settings#match-settings',
+              },
+            };
+          },
+        };
+      },
+    });
+    const intentBody = JSON.parse(intentPostedBody);
+    assert(intentResult.settings.looking_for === 'pair-coding', 'CLI intent should return active match settings');
+    assert(intentBody.looking_for === 'pair-coding' && intentBody.contact_url === 'https://x.com/alex' && intentBody.make_public === true, 'CLI intent should post only sanitized match intent fields');
+    assert(output.join('').includes('Match intent active for 7 days: Pair coding.') && output.join('').includes('Discoverable in matchmaker: https://vibestats.example/match?goal=pair-coding&archetype=shipper') && output.join('').includes('Raw Claude Code /insights data was not read or uploaded.'), 'CLI intent should print public match links and the raw-insights privacy boundary');
+    assert(!output.join('').includes('tool_usage') && !output.join('').includes('language_usage'), 'CLI intent output must not print raw usage fields');
+
+    output.length = 0;
+    await setMatchIntent({
+      host: 'https://vibestats.example',
+      intent: 'mentor',
+      requestToken: async ({ host }) => ({ token: 'device-token', host, handle: 'alex' }),
+    }, {
+      stdout: {
+        write(chunk) {
+          output.push(String(chunk));
+          return true;
+        },
+      },
+      fetchImpl: async (url, options = {}) => {
+        assert(url === 'https://vibestats.example/api/sync-settings', 'CLI intent should keep the authorized host for tokenless device auth');
+        assert(options.headers?.Authorization === 'Bearer device-token', 'CLI intent should use the token returned by device auth');
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              ok: true,
+              user: { gh_handle: 'alex', privacy: 'unlisted' },
+              settings: {
+                looking_for: 'mentor',
+                looking_for_label: 'Mentor',
+                looking_for_expires_at: '2026-06-01T00:00:00.000Z',
+              },
+              links: { settings_url: '/settings#match-settings' },
+            };
+          },
+        };
+      },
+    });
+    assert(output.join('').includes('Authorized CLI intent as @alex.') && output.join('').includes('Profile is still unlisted. Re-run with --public'), 'CLI intent should confirm device auth and explain public discovery opt-in');
+
     output.length = 0;
 
     const extracted = await insightsFromClaudeUsageDirectory(usageDir);
@@ -2055,6 +2152,7 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Optional public discovery: https://vibestats.example/settings#privacy-settings'), 'CLI sync should print the opt-in public discovery settings URL');
     assert(output.join('').includes('Profiles stay unlisted unless you choose Public.'), 'CLI sync should preserve unlisted-by-default privacy copy');
     assert(output.join('').includes('Set match intent: https://vibestats.example/settings#match-settings'), 'CLI sync should print the match intent setup URL');
+    assert(output.join('').includes('Set match intent from terminal: npx --yes github:brightseth/vibestats#feat/wave-1-identity intent pair-coding --contact-url https://x.com/alex --public'), 'CLI sync should print a terminal match-intent command');
     assert(output.join('').includes('View your weekly board: https://vibestats.example/leaderboard/shipper'), 'CLI sync should print the archetype leaderboard return URL');
     assert(output.join('').includes('Find complementary builders: https://vibestats.example/match?goal=pair-coding&archetype=shipper'), 'CLI sync should print the matchmaker return URL');
     assert(output.join('').includes('Share your recap: https://vibestats.example/u/alex/recap'), 'CLI sync should print recap return URL');
@@ -3252,6 +3350,19 @@ async function assertPrivateApiNoStore() {
         module: '../api/sync.js',
         req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
         status: 401,
+      },
+      {
+        label: '/api/sync-settings invalid token',
+        module: '../api/sync-settings.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/sync-settings method guard',
+        module: '../api/sync-settings.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'POST',
       },
       {
         label: '/api/sync-token unauthenticated',

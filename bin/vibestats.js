@@ -52,6 +52,7 @@ function usage() {
   vibestats status [--file PATH] [--dir PATH] [--json]
   vibestats reveal [--file PATH] [--dir PATH] [--json]
   vibestats share --handle HANDLE [--host URL] [--json]
+  vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle> [--contact-url URL] [--public] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
   vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run] [--yes]
   vibestats [sync|join|onboard] --dry-run --json
   vibestats install-claude-command [--force] [--path PATH]
@@ -68,6 +69,7 @@ It reveals your archetype locally before asking for approval to publish it.
 Run without a subcommand for the terminal-first participation flow: local reveal, then GitHub approval.
 Use reveal for a local result with no sign-in and no network publish.
 Use share to fetch a public profile and print its compare link, badge, embed, and privacy proof.
+Use intent to set or clear your short-lived matchmaker availability from the terminal.
 Use join/onboard as explicit aliases for the same terminal-first flow; they use a GitHub device code by default.
 Use --yes with join/onboard to publish after reveal without prompting. Use sync for explicit publish automation.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
@@ -93,12 +95,19 @@ export function parseArgs(argv) {
     force: false,
     path: DEFAULT_CLAUDE_COMMAND_PATH,
     handle: '',
+    intent: '',
+    contactUrl: '',
+    makePublic: false,
     openBrowser: true,
     authTimeoutMs: DEFAULT_AUTH_TIMEOUT_MS,
     authMode: process.env.VIBESTATS_AUTH_MODE || '',
     assumeYes: process.env.VIBESTATS_YES === '1' || process.env.VIBESTATS_ASSUME_YES === '1',
     promptToPublish: false,
   };
+
+  if (command === 'intent' && args[0] && !args[0].startsWith('-')) {
+    options.intent = args.shift();
+  }
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -112,6 +121,11 @@ export function parseArgs(argv) {
     else if (arg.startsWith('--origin=')) options.host = arg.slice('--origin='.length);
     else if (arg === '--handle') options.handle = args[++i] || '';
     else if (arg.startsWith('--handle=')) options.handle = arg.slice('--handle='.length);
+    else if (arg === '--intent') options.intent = args[++i] || '';
+    else if (arg.startsWith('--intent=')) options.intent = arg.slice('--intent='.length);
+    else if (arg === '--contact-url') options.contactUrl = args[++i] || '';
+    else if (arg.startsWith('--contact-url=')) options.contactUrl = arg.slice('--contact-url='.length);
+    else if (arg === '--public') options.makePublic = true;
     else if (arg === '--token') options.token = args[++i] || '';
     else if (arg === '--no-open') options.openBrowser = false;
     else if (arg === '--device') options.authMode = 'device';
@@ -128,8 +142,10 @@ export function parseArgs(argv) {
     throw new Error('Auth mode must be browser or device.');
   }
   options.handle = String(options.handle || '').trim().replace(/^@/, '');
+  options.intent = String(options.intent || '').trim() || 'idle';
+  options.contactUrl = String(options.contactUrl || '').trim();
   if (command === 'reveal') options.dryRun = true;
-  if (!options.authMode) options.authMode = ['join', 'onboard'].includes(command) ? 'device' : 'browser';
+  if (!options.authMode) options.authMode = ['join', 'onboard', 'intent'].includes(command) ? 'device' : 'browser';
   options.promptToPublish = ['join', 'onboard'].includes(command) && !options.dryRun;
 
   return { command, options };
@@ -565,6 +581,75 @@ export async function printProfileShareKit(options = {}, {
   return kit;
 }
 
+function matchIntentLabel(value) {
+  return {
+    'pair-coding': 'Pair coding',
+    'co-founder': 'Co-founder',
+    hire: 'Hiring',
+    mentor: 'Mentor',
+    mentee: 'Mentee',
+    idle: 'Idle',
+  }[value] || value || 'Idle';
+}
+
+export async function setMatchIntent(options = {}, {
+  stdout = process.stdout,
+  fetchImpl = fetch,
+} = {}) {
+  const lookingFor = String(options.intent || 'idle').trim() || 'idle';
+  let host = normalizeHost(options.host || DEFAULT_HOST);
+  let token = options.token || '';
+  if (!token) {
+    const requestToken = options.requestToken || (options.authMode === 'browser' ? requestSyncToken : requestDeviceSyncToken);
+    const auth = await requestToken({
+      host,
+      openBrowser: options.openBrowser !== false,
+      timeoutMs: options.authTimeoutMs,
+      stdout,
+    });
+    token = auth.token;
+    if (auth.host) host = normalizeHost(auth.host);
+    if (auth.handle) stdout.write(`Authorized CLI intent as @${auth.handle}.\n`);
+  }
+
+  const response = await fetchImpl(`${host}/api/sync-settings`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'vibestats-cli',
+    },
+    body: JSON.stringify({
+      looking_for: lookingFor,
+      contact_url: options.contactUrl || '',
+      make_public: options.makePublic === true,
+    }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || `Match intent failed with HTTP ${response.status}`);
+
+  const settings = body.settings || {};
+  const user = body.user || {};
+  const links = body.links || {};
+  const active = settings.looking_for && settings.looking_for !== 'idle';
+  if (active) {
+    stdout.write(`Match intent active for 7 days: ${matchIntentLabel(settings.looking_for)}.\n`);
+    if (settings.contact_url) stdout.write(`Contact link: ${settings.contact_url}\n`);
+    if (settings.looking_for_expires_at) stdout.write(`Expires: ${settings.looking_for_expires_at}\n`);
+    if (user.privacy === 'public') {
+      stdout.write(`Discoverable in matchmaker: ${apiUrl(host, links.match_url, '/match')}\n`);
+      stdout.write(`Browse active profiles: ${apiUrl(host, links.browse_url, '/browse?intent=active')}\n`);
+    } else {
+      stdout.write('Profile is still unlisted. Re-run with --public to appear in browse and /match.\n');
+      stdout.write(`Settings: ${apiUrl(host, links.settings_url, '/settings#match-settings')}\n`);
+    }
+  } else {
+    stdout.write('Match intent cleared.\n');
+  }
+  stdout.write('Raw Claude Code /insights data was not read or uploaded.\n');
+  return body;
+}
+
 export async function installClaudeCommand({ path = DEFAULT_CLAUDE_COMMAND_PATH, force = false, stdout = process.stdout } = {}) {
   if (!path) throw new Error('Missing Claude command install path.');
   const commandMarkdown = await readFile(CLAUDE_COMMAND_SOURCE, 'utf8');
@@ -854,6 +939,7 @@ export async function sync(options) {
   process.stdout.write(`Optional public discovery: ${privacyUrl}\n`);
   process.stdout.write('Profiles stay unlisted unless you choose Public.\n');
   process.stdout.write(`Set match intent: ${matchSettingsUrl}\n`);
+  process.stdout.write(`Set match intent from terminal: ${DEFAULT_NPX_SYNC_COMMAND} intent pair-coding --contact-url https://x.com/${handle} --public\n`);
   process.stdout.write(`View your weekly board: ${leaderboardUrl}\n`);
   process.stdout.write(`Find complementary builders: ${matchUrl}\n`);
   process.stdout.write(`Share your recap: ${recapUrl}\n`);
@@ -881,6 +967,10 @@ export async function main() {
   }
   if (command === 'share') {
     await printProfileShareKit(options);
+    return;
+  }
+  if (command === 'intent') {
+    await setMatchIntent(options);
     return;
   }
   if (!isSyncCommand(command)) throw new Error(`Unknown command: ${command}`);
