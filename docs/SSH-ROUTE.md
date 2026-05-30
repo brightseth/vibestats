@@ -147,6 +147,13 @@ Verify from another computer:
 ssh ssh.vibestats.io help
 ssh ssh.vibestats.io 'view brightseth'
 ssh ssh.vibestats.io claim
+npm run audit:ssh -- --host ssh.vibestats.io --handle brightseth
+```
+
+Before DNS is pointed, run the same audit against Fly's hostname:
+
+```bash
+npm run audit:ssh -- --host vibestats-ssh.fly.dev --handle brightseth
 ```
 
 Implementation options:

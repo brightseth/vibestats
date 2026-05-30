@@ -198,6 +198,13 @@ fly secrets set --config fly.ssh.toml SSH_HOST_KEY="$(cat /tmp/vibestats_ssh_hos
 fly deploy --config fly.ssh.toml
 ```
 
+Audit the public SSH shell from any machine:
+
+```bash
+npm run audit:ssh -- --host vibestats-ssh.fly.dev --handle brightseth
+npm run audit:ssh -- --host ssh.vibestats.io --handle brightseth
+```
+
 Run local smoke checks:
 
 ```bash

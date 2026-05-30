@@ -226,6 +226,7 @@ async function assertRoutes() {
   assert(packageJson.scripts?.dev === 'vercel dev' && packageJson.scripts?.serve === 'vercel dev', 'local dev should use Vercel routing now that / is rendered by an API function');
   assert(packageJson.scripts?.['share:kit'] === 'node scripts/share-kit.mjs', 'package should expose the public profile share-kit generator');
   assert(packageJson.scripts?.['ssh:dev'] === 'node services/ssh-shell/server.js' && packageJson.dependencies?.ssh2, 'package should expose the deployable SSH shell service');
+  assert(packageJson.scripts?.['audit:ssh'] === 'node scripts/ssh-audit.mjs', 'package should expose the public SSH service audit');
   assert(flySshConfig.includes('app = "vibestats-ssh"') && flySshConfig.includes('internal_port = 2222') && flySshConfig.includes('port = 22') && flySshConfig.includes('VIBESTATS_URL = "https://vibestats.io"'), 'Fly config should expose the SSH shell as a public TCP service');
   assert(sshDockerfile.includes('FROM node:22-slim') && sshDockerfile.includes('npm ci --omit=dev') && sshDockerfile.includes('COPY services ./services') && sshDockerfile.includes('CMD ["npm", "run", "ssh:dev"]'), 'SSH Dockerfile should run the standalone SSH shell service');
   assert(
@@ -716,6 +717,51 @@ async function assertLaunchAuditHelpers() {
   assert(launchAuditSource.includes('"match_interest"'), 'launch audit should verify profile JSON exposes the match-interest return signal');
   assert(launchAuditSource.includes('auditCliPackage') && launchAuditSource.includes("execFileAsync('npm', ['view', packageSpec") && launchAuditSource.includes("execFileAsync('npm', ['exec', '--yes', '--package', packageSpec"), 'launch audit should verify the public npm CLI package when strict package readiness is expected');
   console.log('ok launch audit supports protected Vercel previews');
+}
+
+async function assertSshAuditScript() {
+  const {
+    auditSshService,
+    checkSafeOutput,
+    createRecorder,
+    extractClaimCode,
+    parseArgs,
+  } = await import('../scripts/ssh-audit.mjs');
+  const parsed = parseArgs(['--host', 'vibestats-ssh.fly.dev', '--port', '22', '--handle', '@brightseth', '--archetype', 'deepdiver', '--strict-host-key-checking', 'accept-new']);
+  assert(parsed.host === 'vibestats-ssh.fly.dev' && parsed.port === '22' && parsed.handle === 'brightseth' && parsed.archetype === 'deepdiver', 'SSH audit should parse remote host, port, handle, and archetype');
+  assert(extractClaimCode('Claim code: VIBE-ABCD-2345') === 'VIBE-ABCD-2345', 'SSH audit should extract bounded claim codes');
+  const recorder = createRecorder();
+  checkSafeOutput(recorder, 'safe output', 'Raw /insights stayed local');
+  assert(recorder.results.every((result) => result.ok), 'SSH audit safe-output check should allow privacy copy without raw field markers');
+
+  const commands = [];
+  const results = await auditSshService(parsed, {
+    execCommand: async (_options, command) => {
+      commands.push(command);
+      if (command === 'help') {
+        return 'Commands\n  view HANDLE\n  share HANDLE\n  claim\nClaim flow\n  1. Run /insights in Claude Code.\n  3. Run the printed curl command in your local terminal.\n';
+      }
+      if (command === 'view brightseth') {
+        return '@brightseth: high-velocity Deep Diver\nCredential: https://vibestats.io/u/brightseth/credential.json\nCompare invite: https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver\nReveal yours: run /insights, then claim from this shell.\n';
+      }
+      if (command === 'leaderboard deepdiver') {
+        return 'Deep Diver leaderboard (1 public profiles)\nOpen board: https://vibestats.io/leaderboard/deepdiver\nRun /insights, then claim here to join the board.\n';
+      }
+      if (command === 'claim') {
+        return "Claim code: VIBE-ABCD-2345\n  /insights\n  curl -fsSL 'https://vibestats.io/cli.sh' | sh -s -- claim 'VIBE-ABCD-2345'\nThis SSH host never sees raw /insights. It waits for derived-only metrics from the local helper.\n";
+      }
+      if (command === 'status VIBE-ABCD-2345') {
+        return 'Claim state: pending\nStill waiting for the local helper. Raw /insights stays local.\n';
+      }
+      throw new Error(`unexpected SSH audit command ${command}`);
+    },
+  });
+  assert(commands.join('|') === 'help|view brightseth|leaderboard deepdiver|claim|status VIBE-ABCD-2345', 'SSH audit should exercise help, profile, leaderboard, claim, and status commands');
+  assert(results.every((result) => result.ok), `SSH audit fake service should pass: ${results.filter((result) => !result.ok).map((result) => result.label).join(', ')}`);
+  const source = await readFile('scripts/ssh-audit.mjs', 'utf8');
+  assert(source.includes('UserKnownHostsFile') && source.includes('StrictHostKeyChecking') && source.includes('ConnectTimeout'), 'SSH audit should isolate known-hosts and bound connection time');
+  assert(source.includes('SSH_HOST_KEY') && source.includes('hasSecretName'), 'SSH audit should guard against secret-name leaks in remote output');
+  console.log('ok SSH service audit script');
 }
 
 async function assertUpdateCliCommandScript() {
@@ -4011,6 +4057,7 @@ await assertCompatBrowserModule();
 await assertApiImports();
 await assertRoutes();
 await assertLaunchAuditHelpers();
+await assertSshAuditScript();
 await assertUpdateCliCommandScript();
   await assertShareKitScript();
   await assertDerivedProfileCredentialHelpers();

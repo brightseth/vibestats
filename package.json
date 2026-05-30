@@ -30,6 +30,7 @@
     "test": "node scripts/smoke.mjs",
     "doctor:identity": "node scripts/identity-doctor.mjs",
     "audit:launch": "node scripts/launch-audit.mjs",
+    "audit:ssh": "node scripts/ssh-audit.mjs",
     "share:kit": "node scripts/share-kit.mjs",
     "ssh:dev": "node services/ssh-shell/server.js",
     "dev": "vercel dev",
