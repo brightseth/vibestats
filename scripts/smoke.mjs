@@ -545,6 +545,7 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   assert(readme.includes('A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
+  assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`join` and `onboard` are aliases'), 'README should document terminal-first CLI onboarding aliases');
   assert(readme.includes('Use `--dry-run` to reveal the derived result locally') && readme.includes('`--dry-run --json` to inspect the exact derived payload'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
@@ -1363,22 +1364,28 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, dryRunRevealText, installClaudeCommand, isDirectRun, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
   assert(DEFAULT_CLAUDE_COMMAND_PATH.endsWith(join('.claude', 'commands', 'vibestats.md')), 'CLI should default Claude command installs to the user Claude commands directory');
   const parsedDefault = parseArgs(['node', 'vibestats', '--dry-run']);
   assert(parsedDefault.command === 'sync' && parsedDefault.options.dryRun === true, 'CLI should default to sync so the copied npx command needs no subcommand');
+  const parsedJoin = parseArgs(['node', 'vibestats', 'join', '--dry-run']);
+  const parsedOnboard = parseArgs(['node', 'vibestats', 'onboard', '--dry-run']);
+  assert(parsedJoin.command === 'join' && isSyncCommand(parsedJoin.command), 'CLI should accept join as a terminal-first sync alias');
+  assert(parsedOnboard.command === 'onboard' && isSyncCommand(parsedOnboard.command), 'CLI should accept onboard as a terminal-first sync alias');
   const parsedJson = parseArgs(['node', 'vibestats', '--dry-run', '--json']);
   assert(parsedJson.options.dryRun === true && parsedJson.options.json === true, 'CLI dry-run should offer a JSON escape hatch for payload audits');
   const parsedInstall = parseArgs(['node', 'vibestats', 'install-claude-command', '--force', '--path', '/tmp/vibestats.md']);
   assert(parsedInstall.command === 'install-claude-command' && parsedInstall.options.force === true && parsedInstall.options.path === '/tmp/vibestats.md', 'CLI should parse Claude command installation options');
   assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'CLI should expose the current GitHub-backed npx command');
   assert(DEFAULT_INSTALL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command', 'CLI should expose a copyable Claude Code command installer');
-  assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.'), 'CLI help should frame sync as reveal-before-publish');
+  assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Use join/onboard when you want the terminal-first participation flow'), 'CLI help should frame sync as reveal-before-publish terminal onboarding');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
   assert(cliSource.includes('Use --dry-run to reveal locally') && cliSource.includes('Use --dry-run --json to print the exact derived payload'), 'CLI help should separate human reveal from payload JSON');
+  const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
+  assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(`${DEFAULT_NPX_SYNC_COMMAND} --dry-run`), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
   const revealText = dryRunRevealText(payload);
   assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');

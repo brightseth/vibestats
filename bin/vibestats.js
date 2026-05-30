@@ -32,8 +32,8 @@ const ARCHETYPE_LABELS = {
 
 function usage() {
   return `Usage:
-  vibestats [sync] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
-  vibestats [sync] --dry-run --json
+  vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
+  vibestats [sync|join|onboard] --dry-run --json
   vibestats install-claude-command [--force] [--path PATH]
 
 Environment:
@@ -43,6 +43,7 @@ Environment:
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 It reveals your archetype locally before asking for approval to publish it.
+Use join/onboard when you want the terminal-first participation flow; they run the same privacy-preserving sync.
 Without --token it opens a browser approval flow against your GitHub-backed vibestats session.
 Current public install command: ${DEFAULT_NPX_SYNC_COMMAND}
 Install the Claude Code /vibestats command: ${DEFAULT_INSTALL_COMMAND}
@@ -82,6 +83,30 @@ export function parseArgs(argv) {
   }
 
   return { command, options };
+}
+
+export function isSyncCommand(command) {
+  return ['sync', 'join', 'onboard'].includes(command);
+}
+
+function missingInsightsAdvice() {
+  return [
+    'Terminal onboarding:',
+    '1. Open Claude Code and run /insights.',
+    `2. Preview locally: ${DEFAULT_NPX_SYNC_COMMAND} --dry-run`,
+    `3. Publish when ready: ${DEFAULT_NPX_SYNC_COMMAND}`,
+    'No raw Claude Code session data leaves your machine; publishing sends derived metrics only.',
+  ].join('\n');
+}
+
+export function cliErrorMessage(err) {
+  const message = String(err?.message || err || 'vibestats failed');
+  const missingInsights = err?.code === 'ENOENT'
+    || message.includes('No Claude Code /insights session metadata found')
+    || message.includes(`${join('.claude', 'usage-data')}`);
+  if (!missingInsights) return message;
+  if (message.includes('Terminal onboarding:')) return message;
+  return `${message}\n\n${missingInsightsAdvice()}`;
 }
 
 export function normalizeHost(host) {
@@ -375,7 +400,7 @@ export async function main() {
     await installClaudeCommand(options);
     return;
   }
-  if (command !== 'sync') throw new Error(`Unknown command: ${command}`);
+  if (!isSyncCommand(command)) throw new Error(`Unknown command: ${command}`);
   await sync(options);
 }
 
@@ -390,7 +415,7 @@ export function isDirectRun(entry = process.argv[1]) {
 
 if (isDirectRun()) {
   main().catch((err) => {
-    process.stderr.write(`${err.message}\n`);
+    process.stderr.write(`${cliErrorMessage(err)}\n`);
     process.stderr.write(`\n${usage()}\n`);
     process.exitCode = 1;
   });
