@@ -161,7 +161,7 @@ async function assertRoutes() {
   const launchDoc = await readFile('docs/LAUNCH.md', 'utf8');
   const envExample = await readFile('.env.example', 'utf8');
   const npmIgnore = await readFile('.npmignore', 'utf8');
-  const claudeSkill = await readFile('.claude/skills/vibestats/SKILL.md', 'utf8');
+  const claudeCommand = await readFile('.claude/commands/vibestats.md', 'utf8');
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const rewrites = config.rewrites || [];
   assert(
@@ -445,10 +445,10 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   assert(readme.includes('A successful sync prints both the profile URL and a compare-first invite URL.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
-  assert(readme.includes('.claude/skills/vibestats/SKILL.md') && readme.includes('project-local `/vibestats` skill'), 'README should document the Claude Code /vibestats activation path');
-  assert(claudeSkill.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run') && claudeSkill.includes('Only after the user agrees'), 'Claude Code skill should reveal locally before publishing');
-  assert(claudeSkill.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code skill should preserve raw session privacy');
-  assert(claudeSkill.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code skill should explicitly avoid the dead agent-insights path');
+  assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
+  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
+  assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
+  assert(claudeCommand.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code command should explicitly avoid the dead agent-insights path');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
   assert(profileHtml.includes('leaderboardText(profile.leaderboard)'), 'profile UI should render public weekly rank');
   assert(profileHtml.includes('evolution-pill'), 'profile UI should render evolution badge');

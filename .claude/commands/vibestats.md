@@ -1,5 +1,4 @@
 ---
-name: vibestats
 description: Reveal and optionally publish a privacy-preserving vibestats profile from Claude Code /insights.
 allowed-tools: Bash
 ---

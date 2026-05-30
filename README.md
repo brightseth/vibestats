@@ -78,7 +78,7 @@ vibestats/
 ├── db/migrations/     # plain SQL migrations
 ├── scripts/migrate.mjs
 ├── bin/vibestats.js   # local sync CLI
-├── .claude/skills/    # project-local Claude Code `/vibestats` reveal skill
+├── .claude/commands/  # project-local Claude Code `/vibestats` reveal command
 ├── lib/               # html2canvas + shared browser helpers
 ├── fonts/             # self-hosted Inter + JetBrains Mono
 └── vercel.json        # cleanUrls, CSP, headers
@@ -139,7 +139,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --token "$VIBEST
 
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to inspect the derived payload locally without a token or network request, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints both the profile URL and a compare-first invite URL.
 
-Claude Code users can also invoke the project-local `/vibestats` skill from `.claude/skills/vibestats/SKILL.md`. It checks for `/insights` output, runs the CLI dry-run to reveal derived results first, and only publishes after the user explicitly asks to claim the profile.
+Claude Code users can also invoke the project-local `/vibestats` command from `.claude/commands/vibestats.md`. It checks for `/insights` output, runs the CLI dry-run to reveal derived results first, and only publishes after the user explicitly asks to claim the profile.
 
 Run local smoke checks:
 
