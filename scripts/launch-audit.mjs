@@ -437,7 +437,7 @@ async function auditLaunch(options) {
       path: `/compare?a=${encodeURIComponent(archetype)}&b=shipper`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['Open the pairing, then claim yours', 'CLAIM_COMMAND', 'Copy claim'],
+      mustInclude: ['Open the pairing, then claim yours', 'STATUS_COMMAND', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'CLAIM_COMMAND', 'Copy claim'],
     },
     {
       label: 'profile-backed pair route',
@@ -445,8 +445,8 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: [200],
       mustInclude: expectReady && profileHasUpload
-        ? ['Open the pairing, then claim yours', `@${handle}`, '/?compareTo=', 'CLAIM_COMMAND', 'Copy claim']
-        : ['comparisonParamsFromLocation()', 'compareTo=${encodeURIComponent(profileSubject.handle)}', 'CLAIM_COMMAND', 'Copy claim'],
+        ? ['Open the pairing, then claim yours', `@${handle}`, '/?compareTo=', 'STATUS_COMMAND', 'Copy status', 'CLAIM_COMMAND', 'Copy claim']
+        : ['comparisonParamsFromLocation()', 'compareTo=${encodeURIComponent(profileSubject.handle)}', 'STATUS_COMMAND', 'Copy status', 'CLAIM_COMMAND', 'Copy claim'],
     },
     {
       label: 'profile-backed missing pair route',
@@ -454,8 +454,8 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: [200],
       mustInclude: expectReady && profileHasUpload
-        ? [`See how you'd pair with @${handle}`, 'That profile is not minted yet. Preview a pairing or reveal yours.', 'Run /insights for your real pairing']
-        : ['showPicker(knownSubject', 'Run /insights for your real pairing'],
+        ? [`See how you'd pair with @${handle}`, 'That profile is not minted yet. Preview a pairing or reveal yours.', 'Run /insights, check status, then reveal your real pairing']
+        : ['showPicker(knownSubject', 'Run /insights, check status, then reveal your real pairing'],
       checkRawLeaks: false,
     },
     {

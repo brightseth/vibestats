@@ -386,6 +386,7 @@
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
     const CLAIM_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+    const STATUS_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status';
     const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
     const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
     let currentComparison = null;
@@ -434,8 +435,8 @@
         ? `What are you against ${profileLabel}?`
         : 'Claude Code already knows your pattern.';
       const body = profileLabel
-        ? `Run /insights, then the npx reveal command to see your real pairing with ${profileLabel}. Raw sessions stay on your machine.`
-        : 'Run /insights, then the npx reveal command to find your real archetype. Raw sessions stay on your machine.';
+        ? `Run /insights, check status, then reveal to see your real pairing with ${profileLabel}. Raw sessions stay on your machine.`
+        : 'Run /insights, check status, then reveal your real archetype. Raw sessions stay on your machine.';
       const missing = options.missingHandle ? `<span>That profile is not minted yet. Only @${esc(options.missingHandle)} can claim that exact URL with GitHub.</span>` : '';
       el.innerHTML = `
         <div>
@@ -446,6 +447,10 @@
         <div class="reveal-command-row">
           <code>/insights</code>
           <button class="copy-command" type="button" onclick="copyCommand('/insights', this)">Copy</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(STATUS_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(STATUS_COMMAND, this)">Copy status</button>
         </div>
         <div class="reveal-command-row">
           <code>${esc(REVEAL_COMMAND)}</code>
@@ -609,7 +614,7 @@
         const a = ARCHETYPES[myType];
         title.textContent = claimIntent && subject.handle ? `Compare with @${subject.handle}` : 'Compare with a friend';
         subtitle.textContent = claimIntent
-          ? 'Run /insights for your real pairing, or pick an archetype to preview the chemistry.'
+          ? 'Run /insights, check status, then reveal your real pairing, or pick an archetype to preview the chemistry.'
           : 'Pick their archetype to see your chemistry.';
         youSection.innerHTML = `
           <div class="you-label">${subject.handle ? 'Profile' : 'You are'}</div>

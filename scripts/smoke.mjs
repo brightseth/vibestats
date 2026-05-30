@@ -324,7 +324,7 @@ async function assertRoutes() {
   assert(!comparePageApi.includes('readSession'), 'compare page metadata must not personalize public cached previews by session');
   assert(comparePageApi.includes("user.privacy !== 'private'"), 'compare page metadata must not expose private profiles');
   assert(comparePageApi.includes('profileShareProof({ rarity: subject.rarity, leaderboard: subject.leaderboard })'), 'compare page metadata should include profile social proof');
-  assert(comparePageApi.includes('Open the pairing, then claim yours'), 'compare page metadata should drive recipients to claim their profile');
+  assert(comparePageApi.includes('Open the pairing, then claim yours from the terminal after /insights status passes'), 'compare page metadata should drive recipients to terminal claiming after status preflight');
   assert(comparePageApi.includes('sendPrivateMethodNotAllowed(res)'), 'compare page method guard should use private no-store profile cache policy');
   assert(compareHtml.includes('latest.facets || []') && compareHtml.includes('window.VibeCompat.profileCompatibility(aType, bType'), 'compare UI should use profile facet radar when computing pair fit');
   assert(compareHtml.includes('facet-match') && compareHtml.includes('Facet fit:'), 'compare UI should render facet-aware profile pairing proof');
@@ -1024,8 +1024,8 @@ async function assertCompareShareLoop() {
   assert(compareHtml.includes('${esc(claimAction.label)} &rarr;'), 'compare result should render the computed claim CTA label');
   assert(compareHtml.includes("showPicker(knownSubject, { intent: 'claim', missingHandle })"), 'compare route should preserve a known profile when the other side is unminted');
   assert(compareHtml.includes('That profile is not minted yet. Preview a pairing or reveal yours.'), 'compare route should make missing profile pair links productive');
-  assert(compareHtml.includes('Run /insights for your real pairing'), 'compare picker should teach the reveal flow for share recipients');
-  assert(compareHtml.includes("copyCommand('/insights', this)") && compareHtml.includes('copyCommand(REVEAL_COMMAND, this)') && compareHtml.includes('copyCommand(CLAIM_COMMAND, this)') && compareHtml.includes('INSTALL_CLAUDE_COMMAND') && compareHtml.includes('Copy install'), 'compare picker should expose copy buttons for reveal, claim, and the Claude Code install return hook');
+  assert(compareHtml.includes('Run /insights, check status, then reveal your real pairing'), 'compare picker should teach the status and reveal flow for share recipients');
+  assert(compareHtml.includes('STATUS_COMMAND') && compareHtml.includes('copyCommand(STATUS_COMMAND, this)') && compareHtml.includes("copyCommand('/insights', this)") && compareHtml.includes('copyCommand(REVEAL_COMMAND, this)') && compareHtml.includes('copyCommand(CLAIM_COMMAND, this)') && compareHtml.includes('INSTALL_CLAUDE_COMMAND') && compareHtml.includes('Copy install'), 'compare picker should expose copy buttons for status, reveal, claim, and the Claude Code install return hook');
   console.log('ok compare share loop claims profile-backed comparisons');
 }
 
@@ -2523,7 +2523,7 @@ async function assertCompareMetadataHelpers() {
     'https://vibestats.io',
   );
   assert(inviteMeta.title.includes("See how you'd pair with @brightseth"), 'one-sided compare metadata should preserve the known profile');
-  assert(inviteMeta.description.includes('Run /insights, then reveal yours against @brightseth'), 'one-sided compare metadata should teach the reveal path');
+  assert(inviteMeta.description.includes('Run /insights, check status, then reveal yours against @brightseth'), 'one-sided compare metadata should teach the status and reveal path');
   assert(inviteMeta.description.includes('Raw Claude Code sessions stay local'), 'one-sided compare metadata should carry the privacy promise');
   assert(inviteMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver', 'one-sided compare metadata should route into upload-to-compare');
   assert(inviteMeta.image.includes('/api/og?mode=pair'), 'one-sided compare metadata should use a dynamic pair image');

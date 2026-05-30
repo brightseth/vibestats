@@ -69,7 +69,7 @@ function canonicalCompareUrl(aSubject, bSubject, origin) {
 function genericMeta(origin) {
   return {
     title: 'Compare Vibecoding Personalities | vibestats',
-    description: 'Run /insights, reveal your vibecoding personality, and compare your Claude Code build pattern with a friend.',
+    description: 'Run /insights, check status, reveal your vibecoding personality, and compare your Claude Code build pattern with a friend.',
     url: `${origin}/compare`,
     image: `${origin}/og-card.png`,
   };
@@ -96,8 +96,8 @@ export function compareInviteMetadata(subject, origin = 'https://vibestats.io') 
     description: [
       proof ? `${proof}.` : '',
       subject.handle
-        ? `Run /insights, then reveal yours against ${label}.`
-        : `Run /insights, then reveal how you pair with a ${ARCHETYPES[subject.type].short}.`,
+        ? `Run /insights, check status, then reveal yours against ${label}.`
+        : `Run /insights, check status, then reveal how you pair with a ${ARCHETYPES[subject.type].short}.`,
       'Raw Claude Code sessions stay local; only derived metrics save.',
     ].filter(Boolean).join(' '),
     url: `${origin}/?${query.toString()}`,
@@ -129,7 +129,7 @@ export function compareMetadataForSubjects(aSubject, bSubject, origin = 'https:/
       `${pairing.vibe}.`,
       pairing.dynamic,
       aProof || bProof ? `${[aProof, bProof].filter(Boolean).join(' / ')}.` : '',
-      'Open the pairing, then claim yours with one Claude Code insights upload.',
+      'Open the pairing, then claim yours from the terminal after /insights status passes.',
     ].filter(Boolean).join(' '),
     url: canonicalCompareUrl(aSubject, bSubject, origin),
     image: `${origin}/api/og?${params.toString()}`,
