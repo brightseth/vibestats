@@ -11,6 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicMoments } from '../api/_lib/moments.js';
 import { readInsightsInput } from '../lib/claude-insights-extractor.js';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
+import { buildShareKit, fetchProfile, shareKitText } from '../lib/share-kit.js';
 
 const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
 export const DEFAULT_CLAUDE_COMMAND_PATH = join(homedir(), '.claude', 'commands', 'vibestats.md');
@@ -50,6 +51,7 @@ function usage() {
   vibestats [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
   vibestats status [--file PATH] [--dir PATH] [--json]
   vibestats reveal [--file PATH] [--dir PATH] [--json]
+  vibestats share --handle HANDLE [--host URL] [--json]
   vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run] [--yes]
   vibestats [sync|join|onboard] --dry-run --json
   vibestats install-claude-command [--force] [--path PATH]
@@ -65,6 +67,7 @@ Use status to check local /insights readiness without reading raw session JSON.
 It reveals your archetype locally before asking for approval to publish it.
 Run without a subcommand for the terminal-first participation flow: local reveal, then GitHub approval.
 Use reveal for a local result with no sign-in and no network publish.
+Use share to fetch a public profile and print its compare link, badge, embed, and privacy proof.
 Use join/onboard as explicit aliases for the same terminal-first flow; they use a GitHub device code by default.
 Use --yes with join/onboard to publish after reveal without prompting. Use sync for explicit publish automation.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
@@ -89,6 +92,7 @@ export function parseArgs(argv) {
     json: false,
     force: false,
     path: DEFAULT_CLAUDE_COMMAND_PATH,
+    handle: '',
     openBrowser: true,
     authTimeoutMs: DEFAULT_AUTH_TIMEOUT_MS,
     authMode: process.env.VIBESTATS_AUTH_MODE || '',
@@ -103,6 +107,11 @@ export function parseArgs(argv) {
     else if (arg === '--dir') options.file = args[++i] || '';
     else if (arg === '--path') options.path = args[++i] || '';
     else if (arg === '--host') options.host = args[++i] || '';
+    else if (arg.startsWith('--host=')) options.host = arg.slice('--host='.length);
+    else if (arg === '--origin') options.host = args[++i] || '';
+    else if (arg.startsWith('--origin=')) options.host = arg.slice('--origin='.length);
+    else if (arg === '--handle') options.handle = args[++i] || '';
+    else if (arg.startsWith('--handle=')) options.handle = arg.slice('--handle='.length);
     else if (arg === '--token') options.token = args[++i] || '';
     else if (arg === '--no-open') options.openBrowser = false;
     else if (arg === '--device') options.authMode = 'device';
@@ -118,6 +127,7 @@ export function parseArgs(argv) {
   if (!['', 'browser', 'device'].includes(options.authMode)) {
     throw new Error('Auth mode must be browser or device.');
   }
+  options.handle = String(options.handle || '').trim().replace(/^@/, '');
   if (command === 'reveal') options.dryRun = true;
   if (!options.authMode) options.authMode = ['join', 'onboard'].includes(command) ? 'device' : 'browser';
   options.promptToPublish = ['join', 'onboard'].includes(command) && !options.dryRun;
@@ -524,6 +534,37 @@ export async function printOnboardingStatus(options = {}, { stdout = process.std
   return status;
 }
 
+function shareKitCommands() {
+  return {
+    insights: '/insights',
+    status: DEFAULT_NPX_STATUS_COMMAND,
+    reveal: DEFAULT_NPX_REVEAL_COMMAND,
+    claim: DEFAULT_NPX_SYNC_COMMAND,
+    install: DEFAULT_INSTALL_COMMAND,
+  };
+}
+
+export async function printProfileShareKit(options = {}, {
+  stdout = process.stdout,
+  fetchImpl = fetch,
+} = {}) {
+  const handle = String(options.handle || '').trim().replace(/^@/, '');
+  if (!/^[a-zA-Z0-9-]{1,39}$/.test(handle)) {
+    throw new Error('Missing --handle. Use: vibestats share --handle <gh-handle>');
+  }
+
+  const origin = normalizeHost(options.host || DEFAULT_HOST);
+  const profile = await fetchProfile({ origin, handle, fetchImpl });
+  const kit = buildShareKit(profile, {
+    origin,
+    handle,
+    terminalCommands: shareKitCommands(),
+  });
+  if (options.json) stdout.write(`${JSON.stringify(kit, null, 2)}\n`);
+  else stdout.write(`${shareKitText(kit)}\n`);
+  return kit;
+}
+
 export async function installClaudeCommand({ path = DEFAULT_CLAUDE_COMMAND_PATH, force = false, stdout = process.stdout } = {}) {
   if (!path) throw new Error('Missing Claude command install path.');
   const commandMarkdown = await readFile(CLAUDE_COMMAND_SOURCE, 'utf8');
@@ -836,6 +877,10 @@ export async function main() {
   }
   if (['status', 'doctor', 'check'].includes(command)) {
     await printOnboardingStatus(options);
+    return;
+  }
+  if (command === 'share') {
+    await printProfileShareKit(options);
     return;
   }
   if (!isSyncCommand(command)) throw new Error(`Unknown command: ${command}`);

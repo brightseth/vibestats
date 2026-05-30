@@ -558,7 +558,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
   assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
   assert(launchDoc.includes('--expect-ready --expect-device-flow') && launchDoc.includes('Enable Device Flow'), 'launch checklist should document the strict terminal-first device-flow gate');
-  assert(launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document the first-profile share kit');
+  assert(launchDoc.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document terminal and maintainer first-profile share kits');
   assert(launchDoc.includes('VIBESTATS_CLI_PACKAGE') && launchDoc.includes('scoped package') && launchDoc.includes('static onboarding snippets'), 'launch checklist should document the public npm package command switchover');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-digest'), 'launch checklist should require strict device-flow and digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
@@ -574,7 +574,8 @@ async function assertRoutes() {
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub branch fallback'), 'README should document the public CLI package override before broad npm sharing');
-  assert(readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document the copy-ready share kit for minted profiles');
+  assert(readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document terminal and maintainer copy-ready share kits for minted profiles');
+  assert(readme.includes('Use `share --handle <saved-gh-handle>`') && readme.includes('privacy proof without opening the website'), 'README should document the CLI share command for terminal-only distribution');
   assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, a pasteable terminal card, copy-ready reveal text, X share URL') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
@@ -583,6 +584,7 @@ async function assertRoutes() {
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
+  assert((await readFile('.npmignore', 'utf8')).includes('!lib/share-kit.js'), 'npm package should include the shared CLI share-kit helper');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync') && !claudeCommand.includes('feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should preflight, reveal locally, then explicit sync after human consent');
   assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('README badge, embed, or recap links'), 'Claude Code command should keep terminal-only onboarding explicit after the reveal');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('pasteable terminal card') && claudeCommand.includes('copy-ready reveal text, X share URL') && claudeCommand.includes('archetype-only compare link') && claudeCommand.includes('/vibestats` install command') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
@@ -1572,7 +1574,7 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealTerminalCard, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, printProfileShareKit, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
@@ -1585,6 +1587,8 @@ async function assertCliDerivedPayload() {
   assert(parsedReveal.command === 'reveal' && parsedReveal.options.dryRun === true && isSyncCommand(parsedReveal.command), 'CLI should accept reveal as the first-class local dry-run command');
   const parsedStatus = parseArgs(['node', 'vibestats', 'status', '--json']);
   assert(parsedStatus.command === 'status' && parsedStatus.options.json === true && !isSyncCommand(parsedStatus.command), 'CLI should accept status as a terminal preflight without publishing');
+  const parsedShare = parseArgs(['node', 'vibestats', 'share', '--handle', '@alex', '--host=https://vibestats.example', '--json']);
+  assert(parsedShare.command === 'share' && parsedShare.options.handle === 'alex' && parsedShare.options.host === 'https://vibestats.example' && parsedShare.options.json === true && !isSyncCommand(parsedShare.command), 'CLI should accept share as a terminal profile distribution command without publishing');
   const parsedJoin = parseArgs(['node', 'vibestats', 'join', '--dry-run']);
   const parsedOnboard = parseArgs(['node', 'vibestats', 'onboard', '--dry-run']);
   assert(parsedJoin.command === 'join' && isSyncCommand(parsedJoin.command) && parsedJoin.options.authMode === 'device', 'CLI should accept join as a terminal-first device-auth sync alias');
@@ -1610,6 +1614,7 @@ async function assertCliDerivedPayload() {
   });
   assert(overrideHelp.includes('Current public claim command: npx --yes @lets-vibe/vibestats') && overrideHelp.includes('Current public status command: npx --yes @lets-vibe/vibestats status'), 'CLI should honor VIBESTATS_CLI_PACKAGE in printed follow-up commands');
   assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the terminal-first participation flow') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default') && cliSource.includes('Use --yes with join/onboard to publish after reveal without prompting'), 'CLI help should frame the no-subcommand path as status, reveal-before-publish terminal onboarding');
+  assert(cliSource.includes('vibestats share --handle HANDLE [--host URL] [--json]') && cliSource.includes('Use share to fetch a public profile'), 'CLI help should expose terminal profile share-kit generation');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
   assert(cliSource.includes('Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}') && cliSource.includes('Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}') && cliSource.includes('Use --dry-run as a legacy alias for reveal') && cliSource.includes('Use reveal --json to print the exact derived payload'), 'CLI help should separate one-command claim, human reveal, and payload JSON');
   const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
@@ -1741,6 +1746,66 @@ async function assertCliDerivedPayload() {
     });
     const missingStatus = JSON.parse(output.join(''));
     assert(missingStatus.ready === false && missingStatus.next_steps.some((step) => step.includes('/insights')) && missingStatus.status_command === DEFAULT_NPX_STATUS_COMMAND, 'CLI status JSON should recover missing users into the /insights terminal checklist');
+
+    const publicProfile = {
+      user: { gh_handle: 'alex', avatar_url: 'https://example.invalid/avatar.png' },
+      uploads: [{
+        archetype: 'shipper',
+        raw_meta: { signature: 'prolific Shipper', signatureCombo: 'shipper+builder' },
+        scores: { shipper: 92 },
+        metrics: {},
+      }],
+      rarity: { count: 2, tier: 'rare', window_days: 30 },
+    };
+    output.length = 0;
+    const shareKit = await printProfileShareKit({
+      host: 'https://vibestats.example',
+      handle: '@alex',
+    }, {
+      stdout: {
+        write(chunk) {
+          output.push(String(chunk));
+          return true;
+        },
+      },
+      fetchImpl: async (url) => {
+        assert(url === 'https://vibestats.example/api/u/alex', 'CLI share should fetch public profile JSON by handle');
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return publicProfile;
+          },
+        };
+      },
+    });
+    assert(shareKit.urls.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper', 'CLI share should build a compare-first invite URL from the public profile');
+    assert(output.join('').includes('vibestats share kit: @alex') && output.join('').includes('README badge: [![vibestats: @alex]') && output.join('').includes(DEFAULT_NPX_REVEAL_COMMAND), 'CLI share should print the copy-ready share kit and terminal reveal command');
+    assert(output.join('').includes('Privacy proof: raw /insights stays local; public payload has no raw usage fields: yes'), 'CLI share should print privacy proof from the public payload');
+    assert(!output.join('').includes('tool_usage') && !output.join('').includes('language_usage'), 'CLI share output must not print raw usage fields');
+    output.length = 0;
+    await printProfileShareKit({
+      host: 'https://vibestats.example',
+      handle: 'alex',
+      json: true,
+    }, {
+      stdout: {
+        write(chunk) {
+          output.push(String(chunk));
+          return true;
+        },
+      },
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return publicProfile;
+        },
+      }),
+    });
+    const shareKitJson = JSON.parse(output.join(''));
+    assert(shareKitJson.copy.readme_badge_markdown.includes('/u/alex/badge.svg') && shareKitJson.copy.terminal_onboarding.includes(DEFAULT_INSTALL_COMMAND), 'CLI share JSON should expose portable distribution snippets and the Claude Code install hook');
+    output.length = 0;
 
     const extracted = await insightsFromClaudeUsageDirectory(usageDir);
     assert(extracted.meta.date_range === '2026-05-01 to 2026-05-03', 'Claude /insights extractor should derive the session date range');

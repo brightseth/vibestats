@@ -107,6 +107,7 @@ npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle>
 After a saved profile is live, generate the launch/share kit for the first public posts:
 
 ```bash
+npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>
 npm run share:kit -- --handle <saved-gh-handle>
 ```
 

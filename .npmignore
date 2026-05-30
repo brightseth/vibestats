@@ -6,6 +6,7 @@
 !lib
 !lib/claude-insights-extractor.js
 !lib/insights-derived.js
+!lib/share-kit.js
 !api
 !api/_lib
 !api/_lib/moments.js
