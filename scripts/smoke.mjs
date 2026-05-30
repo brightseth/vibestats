@@ -345,8 +345,8 @@ async function assertRoutes() {
   assert(indexHtml.includes('No file hunting') && indexHtml.includes('real ~/.claude/usage-data/ output'), 'upload page should steer cold users away from manual file hunting');
   assert(indexHtml.includes('buildBehavioralMoments(insights)') && indexHtml.includes('longestSessionMinutes'), 'upload page should save derived behavioral moments from local reveal data');
   assert(indexHtml.includes('weekly_digest_available: body.weekly_digest_available === true'), 'upload page should preserve digest delivery readiness from identity status');
-  assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should only show inline digest opt-in when delivery is configured');
-  assert(indexHtml.includes('Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.'), 'upload page should explain pending digest delivery without offering a dead opt-in');
+  assert(indexHtml.includes('identityStatus.weekly_digest_available === true'), 'upload page should preserve digest delivery readiness for inline copy');
+  assert(indexHtml.includes('Reserve the Monday digest now; delivery starts when email infrastructure is enabled.'), 'upload page should capture digest consent before delivery is configured');
   assert(profileHtml.includes("fetch('/api/identity-status'"), 'profile page should check identity readiness before showing sign-in');
   assert(profileHtml.includes('function renderEmptyProfile') && profileHtml.includes('Signature mint pending'), 'profile page should render claimed-but-unminted profiles as a first-run state');
   assert(profileHtml.includes('sameHandle(me?.gh_handle, handle)') && profileHtml.includes("isOwner ? 'Upload insights' : 'Mint yours'"), 'empty profile state should use owner-aware minting actions');
@@ -358,10 +358,11 @@ async function assertRoutes() {
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
   assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
-  assert(settingsHtml.includes('identityStatus.weekly_digest_available === true'), 'settings page should gate digest controls on delivery readiness');
+  assert(settingsHtml.includes('identityStatus.weekly_digest_available === true'), 'settings page should use digest delivery readiness for consent copy');
   assert(settingsHtml.includes('renderDigestControls(settings, identityStatus)'), 'settings page should centralize digest control readiness state');
-  assert(settingsHtml.includes('checkbox.disabled = !digestReady && !digestOptIn') && settingsHtml.includes('save.disabled = !digestReady && !digestOptIn'), 'settings page should allow saved digest opt-outs when delivery is unavailable');
-  assert(settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should block new digest opt-ins when delivery is unavailable');
+  assert(settingsHtml.includes('Digest consent saved. Delivery starts when weekly email infrastructure is enabled.'), 'settings page should explain saved digest consent before delivery is configured');
+  assert(settingsHtml.includes('checkbox.disabled = false') && settingsHtml.includes('save.disabled = false'), 'settings page should allow digest opt-ins before delivery is configured');
+  assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'settings UI should expose CLI sync command generation');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
@@ -375,7 +376,7 @@ async function assertRoutes() {
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
   assert(settingsApi.includes('sync_token_invalidated_at'), 'authenticated settings API should preserve sync token revocation metadata');
   assert(settingsApi.includes('includeActivity: true'), 'authenticated settings API should retain owner activity timestamps');
-  assert(settingsApi.includes('publicIdentityReadiness') && settingsApi.includes('Weekly digest delivery is not configured'), 'settings API should reject new digest opt-ins when delivery env is missing');
+  assert(!settingsApi.includes('Weekly digest delivery is not configured') && settingsApi.includes('email_consent_at'), 'settings API should save digest consent even before delivery env is configured');
   assert(settingsApi.includes('const email = optIn') && settingsApi.includes(': null;'), 'settings API should clear digest email whenever digest opt-in is off');
   assert(settingsExportApi.includes('ownerProfileSettings'), 'settings export should use owner-only settings serializer');
   assert(settingsExportApi.includes('uploads.map(exportableUpload)'), 'settings export should sanitize stored uploads through a derived-field allowlist');
@@ -471,6 +472,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
   assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-digest'), 'launch checklist should require strict digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
+  assert(launchDoc.includes('Digest consent can be captured before delivery env is present'), 'launch checklist should document digest consent capture before delivery readiness');
   assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('day-based streak') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
   assert(launchDoc.includes('Profile JSON includes evolution, day-based streak, rarity, and leaderboard fields.'), 'launch checklist should require profile return-loop JSON proof');
   assert(launchDoc.includes('Profile embed and badge show comparison-oriented scored credential proof.'), 'launch checklist should require scored portable credential proof');

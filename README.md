@@ -124,7 +124,7 @@ Run database migrations:
 npm run migrate
 ```
 
-Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured.
+Weekly digest delivery is scheduled in `vercel.json` at `/api/cron/weekly-digest`. The route requires `Authorization: Bearer $CRON_SECRET` and sends via Resend when `RESEND_API_KEY` + `DIGEST_FROM_EMAIL` are configured. Users can save digest consent before delivery is configured; those opt-ins become eligible once the email env is enabled.
 
 Run one-command local sync after signing in. The CLI opens a browser approval flow against your GitHub-backed vibestats session and creates a revocable token automatically:
 

@@ -2164,14 +2164,14 @@
       const embedPath = embedPathFromSave(result.embed_url, profilePath);
       const safeProfilePath = safeHtml(profilePath);
       const safePairingBuilderUrl = safeHtml(`/compare?me=${encodeURIComponent(currentUser?.gh_handle || '')}`);
-      const digestInline = identityStatus.weekly_digest_available === true
-        ? `
+      const digestInline = `
         <div class="digest-inline">
           <input type="email" id="digest-email-inline" placeholder="you@example.com" autocomplete="email" aria-label="Weekly digest email">
           <button type="button" id="digest-opt-in-inline">Get weekly digest</button>
-          <div class="digest-inline-note">Monday email with evolution, rarity, and leaderboard movement. Raw insights JSON never leaves your browser.</div>
-        </div>`
-        : '<div class="digest-inline-note">Weekly digest delivery is not configured on this deployment yet. Raw insights JSON never leaves your browser.</div>';
+          <div class="digest-inline-note">${identityStatus.weekly_digest_available === true
+            ? 'Monday email with evolution, rarity, and leaderboard movement.'
+            : 'Reserve the Monday digest now; delivery starts when email infrastructure is enabled.'} Raw insights JSON never leaves your browser.</div>
+        </div>`;
       updateProfileSaveStatus(`
         Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a>
         <div class="post-save-actions">
@@ -2209,7 +2209,7 @@
           });
           const body = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(body.error || 'Digest opt-in failed');
-          button.textContent = 'Digest on';
+          button.textContent = identityStatus.weekly_digest_available === true ? 'Digest on' : 'Digest reserved';
           input.value = body.settings?.digest_email || email;
         } catch (err) {
           button.disabled = false;

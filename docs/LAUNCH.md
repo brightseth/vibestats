@@ -23,6 +23,8 @@ Optional but launch-relevant:
 - `KV_REST_API_URL` + `KV_REST_API_TOKEN` or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` for aggregate community stats
 - `CRON_SECRET`, `RESEND_API_KEY`, and `DIGEST_FROM_EMAIL` for weekly digest delivery
 
+Digest consent can be captured before delivery env is present. Missing digest env should disable sending and strict `--expect-digest`, not block users from opting into the future retention loop.
+
 Env scope matters. For preview audits, the required identity variables must be attached to Preview as well as Production; for local `vercel env pull`, attach them to Development too. `vercel env ls` can show a variable that is present in Production only, and the Preview deployment will still report `session_secret`, `database`, or `github_oauth` as missing until that variable exists in Preview and a new deployment is created.
 
 ```bash

@@ -447,11 +447,11 @@
       document.getElementById('digest-hint').textContent = digestReady
         ? 'Optional email summary of your evolution, streak, and future leaderboard movement.'
         : digestOptIn
-        ? 'Weekly digest delivery is not configured on this deployment yet. You can still turn off the saved opt-in.'
-        : 'Weekly digest delivery is not configured on this deployment yet.';
-      checkbox.disabled = !digestReady && !digestOptIn;
-      email.disabled = !digestReady;
-      save.disabled = !digestReady && !digestOptIn;
+        ? 'Digest consent saved. Delivery starts when weekly email infrastructure is enabled.'
+        : 'Reserve your weekly digest now; delivery starts when email infrastructure is enabled.';
+      checkbox.disabled = false;
+      email.disabled = false;
+      save.disabled = false;
     }
 
     async function init() {
@@ -496,10 +496,6 @@
       document.getElementById('save-digest').addEventListener('click', async () => {
         const optIn = document.getElementById('weekly-digest').checked;
         const email = document.getElementById('digest-email').value;
-        if (identityStatus.weekly_digest_available !== true && optIn) {
-          showMessage('Weekly digest delivery is not configured on this deployment yet.', true);
-          return;
-        }
         try {
           const body = await api('/api/settings', {
             method: 'PATCH',
@@ -509,7 +505,9 @@
             }),
           });
           renderDigestControls(body.settings || {}, identityStatus);
-          showMessage(body.settings?.weekly_digest_opt_in ? 'Weekly digest saved.' : 'Weekly digest off.');
+          showMessage(body.settings?.weekly_digest_opt_in
+            ? (identityStatus.weekly_digest_available === true ? 'Weekly digest saved.' : 'Weekly digest reserved.')
+            : 'Weekly digest off.');
         } catch (err) {
           showMessage(err.message, true);
         }
