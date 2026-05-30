@@ -31,6 +31,7 @@
     "doctor:identity": "node scripts/identity-doctor.mjs",
     "audit:launch": "node scripts/launch-audit.mjs",
     "share:kit": "node scripts/share-kit.mjs",
+    "ssh:dev": "node services/ssh-shell/server.js",
     "dev": "vercel dev",
     "serve": "vercel dev",
     "migrate": "node scripts/migrate.mjs"
@@ -38,6 +39,7 @@
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "postgres": "^3.4.9",
-    "satori": "^0.19.1"
+    "satori": "^0.19.1",
+    "ssh2": "^1.17.0"
   }
 }

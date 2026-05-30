@@ -34,7 +34,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **Public metric controls** so exact activity counts and language count stay hidden from visitors unless the owner opts in.
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
 - **A local sync CLI** that reads the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, and `report.html`), computes derived metrics locally, and posts them with a signed sync token.
-- **A versioned SSH shell contract** (`/api/ssh/manifest`) plus short-lived claim sessions (`/api/ssh/claim-start`, `/api/ssh/claim-status`, `/cli.sh`, CLI `claim CODE`) for the planned no-install terminal shell; it coordinates a waiting SSH session without letting the SSH host read raw `/insights`.
+- **A versioned SSH shell contract and service scaffold** (`/api/ssh/manifest`, `services/ssh-shell/server.js`) plus short-lived claim sessions (`/api/ssh/claim-start`, `/api/ssh/claim-status`, `/cli.sh`, CLI `claim CODE`) for the planned no-install terminal shell; it coordinates a waiting SSH session without letting the SSH host read raw `/insights`.
 
 **Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default. The public promises page (`/promises`) makes the raw-data boundary, unlisted-by-default profiles, bounded match-intro/outcome events, and no-employer-search stance explicit.
 
@@ -180,6 +180,15 @@ By default the CLI reads the real Claude Code `/insights` output directory at `~
 Claude Code users can also invoke the `/vibestats` command from `.claude/commands/vibestats.md`. Install it into `~/.claude/commands/vibestats.md` with `npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command`; use `--force` only if you want to replace an existing local command. It checks for `/insights` output, runs the CLI reveal to show derived results first, and only publishes after the user explicitly asks to claim the profile.
 
 Planned no-install route: `ssh ssh.vibestats.io` should become a terminal social shell for browsing profiles, leaderboards, matchmaker results, share kits, and claim status. The HTTP side now exposes `/api/ssh/manifest` so the external SSH service can consume the same versioned command/privacy contract that launch audit checks. It must not replace the local extractor: the SSH host cannot read `~/.claude/usage-data/`, and raw `/insights` files must never be pasted, streamed, scp'd, or uploaded to it. See `docs/SSH-ROUTE.md` for the hybrid SSH + local-helper plan.
+
+Run the first SSH shell scaffold locally:
+
+```bash
+PORT=2222 VIBESTATS_URL=https://vibestats.io npm run ssh:dev
+ssh -p 2222 localhost
+```
+
+For production, deploy `services/ssh-shell/server.js` as a separate TCP service and set a stable `SSH_HOST_KEY`.
 
 Run local smoke checks:
 

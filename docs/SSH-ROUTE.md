@@ -109,12 +109,27 @@ curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-7K2Q-M9PA
 
 Vercel Functions cannot host a long-lived SSH server. Ship this as a separate service on Fly.io, Railway, Render, a small VM, or a container behind a TCP load balancer.
 
+The repo now includes a first deployable Node service at `services/ssh-shell/server.js`. It uses the same `/api/ssh/manifest` contract, accepts anonymous SSH sessions, and implements a line-oriented shell for `help`, `view`, `share`, `leaderboard`, `match`, `compare`, `claim`, and `status`. It talks only to HTTPS APIs on `VIBESTATS_URL`; it does not mount or inspect local Claude Code files.
+
+Local dev:
+
+```bash
+PORT=2222 VIBESTATS_URL=https://vibestats.io npm run ssh:dev
+ssh -p 2222 localhost
+```
+
+Production must set a stable host key:
+
+```bash
+SSH_HOST_KEY="$(cat ./vibestats_ssh_host_key)" VIBESTATS_URL=https://vibestats.io PORT=22 npm run ssh:dev
+```
+
 Implementation options:
 
 - Go: Charm `wish` + Bubble Tea for the TUI.
 - Node: `ssh2` server + Ink/Blessed-style rendering.
 
-Prefer Go if we want the app to feel native and durable under concurrent terminal sessions.
+The current Node shell is the fastest path to a live no-install funnel. A Go/Bubble Tea implementation can replace it later if we want a richer native TUI under high concurrency.
 
 ### APIs To Reuse
 

@@ -22,7 +22,7 @@ The v1 card and viral loops are the wedge. The long-term product is the trusted 
    Start logging intro, accept, and outcome edges early, even before the model is sophisticated. Outcome history cannot be backfilled. This is what eventually moves matching from hand-tuned compatibility to empirical complementarity. V1 now stores only bounded match-intro/outcome event enums, not free-text intros, contact URLs, or headers.
 
 4. **No-install terminal social shell.**
-   Add an SSH/TUI route (`ssh ssh.vibestats.io`) for browsing, share kits, matchmaker discovery, and claim coordination without asking cold users to trust npm first. Keep extraction local; SSH is the product shell, not the raw `/insights` reader. V1 now exposes `/api/ssh/manifest` so that shell has a versioned command/privacy contract before the TCP service is deployed. See `docs/SSH-ROUTE.md`.
+   Add an SSH/TUI route (`ssh ssh.vibestats.io`) for browsing, share kits, matchmaker discovery, and claim coordination without asking cold users to trust npm first. Keep extraction local; SSH is the product shell, not the raw `/insights` reader. V1 now exposes `/api/ssh/manifest` and includes `services/ssh-shell/server.js` as the first deployable TCP service scaffold. See `docs/SSH-ROUTE.md`.
 
 ## Code Catches To Preserve
 

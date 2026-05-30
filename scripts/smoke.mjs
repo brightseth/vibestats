@@ -223,6 +223,7 @@ async function assertRoutes() {
   const rewrites = config.rewrites || [];
   assert(packageJson.scripts?.dev === 'vercel dev' && packageJson.scripts?.serve === 'vercel dev', 'local dev should use Vercel routing now that / is rendered by an API function');
   assert(packageJson.scripts?.['share:kit'] === 'node scripts/share-kit.mjs', 'package should expose the public profile share-kit generator');
+  assert(packageJson.scripts?.['ssh:dev'] === 'node services/ssh-shell/server.js' && packageJson.dependencies?.ssh2, 'package should expose the deployable SSH shell service');
   assert(
     rewrites.some((rewrite) => rewrite.source === '/' && rewrite.destination === '/api/home'),
     'homepage should rewrite to dynamic metadata renderer',
@@ -883,6 +884,91 @@ async function assertSshShellManifest() {
   assert(manifest.viral_loops.includes('compare_invite') && manifest.viral_loops.includes('terminal_share_kit'), 'SSH shell manifest should preserve compare-first viral loops');
   assert(!serialized.includes('tool_usage') && !serialized.includes('language_usage') && !serialized.includes('rawJson'), 'SSH shell manifest should avoid raw-shaped public field names');
   console.log('ok SSH shell manifest contract');
+}
+
+async function assertSshShellService() {
+  const { handleShellCommand, renderHelp, renderWelcome } = await import('../services/ssh-shell/server.js');
+  const profile = {
+    user: { gh_handle: 'alex' },
+    uploads: [{
+      archetype: 'shipper',
+      activity: { days: '30-119 days tracked', cadence: 'high-velocity cadence', depth: 'deep history' },
+      raw_meta: { signature: 'prolific Shipper' },
+    }],
+    rarity: { tier: 'rare', count: 2, window_days: 30 },
+    leaderboard: { rank: 3, label: 'shipper' },
+    achievements: [{ label: 'Rare signature', value: '1 of 2' }],
+  };
+  const fetchImpl = async (url, options = {}) => {
+    const parsed = new URL(url);
+    const bodyFor = () => {
+      if (parsed.pathname === '/api/ssh/claim-start') {
+        assert(options.method === 'POST', 'SSH shell claim command should create sessions with POST');
+        return {
+          ok: true,
+          code: 'VIBE-ABCD-2345',
+          expires_in_seconds: 600,
+          local_command: "curl -fsSL 'https://vibestats.example/cli.sh' | sh -s -- claim 'VIBE-ABCD-2345' --host 'https://vibestats.example'",
+          npx_command: "npx --yes 'github:brightseth/vibestats#feat/wave-1-identity' claim 'VIBE-ABCD-2345' --host 'https://vibestats.example'",
+        };
+      }
+      if (parsed.pathname === '/api/ssh/claim-status') {
+        return {
+          ok: true,
+          state: 'synced',
+          gh_handle: 'alex',
+          profile_url: 'https://vibestats.example/u/alex',
+          compare_url: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper',
+          credential_url: 'https://vibestats.example/u/alex/credential.json',
+        };
+      }
+      if (parsed.pathname === '/api/u/alex') return profile;
+      if (parsed.pathname === '/api/leaderboard') {
+        return {
+          archetype: 'shipper',
+          label: 'Shipper',
+          total: 1,
+          entries: [{ rank: 1, user: { gh_handle: 'alex' }, score: 92, archetype: 'shipper', signature: { label: 'prolific Shipper' } }],
+        };
+      }
+      if (parsed.pathname === '/api/match') {
+        return {
+          goal: 'pair-coding',
+          goal_label: 'Pair coding',
+          entries: [{ user: { gh_handle: 'alex' }, fit_score: 88, fit_level: 'strong', archetype: 'shipper', archetype_label: 'Shipper', signature: { label: 'prolific Shipper' } }],
+        };
+      }
+      return { error: 'missing fake route' };
+    };
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return bodyFor();
+      },
+    };
+  };
+  const context = { origin: 'https://vibestats.example', fetchImpl };
+  const welcome = renderWelcome(context);
+  const help = renderHelp(context);
+  const claim = await handleShellCommand('claim', context);
+  const status = await handleShellCommand('status VIBE-ABCD-2345', context);
+  const viewed = await handleShellCommand('view alex', context);
+  const share = await handleShellCommand('share alex', context);
+  const board = await handleShellCommand('leaderboard shipper', context);
+  const match = await handleShellCommand('match pair-coding builder', context);
+  const compare = await handleShellCommand('compare builder shipper', context);
+  const combined = [welcome, help, claim.text, status.text, viewed.text, share.text, board.text, match.text, compare.text].join('\n');
+  assert(welcome.includes('this SSH shell never reads ~/.claude/usage-data') && help.includes('view HANDLE') && help.includes('claim'), 'SSH shell service should explain commands and local-only extraction');
+  assert(claim.text.includes('/insights') && claim.text.includes('/cli.sh') && claim.text.includes('This SSH host never sees raw /insights'), 'SSH shell claim command should print the local helper handoff');
+  assert(status.text.includes('Profile: https://vibestats.example/u/alex') && status.text.includes('Compare invite:'), 'SSH shell status command should print synced claim links');
+  assert(viewed.text.includes('@alex: prolific Shipper') && viewed.text.includes('Credential: https://vibestats.example/u/alex/credential.json') && viewed.text.includes('Compare invite:'), 'SSH shell view command should print profile, credential, and compare links');
+  assert(share.text.includes('README badge:') && share.text.includes('Raw /insights stayed local') && share.text.includes('twitter.com/intent/tweet'), 'SSH shell share command should print portable viral snippets');
+  assert(board.text.includes('Shipper leaderboard') && board.text.includes('@alex'), 'SSH shell leaderboard command should render public board entries');
+  assert(match.text.includes('Pair coding suggestions') && match.text.includes('@alex'), 'SSH shell match command should render goal-driven suggestions');
+  assert(compare.text.includes('/compare?a=builder&b=shipper') && compare.text.includes('Compare-first loop'), 'SSH shell compare command should render pair preview links');
+  assert(!combined.includes('tool_usage') && !combined.includes('language_usage') && !combined.includes('rawJson'), 'SSH shell service output should avoid raw-shaped field names');
+  console.log('ok SSH shell service commands');
 }
 
 async function assertCliBootstrapScript() {
@@ -3926,6 +4012,7 @@ await assertUpdateCliCommandScript();
   await assertDerivedProfileCredentialHelpers();
   await assertSshClaimHelpers();
   await assertSshShellManifest();
+  await assertSshShellService();
   await assertCliBootstrapScript();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
