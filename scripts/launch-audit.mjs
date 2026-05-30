@@ -386,6 +386,7 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: expectReady ? [404] : [200, 404],
       requireNoStore: true,
+      mustInclude: ['profile unclaimed', 'Copy unclaimed profile', 'Run /insights', 'Raw sessions stay on your machine'],
     },
     {
       label: 'profile embed',

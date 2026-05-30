@@ -371,6 +371,9 @@ async function assertRoutes() {
   assert(indexHtml.includes('Reserve the Monday digest now; delivery starts when email infrastructure is enabled.'), 'upload page should capture digest consent before delivery is configured');
   assert(profileHtml.includes("fetch('/api/identity-status'"), 'profile page should check identity readiness before showing sign-in');
   assert(profileHtml.includes('function renderEmptyProfile') && profileHtml.includes('Signature mint pending'), 'profile page should render claimed-but-unminted profiles as a first-run state');
+  assert(profileHtml.includes('function renderUnknownProfile') && profileHtml.includes('profile unclaimed') && profileHtml.includes('Copy unclaimed profile'), 'profile page should turn missing handles into reveal/claim landing states');
+  assert(profileHtml.includes('renderUnknownProfile(me, profileHandle, identityStatus)') && profileHtml.includes('Only @${handle} can claim this exact URL with GitHub'), 'missing profile state should preserve GitHub-backed handle ownership');
+  assert(profileHtml.includes('Raw sessions stay on your machine; only derived metrics save.'), 'missing profile state should preserve the raw-session privacy promise');
   assert(profileHtml.includes('sameHandle(me?.gh_handle, handle)') && profileHtml.includes("isOwner ? 'Upload insights' : 'Mint yours'"), 'empty profile state should use owner-aware minting actions');
   assert(profileHtml.includes('Raw insights stay in your browser; only derived metrics save.') && profileHtml.includes('Copy pending profile'), 'empty profile state should preserve the privacy promise and copyable profile loop');
   assert(profileHtml.includes('Profile saves pending'), 'profile page should avoid dead-end sign-in when identity is unavailable');
@@ -449,6 +452,7 @@ async function assertRoutes() {
   assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
   assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge and share-recipient reveal surfaces');
+  assert(launchAudit.includes("label: 'unknown profile fallback'") && launchAudit.includes('Copy unclaimed profile'), 'launch audit should verify missing profile reveal/claim fallback');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
   assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare with me') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof');
   assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('Claude Code signal'), 'launch audit should require saved profile badges to expose scored credential proof');

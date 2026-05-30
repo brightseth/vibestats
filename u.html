@@ -1214,6 +1214,86 @@
         : `@${handle} claimed a vibestats profile. Signature mint pending.\n${profileUrl}`;
     }
 
+    function unclaimedProfileInviteText(handle, profileUrl) {
+      return `@${handle} has not minted a vibestats profile yet. Claude Code already has your build fingerprint. Reveal yours:\n${canonicalVibestatsUrl('/')}\nProfile slot: ${profileUrl}`;
+    }
+
+    function renderUnknownProfile(me, handle, identityStatus = {}) {
+      const container = document.getElementById('empty-profile');
+      const profilePath = `/u/${encodeURIComponent(handle)}`;
+      const profileUrl = canonicalVibestatsUrl(profilePath);
+      const isTargetOwner = sameHandle(me?.gh_handle, handle);
+      const authAction = identityStatus.profile_save_available === true && !me
+        ? `<a class="btn" href="/api/auth/github/start?returnTo=${encodeURIComponent(profilePath)}">Sign in with GitHub</a>`
+        : '';
+      const pendingAction = identityStatus.profile_save_available === true
+        ? ''
+        : '<span class="btn muted">Profile saves pending</span>';
+
+      container.innerHTML = `
+        <div class="empty-profile-shell">
+          <div class="empty-profile-head">
+            <div class="empty-profile-avatar fallback" aria-hidden="true">VS</div>
+            <div>
+              <div class="empty-profile-kicker">profile unclaimed</div>
+              <h1>@${esc(handle)} has not minted a vibestats profile yet.</h1>
+            </div>
+          </div>
+          <p class="empty-profile-copy">${esc(isTargetOwner
+            ? 'This GitHub handle is yours. Run the reveal command to turn it into a persistent profile with comparisons, rarity, and weekly return hooks.'
+            : `Only @${handle} can claim this exact URL with GitHub. You can still reveal your own Claude Code identity now.`)} Raw sessions stay on your machine; only derived metrics save.</p>
+          <div class="empty-profile-proof" aria-label="Unclaimed profile path">
+            <div class="empty-proof-item"><strong>Claim by GitHub</strong><span>The persistent URL is tied to the matching GitHub handle.</span></div>
+            <div class="empty-proof-item"><strong>Reveal first</strong><span>Run /insights, then the npx reveal command. No file hunting.</span></div>
+            <div class="empty-proof-item"><strong>Privacy intact</strong><span>Raw Claude Code session data never has to leave your machine.</span></div>
+          </div>
+          <div class="reveal-command-grid" aria-label="Reveal commands">
+            <div class="reveal-command">
+              <code>${esc(INSIGHTS_COMMAND)}</code>
+              <button type="button" data-copy-unclaimed="${esc(INSIGHTS_COMMAND)}">Copy</button>
+            </div>
+            <div class="reveal-command">
+              <code>${esc(REVEAL_COMMAND)}</code>
+              <button type="button" data-copy-unclaimed="${esc(REVEAL_COMMAND)}">Copy</button>
+            </div>
+          </div>
+          <div class="empty-profile-actions">
+            <a class="btn primary" href="/">${isTargetOwner ? 'Mint this profile' : 'Reveal yours'}</a>
+            ${authAction}
+            ${pendingAction}
+            <button class="btn" id="copy-unclaimed-profile" type="button">Copy unclaimed profile</button>
+            <a class="btn" href="/browse">Browse minted profiles</a>
+          </div>
+        </div>
+      `;
+      container.style.display = 'grid';
+
+      container.querySelectorAll('[data-copy-unclaimed]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const idle = button.textContent;
+          try {
+            await copyText(button.getAttribute('data-copy-unclaimed') || '');
+            button.textContent = 'Copied';
+          } catch {
+            button.textContent = 'Copy failed';
+          }
+          setTimeout(() => { button.textContent = idle; }, 1400);
+        });
+      });
+
+      const copyBtn = document.getElementById('copy-unclaimed-profile');
+      copyBtn?.addEventListener('click', async () => {
+        try {
+          await copyText(unclaimedProfileInviteText(handle, profileUrl));
+          copyBtn.textContent = 'Profile copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy unclaimed profile'; }, 1500);
+        } catch {
+          copyBtn.textContent = 'Copy failed';
+          setTimeout(() => { copyBtn.textContent = 'Copy unclaimed profile'; }, 1500);
+        }
+      });
+    }
+
     function renderEmptyProfile(me, profile, identityStatus = {}) {
       const container = document.getElementById('empty-profile');
       const handle = profile.user.gh_handle;
@@ -1560,6 +1640,10 @@
 
       if (!profileRes.ok) {
         document.getElementById('loading').style.display = 'none';
+        if (profileRes.status === 404) {
+          renderUnknownProfile(me, profileHandle, identityStatus);
+          return;
+        }
         const err = profileRes.status === 404 ? 'Profile not found' : 'Profile unavailable';
         document.getElementById('error').style.display = 'grid';
         document.getElementById('error').innerHTML = `<strong>${esc(err)}</strong><span>${esc(profileHandle)}</span>`;
