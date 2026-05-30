@@ -6,6 +6,7 @@
     { "source": "/compare.html", "destination": "/compare", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/", "destination": "/api/home" },
     { "source": "/u/:handle/badge.svg", "destination": "/api/badge?handle=:handle" },
     { "source": "/u/:handle/embed", "destination": "/api/embed?handle=:handle" },
     { "source": "/u/:handle/pair/:other", "destination": "/api/compare-page?a=:other&b=:handle" },

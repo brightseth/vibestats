@@ -20,6 +20,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A scored breakdown** across all 8 (sigmoid + power-law normalized).
 - **A Spotify-Wrapped-style tap-through** (`/wrapped`).
 - **A shareable card** with dynamic OG image (`/card?a=…`) → Twitter intent prefilled.
+- **Compare-first homepage previews** (`/?compareTo=<handle>&compareArchetype=<type>`) that unfurl as "pair with @handle, then reveal yours" instead of generic homepage copy.
 - **A community genome page** (`/genome`) — archetype distribution + community averages.
 - **A compatibility view** (`/compare`) — two pasted profiles side-by-side.
 - **Person-backed pair links** (`/u/<host>/pair/<visitor>`) for share-asymmetric comparisons.
@@ -52,7 +53,7 @@ The current product is a one-shot vanity moment. The next product is a **persist
 
 ```
 vibestats/
-├── index.html         # upload + archetype reveal (~88KB, all client-side)
+├── home.html          # upload + archetype reveal, served through /api/home for dynamic share previews
 ├── wrapped.html       # Spotify-Wrapped tap-through
 ├── dashboard.html     # detailed metric view
 ├── compare-template.html # two-profile side-by-side, served through `/api/compare-page`
@@ -94,11 +95,10 @@ vibestats/
 git clone git@github.com:brightseth/vibestats.git
 cd vibestats
 npm install
-# Local static serve (any static server works):
-npx serve .
-# For API routes:
-vercel dev
+npm run dev
 ```
+
+The homepage is served through `/api/home` so compare-first links can render dynamic share metadata. Use `vercel dev` or `npm run dev`; a plain static server will not exercise the production route order.
 
 Copy `.env.example` to `.env.local`. You'll need:
 
@@ -177,7 +177,7 @@ CI runs the smoke harness on pull requests and pushes to `main`.
 
 - **Branch discipline:** feature branches → PR → merge to main. Don't push to main directly.
 - **Pre-push hygiene:** scan diff for secrets, transcripts, internal notes before pushing. `.env.local` is git-ignored — keep it that way.
-- **All scoring math lives in `index.html`** for now (single-page tradition). When duplicated in `api/*.js`, keep the duplicate in sync until Wave 1 lifts it to `lib/scoring.js`.
+- **All scoring math lives in `home.html`** for now (single-page tradition). When duplicated in `api/*.js`, keep the duplicate in sync until Wave 1 lifts it to `lib/scoring.js`.
 - **Compatibility math lives in `lib/compat.js`.** Keep `/compare` and profile inline pairing on the shared helper.
 - **8 archetypes are canonical.** Adding a 9th is a breaking change (touches scoring, OG, share URL params, community aggregates, compatibility math). See ROADMAP Wave 3 for sub-archetypes — those are additive.
 - **Framing policy:** non-embed pages stay unframeable through CSP `frame-ancestors 'none'`. Do not restore a global `X-Frame-Options: DENY`; it would break `/u/<handle>/embed`.

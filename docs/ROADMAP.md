@@ -135,7 +135,7 @@ create index on uploads(user_id, uploaded_at desc);
 
 **Deliverables:**
 
-1. **Sub-archetypes (already partly built).** `parallel orchestrator`, `methodical architect`. Lift `SUB_PREFIXES` from `index.html` into `lib/scoring.js`, expose on profile.
+1. **Sub-archetypes (already partly built).** `parallel orchestrator`, `methodical architect`. Lift `SUB_PREFIXES` from `home.html` into `lib/scoring.js`, expose on profile.
 2. **Rare combo detection.** Compute a fingerprint = top-3 archetypes + bucketed primary score. Show "1 of N this month" if N < 50. This is the scarcity vanity.
 3. **Weekly leaderboards** per archetype: top 25 by primary score, with ties broken by recency. Reset weekly. Public at `/leaderboard/<archetype>`.
 4. **Streak tracking.** Uploads more than 7 days apart break a streak. Show "47-day streak" on profile.

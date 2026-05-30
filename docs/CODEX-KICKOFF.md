@@ -22,7 +22,7 @@ Full Wave 1 spec is in `docs/ROADMAP.md`. The constraint: **don't break the priv
 
 ## Architecture you're inheriting
 
-**Front-end:** static HTML pages with inline JS (`index.html`, `wrapped.html`, `dashboard.html`, `compare.html`, `genome.html`). All scoring math is in `index.html`. The other pages duplicate slices of it — keep duplicates in sync OR (better) lift scoring to `lib/scoring.js` and import.
+**Front-end:** static HTML pages with inline JS (`home.html`, `wrapped.html`, `dashboard.html`, `compare.html`, `genome.html`). All scoring math is in `home.html`. The other pages duplicate slices of it — keep duplicates in sync OR (better) lift scoring to `lib/scoring.js` and import.
 
 **Back-end:** Vercel Functions in `api/`:
 - `api/stats.js` — POST archetype + 5 averages to Upstash Redis (aggregate counters, rate-limited 1/IP/hr).
@@ -106,7 +106,7 @@ create index users_handle_idx on users(gh_handle);
 
 ### Frontend changes
 
-- **`index.html`**: after archetype reveal, if user is logged in, show a "Saved to your profile →" pill linking to `/u/<handle>`. If logged out, show "Sign in with GitHub to save & track" CTA next to the share buttons. Don't block the share flow on auth.
+- **`home.html`**: after archetype reveal, if user is logged in, show a "Saved to your profile →" pill linking to `/u/<handle>`. If logged out, show "Sign in with GitHub to save & track" CTA next to the share buttons. Don't block the share flow on auth.
 - **New: `u.html`** or `pages/u/[handle].astro` or whatever you pick. Render: avatar + handle, archetype card (reuse OG card markup), evolution sparkline (last 12 uploads, primary archetype score), 5 community-relative stats ("you're in the top 12% of Orchestrators by commitsPerDay").
 - **New: `/settings`** (gated). Privacy toggle, delete account, download my data (return uploads as JSON).
 
@@ -163,10 +163,9 @@ git checkout -b feat/wave-1-identity
 npm install
 vercel link --project vibestats --scope lets-vibe
 vercel env pull .env.local
-npx serve .          # static surface
-vercel dev           # to test api/*
+npm run dev          # Vercel routing, homepage metadata, and api/*
 ```
 
-Then read `index.html` end-to-end. It's 88KB and is the source of truth for archetypes, scoring, and the share flow. Everything you build is a layer over it.
+Then read `home.html` end-to-end. It is the source of truth for archetypes, scoring, and the share flow. Everything you build is a layer over it.
 
 Good luck. Ship the profile.

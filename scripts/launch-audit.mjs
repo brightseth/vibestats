@@ -369,7 +369,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: ['id="readme-panel"', 'Copy README badge'],
+      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?'],
     },
     {
       label: 'profile recap',
@@ -406,7 +406,9 @@ async function auditLaunch(options) {
       path: comparePath,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['compareArchetype', 'compareTo'],
+      mustInclude: expectReady && profileHasUpload
+        ? [`See how you'd pair with @${handle}`, 'Run /insights, then reveal yours', '/api/og?']
+        : ['compareArchetype', 'compareTo'],
       checkRawLeaks: false,
     },
     {

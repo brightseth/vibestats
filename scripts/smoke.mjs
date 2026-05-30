@@ -5,8 +5,9 @@ import { Readable } from 'node:stream';
 
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret-with-at-least-32-bytes';
 
-const htmlFiles = ['index.html', 'u.html', 'settings.html', 'compare-template.html', 'leaderboard.html', 'match.html', 'browse.html', 'recap.html'];
+const htmlFiles = ['home.html', 'u.html', 'settings.html', 'compare-template.html', 'leaderboard.html', 'match.html', 'browse.html', 'recap.html'];
 const apiModules = [
+  '../api/home.js',
   '../api/compare-page.js',
   '../api/profile.js',
   '../api/recap.js',
@@ -174,7 +175,8 @@ async function assertRoutes() {
   const cliBin = await readFile('bin/vibestats.js', 'utf8');
   const identityStatusApi = await readFile('api/identity-status.js', 'utf8');
   const identityReadiness = await readFile('api/_lib/identity-readiness.js', 'utf8');
-  const indexHtml = await readFile('index.html', 'utf8');
+  const indexHtml = await readFile('home.html', 'utf8');
+  const homeApi = await readFile('api/home.js', 'utf8');
   const identityDoctor = await readFile('scripts/identity-doctor.mjs', 'utf8');
   const launchAudit = await readFile('scripts/launch-audit.mjs', 'utf8');
   const launchDoc = await readFile('docs/LAUNCH.md', 'utf8');
@@ -183,6 +185,11 @@ async function assertRoutes() {
   const claudeCommand = await readFile('.claude/commands/vibestats.md', 'utf8');
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
   const rewrites = config.rewrites || [];
+  assert(packageJson.scripts?.dev === 'vercel dev' && packageJson.scripts?.serve === 'vercel dev', 'local dev should use Vercel routing now that / is rendered by an API function');
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/' && rewrite.destination === '/api/home'),
+    'homepage should rewrite to dynamic metadata renderer',
+  );
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/pair/:other' && rewrite.destination === '/api/compare-page?a=:other&b=:handle'),
     'person-backed pair route should rewrite to dynamic compare page',
@@ -285,6 +292,9 @@ async function assertRoutes() {
   assert(recapHtml.includes('id="digest-cta"') && recapHtml.includes('profile.is_owner'), 'profile recap should give owners a path into digest consent');
   assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'profile recap should let owners refresh the return surface with CLI sync');
   assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
+  assert(homeApi.includes('homeMetadataForInvite') && homeApi.includes('Run /insights, then reveal yours against @${handle}'), 'homepage API should render compare-first share-recipient metadata');
+  assert(homeApi.includes("user.privacy === 'private'") && homeApi.includes('profileShareCacheControl(cacheUser)'), 'homepage API should avoid private profile previews and preserve profile cache policy');
+  assert(homeApi.includes('profileShareProof({ rarity, leaderboard })') && homeApi.includes('rarityForSignature(signature)') && homeApi.includes('weeklyLeaderboardRank(user, latest)'), 'homepage API should include profile social proof in compare-first unfurls');
   assert(comparePageApi.includes('compareMetadataForSubjects'), 'compare page API should expose dynamic comparison metadata helpers');
   assert(!comparePageApi.includes('readSession'), 'compare page metadata must not personalize public cached previews by session');
   assert(comparePageApi.includes("user.privacy !== 'private'"), 'compare page metadata must not expose private profiles');
@@ -431,7 +441,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'reveal homepage'") && launchAudit.includes('Try the reveal demo') && launchAudit.includes('agent-insights.json'), 'launch audit should prevent homepage onboarding regressions');
   assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
-  assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge'), 'launch audit should verify the profile README-badge distribution surface');
+  assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge and share-recipient reveal surfaces');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
   assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare with me') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof');
   assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('Claude Code signal'), 'launch audit should require saved profile badges to expose scored credential proof');
@@ -439,6 +449,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'profile recap'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/recap`'), 'launch audit should cover profile recap return URLs');
   assert(launchAudit.includes('Copy sync command') && launchAudit.includes('Run CLI sync after more Claude Code work'), 'launch audit should verify recap-to-sync return action');
   assert(launchAudit.includes('Open the pairing, then claim yours') && launchAudit.includes('/?compareTo='), 'launch audit should verify dynamic pair metadata when identity is ready');
+  assert(launchAudit.includes("See how you'd pair with @${handle}") && launchAudit.includes('Run /insights, then reveal yours'), 'launch audit should verify compare-first homepage unfurl metadata');
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
   assert(launchAudit.includes("RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage']"), 'launch audit should scan public surfaces for raw-field markers');
   assert(launchAudit.includes("path: '/wrapped'") && launchAudit.includes("path: '/dashboard'") && launchAudit.includes("path: `/card?a="), 'launch audit should cover static and dynamic share surfaces');
@@ -779,7 +790,7 @@ async function assertCliLocalTokenEndpoint() {
 }
 
 async function assertProfileShareLoop() {
-  const indexHtml = await readFile('index.html', 'utf8');
+  const indexHtml = await readFile('home.html', 'utf8');
   const profileHtml = await readFile('u.html', 'utf8');
   assert(profileHtml.includes('compareTo=${encodeURIComponent(handle)}'), 'profile compare CTA should seed upload-to-compare');
   assert(profileHtml.includes("return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();"), 'profile outgoing share URLs should canonicalize to vibestats.io');
@@ -2140,6 +2151,59 @@ async function assertCompareMetadataHelpers() {
   console.log('ok compare metadata helpers render dynamic pair previews');
 }
 
+async function assertHomeMetadataHelpers() {
+  const { default: handler, archetypeInviteMetadata, homeMetadataForInvite } = await import('../api/home.js');
+  const profileMeta = homeMetadataForInvite(
+    {
+      handle: 'brightseth',
+      archetype: 'deepdiver',
+      signature: 'high-velocity Deep Diver',
+      rarity: { count: 1, tier: 'rare' },
+      leaderboard: { rank: 1, total: 3, label: 'deepdiver' },
+      metrics: { days: 14, commitsPerDay: 8.5, languages: 6, sessions: 22 },
+    },
+    'https://vibestats.io',
+  );
+  assert(profileMeta.title.includes("See how you'd pair with @brightseth"), 'homepage metadata should make compare-first links personal before the click');
+  assert(profileMeta.description.includes('high-velocity Deep Diver'), 'homepage metadata should include profile signature proof');
+  assert(profileMeta.description.includes('rare combo: 1 of 1 saved profile this month'), 'homepage metadata should include rarity proof');
+  assert(profileMeta.description.includes('#1 of 3 on weekly Deep Diver board'), 'homepage metadata should include leaderboard proof');
+  assert(profileMeta.description.includes('Run /insights, then reveal yours against @brightseth'), 'homepage metadata should carry the reveal command frame');
+  assert(profileMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver', 'homepage metadata should preserve compare-first query params');
+  assert(profileMeta.image.includes('/api/og?a=deepdiver') && profileMeta.image.includes('n=%40brightseth'), 'homepage metadata should use a profile-specific OG image');
+  assert(!profileMeta.description.includes('rawJson'), 'homepage metadata must not leak raw JSON fields');
+
+  const archetypeMeta = archetypeInviteMetadata('shipper', 'https://vibestats.io');
+  assert(archetypeMeta.title.includes('Compare with a Shipper'), 'homepage metadata should handle archetype-only compare links');
+  assert(archetypeMeta.url === 'https://vibestats.io/?compareArchetype=shipper', 'homepage metadata should preserve archetype-only query params');
+
+  const res = mockRes();
+  await handler({
+    method: 'GET',
+    query: {},
+    headers: { host: 'localhost:3000' },
+  }, res);
+  assert(res.statusCode === 200, 'homepage API should render HTTP 200 without requiring database access');
+  assert(String(res.headers['Content-Type']).includes('text/html'), 'homepage API should return HTML');
+  assert(res.headers['Cache-Control'] === 'private, no-store', 'homepage API should avoid caching generic dynamic shells');
+  assert(String(res.body).includes("What's your vibecoding personality? | vibestats"), 'homepage API should preserve generic reveal metadata');
+
+  const headRes = mockRes();
+  await handler({
+    method: 'HEAD',
+    query: {},
+    headers: { host: 'localhost:3000' },
+  }, headRes);
+  assert(headRes.statusCode === 200, 'homepage API should support HEAD requests for link inspectors');
+  assert(String(headRes.headers['Content-Type']).includes('text/html'), 'homepage HEAD should return HTML headers');
+
+  const methodRes = mockRes();
+  await handler({ method: 'POST', query: {}, headers: { host: 'localhost:3000' } }, methodRes);
+  assert(methodRes.statusCode === 405, 'homepage API should guard unsupported methods');
+  assert(methodRes.headers['Cache-Control'] === 'private, no-store', 'homepage API method guard should not be cacheable');
+  console.log('ok homepage metadata renders compare-first reveal previews');
+}
+
 async function assertProfileFallback() {
   const originalError = console.error;
   console.error = () => {};
@@ -2818,6 +2882,7 @@ await assertProfileMetadataHelpers();
 await assertRecapMetadataHelpers();
 await assertProfileCacheHelpers();
 await assertCompareMetadataHelpers();
+await assertHomeMetadataHelpers();
 await assertProfileFallback();
 await assertProfileJsonFallback();
 await assertBadgeFallback();

@@ -92,7 +92,7 @@ Run the full launch audit against the public origin after a saved profile exists
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
 ```
 
-This checks identity readiness, no-store fallback headers, profile/embed/badge/card/recap share surfaces, compare-first routes, browse/match/leaderboard surfaces, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
+This checks identity readiness, no-store fallback headers, profile/embed/badge/card/recap share surfaces, compare-first route metadata, browse/match/leaderboard surfaces, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
 
 `--expect-ready` requires more than a GitHub-created user row. The handle must have at least one saved derived upload, because the viral profile, embed, badge, pair metadata, rarity, leaderboard, evolution, and streak proofs all hang off the minted signature.
 
