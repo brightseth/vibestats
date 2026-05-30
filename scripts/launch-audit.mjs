@@ -397,7 +397,7 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
       mustInclude: expectReady && profileHasUpload
-        ? ['Copy recap', 'Copy sync command', "const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';", 'Copy /vibestats install', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
+        ? ['Copy recap', 'Copy sync command', "const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';", 'Copy /vibestats install', 'id="recipient-reveal"', 'What are you?', 'Copy reveal', 'Copy claim', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
         : ['A privacy-preserving weekly recap'],
     },
     {

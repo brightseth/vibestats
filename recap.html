@@ -218,6 +218,30 @@
       font-size: 12px;
       line-height: 1.55;
     }
+    .command-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .command-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .command-row code {
+      min-width: 0;
+      overflow: hidden;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: #090911;
+      color: #dbe4ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .proof-row {
       gap: 8px;
       flex-wrap: wrap;
@@ -283,6 +307,7 @@
       .topbar { align-items: flex-start; flex-direction: column; }
       .nav, .actions { align-items: stretch; flex-direction: column; width: 100%; }
       .btn { width: 100%; }
+      .command-row { grid-template-columns: 1fr; }
       .hero-card { min-height: 420px; padding: 20px; }
       .hero-head { align-items: flex-start; flex-direction: column; }
       .facet-row { grid-template-columns: 1fr; gap: 5px; }
@@ -355,6 +380,29 @@
           <div class="panel-value">Compare</div>
           <div class="panel-copy" id="next-copy"></div>
         </article>
+        <article class="panel wide" id="recipient-reveal">
+          <div class="panel-title">your turn</div>
+          <div class="panel-value">What are you?</div>
+          <div class="panel-copy">Claude Code already has your build fingerprint. Reveal locally, claim only when you want a persistent GitHub-backed profile, then install /vibestats for the next recap.</div>
+          <div class="command-list" aria-label="Reveal and claim commands">
+            <div class="command-row">
+              <code>/insights</code>
+              <button class="btn" type="button" data-copy-command="/insights">Copy</button>
+            </div>
+            <div class="command-row">
+              <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal</code>
+              <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal">Copy reveal</button>
+            </div>
+            <div class="command-row">
+              <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+              <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy claim</button>
+            </div>
+            <div class="command-row">
+              <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command</code>
+              <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command">Copy install</button>
+            </div>
+          </div>
+        </article>
       </section>
     </section>
   </main>
@@ -387,6 +435,12 @@
 
     const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
     const INSTALL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
+    const RESET_COPY = {
+      '/insights': 'Copy',
+      'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal': 'Copy reveal',
+      'npx --yes github:brightseth/vibestats#feat/wave-1-identity': 'Copy claim',
+      'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command': 'Copy install',
+    };
 
     function profileProofLine(profile, latest) {
       const proof = [];
@@ -532,6 +586,20 @@
           button.textContent = 'Copy failed';
         }
         setTimeout(() => { button.textContent = 'Copy /vibestats install'; }, 1500);
+      });
+      document.querySelectorAll('[data-copy-command]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          const target = event.currentTarget;
+          const command = target.getAttribute('data-copy-command') || '';
+          const reset = RESET_COPY[command] || 'Copy';
+          try {
+            await copyText(command);
+            target.textContent = 'Copied!';
+          } catch {
+            target.textContent = 'Copy failed';
+          }
+          setTimeout(() => { target.textContent = reset; }, 1500);
+        });
       });
       renderFacets(latest);
       document.getElementById('loading').style.display = 'none';
