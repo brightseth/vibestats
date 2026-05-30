@@ -851,6 +851,7 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('id="copy-saved-embed"'), 'post-save save state should expose portable embed copy');
   assert(indexHtml.includes('id="copy-saved-profile"'), 'post-save save state should expose profile URL copy');
   assert(indexHtml.includes('href="/settings#cli-sync"'), 'post-save save state should route owners into CLI sync setup');
+  assert(indexHtml.includes('id="copy-saved-install"') && indexHtml.includes('INSTALL_CLAUDE_COMMAND'), 'post-save save state should expose the Claude Code /vibestats install hook');
   assert(indexHtml.includes('Create pairing link'), 'post-save save state should prompt owners to create pairing links');
   assert(indexHtml.includes('<a class="auth-pill" href="/browse">Browse</a>'), 'upload page should expose public browse loop');
   assert(indexHtml.includes("See how you'd pair with this archetype:"), 'ephemeral share copy should drive card recipients into comparison');

@@ -2206,6 +2206,8 @@
       return `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${compareUrl})`;
     }
 
+    const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
+
     function wirePostSaveActions({ profilePath, comparePath, badgePath, embedPath }, archetype, scores) {
       const handle = currentUser?.gh_handle || '';
       const canonicalProfile = canonicalVibestatsUrl(profilePath);
@@ -2223,6 +2225,9 @@
       });
       document.getElementById('copy-saved-embed')?.addEventListener('click', (event) => {
         copyWithButton(event.currentTarget, embedHtml, 'Embed copied!', 'Copy embed');
+      });
+      document.getElementById('copy-saved-install')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, INSTALL_CLAUDE_COMMAND, '/vibestats copied!', 'Copy /vibestats install');
       });
     }
 
@@ -2250,6 +2255,7 @@
           <button type="button" class="secondary" id="copy-saved-profile">Copy profile</button>
           <a href="${safePairingBuilderUrl}">Create pairing link</a>
           <a class="secondary" href="/settings#cli-sync">Set up CLI sync</a>
+          <button type="button" class="secondary" id="copy-saved-install">Copy /vibestats install</button>
           <button type="button" class="secondary" id="copy-saved-badge">Copy README badge</button>
           <button type="button" class="secondary" id="copy-saved-embed">Copy embed</button>
         </div>
