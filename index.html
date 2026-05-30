@@ -171,6 +171,37 @@
       cursor: pointer;
     }
     .copy-command:hover { border-color: var(--accent); color: #fff; }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: -18px 0 24px;
+    }
+    .hero-demo-btn {
+      min-height: 44px;
+      border-color: rgba(107,143,255,0.46);
+      background: linear-gradient(135deg, rgba(107,143,255,0.2), rgba(34,211,238,0.1));
+      color: #dbe5ff;
+    }
+    .hero-demo-btn:hover {
+      border-color: rgba(34,211,238,0.65);
+      color: #fff;
+      background: linear-gradient(135deg, rgba(107,143,255,0.26), rgba(34,211,238,0.14));
+    }
+    .hero-copy-btn {
+      min-height: 44px;
+      padding: 12px 14px;
+      color: #c8d5ff;
+      border-color: rgba(107,143,255,0.32);
+      background: rgba(107,143,255,0.08);
+    }
+    .hero-demo-hint {
+      margin: -14px 0 28px;
+      max-width: 520px;
+      line-height: 1.55;
+    }
 
     .file-path {
       margin-top: 32px; padding: 14px 20px;
@@ -745,7 +776,10 @@
       .upload-page { padding: 24px; }
       .drop-zone { padding: 36px 20px; }
       .reveal-step { grid-template-columns: 30px minmax(0, 1fr); }
-      .copy-command { grid-column: 2; justify-self: start; }
+      .reveal-step .copy-command { grid-column: 2; justify-self: start; }
+      .hero-actions { align-items: stretch; flex-direction: column; width: min(500px, 90vw); }
+      .hero-actions .demo-btn,
+      .hero-actions .copy-command { width: 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -762,6 +796,15 @@
     <div class="privacy-note">
       Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
     </div>
+
+    <div class="hero-actions" aria-label="Reveal preview actions">
+      <button class="demo-btn hero-demo-btn" onclick="runDemo()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Try the reveal demo
+      </button>
+      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync', this)">Copy npx reveal command</button>
+    </div>
+    <div class="demo-hint hero-demo-hint">No sign-in or upload required for the demo. See the archetype reveal first; claim yours only when you want a public profile.</div>
 
     <div class="reveal-steps" aria-label="Reveal your vibestats profile">
       <div class="reveal-step">
@@ -803,15 +846,6 @@
     </div>
 
     <div class="upload-error" id="upload-error"></div>
-
-    <div class="demo-section">
-      <div class="demo-divider"><span>or</span></div>
-      <button class="demo-btn" onclick="runDemo()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Try a demo
-      </button>
-      <div class="demo-hint">See what it looks like with sample data</div>
-    </div>
 
     <div class="archetypes-preview">
       <span class="archetype-chip">The Orchestrator</span>

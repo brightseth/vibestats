@@ -90,6 +90,7 @@ function usage() {
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
 - public auth/session/sync failure responses do not expose internal config names
+- reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, profile recap, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
@@ -339,6 +340,15 @@ async function auditLaunch(options) {
   }
 
   const paths = [
+    {
+      label: 'reveal homepage',
+      path: '/',
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy npx reveal command', 'Try the reveal demo', 'No file hunting'],
+      mustNotInclude: ['agent-insights.json', 'npx vibestats sync'],
+      checkRawLeaks: false,
+    },
     {
       label: 'profile JSON miss',
       path: `/api/u/${encodeURIComponent(missingHandle)}`,
