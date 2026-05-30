@@ -131,6 +131,7 @@ Run one-command local sync after `/insights`. The no-subcommand claim flow print
 
 ```bash
 npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
+npx --yes github:brightseth/vibestats#feat/wave-1-identity status
 npx --yes github:brightseth/vibestats#feat/wave-1-identity
 npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal --json
 npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command
@@ -148,11 +149,12 @@ Terminal-first onboarding is intentionally short:
 
 ```bash
 # after running /insights in Claude Code
+npx --yes github:brightseth/vibestats#feat/wave-1-identity status
 npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 npx --yes github:brightseth/vibestats#feat/wave-1-identity
 ```
 
-`reveal` is the local, no-sign-in result. Running the GitHub-backed npx command without a subcommand is the terminal-first sync flow. `join` and `onboard` remain explicit aliases. They reveal locally first, then ask the user to open GitHub's device login page and enter a short code only when publishing the derived profile. No website upload is required. Use `--browser` if you explicitly want the local callback approval flow instead.
+`status` is the local preflight: it counts `/insights` files and prints the next terminal commands without reading raw session JSON. `reveal` is the local, no-sign-in result. Running the GitHub-backed npx command without a subcommand is the terminal-first sync flow. `join` and `onboard` remain explicit aliases. They reveal locally first, then ask the user to open GitHub's device login page and enter a short code only when publishing the derived profile. No website upload is required. Use `--browser` if you explicitly want the local callback approval flow instead.
 
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser reveal, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `reveal` to show the derived result locally without a token or network request; it also prints an archetype-only compare link, copy-ready reveal text, X share URL, complementary pairing preview, and `/vibestats` install command that can be used before claiming. Use the no-subcommand command to claim/publish from the terminal after the reveal. Use `reveal --json` to inspect the exact derived payload, and `--file path/to/agent-insights.json` only for legacy JSON exports. `--dry-run` remains a legacy alias for `reveal`. A successful sync mints a GitHub-claimed, derived-only profile and prints the profile URL, compare-first invite URL, copy/paste share line, X share URL, optional public-discovery opt-in link, match intent link, leaderboard/match return links, recap URL, README badge Markdown, and profile embed HTML.
 

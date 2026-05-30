@@ -15,15 +15,20 @@ Use these exact commands:
 
 ```bash
 /insights
+npx --yes github:brightseth/vibestats#feat/wave-1-identity status
 npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 npx --yes github:brightseth/vibestats#feat/wave-1-identity
 ```
 
 ## Flow
 
-1. Check whether Claude Code `/insights` output appears to exist at `~/.claude/usage-data/`.
-   - It should have `session-meta/`, usually `facets/`, and often `report.html`.
-   - Use directory existence or file counts only. Do not print or inspect raw session JSON.
+1. Run the terminal preflight:
+
+```bash
+npx --yes github:brightseth/vibestats#feat/wave-1-identity status
+```
+
+   It checks whether Claude Code `/insights` output appears to exist at `~/.claude/usage-data/` using directory existence and file counts only. Do not print or inspect raw session JSON.
 2. If `/insights` output is missing, tell the user to run `/insights` in Claude Code, then rerun `/vibestats`.
 3. If it exists, run:
 
@@ -43,7 +48,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 npx --yes github:brightseth/vibestats#feat/wave-1-identity
 ```
 
-7. Report the profile URL, compare invite URL, and any README badge or recap links printed by the CLI.
+7. Report the profile URL, compare invite URL, and any README badge, embed, or recap links printed by the CLI.
 
 If the user does not want to publish yet, keep the reveal useful: point them to the archetype-only compare link, copy-ready reveal text, X share URL, complementary pairing preview, and `/vibestats` install command printed by the CLI.
 

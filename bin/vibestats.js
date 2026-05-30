@@ -2,7 +2,7 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { realpathSync } from 'node:fs';
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -18,6 +18,7 @@ const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
 export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE}`;
 export const DEFAULT_NPX_REVEAL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} reveal`;
+export const DEFAULT_NPX_STATUS_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} status`;
 export const DEFAULT_NPX_JOIN_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} join`;
 export const DEFAULT_INSTALL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} install-claude-command`;
 const CLAUDE_COMMAND_SOURCE = new URL('../.claude/commands/vibestats.md', import.meta.url);
@@ -45,6 +46,7 @@ const COMPLEMENTARY_ARCHETYPES = {
 function usage() {
   return `Usage:
   vibestats [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
+  vibestats status [--file PATH] [--dir PATH] [--json]
   vibestats reveal [--file PATH] [--dir PATH] [--json]
   vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run]
   vibestats [sync|join|onboard] --dry-run --json
@@ -56,6 +58,7 @@ Environment:
 
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
+Use status to check local /insights readiness without reading raw session JSON.
 It reveals your archetype locally before asking for approval to publish it.
 Run without a subcommand for the terminal-first participation flow: local reveal, then GitHub approval.
 Use reveal for a local result with no sign-in and no network publish.
@@ -64,6 +67,7 @@ Without --token, sync opens a browser approval flow against your GitHub-backed v
 Use --device to force terminal device-code auth, or --browser to force local browser callback auth.
 Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}
 Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}
+Current public status command: ${DEFAULT_NPX_STATUS_COMMAND}
 Current public join command: ${DEFAULT_NPX_JOIN_COMMAND}
 Install the Claude Code /vibestats command: ${DEFAULT_INSTALL_COMMAND}
 Use --dry-run as a legacy alias for reveal.
@@ -300,6 +304,164 @@ async function pathExists(path) {
   } catch {
     return false;
   }
+}
+
+async function statPath(path) {
+  try {
+    return await stat(path);
+  } catch (err) {
+    if (err?.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+function displayPath(path) {
+  const value = String(path || DEFAULT_INSIGHTS_PATH);
+  const home = homedir();
+  return value === home ? '~' : value.startsWith(`${home}/`) ? `~/${value.slice(home.length + 1)}` : value;
+}
+
+async function jsonFileCount(path) {
+  try {
+    const entries = await readdir(path, { withFileTypes: true });
+    return entries.filter((entry) => entry.isFile() && entry.name.endsWith('.json')).length;
+  } catch (err) {
+    if (err?.code === 'ENOENT' || err?.code === 'ENOTDIR') return 0;
+    throw err;
+  }
+}
+
+async function hasReportHtml(path) {
+  try {
+    const entries = await readdir(path, { withFileTypes: true });
+    return entries.some((entry) => entry.isFile() && /^report.*\.html$/i.test(entry.name));
+  } catch (err) {
+    if (err?.code === 'ENOENT' || err?.code === 'ENOTDIR') return false;
+    throw err;
+  }
+}
+
+function onboardingNextSteps(ready) {
+  if (ready) {
+    return [
+      `Reveal locally: ${DEFAULT_NPX_REVEAL_COMMAND}`,
+      `Claim a GitHub-backed profile: ${DEFAULT_NPX_SYNC_COMMAND}`,
+      `Install /vibestats in Claude Code: ${DEFAULT_INSTALL_COMMAND}`,
+    ];
+  }
+  return [
+    'In Claude Code, run /insights.',
+    `Recheck terminal readiness: ${DEFAULT_NPX_STATUS_COMMAND}`,
+    `Reveal locally after /insights: ${DEFAULT_NPX_REVEAL_COMMAND}`,
+  ];
+}
+
+export async function onboardingStatus({ file = DEFAULT_INSIGHTS_PATH } = {}) {
+  const target = file || DEFAULT_INSIGHTS_PATH;
+  const info = await statPath(target);
+  const base = {
+    path: target,
+    display_path: displayPath(target),
+    reveal_command: DEFAULT_NPX_REVEAL_COMMAND,
+    claim_command: DEFAULT_NPX_SYNC_COMMAND,
+    status_command: DEFAULT_NPX_STATUS_COMMAND,
+    install_command: DEFAULT_INSTALL_COMMAND,
+    privacy: 'Status reads file names and counts only. Reveal and sync derive locally; publishing sends derived metrics only.',
+  };
+
+  if (!info) {
+    return {
+      ...base,
+      input_kind: 'missing',
+      ready: false,
+      status: 'missing',
+      session_meta_files: 0,
+      facet_files: 0,
+      report_html: false,
+      next_steps: onboardingNextSteps(false),
+    };
+  }
+
+  if (info.isFile()) {
+    const lower = target.toLowerCase();
+    const ready = lower.endsWith('.json') || lower.endsWith('.html');
+    const inputKind = lower.endsWith('.html') ? 'report-html' : lower.endsWith('.json') ? 'legacy-json' : 'unsupported-file';
+    return {
+      ...base,
+      input_kind: inputKind,
+      ready,
+      status: ready ? 'ready' : 'unsupported_file',
+      session_meta_files: 0,
+      facet_files: 0,
+      report_html: lower.endsWith('.html'),
+      next_steps: onboardingNextSteps(ready),
+    };
+  }
+
+  if (!info.isDirectory()) {
+    return {
+      ...base,
+      input_kind: 'unsupported',
+      ready: false,
+      status: 'unsupported_path',
+      session_meta_files: 0,
+      facet_files: 0,
+      report_html: false,
+      next_steps: onboardingNextSteps(false),
+    };
+  }
+
+  const [sessionMetaFiles, facetFiles, reportHtml] = await Promise.all([
+    jsonFileCount(join(target, 'session-meta')),
+    jsonFileCount(join(target, 'facets')),
+    hasReportHtml(target),
+  ]);
+  const ready = sessionMetaFiles > 0;
+  return {
+    ...base,
+    input_kind: 'claude-usage-directory',
+    ready,
+    status: ready ? 'ready' : 'missing_session_meta',
+    session_meta_files: sessionMetaFiles,
+    facet_files: facetFiles,
+    report_html: reportHtml,
+    next_steps: onboardingNextSteps(ready),
+  };
+}
+
+export function onboardingStatusText(status = {}) {
+  const ready = status.ready === true;
+  const lines = [
+    'vibestats terminal onboarding check',
+    `Insights input: ${status.display_path || displayPath(status.path)}`,
+    `Status: ${ready ? 'ready for reveal' : 'waiting for Claude Code /insights output'}`,
+  ];
+
+  if (status.input_kind === 'claude-usage-directory') {
+    const sessionCount = Number(status.session_meta_files || 0);
+    const facetCount = Number(status.facet_files || 0);
+    lines.push(`Found: ${formatInt(sessionCount)} session-meta JSON ${sessionCount === 1 ? 'file' : 'files'}, ${formatInt(facetCount)} facet JSON ${facetCount === 1 ? 'file' : 'files'}, report.html ${status.report_html ? 'present' : 'missing'}.`);
+  } else if (status.input_kind === 'legacy-json') {
+    lines.push('Found: legacy JSON export file. Prefer the real /insights directory when available.');
+  } else if (status.input_kind === 'report-html') {
+    lines.push('Found: /insights report HTML. The CLI will read the sibling session-meta and facets directories.');
+  } else if (status.input_kind === 'unsupported-file') {
+    lines.push('Found: unsupported file type. Use the /insights directory or a legacy JSON export.');
+  }
+
+  lines.push('Next:');
+  for (const [index, step] of (status.next_steps || onboardingNextSteps(ready)).entries()) {
+    lines.push(`${index + 1}. ${step}`);
+  }
+  lines.push(`Privacy: ${status.privacy || 'Raw Claude Code data stays local; publishing sends derived metrics only.'}`);
+  return `${lines.join('\n')}\n`;
+}
+
+export async function printOnboardingStatus(options = {}, { stdout = process.stdout } = {}) {
+  const status = await onboardingStatus(options);
+  if (options.json) stdout.write(`${JSON.stringify(status, null, 2)}\n`);
+  else stdout.write(onboardingStatusText(status));
+  return status;
 }
 
 export async function installClaudeCommand({ path = DEFAULT_CLAUDE_COMMAND_PATH, force = false, stdout = process.stdout } = {}) {
@@ -598,6 +760,10 @@ export async function main() {
   }
   if (['install-claude-command', 'install-command', 'install-claude'].includes(command)) {
     await installClaudeCommand(options);
+    return;
+  }
+  if (['status', 'doctor', 'check'].includes(command)) {
+    await printOnboardingStatus(options);
     return;
   }
   if (!isSyncCommand(command)) throw new Error(`Unknown command: ${command}`);
