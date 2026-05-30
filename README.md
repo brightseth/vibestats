@@ -22,6 +22,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **Profile evolution badges** that show score movement or archetype shifts between saved uploads.
 - **A scored breakdown** across all 8 (sigmoid + power-law normalized).
 - **A Spotify-Wrapped-style tap-through** (`/wrapped`).
+- **Anonymous unlisted reveal links** (`/r/<slug>`) so users can share a hosted derived snapshot without GitHub, a name, leaderboard placement, or matchmaker identity.
 - **A shareable card** with dynamic OG image (`/card?a=…`) → Twitter intent prefilled.
 - **Compare-first homepage previews** (`/?compareTo=<handle>&compareArchetype=<type>`) that unfurl as "pair with @handle, then reveal yours" instead of generic homepage copy.
 - **A community genome page** (`/genome`) — archetype distribution + community averages.
@@ -36,7 +37,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A local sync CLI** that reads the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, and `report.html`), computes derived metrics locally, and posts them with a signed sync token.
 - **A versioned SSH shell contract and service scaffold** (`/api/ssh/manifest`, `services/ssh-shell/server.js`) plus short-lived claim sessions (`/api/ssh/claim-start`, `/api/ssh/claim-status`, `/cli.sh`, CLI `claim CODE`) for the planned no-install terminal shell; it coordinates a waiting SSH session without letting the SSH host read raw `/insights`.
 
-**Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default. The public promises page (`/promises`) makes the raw-data boundary, unlisted-by-default profiles, bounded match-intro/outcome events, and no-employer-search stance explicit.
+**Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, signed-in profile saves persist only derived fields, and anonymous reveal links store only a sanitized derived snapshot for 30 days: archetype, scores, coarse metrics, and public-safe moment/signature metadata. Anonymous reveal links do not store a name, GitHub handle, prompts, project paths, session ids, or free text. Public surfaces hide exact counts and language count by default. The public promises page (`/promises`) makes the raw-data boundary, unlisted-by-default profiles, bounded match-intro/outcome events, and no-employer-search stance explicit.
 
 ## Where it's going
 
@@ -50,7 +51,7 @@ The current product is a one-shot vanity moment. The next product is a **persist
 
 - **Hosting:** Vercel (`lets-vibe/vibestats` project, aliased to `vibestats.io`).
 - **Runtime:** static HTML/CSS/JS + Vercel Functions (`api/*.js`).
-- **Storage:** Upstash Redis (KV REST API) for aggregate counters; Neon Postgres for authenticated profile history.
+- **Storage:** Upstash Redis (KV REST API) for aggregate counters and reveal-link rate limits; Neon Postgres for authenticated profile history and anonymous unlisted reveal snapshots.
 - **OG images:** `@vercel/og` via Satori (`api/og.js`) + `@resvg/resvg-js`.
 - **Auth:** custom GitHub OAuth + signed `vibestats_auth` session cookie.
 - **DB:** Neon Postgres. Raw insights JSON still never leaves the browser.

@@ -328,7 +328,8 @@ if (checkSchema) {
   console.log('');
   console.log('Database schema');
   try {
-    const schema = await checkIdentitySchema(firstPresent(['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL']));
+    const databaseKey = firstPresent(['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL']);
+    const schema = await checkIdentitySchema(loaded[databaseKey]);
     for (const item of schema.ok) console.log(`ok ${item}`);
     for (const item of schema.missing) console.log(`missing ${item}`);
     if (schema.missing.length) {

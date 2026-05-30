@@ -17,6 +17,13 @@ Required for GitHub-backed profiles:
 - `GITHUB_CLIENT_SECRET`
 - One session secret: `VIBE_SESSION_SECRET`, `AUTH_SECRET`, or `NEXTAUTH_SECRET` with at least 32 bytes
 
+Required for anonymous reveal links:
+
+- One database URL: `DATABASE_URL`, `POSTGRES_URL`, or `NEON_DATABASE_URL`
+- Migration `0015_reveal_snapshots.sql` applied
+
+Anonymous reveal links intentionally do not require GitHub OAuth or a signed session. They are unlisted `/r/<slug>` pages that store only sanitized derived metrics for 30 days and never enter browse, match, or leaderboard surfaces.
+
 Optional but launch-relevant:
 
 - `VIBESTATS_URL` for a stable OAuth callback origin when host inference is not enough

@@ -13,6 +13,7 @@
     { "source": "/u/:handle/pair/:other", "destination": "/api/compare-page?a=:other&b=:handle" },
     { "source": "/u/:handle/recap", "destination": "/api/recap?handle=:handle" },
     { "source": "/u/:handle", "destination": "/api/profile?handle=:handle" },
+    { "source": "/r/:slug", "destination": "/api/reveal?slug=:slug" },
     { "source": "/cli.sh", "destination": "/api/cli/bootstrap" },
     { "source": "/compare", "destination": "/api/compare-page" },
     { "source": "/genome", "destination": "/genome.html" },

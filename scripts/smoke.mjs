@@ -24,6 +24,8 @@ const apiModules = [
   '../api/identity-status.js',
   '../api/me.js',
   '../api/uploads.js',
+  '../api/reveals.js',
+  '../api/reveal.js',
   '../api/sync.js',
   '../api/ssh/manifest.js',
   '../api/ssh/claim-start.js',
@@ -52,6 +54,7 @@ const apiModules = [
   '../api/_lib/profile-settings.js',
   '../api/_lib/ssh-shell.js',
   '../api/_lib/ssh-claims.js',
+  '../api/_lib/reveal-snapshots.js',
   '../api/_lib/achievements.js',
   '../api/_lib/public-profile.js',
   '../api/_lib/social-proof.js',
@@ -199,6 +202,9 @@ async function assertRoutes() {
   const digestPreviewApi = await readFile('api/digest/preview.js', 'utf8');
   const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
+  const revealsApi = await readFile('api/reveals.js', 'utf8');
+  const revealApi = await readFile('api/reveal.js', 'utf8');
+  const revealSnapshotsHelper = await readFile('api/_lib/reveal-snapshots.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
   const syncSettingsApi = await readFile('api/sync-settings.js', 'utf8');
   const matchIntrosApi = await readFile('api/match-intros.js', 'utf8');
@@ -253,6 +259,10 @@ async function assertRoutes() {
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/recap' && rewrite.destination === '/api/recap?handle=:handle'),
     'profile recap route should rewrite to dynamic recap page',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/r/:slug' && rewrite.destination === '/api/reveal?slug=:slug'),
+    'anonymous reveal snapshot route should rewrite to dynamic reveal page',
   );
   assert(
     rewrites.some((rewrite) => rewrite.source === '/compare' && rewrite.destination === '/api/compare-page'),
@@ -408,6 +418,9 @@ async function assertRoutes() {
   assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('recap_url') && profileLinksHelper.includes('credential_url'), 'profile links helper should expose compare-first, recap, and credential URLs');
   assert(profileLinksHelper.includes('privacy_url') && profileLinksHelper.includes('match_settings_url') && profileLinksHelper.includes('weekly_digest_preview_url') && profileLinksHelper.includes('leaderboard_url') && profileLinksHelper.includes('match_url'), 'profile links helper should expose opt-in discovery and return-loop URLs');
   assert(uploadsApi.includes('profileLinks(user, payload.archetype)') && uploadsApi.includes('claim_code') && uploadsApi.includes('attachClaimSession'), 'browser profile saves should return compare-first profile links and attach browser-claim race sessions');
+  assert(revealsApi.includes('createRevealSnapshot') && revealsApi.includes('requireSameOrigin(req)') && revealsApi.includes('assertRevealRateLimit(req)') && revealsApi.includes('readJson(req, { maxBytes: 64 * 1024 })'), 'anonymous reveal snapshot API should create same-origin rate-limited derived-only share links without auth');
+  assert(revealApi.includes('anonymous unlisted reveal') && revealApi.includes('Raw /insights stayed local') && revealApi.includes('No prompts, project paths, session ids, or free text'), 'anonymous reveal page should render privacy copy and omit durable identity');
+  assert(revealSnapshotsHelper.includes('reveal_snapshots') && revealSnapshotsHelper.includes('sanitizeUploadPayload') && revealSnapshotsHelper.includes("identity: 'anonymous'") && revealSnapshotsHelper.includes('listed: false') && !revealSnapshotsHelper.includes('user_id'), 'anonymous reveal snapshots should store sanitized derived metrics without user identity');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
@@ -457,13 +470,13 @@ async function assertRoutes() {
   assert(identityReadiness.includes('weekly_digest_available'), 'identity readiness should expose non-secret weekly digest delivery readiness');
   assert(indexHtml.includes("fetch('/api/identity-status'"), 'upload page should check identity readiness before fetching session state');
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
-  assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
+  assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Create an anonymous unlisted reveal link instead; raw /insights stays local.'), 'upload page should route unavailable identity into anonymous local-only sharing');
   assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
   assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('Copy reveal command') && indexHtml.includes(NO_NPM_CLI) && indexHtml.includes(NO_NPM_STATUS) && indexHtml.includes('Reveal, preview, then claim') && indexHtml.includes('Troubleshooting preflight'), 'upload page should frame onboarding as a Claude Code reveal-first path with status demoted to troubleshooting');
   assert(indexHtml.includes('function shouldAutoRunDemo()') && indexHtml.includes('setTimeout(runDemo, 120)'), 'demo-first URLs should auto-start the reveal instead of landing on manual upload');
   assert(indexHtml.includes('install-claude-command') && indexHtml.includes('Install /vibestats in Claude Code'), 'upload page should expose the installable Claude Code command path');
   assert(indexHtml.includes('Try the reveal demo') && indexHtml.includes('Copy reveal command') && indexHtml.includes('opens the web preview') && indexHtml.includes('Install /vibestats'), 'upload page should let cold visitors preview the reveal and install the smooth returning-user loop without internal no-npm jargon');
-  assert(indexHtml.includes('vibestatsPreview') && indexHtml.includes('Local web preview from terminal') && indexHtml.includes('Claim with GitHub') && indexHtml.includes('Claim this profile') && indexHtml.includes('if (!options.localPreview) submitStats'), 'upload page should render CLI-opened local previews with browser claim and without publishing profile or community stats data');
+  assert(indexHtml.includes('vibestatsPreview') && indexHtml.includes('this page only has derived preview metrics') && indexHtml.includes('Create anonymous share link') && indexHtml.includes('Claim with GitHub') && indexHtml.includes('GitHub claim unavailable') && indexHtml.includes('Claim this profile') && indexHtml.includes("fetch('/api/reveals'") && indexHtml.includes('if (!options.localPreview) submitStats'), 'upload page should render CLI-opened local previews with anonymous share links, optional browser claim, and without publishing profile or community stats data');
   assert(indexHtml.includes('Explore sample pairings without data') && indexHtml.includes('href="/compare?a=orchestrator&b=shipper"'), 'upload page should give no-data visitors an archetype-pairing gallery path');
   assert(!indexHtml.includes('npx vibestats sync'), 'upload page should not advertise the occupied unscoped npm package name');
   assert(indexHtml.includes('Have a legacy JSON export?') && indexHtml.includes('Troubleshooting preflight'), 'upload page should demote legacy uploads and status checks out of the mainline onboarding path');
@@ -547,6 +560,7 @@ async function assertRoutes() {
   assert(identityDoctor.includes('UPSTASH_REDIS_REST_URL') && identityDoctor.includes('UPSTASH_REDIS_REST_TOKEN'), 'identity doctor should report Redis env aliases');
   assert(identityDoctor.includes('CRON_SECRET') && identityDoctor.includes('RESEND_API_KEY') && identityDoctor.includes('DIGEST_FROM_EMAIL'), 'identity doctor should report weekly digest env readiness');
   assert(identityDoctor.includes('--schema') && identityDoctor.includes('checkIdentitySchema'), 'identity doctor should expose an explicit DB schema readiness check');
+  assert(identityDoctor.includes('const databaseKey = firstPresent') && identityDoctor.includes('checkIdentitySchema(loaded[databaseKey])'), 'identity doctor schema check should connect with the selected database URL value, not the env var name');
   assert(identityDoctor.includes('information_schema.columns') && identityDoctor.includes('schema_migrations'), 'identity doctor schema check should verify columns and applied migrations');
   assert(identityDoctor.includes('users.privacy default unlisted and not null'), 'identity doctor schema check should verify the profile privacy default');
   assert(identityDoctor.includes('uploads.user_id not null'), 'identity doctor schema check should verify uploads cannot be orphaned');
@@ -622,6 +636,7 @@ async function assertRoutes() {
   assert((await readFile('db/migrations/0011_upload_owner_not_null.sql', 'utf8')).includes('alter column user_id set not null'), 'migrations should prevent orphaned profile uploads');
   assert((await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('ssh_claim_sessions') && (await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('code_hash text not null unique'), 'migrations should add hashed short-lived SSH claim sessions');
   assert((await readFile('db/migrations/0014_match_feedback_actions.sql', 'utf8')).includes('outcome_positive') && (await readFile('db/migrations/0014_match_feedback_actions.sql', 'utf8')).includes('intro_accept'), 'migrations should preserve bounded match feedback action enums');
+  assert((await readFile('db/migrations/0015_reveal_snapshots.sql', 'utf8')).includes('reveal_snapshots') && (await readFile('db/migrations/0015_reveal_snapshots.sql', 'utf8')).includes('slug text not null unique'), 'migrations should add anonymous unlisted reveal snapshots');
   assert(githubOauthHelper.includes('gh_handle, avatar_url, privacy, last_seen_at') && githubOauthHelper.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(authCallbackApi.includes('identityReadiness, identityUnavailableMessage'), 'GitHub OAuth callback should use the shared identity readiness gate');
   assert(authCallbackApi.indexOf('identityReadiness().available') < authCallbackApi.indexOf('const statePayload = decodeStatePayload'), 'GitHub OAuth callback should fail closed before reading signed state when identity is unavailable');
@@ -3893,7 +3908,7 @@ async function assertDiscoveryApiNoStoreGuards() {
 async function assertPrivateApiNoStore() {
   const originalError = console.error;
   console.error = () => {};
-  const envKeys = ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET'];
+  const envKeys = ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'KV_REST_API_URL', 'KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'];
   const previous = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
   for (const key of envKeys) delete process.env[key];
 
@@ -4010,6 +4025,32 @@ async function assertPrivateApiNoStore() {
         req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
         status: 405,
         allow: 'POST',
+      },
+      {
+        label: '/api/reveals invalid payload',
+        module: '../api/reveals.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }, body: {} },
+        status: 400,
+      },
+      {
+        label: '/api/reveals method guard',
+        module: '../api/reveals.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'POST',
+      },
+      {
+        label: '/api/reveal missing slug',
+        module: '../api/reveal.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 400,
+      },
+      {
+        label: '/api/reveal method guard',
+        module: '../api/reveal.js',
+        req: { method: 'POST', query: { slug: 'abcdefghij' }, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'GET, HEAD',
       },
       {
         label: '/api/sync-token unauthenticated',

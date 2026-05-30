@@ -641,6 +641,10 @@
       background: rgba(255,255,255,0.04);
       color: var(--text-muted);
     }
+    .post-save-actions button:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
     .profile-save-status.muted {
       color: var(--text-dim);
       border-color: rgba(255,255,255,0.08);
@@ -2475,6 +2479,71 @@
       return body;
     }
 
+    async function postAnonymousRevealPayload(payload) {
+      const res = await fetch('/api/reveals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Reveal link failed');
+      return body;
+    }
+
+    function anonymousRevealShareText(archetype, scores, revealUrl) {
+      const signature = buildVibeSignature(scores || {}, archetype);
+      const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
+      const label = signature?.label || arch.name.replace(/^THE /, '');
+      return `Anonymous vibestats reveal: ${label}. Raw /insights stayed local. What are you? ${revealUrl}`;
+    }
+
+    function renderAnonymousRevealStatus(snapshot, archetype, scores) {
+      const revealPath = pathFromSaveUrl(snapshot.reveal_path || snapshot.reveal_url, '/');
+      const revealUrl = canonicalVibestatsUrl(snapshot.reveal_url || revealPath);
+      const text = anonymousRevealShareText(archetype, scores, revealUrl);
+      const claimLaterAction = identityStatus.profile_save_available
+        ? `<a class="secondary" href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">Optional GitHub claim</a>`
+        : '';
+      const xUrl = `https://twitter.com/intent/tweet?${new URLSearchParams({
+        text: text.replace(` ${revealUrl}`, ''),
+        url: revealUrl,
+      }).toString()}`;
+      updateProfileSaveStatus(`
+        <strong>Anonymous share link created.</strong>
+        <div class="post-save-note">No name, GitHub handle, leaderboard entry, or raw /insights data. This unlisted link hosts derived metrics only.</div>
+        <div class="post-save-actions">
+          <a class="primary" href="${safeHtml(revealPath)}">Open reveal</a>
+          <button type="button" class="secondary" id="copy-anon-reveal-link">Copy link</button>
+          <button type="button" class="secondary" id="copy-anon-reveal-text">Copy text</button>
+          <a class="secondary" href="${safeHtml(xUrl)}" target="_blank" rel="noopener">Share on X</a>
+          ${claimLaterAction}
+        </div>
+      `);
+      document.getElementById('copy-anon-reveal-link')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, revealUrl, 'Link copied!', 'Copy link');
+      });
+      document.getElementById('copy-anon-reveal-text')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, text, 'Text copied!', 'Copy text');
+      });
+    }
+
+    function wireAnonymousRevealAction(buttonId, archetype, scores, insights) {
+      document.getElementById(buttonId)?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        const idle = button.textContent;
+        button.textContent = 'Creating...';
+        try {
+          const body = await postAnonymousRevealPayload(derivedUploadPayload(archetype, scores, insights));
+          renderAnonymousRevealStatus(body, archetype, scores);
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = idle;
+          updateProfileSaveStatus(safeHtml(err.message), 'error');
+        }
+      });
+    }
+
     async function resumePendingProfileSave() {
       const pending = readPendingProfileSave();
       if (!pending || !currentUser) return;
@@ -2505,36 +2574,48 @@
     }
 
     function renderLocalPreviewClaim(archetype, scores, insights, options = {}) {
-      if (!identityStatus.profile_save_available) {
-        updateProfileSaveStatus('Local web preview from terminal. Profile claiming is not configured on this deployment yet; nothing was published.', 'muted');
+      if (!currentUser) {
+        const stashed = identityStatus.profile_save_available
+          ? stashPendingProfileSave(archetype, scores, insights, { claimCode: options.claimCode })
+          : false;
+        const authAction = identityStatus.profile_save_available
+          ? `<a class="secondary" href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">${stashed ? 'Claim with GitHub' : 'Sign in with GitHub'}</a>`
+          : '<button type="button" class="secondary" disabled>GitHub claim unavailable</button>';
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">Share this reveal anonymously without GitHub${identityStatus.profile_save_available ? ', or claim a durable profile later' : ''}. Raw /insights stayed local; this page only has derived preview metrics.</div>
+          <div class="post-save-actions">
+            <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+            ${authAction}
+          </div>
+        `);
+        wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
         return;
       }
 
-      if (!currentUser) {
-        const stashed = stashPendingProfileSave(archetype, scores, insights, { claimCode: options.claimCode });
-        const authHref = `/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}`;
+      if (!identityStatus.profile_save_available) {
         updateProfileSaveStatus(`
           <strong>Nothing published yet.</strong>
-          <div class="post-save-note">Claim this profile from the browser when the reveal lands. Raw /insights stayed local; this page only has derived preview metrics.</div>
+          <div class="post-save-note">GitHub profile claiming is not configured on this deployment. You can still create an anonymous unlisted reveal link from derived metrics only.</div>
           <div class="post-save-actions">
-            <a class="primary" href="${authHref}">${stashed ? 'Claim with GitHub' : 'Sign in with GitHub'}</a>
-            <button type="button" class="secondary" id="copy-local-preview-share">Copy reveal link</button>
+            <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+            <button type="button" class="secondary" disabled>Profile saves pending</button>
           </div>
-        `);
-        document.getElementById('copy-local-preview-share')?.addEventListener('click', (event) => {
-          copyWithButton(event.currentTarget, canonicalVibestatsUrl(comparisonDestination(archetype) || `/?compareArchetype=${encodeURIComponent(archetype)}`), 'Link copied!', 'Copy reveal link');
-        });
+        `, 'muted');
+        wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
         return;
       }
 
       updateProfileSaveStatus(`
         <strong>Nothing published yet.</strong>
-        <div class="post-save-note">Save this derived result to @${safeHtml(currentUser.gh_handle)} and open your wrapped recap. Raw /insights stayed local.</div>
+        <div class="post-save-note">Share anonymously, or save this derived result to @${safeHtml(currentUser.gh_handle)} and open your wrapped recap. Raw /insights stayed local.</div>
         <div class="post-save-actions">
-          <button type="button" class="primary" id="claim-local-preview">Claim this profile</button>
+          <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+          <button type="button" class="secondary" id="claim-local-preview">Claim this profile</button>
           <a class="secondary" href="/settings#privacy-settings">Privacy settings</a>
         </div>
       `);
+      wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
       document.getElementById('claim-local-preview')?.addEventListener('click', async (event) => {
         const button = event.currentTarget;
         button.disabled = true;
@@ -2563,18 +2644,37 @@
         return;
       }
       if (!identityStatus.profile_save_available) {
-        updateProfileSaveStatus(`Profile saves are not configured on this deployment yet. Your result stayed local.${comparisonReturnLink(archetype)}`, 'muted');
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">Profile saves are not configured on this deployment yet. Create an anonymous unlisted reveal link instead; raw /insights stays local.</div>
+          <div class="post-save-actions">
+            <button type="button" class="primary" id="create-anon-browser-reveal">Create anonymous share link</button>
+            <button type="button" class="secondary" disabled>Profile saves pending</button>
+          </div>
+          ${comparisonReturnLink(archetype)}
+        `, 'muted');
+        wireAnonymousRevealAction('create-anon-browser-reveal', archetype, scores, insights);
         return;
       }
       if (!currentUser) {
         const stashed = stashPendingProfileSave(archetype, scores, insights);
         const intent = comparisonIntent();
+        const authHref = `/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}`;
         const saveCopy = stashed && intent?.kind === 'profile'
-          ? 'Sign in with GitHub to save this derived result and open your pairing.'
+          ? 'Claim with GitHub to save this derived result and open your pairing.'
           : stashed && intent?.kind === 'archetype'
-          ? 'Sign in with GitHub to save this derived result and compare as your profile.'
-          : 'Sign in with GitHub to save and track your evolution.';
-        updateProfileSaveStatus(`<a href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">${saveCopy}</a>${comparisonReturnLink(archetype)}`, 'muted');
+          ? 'Claim with GitHub to save this derived result and compare as your profile.'
+          : 'Claim with GitHub to save and track your evolution.';
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">Create an anonymous unlisted reveal link now, or ${safeHtml(saveCopy)}</div>
+          <div class="post-save-actions">
+            <button type="button" class="primary" id="create-anon-browser-reveal">Create anonymous share link</button>
+            <a class="secondary" href="${authHref}">Claim with GitHub</a>
+          </div>
+          ${comparisonReturnLink(archetype)}
+        `, 'muted');
+        wireAnonymousRevealAction('create-anon-browser-reveal', archetype, scores, insights);
         return;
       }
       const saveToggle = document.getElementById('save-to-profile');
