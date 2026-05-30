@@ -57,7 +57,7 @@ if [ -z "$run_dir" ] || [ ! -f "$run_dir/bin/vibestats.js" ]; then
   exit 1
 fi
 
-if [ -r /dev/tty ]; then
+if ( : < /dev/tty ) 2>/dev/null; then
   node "$run_dir/bin/vibestats.js" "$@" < /dev/tty
 else
   node "$run_dir/bin/vibestats.js" "$@"
