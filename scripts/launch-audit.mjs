@@ -471,14 +471,14 @@ async function auditLaunch(options) {
       path: '/wrapped',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal'],
+      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'install-claude-command'],
     },
     {
       label: 'dashboard share route',
       path: '/dashboard',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal'],
+      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'install-claude-command'],
       mustNotInclude: 'Claude Code Analytics',
     },
     {
@@ -486,7 +486,7 @@ async function auditLaunch(options) {
       path: '/genome',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy npx reveal command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
+      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy npx reveal command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'install-claude-command', 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
       mustNotInclude: ['>Quiz</a>', 'agent-insights.json'],
     },
     {
@@ -501,7 +501,7 @@ async function auditLaunch(options) {
       path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal'],
+      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'install-claude-command'],
     },
     {
       label: 'browse API',
@@ -516,7 +516,7 @@ async function auditLaunch(options) {
       path: `/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings', 'Find your real match', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal'],
+      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings', 'Find your real match', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'install-claude-command'],
     },
     {
       label: 'match API',
@@ -531,7 +531,7 @@ async function auditLaunch(options) {
       path: `/leaderboard/${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing', 'Where do you rank?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal'],
+      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing', 'Where do you rank?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'install-claude-command'],
     },
     {
       label: 'leaderboard API',
