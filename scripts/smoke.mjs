@@ -387,7 +387,7 @@ async function assertRoutes() {
   assert(syncSettingsApi.includes('cleanLookingFor') && syncSettingsApi.includes('cleanContactUrl') && syncSettingsApi.includes('lookingForExpiry(7)'), 'CLI sync settings API should only accept sanitized short-lived match intent fields');
   assert(syncSettingsApi.includes("privacy = 'public'") && syncSettingsApi.includes('make_public === true'), 'CLI sync settings API should require explicit public opt-in for match discovery');
   assert(!syncSettingsApi.includes('sanitizeUploadPayload') && !syncSettingsApi.includes('raw_meta'), 'CLI sync settings API must not accept or process upload payloads');
-  assert(cliBin.includes('Minted GitHub-claimed, derived-only profile') && cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Optional public discovery:') && cliBin.includes('Profiles stay unlisted unless you choose Public.') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:') && cliBin.includes('Profile embed HTML:'), 'CLI sync success output should surface claimed identity, compare-first social share, opt-in discovery, recap, README badge, and embed hooks');
+  assert(cliBin.includes('Minted GitHub-claimed, derived-only profile') && cliBin.includes('Verify derived credential:') && cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Optional public discovery:') && cliBin.includes('Profiles stay unlisted unless you choose Public.') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:') && cliBin.includes('Profile embed HTML:'), 'CLI sync success output should surface claimed identity, credential proof, compare-first social share, opt-in discovery, recap, README badge, and embed hooks');
   assert(cliBin.includes('vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle>') && cliBin.includes('setMatchIntent') && cliBin.includes('/api/sync-settings'), 'CLI should expose terminal match-intent participation through the sync settings API');
   assert(cliBin.includes('Install /vibestats for future reveals:') && cliBin.includes('Reserve weekly digest:') && cliBin.includes('Preview weekly digest:'), 'CLI sync success output should surface Claude Code and digest return hooks');
   assert(cliBin.includes('VIBESTATS_CLI_PACKAGE') && cliBin.includes('FALLBACK_CLI_PACKAGE'), 'CLI should allow printed npx commands to switch to a public package once one is published');
@@ -608,7 +608,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('Identity is not production-ready until GitHub OAuth is added') && launchDoc.includes('preview identity audits will still fail until a strong session secret is also added to Preview'), 'launch checklist should record current identity env blockers');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   const readme = await readFile('README.md', 'utf8');
-  assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
+  assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, derived credential proof URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
   assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
@@ -621,7 +621,7 @@ async function assertRoutes() {
   assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, a pasteable terminal card, copy-ready reveal text, X share URL') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
-  assert(readme.includes('README badge Markdown, and profile embed HTML'), 'README should document post-sync portable distribution snippets');
+  assert(readme.includes('derived credential proof URL') && readme.includes('README badge Markdown, and profile embed HTML'), 'README should document post-sync credential proof and portable distribution snippets');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
@@ -629,7 +629,7 @@ async function assertRoutes() {
   assert((await readFile('.npmignore', 'utf8')).includes('!lib/share-kit.js'), 'npm package should include the shared CLI share-kit helper');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync') && !claudeCommand.includes('feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should preflight, reveal locally, then explicit sync after human consent');
   assert(claudeCommand.includes('intent pair-coding --contact-url') && claudeCommand.includes('does not read `/insights` data'), 'Claude Code command should let users opt into match intent without reading raw insights');
-  assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('README badge, embed, or recap links'), 'Claude Code command should keep terminal-only onboarding explicit after the reveal');
+  assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('derived credential proof URL') && claudeCommand.includes('README badge, embed, or recap links'), 'Claude Code command should keep terminal-only onboarding and proof reporting explicit after the reveal');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('pasteable terminal card') && claudeCommand.includes('copy-ready reveal text, X share URL') && claudeCommand.includes('archetype-only compare link') && claudeCommand.includes('/vibestats` install command') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
   assert(claudeCommand.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code command should explicitly avoid the dead agent-insights path');
@@ -2236,6 +2236,7 @@ async function assertCliDerivedPayload() {
             profile_url: '/u/alex',
             compare_url: '/?compareTo=alex&compareArchetype=shipper',
             recap_url: '/u/alex/recap',
+            credential_url: '/u/alex/credential.json',
             badge_url: '/u/alex/badge.svg',
             embed_url: '/u/alex/embed',
             privacy_url: '/settings#privacy-settings',
@@ -2254,6 +2255,7 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Raw Claude Code /insights data stayed local. Publishing only derived metrics.'), 'CLI sync should state the privacy boundary before publishing');
     assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
     assert(output.join('').includes('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.'), 'CLI sync should print claimed identity and derived-only proof after publishing');
+    assert(output.join('').includes('Verify derived credential: https://vibestats.example/u/alex/credential.json'), 'CLI sync should print the machine-readable derived credential proof URL');
     assert(output.join('').includes("Copy/paste share: I just claimed my Claude Code build profile: prolific Shipper. Raw /insights stayed local. What are you? See how you'd pair with me: https://vibestats.example/?compareTo=alex&compareArchetype=shipper"), 'CLI sync should print a copy-ready privacy-aware compare-first share line');
     const printedXShare = output.join('').match(/Share on X: (https:\/\/twitter\.com\/intent\/tweet\?\S+)/)?.[1] || '';
     assert(printedXShare && new URL(printedXShare).searchParams.get('url')?.includes('compareTo=alex'), 'CLI sync should print a one-click X share URL');

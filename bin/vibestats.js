@@ -918,6 +918,7 @@ export async function sync(options) {
   const profilePath = new URL(profileUrl).pathname;
   const compareUrl = apiUrl(host, body.compare_url, `/?compareArchetype=${encodeURIComponent(payload.archetype)}`);
   const recapUrl = apiUrl(host, body.recap_url, `${profilePath}/recap`);
+  const credentialUrl = apiUrl(host, body.credential_url, `${profilePath}/credential.json`);
   const badgeUrl = apiUrl(host, body.badge_url, `${profilePath}/badge.svg`);
   const embedUrl = apiUrl(host, body.embed_url, `${profilePath}/embed`);
   const privacyUrl = apiUrl(host, body.privacy_url, '/settings#privacy-settings');
@@ -933,6 +934,7 @@ export async function sync(options) {
   const xShare = cliXShareUrl({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
   process.stdout.write('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.\n');
+  process.stdout.write(`Verify derived credential: ${credentialUrl}\n`);
   process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
   process.stdout.write(`Copy/paste share: ${shareText}\n`);
   process.stdout.write(`Share on X: ${xShare}\n`);

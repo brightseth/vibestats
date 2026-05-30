@@ -48,7 +48,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
 ```
 
-7. Report the profile URL, compare invite URL, and any README badge, embed, or recap links printed by the CLI.
+7. Report the profile URL, derived credential proof URL, compare invite URL, and any README badge, embed, or recap links printed by the CLI.
 8. If the user wants to appear in `/match`, ask for their public contact URL and whether they want public discovery. Only after they agree, run a command shaped like:
 
 ```bash
