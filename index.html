@@ -297,11 +297,28 @@
       display: flex; gap: 10px; margin-top: 36px; flex-wrap: wrap;
       justify-content: center; max-width: 600px;
     }
+    .archetypes-preview-title {
+      flex-basis: 100%;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
     .archetype-chip {
       font-family: var(--mono); font-size: 11px;
       padding: 6px 14px; border-radius: 20px;
       background: var(--surface-2); border: 1px solid var(--border);
       color: var(--text-dim);
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .archetype-chip:hover, .archetype-chip:focus-visible {
+      border-color: rgba(107,143,255,0.55);
+      color: #fff;
+      background: rgba(107,143,255,0.08);
+      outline: none;
     }
 
     /* ===== ANALYZING STATE ===== */
@@ -854,14 +871,15 @@
     <div class="upload-error" id="upload-error"></div>
 
     <div class="archetypes-preview">
-      <span class="archetype-chip">The Orchestrator</span>
-      <span class="archetype-chip">The Shipper</span>
-      <span class="archetype-chip">The Architect</span>
-      <span class="archetype-chip">The Debugger</span>
-      <span class="archetype-chip">The Polyglot</span>
-      <span class="archetype-chip">The Sprinter</span>
-      <span class="archetype-chip">The Deep Diver</span>
-      <span class="archetype-chip">The Builder</span>
+      <div class="archetypes-preview-title">Explore sample pairings without data</div>
+      <a class="archetype-chip" href="/compare?a=orchestrator&b=shipper">The Orchestrator</a>
+      <a class="archetype-chip" href="/compare?a=shipper&b=deepdiver">The Shipper</a>
+      <a class="archetype-chip" href="/compare?a=architect&b=sprinter">The Architect</a>
+      <a class="archetype-chip" href="/compare?a=debugger&b=builder">The Debugger</a>
+      <a class="archetype-chip" href="/compare?a=polyglot&b=architect">The Polyglot</a>
+      <a class="archetype-chip" href="/compare?a=sprinter&b=deepdiver">The Sprinter</a>
+      <a class="archetype-chip" href="/compare?a=deepdiver&b=shipper">The Deep Diver</a>
+      <a class="archetype-chip" href="/compare?a=builder&b=orchestrator">The Builder</a>
     </div>
 
     <div class="vibe-footer">

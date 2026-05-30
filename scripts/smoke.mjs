@@ -343,6 +343,7 @@ async function assertRoutes() {
   assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
   assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
   assert(indexHtml.includes('Try the reveal demo') && indexHtml.includes('Copy npx reveal command') && indexHtml.includes('claim yours only when you want a public profile'), 'upload page should let cold visitors preview the reveal before asking them to publish');
+  assert(indexHtml.includes('Explore sample pairings without data') && indexHtml.includes('href="/compare?a=orchestrator&b=shipper"'), 'upload page should give no-data visitors an archetype-pairing gallery path');
   assert(!indexHtml.includes('npx vibestats sync'), 'upload page should not advertise the occupied unscoped npm package name');
   assert(indexHtml.includes('No file hunting') && indexHtml.includes('real ~/.claude/usage-data/ output'), 'upload page should steer cold users away from manual file hunting');
   assert(indexHtml.includes('buildBehavioralMoments(insights)') && indexHtml.includes('longestSessionMinutes'), 'upload page should save derived behavioral moments from local reveal data');
@@ -421,6 +422,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'OAuth callback failure response'") && launchAudit.includes("path: '/api/auth/github/callback?code=a&state=b'"), 'launch audit should verify OAuth callback failure responses');
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes("label: 'reveal homepage'") && launchAudit.includes('Try the reveal demo') && launchAudit.includes('agent-insights.json'), 'launch audit should prevent homepage onboarding regressions');
+  assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
   assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge'), 'launch audit should verify the profile README-badge distribution surface');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
