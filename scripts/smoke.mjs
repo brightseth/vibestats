@@ -532,7 +532,7 @@ async function assertRoutes() {
   assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
   assert(launchAudit.includes("label: 'profile credential'") && launchAudit.includes('"schema_version":"vibestats.derived_profile.v1"') && launchAudit.includes('"content_hash":"sha256:'), 'launch audit should verify the derived profile credential JSON');
-  assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge and share-recipient reveal surfaces');
+  assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="credential-panel"') && launchAudit.includes('Copy credential proof') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge, credential proof, and share-recipient reveal surfaces');
   assert(launchAudit.includes("label: 'unknown profile fallback'") && launchAudit.includes('Copy unclaimed profile'), 'launch audit should verify missing profile reveal/claim fallback');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
   assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare + reveal yours') && launchAudit.includes('Run /insights, check status, then reveal yours') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof and status-aware reveal copy');
@@ -1124,6 +1124,8 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('const uploadCompareUrl = canonicalVibestatsUrl(uploadComparePath);'), 'profile copied invites should use canonical compare URLs');
   assert(profileHtml.includes('profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile)'), 'profile copy action should use direct asymmetric compare invite text');
   assert(profileHtml.includes('id="credential-cta"') && profileHtml.includes('`${profilePath}/credential.json`'), 'profile UI should link to the derived credential JSON');
+  assert(profileHtml.includes('id="credential-panel"') && profileHtml.includes('Verified derived profile') && profileHtml.includes('Copy credential proof') && profileHtml.includes('raw sessions stayed local') && profileHtml.includes('content hash'), 'profile UI should render human-readable credential proof');
+  assert(profileHtml.includes('renderCredentialPanel(profile, latest, credentialPath, uploadCompareUrl)'), 'profile UI should render the credential proof after wiring viral actions');
   assert(profileHtml.includes('Profile: ${profileUrl}'), 'profile invite copy should retain the profile as credential context');
   assert(profileHtml.includes('https://twitter.com/intent/tweet?text='), 'profile UI should include X share intent');
   assert(profileHtml.includes('url=${encodeURIComponent(uploadCompareUrl)}'), 'profile X share should click through directly to upload-to-compare');

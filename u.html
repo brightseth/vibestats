@@ -382,6 +382,84 @@
       padding: 10px 12px;
       white-space: nowrap;
     }
+    .credential-panel {
+      display: none;
+      margin-top: 18px;
+      width: min(660px, 100%);
+      border: 1px solid rgba(34,197,94,0.22);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(34,197,94,0.07), rgba(107,143,255,0.045));
+      padding: 16px;
+      gap: 12px;
+    }
+    .credential-panel.visible { display: grid; }
+    .credential-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .credential-title {
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+    .credential-copy {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .credential-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .credential-proof {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.18);
+    }
+    .credential-proof strong {
+      display: block;
+      overflow: hidden;
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .credential-proof span {
+      display: block;
+      margin-top: 5px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .credential-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .credential-actions a,
+    .credential-actions button {
+      min-height: 38px;
+      border: 1px solid rgba(34,197,94,0.32);
+      border-radius: 8px;
+      background: rgba(34,197,94,0.1);
+      color: #baf7d0;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .credential-actions a:hover,
+    .credential-actions button:hover { border-color: rgba(34,197,94,0.62); color: #fff; }
     .reveal-panel {
       display: none;
       margin-top: 18px;
@@ -858,6 +936,8 @@
       .empty-profile-actions { align-items: stretch; flex-direction: column; }
       .avatar { width: 64px; height: 64px; border-radius: 14px; }
       .readme-head { display: grid; }
+      .credential-head { display: grid; }
+      .credential-grid { grid-template-columns: 1fr; }
       .summary-grid { grid-template-columns: 1fr; }
       .achievement-grid { grid-template-columns: 1fr; }
       .achievement-head { display: grid; }
@@ -909,6 +989,7 @@
             <a class="btn" id="digest-preview-cta" href="/api/digest/preview" target="_blank" rel="noopener" style="display:none">Preview digest</a>
           </div>
           <div class="viral-note" id="viral-note"></div>
+          <section class="credential-panel" id="credential-panel" aria-label="Derived credential proof"></section>
           <section class="readme-panel" id="readme-panel" aria-label="GitHub README badge distribution"></section>
           <section class="reveal-panel" id="reveal-panel" aria-label="Reveal your vibestats profile"></section>
           <section class="compat-panel" id="compat-panel"></section>
@@ -1234,6 +1315,65 @@
       });
     }
 
+    async function renderCredentialPanel(profile, latest, credentialPath, compareUrl) {
+      const panel = document.getElementById('credential-panel');
+      if (!panel) return;
+
+      const handle = profile.user.gh_handle;
+      const credentialUrl = canonicalVibestatsUrl(credentialPath);
+      const githubUrl = `https://github.com/${encodeURIComponent(handle)}`;
+      const initialProof = `@${handle} has a GitHub-claimed, derived-only vibestats profile. Raw /insights stayed local. Verify: ${credentialUrl} Compare: ${compareUrl}`;
+      panel.classList.add('visible');
+      panel.innerHTML = `
+        <div class="credential-head">
+          <div>
+            <div class="credential-title">Verified derived profile</div>
+            <div class="credential-copy">GitHub-claimed identity, public-safe derived signals, raw sessions stayed local, and no single hireable score.</div>
+          </div>
+        </div>
+        <div class="credential-grid">
+          <div class="credential-proof"><strong>@${esc(handle)}</strong><span>GitHub anchor</span></div>
+          <div class="credential-proof"><strong>${esc(latest.raw_meta?.signature || shareLabel(latest))}</strong><span>derived claim</span></div>
+          <div class="credential-proof"><strong id="credential-hash">checking...</strong><span>content hash</span></div>
+        </div>
+        <div class="credential-actions">
+          <button type="button" id="copy-credential-proof">Copy credential proof</button>
+          <a href="${esc(credentialPath)}" target="_blank" rel="noopener">Open JSON</a>
+          <a href="${esc(githubUrl)}" target="_blank" rel="noopener">GitHub</a>
+          <a href="/promises">Promises</a>
+        </div>
+      `;
+
+      let proofText = initialProof;
+      try {
+        const res = await fetch(credentialPath, { headers: { Accept: 'application/json' } });
+        if (res.ok) {
+          const credential = await res.json();
+          const hash = String(credential?.verification?.content_hash || '').replace(/^sha256:/, '');
+          if (hash) {
+            const shortHash = `sha256:${hash.slice(0, 12)}`;
+            document.getElementById('credential-hash').textContent = shortHash;
+            proofText = `@${handle} verified on vibestats: ${credential.claim?.signature?.label || shareLabel(latest)}. ${shortHash}. Raw /insights stayed local; public profile is derived-only. Verify: ${credentialUrl} Compare: ${compareUrl}`;
+          }
+        } else {
+          document.getElementById('credential-hash').textContent = 'pending';
+        }
+      } catch {
+        document.getElementById('credential-hash').textContent = 'pending';
+      }
+
+      panel.querySelector('#copy-credential-proof')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        try {
+          await copyText(proofText);
+          button.textContent = 'Proof copied!';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = 'Copy credential proof'; }, 1500);
+      });
+    }
+
     async function fetchMe() {
       try {
         const res = await fetch('/api/me');
@@ -1512,6 +1652,7 @@
           ? 'Pin the README badge for ambient discovery, create pairing links, set match intent, sync from the CLI, or preview the weekly email.'
           : 'Your profile is unlisted. Share direct links freely, or opt into public discovery before using browse, match, and leaderboards.';
       }
+      renderCredentialPanel(profile, latest, credentialPath, uploadCompareUrl);
       renderReadmePanel(me, profile, latest, badgePath, uploadCompareUrl);
 
       copyBtn.addEventListener('click', async () => {
