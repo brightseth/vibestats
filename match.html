@@ -577,6 +577,10 @@
               <a class="btn" href="${esc(contactUrl)}" target="${contactUrl.startsWith('/') ? '_self' : '_blank'}" rel="noopener" data-match-action="contact_click" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Contact</a>
               <button class="btn" type="button" data-intro="${esc(intro)}" data-match-action="copy_intro" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Copy intro</button>
               <a class="btn" href="${esc(xShareUrl(entry, goalLabel, seekerArchetype))}" target="_blank" rel="noopener" data-match-action="share_x" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Share on X</a>
+              <button class="btn" type="button" data-feedback-label="Met" data-match-action="intro_accept" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Met</button>
+              <button class="btn" type="button" data-feedback-label="Useful" data-match-action="outcome_positive" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Useful</button>
+              <button class="btn" type="button" data-feedback-label="Okay" data-match-action="outcome_neutral" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Okay</button>
+              <button class="btn" type="button" data-feedback-label="No fit" data-match-action="outcome_negative" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">No fit</button>
             </div>
           </article>
         `;
@@ -597,6 +601,14 @@
       list.querySelectorAll('[data-intro]').forEach((button) => {
         button.addEventListener('click', () => {
           copyText(button, button.getAttribute('data-intro'), 'Copy intro');
+        });
+      });
+
+      list.querySelectorAll('[data-feedback-label]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const label = button.getAttribute('data-feedback-label') || 'Feedback';
+          button.textContent = 'Logged';
+          setTimeout(() => { button.textContent = label; }, 1500);
         });
       });
     }

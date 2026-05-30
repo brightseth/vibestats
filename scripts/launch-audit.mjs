@@ -528,7 +528,7 @@ async function auditLaunch(options) {
       path: '/promises',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['Raw Claude Code sessions stay local.', 'Only derived metrics sync.', 'Profiles start unlisted.', 'No single hireable score.', 'No employer people search', 'bounded match-intro events', 'No free-text goals or friction'],
+      mustInclude: ['Raw Claude Code sessions stay local.', 'Only derived metrics sync.', 'Profiles start unlisted.', 'No single hireable score.', 'No employer people search', 'bounded match-intro/outcome events', 'No free-text goals or friction'],
       mustNotInclude: ['tool_usage', 'language_usage', 'rawJson'],
     },
     {

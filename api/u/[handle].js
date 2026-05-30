@@ -48,13 +48,17 @@ export function profileMatchInterestPayload(row = {}, { isOwner = false } = {}) 
     count_bucket: bucket.bucket,
     top_goal: topGoal,
     top_goal_label: topGoal ? GOAL_LABELS[topGoal] : null,
-    detail: `${goalText} from compare/contact/share actions`,
+    detail: `${goalText} from compare/contact/outcome actions`,
     ...(isOwner ? {
       events,
       contact_clicks: Math.max(0, Number(row.contact_count || 0)),
       intro_copies: Math.max(0, Number(row.copy_intro_count || 0)),
       compare_clicks: Math.max(0, Number(row.compare_count || 0)),
       share_clicks: Math.max(0, Number(row.share_count || 0)),
+      intro_accepts: Math.max(0, Number(row.accept_count || 0)),
+      positive_outcomes: Math.max(0, Number(row.positive_outcome_count || 0)),
+      neutral_outcomes: Math.max(0, Number(row.neutral_outcome_count || 0)),
+      negative_outcomes: Math.max(0, Number(row.negative_outcome_count || 0)),
     } : {}),
   };
 }
@@ -148,6 +152,10 @@ export default async function handler(req, res) {
           count(*) filter (where action = 'copy_intro')::int as copy_intro_count,
           count(*) filter (where action = 'compare_click')::int as compare_count,
           count(*) filter (where action = 'share_x')::int as share_count,
+          count(*) filter (where action = 'intro_accept')::int as accept_count,
+          count(*) filter (where action = 'outcome_positive')::int as positive_outcome_count,
+          count(*) filter (where action = 'outcome_neutral')::int as neutral_outcome_count,
+          count(*) filter (where action = 'outcome_negative')::int as negative_outcome_count,
           (select goal from top_goal) as top_goal
         from recent
       `;

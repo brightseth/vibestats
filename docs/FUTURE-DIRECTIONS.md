@@ -19,7 +19,7 @@ The v1 card and viral loops are the wedge. The long-term product is the trusted 
    Normalize Claude Code, Codex, Cursor, Aider, git, and terminal-derived signals locally into one versioned profile. This is the platform-risk hedge: a neutral identity survives any single coding-agent vendor cloning or changing its own stats surface.
 
 3. **Connections and match feedback graph.**
-   Start logging intro, accept, and outcome edges early, even before the model is sophisticated. Outcome history cannot be backfilled. This is what eventually moves matching from hand-tuned compatibility to empirical complementarity.
+   Start logging intro, accept, and outcome edges early, even before the model is sophisticated. Outcome history cannot be backfilled. This is what eventually moves matching from hand-tuned compatibility to empirical complementarity. V1 now stores only bounded match-intro/outcome event enums, not free-text intros, contact URLs, or headers.
 
 4. **No-install terminal social shell.**
    Add an SSH/TUI route (`ssh ssh.vibestats.io`) for browsing, share kits, matchmaker discovery, and claim coordination without asking cold users to trust npm first. Keep extraction local; SSH is the product shell, not the raw `/insights` reader. See `docs/SSH-ROUTE.md`.

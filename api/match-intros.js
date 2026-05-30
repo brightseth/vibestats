@@ -3,7 +3,16 @@ import { sql } from './_lib/db.js';
 import { LOOKING_FOR_VALUES } from './_lib/profile-settings.js';
 import { ARCHETYPE_KEYS } from './_lib/signatures.js';
 
-const ACTIONS = new Set(['compare_click', 'contact_click', 'copy_intro', 'share_x']);
+const ACTIONS = new Set([
+  'compare_click',
+  'contact_click',
+  'copy_intro',
+  'share_x',
+  'intro_accept',
+  'outcome_positive',
+  'outcome_neutral',
+  'outcome_negative',
+]);
 const SOURCES = new Set(['match', 'browse', 'profile']);
 const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
 

@@ -292,7 +292,7 @@ async function assertRoutes() {
   assert(matchApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'match API method errors should not be cached');
   assert(!matchApi.includes('s-maxage='), 'match API profile lists should not be publicly cached');
   assert(matchIntrosApi.includes('requireSameOrigin(req)') && matchIntrosApi.includes('readJson(req, { maxBytes: 2 * 1024 })'), 'match intro event API should require same-origin bounded JSON writes');
-  assert(matchIntrosApi.includes("action in ('compare_click', 'contact_click', 'copy_intro', 'share_x')") || matchIntrosApi.includes("['compare_click', 'contact_click', 'copy_intro', 'share_x']"), 'match intro event API should store bounded action enums only');
+  assert(matchIntrosApi.includes('compare_click') && matchIntrosApi.includes('contact_click') && matchIntrosApi.includes('copy_intro') && matchIntrosApi.includes('share_x') && matchIntrosApi.includes('intro_accept') && matchIntrosApi.includes('outcome_positive') && matchIntrosApi.includes('outcome_neutral') && matchIntrosApi.includes('outcome_negative'), 'match intro event API should store bounded action and outcome enums only');
   assert(!matchIntrosApi.includes('contact_url') && !matchIntrosApi.includes('intro_text') && !matchIntrosApi.includes('user-agent'), 'match intro event API must not store contact URLs, intro text, or request headers');
   assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
   assert(!browseApi.includes('languages:'), 'browse API should not expose public language counts');
@@ -313,7 +313,7 @@ async function assertRoutes() {
   assert(matchHtml.includes('const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));'), 'match copied intros should canonicalize comparison URLs to vibestats.io');
   assert(matchHtml.includes('url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}'), 'match X share URLs should canonicalize to vibestats.io');
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
-  assert(matchHtml.includes("fetch('/api/match-intros'") && matchHtml.includes('data-match-action="copy_intro"') && matchHtml.includes('data-match-action="contact_click"') && matchHtml.includes('data-match-action="compare_click"') && matchHtml.includes('data-match-action="share_x"'), 'match UI should log bounded intro intent events for future match feedback without blocking navigation');
+  assert(matchHtml.includes("fetch('/api/match-intros'") && matchHtml.includes('data-match-action="copy_intro"') && matchHtml.includes('data-match-action="contact_click"') && matchHtml.includes('data-match-action="compare_click"') && matchHtml.includes('data-match-action="share_x"') && matchHtml.includes('data-match-action="intro_accept"') && matchHtml.includes('data-match-action="outcome_positive"') && matchHtml.includes('data-match-action="outcome_neutral"') && matchHtml.includes('data-match-action="outcome_negative"'), 'match UI should log bounded intro and outcome events for future match feedback without blocking navigation');
   assert(matchHtml.includes('class="reveal-strip"') && matchHtml.includes('Find your real match') && matchHtml.includes('data-copy-command="/insights"') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && matchHtml.includes('Copy status') && matchHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && matchHtml.includes('data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity"') && matchHtml.includes('install-claude-command'), 'match page should offer a direct terminal-first status, reveal, claim, and Claude Code install hook even when matches are populated');
   assert(matchHtml.includes('Match database unavailable') && matchHtml.includes('Boolean(data.unavailable)'), 'match UI should distinguish unavailable DB from no active matches');
   assert(genomeHtml.includes('What are you?') && genomeHtml.includes('data-copy-command="/insights"') && genomeHtml.includes('Copy status preflight') && genomeHtml.includes('Copy npx reveal command') && genomeHtml.includes('Copy claim command') && genomeHtml.includes('data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity"') && genomeHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && genomeHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && genomeHtml.includes('install-claude-command') && genomeHtml.includes('Raw Claude Code /insights data stays local'), 'genome page should convert community curiosity into status-first onboarding with claim and Claude Code install hooks');
@@ -592,6 +592,7 @@ async function assertRoutes() {
   assert((await readFile('db/migrations/0010_validate_contact_url_constraint.sql', 'utf8')).includes('validate constraint profile_settings_contact_url_protocol'), 'migrations should validate the HTTPS contact URL constraint');
   assert((await readFile('db/migrations/0011_upload_owner_not_null.sql', 'utf8')).includes('alter column user_id set not null'), 'migrations should prevent orphaned profile uploads');
   assert((await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('ssh_claim_sessions') && (await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('code_hash text not null unique'), 'migrations should add hashed short-lived SSH claim sessions');
+  assert((await readFile('db/migrations/0014_match_feedback_actions.sql', 'utf8')).includes('outcome_positive') && (await readFile('db/migrations/0014_match_feedback_actions.sql', 'utf8')).includes('intro_accept'), 'migrations should preserve bounded match feedback action enums');
   assert(githubOauthHelper.includes('gh_handle, avatar_url, privacy, last_seen_at') && githubOauthHelper.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(authCallbackApi.includes('identityReadiness, identityUnavailableMessage'), 'GitHub OAuth callback should use the shared identity readiness gate');
   assert(authCallbackApi.indexOf('identityReadiness().available') < authCallbackApi.indexOf('const statePayload = decodeStatePayload'), 'GitHub OAuth callback should fail closed before reading signed state when identity is unavailable');
@@ -668,9 +669,9 @@ async function assertRoutes() {
   assert(profileHtml.includes('achievementShareText(handle, latest, badge, compareUrl)') && profileHtml.includes('Copy badge proof') && profileHtml.includes('Share badge') && profileHtml.includes('data-copy-achievement') && profileHtml.includes('achievementXShareUrl(share, compareUrl)'), 'profile achievements should be copyable share objects that route recipients into comparison');
   assert(profileHtml.includes('owner history private'), 'profile UI should not render a fake history chart for visitors');
   assert(profileHtml.includes("historyVisible ? `${uploads.length} total` : 'latest only'"), 'profile UI should label visitor timeline as latest-only');
-  assert(promisesHtml.includes('Raw Claude Code sessions stay local.') && promisesHtml.includes('Only derived metrics sync.') && promisesHtml.includes('Profiles start unlisted.') && promisesHtml.includes('No single hireable score.') && promisesHtml.includes('No employer people search') && promisesHtml.includes('Delete means leave.') && promisesHtml.includes('bounded match-intro events') && promisesHtml.includes('No free-text goals or friction'), 'promises page should publish the core privacy and anti-coercion promises');
+  assert(promisesHtml.includes('Raw Claude Code sessions stay local.') && promisesHtml.includes('Only derived metrics sync.') && promisesHtml.includes('Profiles start unlisted.') && promisesHtml.includes('No single hireable score.') && promisesHtml.includes('No employer people search') && promisesHtml.includes('Delete means leave.') && promisesHtml.includes('bounded match-intro/outcome events') && promisesHtml.includes('No free-text goals or friction'), 'promises page should publish the core privacy and anti-coercion promises');
   assert(!promisesHtml.includes('tool_usage') && !promisesHtml.includes('language_usage') && !promisesHtml.includes('rawJson'), 'promises page should not include raw-insights field names');
-  assert(readme.includes('`/promises`') && readme.includes('bounded match-intro events') && readme.includes('no-employer-search stance'), 'README should link the public promises surface');
+  assert(readme.includes('`/promises`') && readme.includes('bounded match-intro/outcome events') && readme.includes('no-employer-search stance'), 'README should link the public promises surface');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   assert((config.rewrites || []).some((rewrite) => rewrite.source === '/cli.sh' && rewrite.destination === '/api/cli/bootstrap'), 'no-npm CLI bootstrap should be available at /cli.sh');
   console.log('ok route rewrites');
@@ -1505,6 +1506,16 @@ async function assertMatchIntroEventHelpers() {
   assert(event.seeker_archetype === 'builder' && event.target_archetype === 'shipper', 'match intro events should normalize archetypes');
   assert(event.action === 'copy_intro' && event.source === 'match', 'match intro events should keep bounded action/source enums');
   assert(!Object.hasOwn(event, 'intro_text') && !Object.hasOwn(event, 'contact_url'), 'match intro events must discard free-text intro copy and contact URLs');
+  const outcome = cleanMatchIntroEvent({
+    target_handle: 'brightseth',
+    goal: 'pair-coding',
+    seeker_archetype: 'builder',
+    target_archetype: 'shipper',
+    action: 'outcome_positive',
+    source: 'match',
+    friction_detail: 'secret key and private notes should be ignored',
+  });
+  assert(outcome.action === 'outcome_positive' && !Object.hasOwn(outcome, 'friction_detail'), 'match outcome feedback should keep only bounded enums and discard free text');
 
   for (const body of [
     { target_handle: 'bad handle', goal: 'pair-coding', action: 'copy_intro' },
@@ -1520,7 +1531,7 @@ async function assertMatchIntroEventHelpers() {
     }
     assert(rejected, 'match intro events should reject unbounded or non-canonical fields');
   }
-  console.log('ok match intro events stay bounded and privacy-safe');
+  console.log('ok match intro/outcome events stay bounded and privacy-safe');
 }
 
 async function assertBehavioralMoments() {
@@ -2676,6 +2687,10 @@ async function assertProfileApiPayloadHelpers() {
     copy_intro_count: 4,
     compare_count: 5,
     share_count: 0,
+    accept_count: 2,
+    positive_outcome_count: 1,
+    neutral_outcome_count: 1,
+    negative_outcome_count: 0,
     top_goal: 'pair-coding',
   });
   const ownerInterest = profileMatchInterestPayload({
@@ -2684,11 +2699,15 @@ async function assertProfileApiPayloadHelpers() {
     copy_intro_count: 4,
     compare_count: 5,
     share_count: 0,
+    accept_count: 2,
+    positive_outcome_count: 1,
+    neutral_outcome_count: 1,
+    negative_outcome_count: 0,
     top_goal: 'pair-coding',
   }, { isOwner: true });
   assert(visitorInterest.label === 'strong match interest' && visitorInterest.count_bucket === '10-19' && visitorInterest.top_goal_label === 'Pair coding', 'visitor match interest should expose coarse public aggregate proof');
-  assert(!Object.hasOwn(visitorInterest, 'events') && !Object.hasOwn(visitorInterest, 'contact_clicks'), 'visitor match interest must not expose exact event counts');
-  assert(ownerInterest.events === 12 && ownerInterest.contact_clicks === 3 && ownerInterest.intro_copies === 4, 'owner match interest should expose exact bounded event counts');
+  assert(!Object.hasOwn(visitorInterest, 'events') && !Object.hasOwn(visitorInterest, 'contact_clicks') && !Object.hasOwn(visitorInterest, 'positive_outcomes'), 'visitor match interest must not expose exact event counts');
+  assert(ownerInterest.events === 12 && ownerInterest.contact_clicks === 3 && ownerInterest.intro_copies === 4 && ownerInterest.intro_accepts === 2 && ownerInterest.positive_outcomes === 1, 'owner match interest should expose exact bounded event and outcome counts');
   assert(profileMatchInterestPayload({ week_count: 0 }) === null, 'profile match interest should omit empty event windows');
   console.log('ok profile API payload helpers keep rarity and match-interest internals owner-only');
 }
