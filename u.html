@@ -971,6 +971,7 @@
       deepdiver: 'Deep Diver', builder: 'Builder',
     };
     const INSIGHTS_COMMAND = '/insights';
+    const STATUS_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status';
     const CLAIM_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
     const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
     const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
@@ -1147,6 +1148,10 @@
             <button type="button" data-copy-reveal="${esc(INSIGHTS_COMMAND)}" data-label="Copy">Copy</button>
           </div>
           <div class="reveal-command">
+            <code>${esc(STATUS_COMMAND)}</code>
+            <button type="button" data-copy-reveal="${esc(STATUS_COMMAND)}" data-label="Copy status">Copy status</button>
+          </div>
+          <div class="reveal-command">
             <code>${esc(REVEAL_COMMAND)}</code>
             <button type="button" data-copy-reveal="${esc(REVEAL_COMMAND)}" data-label="Copy">Copy</button>
           </div>
@@ -1293,13 +1298,17 @@
             : `Only @${handle} can claim this exact URL with GitHub. You can still reveal your own Claude Code identity now.`)} Raw sessions stay on your machine; only derived metrics save.</p>
           <div class="empty-profile-proof" aria-label="Unclaimed profile path">
             <div class="empty-proof-item"><strong>Claim by GitHub</strong><span>The persistent URL is tied to the matching GitHub handle.</span></div>
-            <div class="empty-proof-item"><strong>Reveal first</strong><span>Run /insights, then the npx reveal command. Claim from terminal only when you want persistence.</span></div>
+            <div class="empty-proof-item"><strong>Reveal first</strong><span>Run /insights, check status, then reveal. Claim from terminal only when you want persistence.</span></div>
             <div class="empty-proof-item"><strong>Privacy intact</strong><span>Raw Claude Code session data never has to leave your machine.</span></div>
           </div>
           <div class="reveal-command-grid" aria-label="Reveal commands">
             <div class="reveal-command">
               <code>${esc(INSIGHTS_COMMAND)}</code>
               <button type="button" data-copy-unclaimed="${esc(INSIGHTS_COMMAND)}">Copy</button>
+            </div>
+            <div class="reveal-command">
+              <code>${esc(STATUS_COMMAND)}</code>
+              <button type="button" data-copy-unclaimed="${esc(STATUS_COMMAND)}">Copy status</button>
             </div>
             <div class="reveal-command">
               <code>${esc(REVEAL_COMMAND)}</code>
@@ -1457,7 +1466,7 @@
       browseCta.href = `/browse?archetype=${encodeURIComponent(hostArchetype)}`;
       browseCta.textContent = `Browse ${ARCHETYPE_SHORT_NAMES[hostArchetype] || 'similar'}`;
       shareX.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(uploadCompareUrl)}`;
-      note.textContent = `@${handle} is ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} What are you? Run /insights, then the npx reveal command on the homepage.`;
+      note.textContent = `@${handle} is ${shareLabel(latest)}.${proof ? ` ${proof}.` : ''} What are you? Run /insights, check status, then reveal from your terminal.`;
 
       if (me && me.gh_handle !== handle) {
         const myLatest = await latestForHandle(me.gh_handle);
