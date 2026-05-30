@@ -4,6 +4,8 @@
 
 This document is opinionated. It says what we should build and — more importantly — what we shouldn't.
 
+Post-v1 strategic constraints live in [FUTURE-DIRECTIONS.md](./FUTURE-DIRECTIONS.md). They should guide architecture choices without interrupting the current launch path.
+
 ---
 
 ## TL;DR
