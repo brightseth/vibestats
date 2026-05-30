@@ -164,6 +164,7 @@ export function buildDerivedProfileCredential({
     method: {
       spec_version: DERIVED_PROFILE_SCHEMA,
       spec_url: absoluteUrl(origin, '/api/derived-profile-spec'),
+      spec_path: '/api/derived-profile-spec',
       trust_tier: 'github_claimed_derived',
       derived_locally: true,
       source: {
