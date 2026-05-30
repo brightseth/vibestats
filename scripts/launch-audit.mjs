@@ -29,6 +29,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     expectDeviceFlow: false,
     expectCliPackage: false,
     expectDigest: false,
+    expectSshClaim: false,
     cliPackage: process.env.VIBESTATS_CLI_PACKAGE || DEFAULT_CLI_PACKAGE,
     cronSecret: process.env.CRON_SECRET || '',
     vercelDeployment: process.env.VERCEL_DEPLOYMENT_URL || '',
@@ -52,6 +53,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg === '--expect-ready') options.expectReady = true;
     else if (arg === '--expect-device-flow') options.expectDeviceFlow = true;
     else if (arg === '--expect-cli-package') options.expectCliPackage = true;
+    else if (arg === '--expect-ssh-claim') options.expectSshClaim = true;
     else if (arg === '--cli-package') options.cliPackage = argv[++i];
     else if (arg.startsWith('--cli-package=')) options.cliPackage = arg.slice('--cli-package='.length);
     else if (arg === '--expect-digest') options.expectDigest = true;
@@ -95,14 +97,15 @@ function normalizeOrigin(value) {
 }
 
 function usage() {
-  return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-device-flow] [--expect-cli-package] [--expect-digest]
+  return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-device-flow] [--expect-cli-package] [--expect-ssh-claim] [--expect-digest]
        npm run audit:launch -- --deployment https://preview.vercel.app --scope lets-vibe --handle brightseth
-       CRON_SECRET=... npm run audit:launch -- --origin https://vibestats.io --handle brightseth --expect-ready --expect-device-flow --expect-cli-package --expect-digest
+       CRON_SECRET=... npm run audit:launch -- --origin https://vibestats.io --handle brightseth --expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim --expect-digest
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
 - CLI device-code auth start when --expect-ready is used; --expect-device-flow requires a live GitHub device code instead of browser fallback
 - public npm CLI package visibility and runnable help when --expect-cli-package is used
+- no-npm CLI bootstrap script, and SSH claim-session creation/status when --expect-ssh-claim is used
 - public auth/session/sync failure responses do not expose internal config names
 - reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
 - promises page privacy, derived-only, and anti-coercion public contract
@@ -259,14 +262,55 @@ async function auditCliPackage(options, recorder) {
   }
 }
 
+async function auditSshClaim(options, recorder) {
+  try {
+    const start = await fetchText(options, '/api/ssh/claim-start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const cache = start.response.headers.get('cache-control') || '';
+    const type = start.response.headers.get('content-type') || '';
+    const body = JSON.parse(start.body || '{}');
+    recorder.check(start.response.status === 201, 'SSH claim start creates a session', `${start.response.status} ${start.url}`);
+    recorder.check(type.includes('application/json'), 'SSH claim start content type', type || '(none)');
+    recorder.check(cache.includes('no-store'), 'SSH claim start disables public caching', cache || '(none)');
+    recorder.check(/^VIBE-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(body.code || ''), 'SSH claim start returns a bounded claim code', body.code || '(missing)');
+    recorder.check(String(body.local_command || '').includes('/cli.sh') && String(body.local_command || '').includes(' claim '), 'SSH claim start prints no-npm local helper command', body.local_command || '(missing)');
+    recorder.check(String(body.npx_command || '').includes('npx --yes') && String(body.npx_command || '').includes(' claim '), 'SSH claim start keeps npx fallback command', body.npx_command || '(missing)');
+    recorder.check(body.privacy?.ssh_host_reads_raw_insights === false && body.privacy?.local_helper_uploads === 'derived-only', 'SSH claim start proves local-only extraction boundary');
+    recorder.check(!hasRawLeak(start.body), 'SSH claim start has no raw-insights field names');
+    recorder.check(!hasSecretName(start.body), 'SSH claim start does not expose secret env names');
+
+    if (body.code) {
+      const status = await fetchText(options, `/api/ssh/claim-status?code=${encodeURIComponent(body.code)}`);
+      const statusCache = status.response.headers.get('cache-control') || '';
+      const statusType = status.response.headers.get('content-type') || '';
+      const statusBody = JSON.parse(status.body || '{}');
+      recorder.check(status.response.status === 200, 'SSH claim status returns pending session', `${status.response.status} ${status.url}`);
+      recorder.check(statusType.includes('application/json'), 'SSH claim status content type', statusType || '(none)');
+      recorder.check(statusCache.includes('no-store'), 'SSH claim status disables public caching', statusCache || '(none)');
+      recorder.check(statusBody.ok === true && ['pending', 'expired'].includes(statusBody.state), 'SSH claim status returns bounded state', status.body);
+      recorder.check(!hasRawLeak(status.body), 'SSH claim status has no raw-insights field names');
+      recorder.check(!hasSecretName(status.body), 'SSH claim status does not expose secret env names');
+    }
+  } catch (err) {
+    recorder.fail('SSH claim-session audit failed', err.message);
+  }
+}
+
 async function auditLaunch(options) {
   const recorder = createRecorder();
-  const { origin, handle, archetype, expectReady, expectDeviceFlow, expectCliPackage, expectDigest } = options;
+  const { origin, handle, archetype, expectReady, expectDeviceFlow, expectCliPackage, expectDigest, expectSshClaim } = options;
   const missingHandle = `audit-missing-${Date.now().toString(36)}`.slice(0, 39);
   const comparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
 
   if (expectCliPackage) {
     await auditCliPackage(options, recorder);
+  }
+
+  if (expectSshClaim) {
+    await auditSshClaim(options, recorder);
   }
 
   let identity = null;
@@ -446,6 +490,15 @@ async function auditLaunch(options) {
   }
 
   const paths = [
+    {
+      label: 'no-npm CLI bootstrap',
+      path: '/cli.sh',
+      expectedType: 'text/x-shellscript',
+      allowStatuses: [200],
+      requireNoStore: true,
+      mustInclude: ['codeload.github.com', 'node "$run_dir/bin/vibestats.js" "$@"', 'Raw /insights data has not left this machine'],
+      mustNotInclude: ['npx --yes', 'npm install', 'GITHUB_CLIENT_SECRET'],
+    },
     {
       label: 'reveal homepage',
       path: '/',

@@ -50,6 +50,10 @@ export function generateClaimCode() {
 }
 
 export function claimLocalCommand(origin, code) {
+  return `curl -fsSL ${shellQuote(`${origin}/cli.sh`)} | sh -s -- claim ${shellQuote(code)} --host ${shellQuote(origin)}`;
+}
+
+export function claimNpxCommand(origin, code) {
   const packageSpec = process.env.VIBESTATS_CLI_PACKAGE || DEFAULT_CLI_PACKAGE;
   return `npx --yes ${shellQuote(packageSpec)} claim ${shellQuote(code)} --host ${shellQuote(origin)}`;
 }

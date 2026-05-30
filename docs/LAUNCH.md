@@ -131,8 +131,14 @@ After the package is published and static snippets are switched over, prove npm 
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package
 ```
 
+After migration `0013_ssh_claim_sessions.sql` is applied, prove the no-npm bootstrap and SSH claim-session start/status loop with:
+
 ```bash
-CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-digest
+npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim
+```
+
+```bash
+CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim --expect-digest
 ```
 
 `--expect-digest` also runs the protected weekly digest dry run and fails if `CRON_SECRET` is not present in the local shell. The audit does not print the secret value.

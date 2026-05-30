@@ -73,7 +73,7 @@ scp ~/.claude/usage-data/session-meta/*.json ssh.vibestats.io:
 
 ```bash
 /insights
-npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-7K2Q-M9PA
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-7K2Q-M9PA
 ```
 
 4. The local helper:
@@ -153,21 +153,27 @@ Public API shape:
 - `GET /api/ssh/claim-status?code=...` returns bounded status for the SSH TUI.
 - `POST /api/sync` accepts an optional `claim_code` when the local helper publishes derived metrics.
 - `vibestats claim CODE` is the local helper command shape for a waiting SSH session.
+- `GET /cli.sh` returns the no-npm bootstrap wrapper that downloads the repo tarball and runs the local helper with Node.
 
 The status API must never serialize raw input fields or secret env names.
 
 ### Local Helper Shape
 
-Keep the current CLI as the first local helper:
+Keep the current CLI as the first local helper, but print the no-npm bootstrap first:
+
+```bash
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-7K2Q-M9PA
+```
+
+Keep npx as a fallback while the package is unpublished or users prefer npm's cache:
 
 ```bash
 npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-7K2Q-M9PA
 ```
 
-Later, reduce npm friction with a signed binary/bootstrap:
+Later, reduce shell-bootstrap friction with a signed binary:
 
 ```bash
-curl -fsSL https://vibestats.io/install | sh
 vibestats claim VIBE-7K2Q-M9PA
 ```
 
@@ -180,7 +186,7 @@ SSH coordinates the reveal. Local code does the extraction.
 3. **Claim-session API.** Add short-lived codes, status polling, and sync attachment. No raw payload fields.
 4. **Local helper command.** Add `claim CODE` to the existing CLI so a local publish can wake a waiting SSH session.
 5. **Reveal handoff.** SSH TUI updates live after sync and prints the launch kit.
-6. **Signed binary/bootstrap.** Only after the claim loop works, add non-npm installation so SSH can print a command that does not mention npm.
+6. **Signed binary.** Only after the claim loop works, add a signed installed binary so SSH can print a command that does not need curl, npm, or a repo tarball.
 7. **Ops hardening.** Rate limits, abuse handling, session expiry, host key pinning guidance, and launch audit checks against the SSH health endpoint.
 
 ## Acceptance

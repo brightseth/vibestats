@@ -26,6 +26,7 @@ const apiModules = [
   '../api/credential.js',
   '../api/sync-settings.js',
   '../api/sync-token.js',
+  '../api/cli/bootstrap.js',
   '../api/cli/local-token.js',
   '../api/cli/device-start.js',
   '../api/cli/device-poll.js',
@@ -193,6 +194,7 @@ async function assertRoutes() {
   const cliLocalTokenApi = await readFile('api/cli/local-token.js', 'utf8');
   const cliDeviceStartApi = await readFile('api/cli/device-start.js', 'utf8');
   const cliDevicePollApi = await readFile('api/cli/device-poll.js', 'utf8');
+  const cliBootstrapApi = await readFile('api/cli/bootstrap.js', 'utf8');
   const githubOauthHelper = await readFile('api/_lib/github-oauth.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
   const sshClaimStartApi = await readFile('api/ssh/claim-start.js', 'utf8');
@@ -390,9 +392,10 @@ async function assertRoutes() {
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
   assert(syncApi.includes('claim_code') && syncApi.includes('assertClaimSessionAttachable') && syncApi.includes('attachClaimSession') && syncApi.includes('claim_session'), 'CLI sync should support SSH claim-session attachment without changing the derived upload contract');
-  assert(sshClaimStartApi.includes('createClaimSession') && sshClaimStartApi.includes('claimLocalCommand') && sshClaimStartApi.includes('ssh_host_reads_raw_insights: false'), 'SSH claim start API should create a code and print a local-helper command with privacy proof');
+  assert(sshClaimStartApi.includes('createClaimSession') && sshClaimStartApi.includes('claimLocalCommand') && sshClaimStartApi.includes('claimNpxCommand') && sshClaimStartApi.includes('ssh_host_reads_raw_insights: false'), 'SSH claim start API should create a code and print no-npm plus npx local-helper commands with privacy proof');
   assert(sshClaimStatusApi.includes('getClaimSessionStatus') && sshClaimStatusApi.includes("req.query?.code") && sshClaimStatusApi.includes('NO_STORE_HEADERS'), 'SSH claim status API should expose bounded no-store polling by claim code');
-  assert(sshClaimsHelper.includes('CLAIM_CODE_PATTERN') && sshClaimsHelper.includes('code_hash') && sshClaimsHelper.includes('raw_claude_code_sessions') === false && sshClaimsHelper.includes('claimLocalCommand') && sshClaimsHelper.includes('user_id'), 'SSH claim helper should hash claim codes and avoid raw-insights payload fields');
+  assert(sshClaimsHelper.includes('CLAIM_CODE_PATTERN') && sshClaimsHelper.includes('code_hash') && sshClaimsHelper.includes('raw_claude_code_sessions') === false && sshClaimsHelper.includes('/cli.sh') && sshClaimsHelper.includes('claimNpxCommand') && sshClaimsHelper.includes('user_id'), 'SSH claim helper should hash claim codes, prefer no-npm bootstrap, and avoid raw-insights payload fields');
+  assert(cliBootstrapApi.includes('text/x-shellscript') && cliBootstrapApi.includes('codeload.github.com') && cliBootstrapApi.includes('node "$run_dir/bin/vibestats.js" "$@"') && cliBootstrapApi.includes('Raw /insights data has not left this machine'), 'CLI bootstrap API should serve a no-npm local helper wrapper that preserves the privacy boundary');
   assert(syncSettingsApi.includes('readSyncSession') && syncSettingsApi.includes('syncTokenIsRevoked'), 'CLI sync settings API should require revocable signed sync token sessions');
   assert(syncSettingsApi.includes('cleanLookingFor') && syncSettingsApi.includes('cleanContactUrl') && syncSettingsApi.includes('lookingForExpiry(7)'), 'CLI sync settings API should only accept sanitized short-lived match intent fields');
   assert(syncSettingsApi.includes("privacy = 'public'") && syncSettingsApi.includes('make_public === true'), 'CLI sync settings API should require explicit public opt-in for match discovery');
@@ -575,7 +578,8 @@ async function assertRoutes() {
     'launch audit should verify discovery API cache policy',
   );
   assert(launchAudit.includes('checkRawLeaks: false'), 'launch audit should not fail the upload page for local raw-parser field names');
-  assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-device-flow') && launchAudit.includes('--expect-cli-package') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
+  assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-device-flow') && launchAudit.includes('--expect-cli-package') && launchAudit.includes('--expect-ssh-claim') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
+  assert(launchAudit.includes("label: 'no-npm CLI bootstrap'") && launchAudit.includes("path: '/cli.sh'") && launchAudit.includes('SSH claim start creates a session'), 'launch audit should verify the no-npm bootstrap and optional SSH claim-session loop');
   assert(launchAudit.includes('cronSecret: process.env.CRON_SECRET') && launchAudit.includes('weekly digest dry run has cron secret'), 'launch audit should run a protected digest dry run when strict digest readiness is expected');
   assert(launchAudit.includes('weekly digest dry run returns readiness payload') && launchAudit.includes('body.resend_ready === true'), 'launch audit should require digest dry-run readiness payload');
   assert(launchAudit.includes('weekly digest dry run has at least one candidate') && launchAudit.includes('weekly digest dry run proves return-loop content'), 'launch audit should require digest dry-run content proof');
@@ -607,10 +611,11 @@ async function assertRoutes() {
   assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
   assert(launchDoc.includes('--expect-ready --expect-device-flow') && launchDoc.includes('Enable Device Flow'), 'launch checklist should document the strict terminal-first device-flow gate');
   assert(launchDoc.includes('--expect-ready --expect-device-flow --expect-cli-package') && launchDoc.includes('prove npm visibility and executable CLI help'), 'launch checklist should document the strict public npm CLI package gate');
+  assert(launchDoc.includes('--expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim') && launchDoc.includes('no-npm bootstrap and SSH claim-session start/status loop'), 'launch checklist should document the strict SSH claim gate after migration');
   assert(launchDoc.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document terminal and maintainer first-profile share kits');
   assert(launchDoc.includes('unscoped `vibestats` package is owned by another publisher') && launchDoc.includes('npm pack --dry-run') && launchDoc.includes('npm publish --access public'), 'launch checklist should document the scoped npm publish gate');
   assert(launchDoc.includes('VIBESTATS_CLI_PACKAGE') && launchDoc.includes('scoped package') && launchDoc.includes('static onboarding snippets'), 'launch checklist should document the public npm package command switchover');
-  assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-digest'), 'launch checklist should require strict device-flow, CLI package, and digest audit once email is configured');
+  assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim --expect-digest'), 'launch checklist should require strict device-flow, CLI package, SSH claim, and digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
   assert(launchDoc.includes('Digest consent can be captured before delivery env is present'), 'launch checklist should document digest consent capture before delivery readiness');
   assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('day-based streak') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
@@ -622,12 +627,12 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   const sshRouteDoc = await readFile('docs/SSH-ROUTE.md', 'utf8');
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, derived credential proof URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
-  assert(readme.includes('SSH claim-session primitive') && readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH claim-session handoff command');
+  assert(readme.includes('SSH claim-session primitive') && readme.includes('curl -fsSL https://vibestats.io/cli.sh | sh -s -- claim VIBE-ABCD-2345') && readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH claim-session handoff commands');
   assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('This repo is packaged as `@lets-vibe/vibestats`') && readme.includes('npm pack --dry-run') && readme.includes('npm publish --access public'), 'README should document scoped npm package publication before broad sharing');
-  assert(readme.includes('--expect-ready --expect-device-flow --expect-cli-package') && readme.includes('prove npm can see and execute the public package help output'), 'README should document the strict public npm CLI package gate');
+  assert(readme.includes('--expect-ready --expect-device-flow --expect-cli-package --expect-ssh-claim') && readme.includes('prove the no-npm `/cli.sh` bootstrap and SSH claim-session poll loop'), 'README should document the strict public CLI and SSH claim gates');
   assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub branch fallback'), 'README should document the public CLI package override before broad npm sharing');
   assert(readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document terminal and maintainer copy-ready share kits for minted profiles');
   assert(readme.includes('Use `share --handle <saved-gh-handle>`') && readme.includes('privacy proof without opening the website'), 'README should document the CLI share command for terminal-only distribution');
@@ -637,7 +642,7 @@ async function assertRoutes() {
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('derived credential proof URL') && readme.includes('README badge Markdown, and profile embed HTML'), 'README should document post-sync credential proof and portable distribution snippets');
   assert(readme.includes('docs/SSH-ROUTE.md') && readme.includes('SSH should become a social shell and claim coordinator') && readme.includes('raw `/insights` files must never be pasted'), 'README should document the planned no-install SSH route without weakening local extraction');
-  assert(sshRouteDoc.includes('Treat SSH as a no-install terminal social shell and claim coordinator, not as the raw-data extractor.') && sshRouteDoc.includes('The SSH host must never ask for raw `session-meta/*.json`') && sshRouteDoc.includes('Vercel Functions cannot host a long-lived SSH server') && sshRouteDoc.includes('vibestats claim CODE'), 'SSH route spec should preserve local-only extraction and name the implementation shape');
+  assert(sshRouteDoc.includes('Treat SSH as a no-install terminal social shell and claim coordinator, not as the raw-data extractor.') && sshRouteDoc.includes('The SSH host must never ask for raw `session-meta/*.json`') && sshRouteDoc.includes('Vercel Functions cannot host a long-lived SSH server') && sshRouteDoc.includes('curl -fsSL https://vibestats.io/cli.sh') && sshRouteDoc.includes('vibestats claim CODE'), 'SSH route spec should preserve local-only extraction and name the implementation shape');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
@@ -667,6 +672,7 @@ async function assertRoutes() {
   assert(!promisesHtml.includes('tool_usage') && !promisesHtml.includes('language_usage') && !promisesHtml.includes('rawJson'), 'promises page should not include raw-insights field names');
   assert(readme.includes('`/promises`') && readme.includes('bounded match-intro events') && readme.includes('no-employer-search stance'), 'README should link the public promises surface');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
+  assert((config.rewrites || []).some((rewrite) => rewrite.source === '/cli.sh' && rewrite.destination === '/api/cli/bootstrap'), 'no-npm CLI bootstrap should be available at /cli.sh');
   console.log('ok route rewrites');
 }
 
@@ -678,8 +684,8 @@ async function assertLaunchAuditHelpers() {
   assert(parsed.vercelDeployment === 'https://preview.vercel.app', 'launch audit should normalize vercel deployment URL');
   assert(parsed.vercelScope === 'lets-vibe', 'launch audit should parse vercel scope');
   assert(parsed.handle === 'brightseth', 'launch audit should normalize handle while parsing deployment mode');
-  const parsedStrict = parseArgs(['--origin', 'https://vibestats.io', '--handle', 'brightseth', '--expect-ready', '--expect-device-flow', '--expect-cli-package', '--cli-package', '@lets-vibe/vibestats', '--expect-digest']);
-  assert(parsedStrict.expectReady === true && parsedStrict.expectDeviceFlow === true && parsedStrict.expectCliPackage === true && parsedStrict.cliPackage === '@lets-vibe/vibestats' && parsedStrict.expectDigest === true, 'launch audit should parse strict ready, device-flow, CLI package, and digest gates independently');
+  const parsedStrict = parseArgs(['--origin', 'https://vibestats.io', '--handle', 'brightseth', '--expect-ready', '--expect-device-flow', '--expect-cli-package', '--cli-package', '@lets-vibe/vibestats', '--expect-ssh-claim', '--expect-digest']);
+  assert(parsedStrict.expectReady === true && parsedStrict.expectDeviceFlow === true && parsedStrict.expectCliPackage === true && parsedStrict.cliPackage === '@lets-vibe/vibestats' && parsedStrict.expectSshClaim === true && parsedStrict.expectDigest === true, 'launch audit should parse strict ready, device-flow, CLI package, SSH claim, and digest gates independently');
 
   const parsedCurl = parseVercelCurlResponse(`Retrieving project...\nHTTP/2 200\r\ncache-control: no-store\r\ncontent-type: application/json; charset=utf-8\r\n\r\n{"ok":true}`);
   assert(parsedCurl.response.status === 200, 'vercel curl parser should read HTTP status');
@@ -815,6 +821,7 @@ async function assertSshClaimHelpers() {
     CLAIM_CODE_PATTERN,
     claimCodeHash,
     claimLocalCommand,
+    claimNpxCommand,
     cleanClaimCode,
     generateClaimCode,
     normalizeClaimCode,
@@ -827,7 +834,9 @@ async function assertSshClaimHelpers() {
   assert(cleanClaimCode('', { optional: true }) === '', 'SSH claim helper should allow optional claim codes');
   assert(claimCodeHash('VIBE-ABCD-2345') === claimCodeHash('vibeabcd2345'), 'SSH claim helper should hash normalized codes consistently');
   const command = claimLocalCommand('https://vibestats.example', 'VIBE-ABCD-2345');
-  assert(command.includes('npx --yes') && command.includes(' claim ') && command.includes('VIBE-ABCD-2345') && command.includes('--host'), 'SSH claim helper should print a local claim command');
+  assert(command.includes('curl -fsSL') && command.includes('/cli.sh') && command.includes(' claim ') && command.includes('VIBE-ABCD-2345') && command.includes('--host'), 'SSH claim helper should print a no-npm local claim command');
+  const npxCommand = claimNpxCommand('https://vibestats.example', 'VIBE-ABCD-2345');
+  assert(npxCommand.includes('npx --yes') && npxCommand.includes(' claim ') && npxCommand.includes('VIBE-ABCD-2345') && npxCommand.includes('--host'), 'SSH claim helper should keep an npx fallback command');
   let invalid = false;
   try {
     cleanClaimCode('../raw-session.json');
@@ -836,6 +845,18 @@ async function assertSshClaimHelpers() {
   }
   assert(invalid, 'SSH claim helper should reject non-code input');
   console.log('ok SSH claim helpers preserve local handoff shape');
+}
+
+async function assertCliBootstrapScript() {
+  const { bootstrapScript, githubTarballUrl } = await import('../api/cli/bootstrap.js');
+  const script = bootstrapScript();
+  assert(githubTarballUrl() === 'https://codeload.github.com/brightseth/vibestats/tar.gz/refs/heads/feat/wave-1-identity', 'CLI bootstrap should default to the current GitHub branch tarball');
+  assert(script.startsWith('#!/bin/sh') && script.includes('set -eu'), 'CLI bootstrap should be a strict portable shell script');
+  assert(script.includes('command -v node') && script.includes('Node.js 20+'), 'CLI bootstrap should require Node 20 before reading local insights');
+  assert(script.includes('curl -fsSL "$tarball_url"') && script.includes('wget -qO "$archive"'), 'CLI bootstrap should support curl and wget without npm');
+  assert(script.includes('node "$run_dir/bin/vibestats.js" "$@"'), 'CLI bootstrap should execute the repo-local CLI with forwarded args');
+  assert(script.includes('Raw /insights data has not left this machine') && !script.includes('npx --yes') && !script.includes('npm install'), 'CLI bootstrap should preserve privacy copy and avoid npm package installation');
+  console.log('ok no-npm CLI bootstrap script');
 }
 
 async function assertIdentityReadiness() {
@@ -3848,6 +3869,7 @@ await assertUpdateCliCommandScript();
 await assertShareKitScript();
 await assertDerivedProfileCredentialHelpers();
 await assertSshClaimHelpers();
+await assertCliBootstrapScript();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
 await assertCliLocalTokenEndpoint();
