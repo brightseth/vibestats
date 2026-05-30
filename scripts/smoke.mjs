@@ -115,6 +115,19 @@ async function assertCompatBrowserModule() {
   assert(compat.getPairing('builder', 'shipper').name === 'Feature Factory', 'compat module should expose pair names');
   assert(compat.getPairing('shipper', 'builder').name === 'Feature Factory', 'compat module should normalize pair keys');
   assert(compat.profileCompatibility('builder', 'shipper', 'brightseth').score >= 90, 'profile compatibility should expose a strong score');
+  const facetFit = compat.facetCompatibility(
+    { type: 'builder', facets: [{ id: 'build_energy', value: 92 }, { id: 'system_design', value: 30 }, { id: 'debug_patience', value: 20 }] },
+    { type: 'architect', facets: [{ id: 'system_design', value: 88 }, { id: 'build_energy', value: 42 }, { id: 'shipping_velocity', value: 30 }] },
+  );
+  assert(facetFit.score >= 80 && facetFit.line.includes('Facet read'), 'compat module should score derived facet fit');
+  const profileFit = compat.profileCompatibility(
+    'builder',
+    'architect',
+    'alex',
+    { type: 'builder', facets: [{ id: 'build_energy', value: 92 }, { id: 'system_design', value: 30 }, { id: 'debug_patience', value: 20 }] },
+    { type: 'architect', facets: [{ id: 'system_design', value: 88 }, { id: 'build_energy', value: 42 }, { id: 'shipping_velocity', value: 30 }] },
+  );
+  assert(profileFit.facet?.score >= 80 && profileFit.line.includes('Facet read'), 'profile compatibility should blend facet fit when profile facets exist');
   console.log('ok shared compatibility browser module');
 }
 
@@ -134,6 +147,7 @@ async function assertRoutes() {
   const matchHtml = await readFile('match.html', 'utf8');
   const profileApi = await readFile('api/u/[handle].js', 'utf8');
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
+  const compareHtml = await readFile('compare-template.html', 'utf8');
   const ogApi = await readFile('api/og.js', 'utf8');
   const cacheHelper = await readFile('api/_lib/cache.js', 'utf8');
   const publicProfileHelper = await readFile('api/_lib/public-profile.js', 'utf8');
@@ -215,7 +229,7 @@ async function assertRoutes() {
   assert(!matchApi.includes('languages:'), 'match API should not expose public language counts');
   assert(matchApi.includes('updated: uploadRecency(row.uploaded_at)'), 'match API should bucket public upload freshness');
   assert(matchApi.includes('seeker_archetype'), 'match API should preserve visitor archetype for goal-aware scoring');
-  assert(matchApi.includes('goalFit({'), 'match API should use shared goal fit scoring');
+  assert(matchApi.includes('goalFit({') && matchApi.includes('candidateFacets'), 'match API should use shared facet-aware goal fit scoring');
   assert(matchApi.includes("methodNotAllowed(res, ['GET'], NO_STORE_HEADERS)"), 'match API method errors should not be cached');
   assert(!matchApi.includes('s-maxage='), 'match API profile lists should not be publicly cached');
   assert(browseApi.includes("u.privacy = 'public'"), 'browse API should include opt-in public profiles only');
@@ -231,6 +245,7 @@ async function assertRoutes() {
   assert(browseHtml.includes("document.execCommand('copy')"), 'browse copy actions should fall back when Clipboard API is unavailable');
   assert(browseHtml.includes('Profile database unavailable') && browseHtml.includes('renderEntries(data.entries || [], Boolean(data.unavailable))'), 'browse UI should distinguish unavailable DB from an empty directory');
   assert(matchHtml.includes('renderChips(\'archetypes\''), 'match UI should let visitors rank matches by their archetype');
+  assert(matchHtml.includes('entry.facet_focus') && matchHtml.includes('Strongest goal facet'), 'match UI should expose facet-aware match reasons');
   assert(matchHtml.includes('const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));'), 'match copied intros should canonicalize comparison URLs to vibestats.io');
   assert(matchHtml.includes('url=${encodeURIComponent(canonicalVibestatsUrl(comparePath(entry, seekerArchetype)))}'), 'match X share URLs should canonicalize to vibestats.io');
   assert(matchHtml.includes("document.execCommand('copy')"), 'match copy intro actions should fall back when Clipboard API is unavailable');
@@ -259,6 +274,8 @@ async function assertRoutes() {
   assert(comparePageApi.includes('profileShareProof({ rarity: subject.rarity, leaderboard: subject.leaderboard })'), 'compare page metadata should include profile social proof');
   assert(comparePageApi.includes('Open the pairing, then claim yours'), 'compare page metadata should drive recipients to claim their profile');
   assert(comparePageApi.includes('sendPrivateMethodNotAllowed(res)'), 'compare page method guard should use private no-store profile cache policy');
+  assert(compareHtml.includes('latest.facets || []') && compareHtml.includes('window.VibeCompat.profileCompatibility(aType, bType'), 'compare UI should use profile facet radar when computing pair fit');
+  assert(compareHtml.includes('facet-match') && compareHtml.includes('Facet fit:'), 'compare UI should render facet-aware profile pairing proof');
   assert(ogApi.includes("mode === 'pair'"), 'OG API should support pair-specific share images');
   assert(ogApi.includes('CLAUDE CODE PAIRING'), 'pair OG image should frame shared comparisons as Claude Code pairings');
   assert(ogApi.includes('sendFallbackOg(res)'), 'OG API should return a static fallback image on generation failure');
@@ -450,6 +467,7 @@ async function assertRoutes() {
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
+  assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
@@ -987,6 +1005,11 @@ async function assertMatchmakingHelpers() {
     candidateArchetype: 'shipper',
     seekerArchetype: 'builder',
     signal: 93,
+    candidateFacets: [
+      { id: 'shipping_velocity', value: 92 },
+      { id: 'build_energy', value: 88 },
+      { id: 'debug_patience', value: 70 },
+    ],
   });
   const loose = goalFit({
     goal: 'pair-coding',
@@ -997,6 +1020,7 @@ async function assertMatchmakingHelpers() {
   });
   assert(strong.score > loose.score, 'goal fit should reward matching intent and complementary archetypes');
   assert(strong.reason.includes('Builder + Shipper'), 'goal fit reason should name the visitor/candidate pairing');
+  assert(strong.facet_focus?.id && strong.reason.includes('Facet fit'), 'goal fit should use derived facet radar signals');
   console.log('ok goal-driven matchmaking helpers');
 }
 

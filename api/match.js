@@ -1,6 +1,7 @@
 import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
 import { publicActivity, publicScores, uploadRecency } from './_lib/public-profile.js';
+import { publicFacetRadar } from './_lib/facets.js';
 import { sql } from './_lib/db.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 import { ARCHETYPE_LABELS, GOAL_LABELS, cleanSeekerArchetype, goalFit } from './_lib/matchmaking.js';
@@ -27,12 +28,14 @@ export function matchEntry(row, goal, seekerArchetype) {
   const signature = signatureFromUpload(upload);
   const match = publicMatchSettings(row);
   const score = scores[row.archetype] || 0;
+  const candidateFacets = publicFacetRadar(scores);
   const fit = goalFit({
     goal,
     lookingFor: match.looking_for,
     candidateArchetype: row.archetype,
     seekerArchetype,
     signal: score,
+    candidateFacets,
   });
 
   return {
@@ -44,6 +47,7 @@ export function matchEntry(row, goal, seekerArchetype) {
     fit_score: fit.score,
     fit_level: fit.level,
     fit_reason: fit.reason,
+    facet_focus: fit.facet_focus,
     archetype: row.archetype,
     archetype_label: ARCHETYPE_LABELS[row.archetype] || row.archetype,
     score,

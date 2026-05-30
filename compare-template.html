@@ -144,6 +144,40 @@
       font-size: 16px; color: var(--text-muted); line-height: 1.7;
       max-width: 400px; margin: 0 auto 24px;
     }
+    .facet-match {
+      display: none;
+      margin: -6px 0 22px;
+      padding: 12px;
+      border: 1px solid rgba(107,143,255,0.2);
+      border-radius: 12px;
+      background: rgba(107,143,255,0.06);
+      text-align: left;
+    }
+    .facet-match.visible { display: block; }
+    .facet-match-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .facet-match-head strong {
+      color: #fff;
+      font-size: 16px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .facet-match-line {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+    }
 
     .pair-traits {
       display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px;
@@ -394,6 +428,7 @@
           signature: latest.raw_meta?.signature || '',
           rarity: profile.rarity || null,
           leaderboard: profile.leaderboard || null,
+          facets: latest.facets || [],
           param: profile.user.gh_handle,
         };
       } catch {
@@ -570,7 +605,8 @@
     function comparisonInviteText(aSubject, bSubject, compat, shareUrl) {
       const a = ARCHETYPES[aSubject.type];
       const b = ARCHETYPES[bSubject.type];
-      return `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry.\n\n${comparisonSharePrompt(aSubject, bSubject)}\n${shareUrl}`;
+      const facetLine = compat.facet ? `\nFacet fit: ${compat.facet.score}% - ${compat.facet.top_a.label} x ${compat.facet.top_b.label}.` : '';
+      return `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry. ${compat.profileScore}% match.${facetLine}\n\n${comparisonSharePrompt(aSubject, bSubject)}\n${shareUrl}`;
     }
 
     async function copyComparisonInvite(button) {
@@ -613,7 +649,14 @@
       const bType = bSubject.type;
       const a = ARCHETYPES[aType];
       const b = ARCHETYPES[bType];
-      const compat = getCompat(aType, bType);
+      const pairing = getCompat(aType, bType);
+      const profileCompat = window.VibeCompat.profileCompatibility(aType, bType, bSubject.handle || aSubject.handle || '', aSubject, bSubject);
+      const compat = {
+        ...pairing,
+        profileScore: profileCompat.score,
+        dynamic: profileCompat.facet ? pairing.dynamic : (profileCompat.line || pairing.dynamic),
+        facet: profileCompat.facet,
+      };
 
       // Pair types
       document.getElementById('pair-vs').innerHTML = `
@@ -623,10 +666,16 @@
       `;
 
       document.getElementById('pair-name').textContent = compat.name;
-      document.getElementById('pair-chemistry').innerHTML = renderStars(compat.chemistry) + `<span class="chem-label">${compat.chemistry}/5 chemistry</span>`;
+      document.getElementById('pair-chemistry').innerHTML = renderStars(compat.chemistry) + `<span class="chem-label">${compat.chemistry}/5 chemistry · ${compat.profileScore}% match</span>`;
       document.getElementById('pair-dynamic').textContent = compat.dynamic;
 
       document.getElementById('pair-traits').innerHTML = `
+        ${compat.facet ? `
+          <div class="facet-match visible" style="grid-column:1/-1">
+            <div class="facet-match-head"><span>facet fit</span><strong>${esc(compat.facet.score)}%</strong></div>
+            <div class="facet-match-line">${esc(compat.facet.line.replace(/^Facet read:\s*/, ''))}</div>
+          </div>
+        ` : ''}
         <div class="pair-trait">
           <div class="pair-trait-label">${esc(traitLabel(aSubject))} brings</div>
           <div class="pair-trait-val">${a.strength}</div>

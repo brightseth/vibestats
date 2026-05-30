@@ -378,7 +378,8 @@
       const compareUrl = canonicalVibestatsUrl(comparePath(entry, seekerArchetype));
       const profileUrl = canonicalVibestatsUrl(`/u/${encodeURIComponent(handle)}`);
       const style = seekerArchetype && seekerArchetype !== 'any' ? `I'm a ${ARCHETYPE_NAMES[seekerArchetype] || seekerArchetype}. ` : '';
-      return `${style}Saw your vibestats profile - you're a ${entry.signature?.label || ARCHETYPE_NAMES[entry.archetype] || entry.archetype}. vibestats has us at ${entry.fit_score}% for ${goalLabel.toLowerCase()}: ${entry.fit_reason} Compare here: ${compareUrl}\n${profileUrl}`;
+      const facet = entry.facet_focus ? ` Strongest goal facet: ${entry.facet_focus.label} (${entry.facet_focus.value}%).` : '';
+      return `${style}Saw your vibestats profile - you're a ${entry.signature?.label || ARCHETYPE_NAMES[entry.archetype] || entry.archetype}. vibestats has us at ${entry.fit_score}% for ${goalLabel.toLowerCase()}: ${entry.fit_reason}${facet} Compare here: ${compareUrl}\n${profileUrl}`;
     }
 
     function xShareUrl(entry, goalLabel, seekerArchetype) {
@@ -436,6 +437,7 @@
                 <a class="handle" href="${profilePath}">@${esc(handle)}</a>
                 <div class="signature">${esc(entry.signature?.label || ARCHETYPE_NAMES[entry.archetype] || entry.archetype)}</div>
                 <div class="meta">${esc(activity.days || 'fresh profile')} · ${esc(entry.score)}% ${esc(ARCHETYPE_NAMES[entry.archetype] || entry.archetype)} signal</div>
+                ${entry.facet_focus ? `<div class="meta">facet fit: ${esc(entry.facet_focus.label)} · ${esc(entry.facet_focus.value)}%</div>` : ''}
                 <div class="intent">${esc(entry.match?.looking_for_label || 'Active')}</div>
               </div>
             </div>

@@ -977,7 +977,7 @@
       const hostType = hostLatest.archetype;
       const visitorArch = ARCHETYPES[visitorType] || ARCHETYPES.builder;
       const hostArch = ARCHETYPES[hostType] || ARCHETYPES.builder;
-      const compat = window.VibeCompat.profileCompatibility(visitorType, hostType, hostHandle);
+      const compat = window.VibeCompat.profileCompatibility(visitorType, hostType, hostHandle, myLatest, hostLatest);
       const pairUrl = `/u/${encodeURIComponent(hostHandle)}/pair/${encodeURIComponent(me.gh_handle)}`;
 
       panel.classList.add('visible');

@@ -117,6 +117,64 @@ const PAIR_FIT = {
   },
 };
 
+const GOAL_FACET_WEIGHTS = {
+  'pair-coding': {
+    build_energy: 0.22,
+    shipping_velocity: 0.18,
+    debug_patience: 0.18,
+    tool_orchestration: 0.16,
+    system_design: 0.12,
+    deep_focus: 0.1,
+    stack_breadth: 0.04,
+  },
+  'co-founder': {
+    system_design: 0.24,
+    build_energy: 0.2,
+    tool_orchestration: 0.18,
+    shipping_velocity: 0.14,
+    debug_patience: 0.1,
+    deep_focus: 0.08,
+    stack_breadth: 0.06,
+  },
+  hire: {
+    shipping_velocity: 0.22,
+    debug_patience: 0.2,
+    build_energy: 0.18,
+    stack_breadth: 0.14,
+    system_design: 0.12,
+    tool_orchestration: 0.08,
+    deep_focus: 0.06,
+  },
+  mentor: {
+    system_design: 0.24,
+    deep_focus: 0.22,
+    debug_patience: 0.18,
+    tool_orchestration: 0.14,
+    stack_breadth: 0.1,
+    build_energy: 0.08,
+    shipping_velocity: 0.04,
+  },
+  mentee: {
+    build_energy: 0.22,
+    shipping_velocity: 0.2,
+    stack_breadth: 0.16,
+    tool_orchestration: 0.14,
+    debug_patience: 0.1,
+    system_design: 0.1,
+    deep_focus: 0.08,
+  },
+};
+
+const FACET_LABELS = {
+  shipping_velocity: 'shipping velocity',
+  system_design: 'system design',
+  debug_patience: 'debug patience',
+  tool_orchestration: 'tool orchestration',
+  stack_breadth: 'stack breadth',
+  deep_focus: 'deep focus',
+  build_energy: 'build energy',
+};
+
 function clampScore(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
@@ -155,13 +213,48 @@ function archetypeBonus(goal, candidateArchetype, seekerArchetype) {
   return ROLE_FIT[goal]?.[candidateArchetype] || 8;
 }
 
+function facetGoalSignal(goal, candidateFacets = []) {
+  const weights = GOAL_FACET_WEIGHTS[goal];
+  if (!weights || !Array.isArray(candidateFacets) || !candidateFacets.length) {
+    return { bonus: 0, focus: null };
+  }
+
+  let weighted = 0;
+  let top = null;
+  for (const facet of candidateFacets) {
+    const id = facet?.id;
+    const weight = weights[id] || 0;
+    const value = clampScore(facet?.value);
+    if (!weight) continue;
+    weighted += value * weight;
+    if (!top || (value * weight) > top.weighted) {
+      top = {
+        id,
+        label: FACET_LABELS[id] || id,
+        value,
+        weighted: value * weight,
+      };
+    }
+  }
+
+  if (!top) return { bonus: 0, focus: null };
+  return {
+    bonus: Math.round(weighted * 0.12),
+    focus: {
+      id: top.id,
+      label: top.label,
+      value: top.value,
+    },
+  };
+}
+
 function levelFor(score) {
   if (score >= 90) return 'strong';
   if (score >= 80) return 'good';
   return 'available';
 }
 
-function reasonFor({ goal, lookingFor, candidateArchetype, seekerArchetype, pairBonus }) {
+function reasonFor({ goal, lookingFor, candidateArchetype, seekerArchetype, pairBonus, facetFocus }) {
   const goalLabel = GOAL_LABELS[goal]?.toLowerCase() || goal;
   const candidateLabel = ARCHETYPE_LABELS[candidateArchetype] || candidateArchetype;
   const intentText = goal === lookingFor
@@ -171,29 +264,32 @@ function reasonFor({ goal, lookingFor, candidateArchetype, seekerArchetype, pair
       : 'recent public profile';
 
   if (!seekerArchetype) {
-    return `${candidateLabel} profile with ${intentText}.`;
+    return `${candidateLabel} profile with ${intentText}.${facetFocus ? ` Facet fit: ${facetFocus.label}.` : ''}`;
   }
 
   const seekerLabel = ARCHETYPE_LABELS[seekerArchetype] || seekerArchetype;
   const complement = pairBonus >= 20 ? 'strong complement' : pairBonus >= 14 ? 'clean complement' : 'shared-style fit';
-  return `${seekerLabel} + ${candidateLabel}: ${complement}, ${intentText}.`;
+  return `${seekerLabel} + ${candidateLabel}: ${complement}, ${intentText}.${facetFocus ? ` Facet fit: ${facetFocus.label}.` : ''}`;
 }
 
-export function goalFit({ goal, lookingFor, candidateArchetype, seekerArchetype = null, signal = 0 }) {
+export function goalFit({ goal, lookingFor, candidateArchetype, seekerArchetype = null, signal = 0, candidateFacets = [] }) {
   const normalizedSeeker = cleanSeekerArchetype(seekerArchetype);
   const signalScore = clampScore(signal);
   const pairBonus = archetypeBonus(goal, candidateArchetype, normalizedSeeker);
-  const score = Math.max(55, Math.min(99, 48 + intentBonus(goal, lookingFor) + pairBonus + Math.round(signalScore * 0.09)));
+  const facetSignal = facetGoalSignal(goal, candidateFacets);
+  const score = Math.max(55, Math.min(99, 48 + intentBonus(goal, lookingFor) + pairBonus + facetSignal.bonus + Math.round(signalScore * 0.07)));
 
   return {
     score,
     level: levelFor(score),
+    facet_focus: facetSignal.focus,
     reason: reasonFor({
       goal,
       lookingFor,
       candidateArchetype,
       seekerArchetype: normalizedSeeker,
       pairBonus,
+      facetFocus: facetSignal.focus,
     }),
   };
 }
