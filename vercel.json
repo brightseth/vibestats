@@ -14,6 +14,7 @@
     { "source": "/u/:handle", "destination": "/api/profile?handle=:handle" },
     { "source": "/compare", "destination": "/api/compare-page" },
     { "source": "/genome", "destination": "/genome.html" },
+    { "source": "/promises", "destination": "/promises.html" },
     { "source": "/browse", "destination": "/browse.html" },
     { "source": "/leaderboard/:archetype", "destination": "/leaderboard?archetype=:archetype" },
     { "source": "/leaderboard", "destination": "/leaderboard.html" },

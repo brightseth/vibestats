@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 process.env.VIBE_SESSION_SECRET ||= 'smoke-test-secret-with-at-least-32-bytes';
 const execFileAsync = promisify(execFile);
 
-const htmlFiles = ['home.html', 'u.html', 'settings.html', 'compare-template.html', 'genome.html', 'leaderboard.html', 'match.html', 'browse.html', 'recap.html'];
+const htmlFiles = ['home.html', 'u.html', 'settings.html', 'compare-template.html', 'genome.html', 'leaderboard.html', 'match.html', 'browse.html', 'recap.html', 'promises.html'];
 const apiModules = [
   '../api/home.js',
   '../api/compare-page.js',
@@ -161,6 +161,7 @@ async function assertRoutes() {
   const comparePageApi = await readFile('api/compare-page.js', 'utf8');
   const compareHtml = await readFile('compare-template.html', 'utf8');
   const genomeHtml = await readFile('genome.html', 'utf8');
+  const promisesHtml = await readFile('promises.html', 'utf8');
   const recapApi = await readFile('api/recap.js', 'utf8');
   const recapHtml = await readFile('recap.html', 'utf8');
   const ogApi = await readFile('api/og.js', 'utf8');
@@ -223,6 +224,10 @@ async function assertRoutes() {
   assert(
     rewrites.some((rewrite) => rewrite.source === '/genome' && rewrite.destination === '/genome.html'),
     'genome route should be explicit because leaderboard links to it as a public viral surface',
+  );
+  assert(
+    rewrites.some((rewrite) => rewrite.source === '/promises' && rewrite.destination === '/promises.html'),
+    'promises route should expose the public privacy and anti-coercion surface',
   );
   assert(
     rewrites.some((rewrite) => rewrite.source === '/u/:handle/embed' && rewrite.destination === '/api/embed?handle=:handle'),
@@ -430,6 +435,7 @@ async function assertRoutes() {
   assert(profileHtml.includes('id="readme-panel"') && profileHtml.includes('Put your vibestats badge in a GitHub README') && profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)'), 'owner profile should promote README badges as ambient compare-first distribution');
   assert(profileHtml.includes('id="moment-grid"') && profileHtml.includes('renderBehavioralMoments(latest)'), 'profile pages should render shareable derived behavioral moments');
   assert(settingsHtml.includes("fetch('/api/identity-status'"), 'settings page should check identity readiness before showing sign-in');
+  assert(indexHtml.includes('/promises') && settingsHtml.includes('/promises') && profileHtml.includes('/promises'), 'homepage, settings, and profile nav should link to public promises');
   assert(settingsHtml.includes('Profile saves are not configured on this deployment yet.'), 'settings page should explain unavailable identity instead of linking to dead-end auth');
   assert(settingsHtml.includes('id="settings-sign-in" role="button" aria-disabled="true"'), 'settings page should not render a live OAuth link before identity readiness is known');
   assert(settingsHtml.includes("signIn.removeAttribute('aria-disabled')"), 'settings page should enable sign-in only after identity readiness passes');
@@ -628,6 +634,9 @@ async function assertRoutes() {
   assert(profileHtml.includes('achievementShareText(handle, latest, badge, compareUrl)') && profileHtml.includes('Copy badge proof') && profileHtml.includes('Share badge') && profileHtml.includes('data-copy-achievement') && profileHtml.includes('achievementXShareUrl(share, compareUrl)'), 'profile achievements should be copyable share objects that route recipients into comparison');
   assert(profileHtml.includes('owner history private'), 'profile UI should not render a fake history chart for visitors');
   assert(profileHtml.includes("historyVisible ? `${uploads.length} total` : 'latest only'"), 'profile UI should label visitor timeline as latest-only');
+  assert(promisesHtml.includes('Raw Claude Code sessions stay local.') && promisesHtml.includes('Only derived metrics sync.') && promisesHtml.includes('Profiles start unlisted.') && promisesHtml.includes('No single hireable score.') && promisesHtml.includes('No employer people search') && promisesHtml.includes('Delete means leave.') && promisesHtml.includes('bounded match-intro events') && promisesHtml.includes('No free-text goals or friction'), 'promises page should publish the core privacy and anti-coercion promises');
+  assert(!promisesHtml.includes('tool_usage') && !promisesHtml.includes('language_usage') && !promisesHtml.includes('rawJson'), 'promises page should not include raw-insights field names');
+  assert(readme.includes('`/promises`') && readme.includes('bounded match-intro events') && readme.includes('no-employer-search stance'), 'README should link the public promises surface');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
   console.log('ok route rewrites');
 }

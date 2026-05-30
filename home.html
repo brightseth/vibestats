@@ -2121,6 +2121,7 @@
             @${currentUser.gh_handle}
           </a>
           <a class="auth-pill" href="/browse">Browse</a>
+          <a class="auth-pill" href="/promises">Promises</a>
           <a class="auth-pill" href="/settings">Settings</a>
         `;
         saveToggle.classList.add('visible');
@@ -2128,10 +2129,12 @@
         authBar.innerHTML = identityStatus.profile_save_available
           ? `
             <a class="auth-pill" href="/browse">Browse</a>
+            <a class="auth-pill" href="/promises">Promises</a>
             <a class="auth-pill primary" href="/api/auth/github/start?returnTo=${returnTo}">Sign in with GitHub</a>
           `
           : `
             <a class="auth-pill" href="/browse">Browse</a>
+            <a class="auth-pill" href="/promises">Promises</a>
             <span class="auth-pill muted">Profile saves pending</span>
           `;
         saveToggle.classList.remove('visible');

@@ -105,6 +105,7 @@ Checks the deployed identity loop without printing secrets:
 - public npm CLI package visibility and runnable help when --expect-cli-package is used
 - public auth/session/sync failure responses do not expose internal config names
 - reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
+- promises page privacy, derived-only, and anti-coercion public contract
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
 - card, wrapped, dashboard, profile recap, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
@@ -468,6 +469,14 @@ async function auditLaunch(options) {
       allowStatuses: expectReady ? [200] : [200, 404, 503],
       requireNoStore: true,
       mustInclude: expectReady ? ['"uploads"', '"metric_visibility"', '"history"', '"leaderboard"', '"evolution"', '"streak"', '"match_interest"'] : null,
+    },
+    {
+      label: 'promises page',
+      path: '/promises',
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: ['Raw Claude Code sessions stay local.', 'Only derived metrics sync.', 'Profiles start unlisted.', 'No single hireable score.', 'No employer people search', 'bounded match-intro events', 'No free-text goals or friction'],
+      mustNotInclude: ['tool_usage', 'language_usage', 'rawJson'],
     },
     {
       label: 'profile page',

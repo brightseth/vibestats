@@ -1259,6 +1259,7 @@
         nav.innerHTML = `
           <a class="btn" href="/">Reveal</a>
           <a class="btn" href="/browse">Browse</a>
+          <a class="btn" href="/promises">Promises</a>
           <a class="btn" href="/settings">Settings</a>
           <a class="btn primary" href="/u/${encodeURIComponent(me.gh_handle)}">@${esc(me.gh_handle)}</a>
         `;
@@ -1266,6 +1267,7 @@
         nav.innerHTML = `
           <a class="btn" href="/">Reveal</a>
           <a class="btn" href="/browse">Browse</a>
+          <a class="btn" href="/promises">Promises</a>
           ${identityStatus.profile_save_available === true
             ? `<a class="btn primary" href="/api/auth/github/start?returnTo=${encodeURIComponent(`/u/${profileHandle}`)}">Sign in with GitHub</a>`
             : '<span class="btn muted">Profile saves pending</span>'}

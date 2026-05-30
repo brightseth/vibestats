@@ -33,7 +33,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A public match surface** (`/match`) for explicit, short-lived `looking_for` profile intent.
 - **A local sync CLI** that reads the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, and `report.html`), computes derived metrics locally, and posts them with a signed sync token.
 
-**Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default.
+**Privacy stance:** the insights JSON never leaves the browser. Community stats receive only aggregate metrics, and signed-in profile saves persist only derived fields: archetype, scores, coarse metrics, and signature metadata. Public surfaces hide exact counts and language count by default. The public promises page (`/promises`) makes the raw-data boundary, unlisted-by-default profiles, bounded match-intro events, and no-employer-search stance explicit.
 
 ## Where it's going
 

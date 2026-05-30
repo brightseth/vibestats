@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Promises | vibestats</title>
+  <meta name="description" content="The vibestats privacy and anti-coercion promises: local raw data, derived-only profiles, opt-in discovery, no single hireable score.">
+  <meta property="og:title" content="vibestats promises">
+  <meta property="og:description" content="Raw Claude Code sessions stay local. Only derived metrics sync. Profiles start unlisted, and never become a single hireable score.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vibestats.io/promises">
+  <meta property="og:image" content="https://vibestats.io/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://vibestats.io/og-card.png">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface-2: #14141e;
+      --border: #252535;
+      --text: #e0e0e0;
+      --text-muted: #8888a0;
+      --text-dim: #555568;
+      --accent: #6b8fff;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --purple: #a78bfa;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; }
+    .shell {
+      width: min(1040px, 100%);
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 52px;
+    }
+    .brand {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-decoration: none;
+      max-width: 100%;
+    }
+    .btn:hover { border-color: var(--accent); color: #fff; }
+    .btn.primary {
+      border-color: rgba(107,143,255,0.45);
+      background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
+      color: #c8d5ff;
+    }
+    .hero {
+      width: 100%;
+      max-width: 820px;
+      margin-bottom: 28px;
+    }
+    .eyebrow {
+      margin-bottom: 12px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    h1 {
+      color: #fff;
+      font-size: clamp(38px, 8vw, 76px);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+    .lead {
+      width: 100%;
+      max-width: 760px;
+      margin-top: 18px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .proof-strip {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 28px 0;
+    }
+    .proof {
+      min-width: 0;
+      min-height: 112px;
+      padding: 16px;
+      border: 1px solid rgba(107,143,255,0.18);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.06);
+      overflow: hidden;
+    }
+    .proof strong {
+      display: block;
+      color: #fff;
+      font-size: 16px;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .proof span {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .promise-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .promise {
+      min-width: 0;
+      min-height: 168px;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .promise-label {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .promise h2 {
+      color: #fff;
+      font-size: 18px;
+      line-height: 1.3;
+      margin-bottom: 9px;
+      letter-spacing: 0;
+    }
+    .promise p {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.65;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .constitution {
+      margin-top: 24px;
+      padding: 18px;
+      border: 1px solid rgba(245,158,11,0.22);
+      border-radius: 8px;
+      background: rgba(245,158,11,0.06);
+    }
+    .constitution h2 {
+      color: #fff;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .constitution p {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+      max-width: 820px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+    @media (max-width: 760px) {
+      .hero, .lead, .proof-strip, .promise-grid, .constitution { max-width: 100%; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .nav { justify-content: flex-start; width: 100%; }
+      .proof-strip, .promise-grid { grid-template-columns: 1fr; }
+      .btn { width: 100%; }
+      .actions { flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .shell { width: min(340px, calc(100vw - 32px)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <a class="brand" href="/">vibestats</a>
+      <div class="nav">
+        <a class="btn" href="/">Reveal</a>
+        <a class="btn" href="/browse">Browse</a>
+        <a class="btn" href="/match">Match</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="eyebrow">version 1 promises</div>
+      <h1>Proof without surveillance.</h1>
+      <p class="lead">Vibestats turns local Claude Code behavior into a GitHub-claimed build profile. The card is shareable because the boundary is strict: raw sessions stay local, public profiles are derived-only, and discovery is opt-in.</p>
+    </section>
+
+    <section class="proof-strip" aria-label="Core privacy proof">
+      <div class="proof">
+        <strong>Raw Claude Code sessions stay local.</strong>
+        <span>Prompts, session summaries, project paths, session ids, tool maps, language maps, and free-text friction do not sync.</span>
+      </div>
+      <div class="proof">
+        <strong>Only derived metrics sync.</strong>
+        <span>Saved profiles store archetype, scores, coarse metrics, signature, badges, and bounded match-intro events.</span>
+      </div>
+      <div class="proof">
+        <strong>Owned by the builder</strong>
+        <span>Profiles start unlisted. They are GitHub-claimed, exportable, deletable, and use revocable CLI tokens.</span>
+      </div>
+    </section>
+
+    <section class="promise-grid" aria-label="Detailed promises">
+      <article class="promise">
+        <div class="promise-label">01 local first</div>
+        <h2>No raw Claude Code session data leaves your machine.</h2>
+        <p>The reveal runs locally. Publishing sends bounded derived metrics only. No free-text goals or friction leave device.</p>
+      </article>
+      <article class="promise">
+        <div class="promise-label">02 opt-in discovery</div>
+        <h2>Public visibility is a choice.</h2>
+        <p>Saved profiles start unlisted. Browse, leaderboard, match, and contact links require explicit public opt-in from the owner.</p>
+      </article>
+      <article class="promise">
+        <div class="promise-label">03 no ranking trap</div>
+        <h2>No single hireable score.</h2>
+        <p>Vibestats describes build style, rarity, trajectory, and fit. No employer people search, and no employer-searchable rank.</p>
+      </article>
+      <article class="promise">
+        <div class="promise-label">04 bounded graph</div>
+        <h2>Match feedback starts with safe aggregates.</h2>
+        <p>Intro intent records goal, archetypes, target handle, source, and action. It does not store message text, contact URLs, IP address, or headers.</p>
+      </article>
+      <article class="promise">
+        <div class="promise-label">05 delete means leave</div>
+        <h2>Delete means leave.</h2>
+        <p>Settings includes export and account deletion. Local-only reveal remains valid for people who never want a persistent profile.</p>
+      </article>
+      <article class="promise">
+        <div class="promise-label">06 stable canon</div>
+        <h2>The eight archetypes stay stable.</h2>
+        <p>Rarity grows through signatures, facets, achievements, and trajectory. We do not add noisy archetypes that break scoring and sharing.</p>
+      </article>
+    </section>
+
+    <section class="constitution">
+      <h2>The short version</h2>
+      <p>Vibestats should be useful because it is narrow and falsifiable: "this is how I build, this is how rare it is, this is how we might pair." It should never become a developer credit score, employer search database, or raw telemetry sink.</p>
+      <div class="actions">
+        <a class="btn primary" href="/">Reveal yours</a>
+        <a class="btn" href="/settings#privacy-settings">Manage privacy</a>
+        <a class="btn" href="/u/brightseth">See a live profile</a>
+        <a class="btn" href="/match">Find matches</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
