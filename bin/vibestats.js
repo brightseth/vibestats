@@ -6,6 +6,7 @@ import { access, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promi
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { createInterface } from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicMoments } from '../api/_lib/moments.js';
 import { readInsightsInput } from '../lib/claude-insights-extractor.js';
@@ -48,7 +49,7 @@ function usage() {
   vibestats [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
   vibestats status [--file PATH] [--dir PATH] [--json]
   vibestats reveal [--file PATH] [--dir PATH] [--json]
-  vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run]
+  vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run] [--yes]
   vibestats [sync|join|onboard] --dry-run --json
   vibestats install-claude-command [--force] [--path PATH]
 
@@ -63,6 +64,7 @@ It reveals your archetype locally before asking for approval to publish it.
 Run without a subcommand for the terminal-first participation flow: local reveal, then GitHub approval.
 Use reveal for a local result with no sign-in and no network publish.
 Use join/onboard as explicit aliases for the same terminal-first flow; they use a GitHub device code by default.
+Use --yes with join/onboard to publish after reveal without prompting. Use sync for explicit publish automation.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
 Use --device to force terminal device-code auth, or --browser to force local browser callback auth.
 Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}
@@ -88,6 +90,8 @@ export function parseArgs(argv) {
     openBrowser: true,
     authTimeoutMs: DEFAULT_AUTH_TIMEOUT_MS,
     authMode: process.env.VIBESTATS_AUTH_MODE || '',
+    assumeYes: process.env.VIBESTATS_YES === '1' || process.env.VIBESTATS_ASSUME_YES === '1',
+    promptToPublish: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -105,6 +109,7 @@ export function parseArgs(argv) {
     else if (arg === '--dry-run' || arg === '--dryRun') options.dryRun = true;
     else if (arg === '--json') options.json = true;
     else if (arg === '--force') options.force = true;
+    else if (arg === '--yes' || arg === '-y' || arg === '--publish') options.assumeYes = true;
     else throw new Error(`Unknown option: ${arg}`);
   }
 
@@ -113,6 +118,7 @@ export function parseArgs(argv) {
   }
   if (command === 'reveal') options.dryRun = true;
   if (!options.authMode) options.authMode = ['join', 'onboard'].includes(command) ? 'device' : 'browser';
+  options.promptToPublish = ['join', 'onboard'].includes(command) && !options.dryRun;
 
   return { command, options };
 }
@@ -296,6 +302,28 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   );
 
   return `${lines.join('\n')}\n`;
+}
+
+export async function confirmPublish({
+  assumeYes = false,
+  input = process.stdin,
+  output = process.stdout,
+  stdout = process.stdout,
+} = {}) {
+  if (assumeYes) return true;
+
+  if (!input?.isTTY) {
+    stdout.write(`Profile not published because this terminal is non-interactive. Claim later with: ${DEFAULT_NPX_SYNC_COMMAND} sync\n`);
+    return false;
+  }
+
+  const rl = createInterface({ input, output });
+  try {
+    const answer = await rl.question('Claim this GitHub-backed, derived-only profile now? [y/N] ');
+    return /^(y|yes)$/i.test(answer.trim());
+  } finally {
+    rl.close();
+  }
 }
 
 async function pathExists(path) {
@@ -688,8 +716,20 @@ export async function sync(options) {
 
   const label = payload.raw_meta?.signature || ARCHETYPE_LABELS[payload.archetype] || payload.archetype;
   const score = Math.round(Number(payload.scores?.[payload.archetype] || 0));
-  process.stdout.write(`Revealed: ${label}${score ? ` (${score}% ${ARCHETYPE_LABELS[payload.archetype] || payload.archetype})` : ''}.\n`);
-  process.stdout.write('Raw Claude Code /insights data stayed local. Publishing only derived metrics.\n');
+  if (options.promptToPublish) {
+    process.stdout.write(dryRunRevealText(payload, { host: options.host }));
+    const publish = await confirmPublish({
+      assumeYes: options.assumeYes,
+      input: options.input || process.stdin,
+      output: options.output || process.stdout,
+      stdout: process.stdout,
+    });
+    if (!publish) return { published: false, payload };
+    process.stdout.write('Publishing the derived profile now. Raw Claude Code /insights data stays local.\n');
+  } else {
+    process.stdout.write(`Revealed: ${label}${score ? ` (${score}% ${ARCHETYPE_LABELS[payload.archetype] || payload.archetype})` : ''}.\n`);
+    process.stdout.write('Raw Claude Code /insights data stayed local. Publishing only derived metrics.\n');
+  }
 
   let host = normalizeHost(options.host || DEFAULT_HOST);
   let token = options.token || '';

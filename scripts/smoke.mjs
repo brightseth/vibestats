@@ -563,7 +563,7 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
-  assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required'), 'README should document terminal-first CLI status, reveal, and join without manual website upload');
+  assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('Use `reveal` to show the derived result locally') && readme.includes('archetype-only compare link, copy-ready reveal text, X share URL, complementary pairing preview, and `/vibestats` install command') && readme.includes('`reveal --json` to inspect the exact derived payload') && readme.includes('`--dry-run` remains a legacy alias'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('GitHub-claimed, derived-only profile'), 'README should describe the terminal-created profile credential accurately');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
@@ -572,7 +572,7 @@ async function assertRoutes() {
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
-  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity') && !claudeCommand.includes('feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should preflight, reveal locally, then one-command publish');
+  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity status') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity sync') && !claudeCommand.includes('feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should preflight, reveal locally, then explicit sync after human consent');
   assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('README badge, embed, or recap links'), 'Claude Code command should keep terminal-only onboarding explicit after the reveal');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('copy-ready reveal text, X share URL') && claudeCommand.includes('archetype-only compare link') && claudeCommand.includes('/vibestats` install command') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
@@ -1483,15 +1483,15 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealXShareUrl, cliShareText, cliXShareUrl, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_JOIN_COMMAND, DEFAULT_NPX_REVEAL_COMMAND, DEFAULT_NPX_STATUS_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliRevealShareText, cliRevealXShareUrl, cliShareText, cliXShareUrl, confirmPublish, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, onboardingStatus, onboardingStatusText, parseArgs, printOnboardingStatus, requestDeviceSyncToken, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
   assert(DEFAULT_CLAUDE_COMMAND_PATH.endsWith(join('.claude', 'commands', 'vibestats.md')), 'CLI should default Claude command installs to the user Claude commands directory');
   const parsedDefault = parseArgs(['node', 'vibestats']);
-  assert(parsedDefault.command === 'onboard' && parsedDefault.options.authMode === 'device', 'CLI should default to terminal-first onboarding so the copied npx command needs no subcommand');
+  assert(parsedDefault.command === 'onboard' && parsedDefault.options.authMode === 'device' && parsedDefault.options.promptToPublish === true, 'CLI should default to consented terminal-first onboarding so the copied npx command needs no subcommand');
   const parsedDefaultDryRun = parseArgs(['node', 'vibestats', '--dry-run']);
-  assert(parsedDefaultDryRun.command === 'onboard' && parsedDefaultDryRun.options.dryRun === true, 'CLI should keep dry-run as a no-subcommand reveal alias');
+  assert(parsedDefaultDryRun.command === 'onboard' && parsedDefaultDryRun.options.dryRun === true && parsedDefaultDryRun.options.promptToPublish === false, 'CLI should keep dry-run as a no-subcommand reveal alias');
   const parsedReveal = parseArgs(['node', 'vibestats', 'reveal']);
   assert(parsedReveal.command === 'reveal' && parsedReveal.options.dryRun === true && isSyncCommand(parsedReveal.command), 'CLI should accept reveal as the first-class local dry-run command');
   const parsedStatus = parseArgs(['node', 'vibestats', 'status', '--json']);
@@ -1500,9 +1500,11 @@ async function assertCliDerivedPayload() {
   const parsedOnboard = parseArgs(['node', 'vibestats', 'onboard', '--dry-run']);
   assert(parsedJoin.command === 'join' && isSyncCommand(parsedJoin.command) && parsedJoin.options.authMode === 'device', 'CLI should accept join as a terminal-first device-auth sync alias');
   assert(parsedOnboard.command === 'onboard' && isSyncCommand(parsedOnboard.command) && parsedOnboard.options.authMode === 'device', 'CLI should accept onboard as a terminal-first device-auth sync alias');
+  const parsedYes = parseArgs(['node', 'vibestats', 'join', '--yes']);
+  assert(parsedYes.options.assumeYes === true && parsedYes.options.promptToPublish === true, 'CLI join should support explicit yes for non-interactive terminal publishing');
   const parsedBrowser = parseArgs(['node', 'vibestats', 'join', '--browser']);
   const parsedDevice = parseArgs(['node', 'vibestats', 'sync', '--device']);
-  assert(parsedBrowser.options.authMode === 'browser' && parsedDevice.options.authMode === 'device', 'CLI should let users choose browser or device auth explicitly');
+  assert(parsedBrowser.options.authMode === 'browser' && parsedDevice.options.authMode === 'device' && parsedDevice.options.promptToPublish === false, 'CLI should let users choose browser or device auth explicitly');
   const parsedJson = parseArgs(['node', 'vibestats', '--dry-run', '--json']);
   assert(parsedJson.options.dryRun === true && parsedJson.options.json === true, 'CLI dry-run should offer a JSON escape hatch for payload audits');
   const parsedRevealJson = parseArgs(['node', 'vibestats', 'reveal', '--json']);
@@ -1514,7 +1516,7 @@ async function assertCliDerivedPayload() {
   assert(DEFAULT_NPX_STATUS_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'CLI should expose the current terminal readiness preflight command');
   assert(DEFAULT_NPX_JOIN_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'CLI should expose the current terminal-first join command');
   assert(DEFAULT_INSTALL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command', 'CLI should expose a copyable Claude Code command installer');
-  assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the terminal-first participation flow') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default'), 'CLI help should frame the no-subcommand path as status, reveal-before-publish terminal onboarding');
+  assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the terminal-first participation flow') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default') && cliSource.includes('Use --yes with join/onboard to publish after reveal without prompting'), 'CLI help should frame the no-subcommand path as status, reveal-before-publish terminal onboarding');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
   assert(cliSource.includes('Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}') && cliSource.includes('Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}') && cliSource.includes('Use --dry-run as a legacy alias for reveal') && cliSource.includes('Use reveal --json to print the exact derived payload'), 'CLI help should separate one-command claim, human reveal, and payload JSON');
   const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
@@ -1546,6 +1548,19 @@ async function assertCliDerivedPayload() {
   assert(normalizeHost('https://vibestats.example/path?q=1#x') === 'https://vibestats.example', 'CLI sync should normalize host URLs before auth and sync');
   const localAuthUrl = authUrlForLocalCallback('https://vibestats.example/', 'http://127.0.0.1:49152/callback', 'abcdefghijklmnopqrstuvwxyz');
   assert(localAuthUrl === 'https://vibestats.example/api/cli/local-token?callback=http%3A%2F%2F127.0.0.1%3A49152%2Fcallback&nonce=abcdefghijklmnopqrstuvwxyz', 'CLI sync should build browser auth URLs for localhost callbacks');
+  const confirmOutput = [];
+  const skippedPublish = await confirmPublish({
+    input: { isTTY: false },
+    stdout: {
+      write(chunk) {
+        confirmOutput.push(String(chunk));
+        return true;
+      },
+    },
+  });
+  assert(skippedPublish === false && confirmOutput.join('').includes('Profile not published because this terminal is non-interactive'), 'CLI onboarding should not publish from non-interactive terminals without explicit consent');
+  const assumedPublish = await confirmPublish({ assumeYes: true, input: { isTTY: false }, stdout: { write() { return true; } } });
+  assert(assumedPublish === true, 'CLI onboarding should let automation opt into publishing explicitly');
 
   const dir = await mkdtemp(join(tmpdir(), 'vibestats-cli-'));
   const file = join(dir, 'agent-insights.json');
@@ -1657,6 +1672,20 @@ async function assertCliDerivedPayload() {
     assert(!output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should not dump payload JSON by default');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
     assert(!output.join('').includes('private prompt') && !output.join('').includes('/private/project'), 'CLI dry-run output must not print raw Claude Code session details');
+
+    output.length = 0;
+    const skippedOnboard = await sync({
+      file,
+      host: 'https://example.invalid',
+      token: '',
+      dryRun: false,
+      promptToPublish: true,
+      input: { isTTY: false },
+    });
+    assert(skippedOnboard.published === false, 'CLI default onboarding should stop before auth/publish when consent cannot be collected');
+    assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Profile not published because this terminal is non-interactive'), 'CLI default onboarding should reveal locally before refusing non-consented publishing');
+    assert(output.join('').includes('Claim later with: npx --yes github:brightseth/vibestats#feat/wave-1-identity sync'), 'CLI default onboarding should give non-interactive users an explicit publish command');
+    assert(!output.join('').includes('Opening browser') && !output.join('').includes('Authorize vibestats with GitHub device login'), 'CLI default onboarding should not start auth before publish consent');
 
     output.length = 0;
     const jsonResult = await sync({ file, host: 'https://example.invalid', token: '', dryRun: true, json: true });
@@ -1864,6 +1893,19 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Reserve weekly digest: https://vibestats.example/settings#weekly-digest-row'), 'CLI sync should print the weekly digest setup link as a return hook');
     assert(output.join('').includes('Preview weekly digest: https://vibestats.example/api/digest/preview'), 'CLI sync should print the weekly digest preview as an immediate return hook');
     assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI sync request must not post raw usage maps');
+
+    output.length = 0;
+    const consentedOnboardResult = await sync({
+      file,
+      host: 'https://vibestats.example',
+      token: 'sync-token',
+      dryRun: false,
+      promptToPublish: true,
+      assumeYes: true,
+    });
+    assert(consentedOnboardResult.ok === true, 'CLI default onboarding should publish after explicit yes consent');
+    assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Publishing the derived profile now. Raw Claude Code /insights data stays local.'), 'CLI default onboarding should print the full local reveal before consented publishing');
+    assert(output.join('').includes('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.'), 'CLI default onboarding should keep the claimed profile proof after publishing');
 
     output.length = 0;
     const browserAuthSyncResult = await sync({
