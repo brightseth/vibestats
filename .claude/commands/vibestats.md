@@ -31,7 +31,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity
 npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
 ```
 
-4. Summarize only the derived reveal:
+4. Use the local reveal output directly. Summarize only derived fields if needed:
    - archetype
    - signature, if present
    - behavioral moments, if present
@@ -50,5 +50,5 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity
 - Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/` or `~/.claude/usage-data/facets/`.
 - Do not mention `agent-insights.json` as the normal path. That was a legacy/dead path.
 - Treat the vibestats CLI as the only extractor. It computes locally and uploads only derived metrics.
-- If the user asks what was uploaded, answer from the CLI dry-run payload shape only: archetype, scores, five profile metrics, signature metadata, and sanitized behavioral moment ids/values.
+- If the user asks what would be uploaded, run `npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run --json` and answer from that derived payload shape only: archetype, scores, five profile metrics, signature metadata, and sanitized behavioral moment ids/values.
 - If publishing fails, keep the reveal useful. The user can still share their archetype manually or retry `sync`.

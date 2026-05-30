@@ -396,7 +396,8 @@ async function assertRoutes() {
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="match-settings"'), 'settings UI should expose a direct anchor for match intent setup');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
-  assert(settingsHtml.includes('--dry-run'), 'settings UI should tell users how to preview CLI payloads locally');
+  assert(settingsHtml.includes('--dry-run'), 'settings UI should tell users how to preview CLI reveals locally');
+  assert(settingsHtml.includes('--dry-run --json') && settingsHtml.includes('shows the local reveal before anything is sent'), 'settings UI should reserve JSON mode for exact derived payload audits');
   assert(settingsHtml.includes('local Claude Code `/insights` directory') && settingsHtml.includes('keeps raw session data on disk'), 'settings UI should explain the CLI /insights extractor privacy boundary');
   assert(settingsHtml.includes("document.execCommand('copy')"), 'settings copy actions should fall back when Clipboard API is unavailable');
   assert(browseHtml.includes('emptyStateHtml({ unavailable') && browseHtml.includes('Try sample pairing') && browseHtml.includes('Reveal yours'), 'browse empty states should route visitors into reveal and comparison');
@@ -522,12 +523,14 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   assert(readme.includes('A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
+  assert(readme.includes('Use `--dry-run` to reveal the derived result locally') && readme.includes('`--dry-run --json` to inspect the exact derived payload'), 'README should document human CLI reveal before payload JSON');
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
+  assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('--dry-run --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
   assert(claudeCommand.includes('Do not mention `agent-insights.json` as the normal path'), 'Claude Code command should explicitly avoid the dead agent-insights path');
   assert((await readFile('match.html', 'utf8')).includes('&b=${encodeURIComponent(handle)}'), 'match compare links should preserve candidate profile identity');
@@ -1331,14 +1334,22 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, isDirectRun, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, dryRunRevealText, isDirectRun, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
   const parsedDefault = parseArgs(['node', 'vibestats', '--dry-run']);
   assert(parsedDefault.command === 'sync' && parsedDefault.options.dryRun === true, 'CLI should default to sync so the copied npx command needs no subcommand');
+  const parsedJson = parseArgs(['node', 'vibestats', '--dry-run', '--json']);
+  assert(parsedJson.options.dryRun === true && parsedJson.options.json === true, 'CLI dry-run should offer a JSON escape hatch for payload audits');
   assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'CLI should expose the current GitHub-backed npx command');
   assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.'), 'CLI help should frame sync as reveal-before-publish');
+  assert(cliSource.includes('Use --dry-run to reveal locally') && cliSource.includes('Use --dry-run --json to print the exact derived payload'), 'CLI help should separate human reveal from payload JSON');
+  const revealText = dryRunRevealText(payload);
+  assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
+  assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
+  assert(revealText.includes('For machine-readable derived payload: add --json.'), 'CLI dry-run reveal should point auditors to JSON mode');
+  assert(!revealText.includes('tool_usage') && !revealText.includes('language_usage'), 'CLI dry-run reveal must not print raw usage maps');
   const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
   assert(parsedNoOpen.options.openBrowser === false && parsedNoOpen.options.authTimeoutMs === 1000, 'CLI sync should parse manual browser auth options');
   assert(normalizeHost('https://vibestats.example/path?q=1#x') === 'https://vibestats.example', 'CLI sync should normalize host URLs before auth and sync');
@@ -1418,9 +1429,16 @@ async function assertCliDerivedPayload() {
     await writeFile(file, JSON.stringify(insights), 'utf8');
     const result = await sync({ file, host: 'https://example.invalid', token: '', dryRun: true });
     assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
-    assert(output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should print derived payload JSON');
+    assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Revealed: prolific Shipper'), 'CLI dry-run should print a local reveal before auth');
+    assert(!output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should not dump payload JSON by default');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
     assert(!output.join('').includes('private prompt') && !output.join('').includes('/private/project'), 'CLI dry-run output must not print raw Claude Code session details');
+
+    output.length = 0;
+    const jsonResult = await sync({ file, host: 'https://example.invalid', token: '', dryRun: true, json: true });
+    assert(jsonResult.payload.archetype === 'shipper', 'CLI dry-run JSON mode should return the same derived payload');
+    assert(output.join('').includes('"archetype": "shipper"'), 'CLI dry-run JSON mode should print derived payload JSON');
+    assert(!output.join('').includes('tool_usage'), 'CLI dry-run JSON output must not print raw tool usage');
 
     output.length = 0;
     const usageResult = await sync({ file: usageDir, host: 'https://example.invalid', token: '', dryRun: true });

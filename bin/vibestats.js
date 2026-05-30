@@ -6,6 +6,7 @@ import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { publicMoments } from '../api/_lib/moments.js';
 import { readInsightsInput } from '../lib/claude-insights-extractor.js';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
 
@@ -28,6 +29,7 @@ const ARCHETYPE_LABELS = {
 function usage() {
   return `Usage:
   vibestats [sync] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
+  vibestats [sync] --dry-run --json
 
 Environment:
   VIBESTATS_SYNC_TOKEN  optional signed sync token from vibestats settings
@@ -38,7 +40,8 @@ By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHT
 It reveals your archetype locally before asking for approval to publish it.
 Without --token it opens a browser approval flow against your GitHub-backed vibestats session.
 Current public install command: ${DEFAULT_NPX_SYNC_COMMAND}
-Use --dry-run to print the derived payload without signing in or sending it.`;
+Use --dry-run to reveal locally without signing in or sending it.
+Use --dry-run --json to print the exact derived payload for debugging.`;
 }
 
 export function parseArgs(argv) {
@@ -49,6 +52,7 @@ export function parseArgs(argv) {
     host: process.env.VIBESTATS_URL || DEFAULT_HOST,
     token: process.env.VIBESTATS_SYNC_TOKEN || '',
     dryRun: false,
+    json: false,
     openBrowser: true,
     authTimeoutMs: DEFAULT_AUTH_TIMEOUT_MS,
   };
@@ -63,6 +67,7 @@ export function parseArgs(argv) {
     else if (arg === '--no-open') options.openBrowser = false;
     else if (arg === '--auth-timeout-ms') options.authTimeoutMs = Number(args[++i] || 0);
     else if (arg === '--dry-run' || arg === '--dryRun') options.dryRun = true;
+    else if (arg === '--json') options.json = true;
     else throw new Error(`Unknown option: ${arg}`);
   }
 
@@ -113,6 +118,53 @@ function htmlEsc(value) {
 function successHtml(handle) {
   const label = handle ? `@${htmlEsc(handle)}` : 'your profile';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>vibestats CLI authorized</title></head><body><h1>vibestats CLI authorized</h1><p>You can return to the terminal. Sync will continue as ${label}.</p></body></html>`;
+}
+
+function formatInt(value) {
+  return Number(value || 0).toLocaleString('en-US');
+}
+
+function primaryScore(payload) {
+  const score = Number(payload?.scores?.[payload?.archetype] || 0);
+  return Number.isFinite(score) ? Math.round(score) : 0;
+}
+
+function revealLabel(payload) {
+  return payload?.raw_meta?.signature || ARCHETYPE_LABELS[payload?.archetype] || payload?.archetype || 'vibecoder';
+}
+
+export function dryRunRevealText(payload = {}) {
+  const archetype = ARCHETYPE_LABELS[payload.archetype] || payload.archetype || 'Unknown';
+  const score = primaryScore(payload);
+  const metrics = payload.metrics || {};
+  const moments = publicMoments(payload.raw_meta?.moments || [], { exact: true });
+  const metricLine = [
+    `${formatInt(metrics.sessions)} sessions`,
+    `${formatInt(metrics.days)} days`,
+    `${formatInt(metrics.commitsPerDay)} commits/day`,
+    `${formatInt(metrics.languages)} code languages`,
+    `${formatInt(metrics.msgsPerSession)} messages/session`,
+  ].join(' · ');
+  const lines = [
+    'vibestats local reveal',
+    `Revealed: ${revealLabel(payload)}${score ? ` (${score}% ${archetype})` : ''}.`,
+    `Pattern: ${metricLine}.`,
+  ];
+
+  if (moments.length) {
+    lines.push('Behavioral moments:');
+    for (const moment of moments) {
+      lines.push(`- ${moment.label}: ${moment.value}`);
+    }
+  }
+
+  lines.push(
+    'Raw Claude Code /insights data stayed local. No profile was published.',
+    'To claim your profile and share compare links, rerun without --dry-run.',
+    'For machine-readable derived payload: add --json.',
+  );
+
+  return `${lines.join('\n')}\n`;
 }
 
 export function authUrlForLocalCallback(host, callback, nonce) {
@@ -226,7 +278,8 @@ export async function sync(options) {
   const payload = derivedUploadPayloadFromInsights(insights, { source: 'cli' });
 
   if (options.dryRun) {
-    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+    if (options.json) process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+    else process.stdout.write(dryRunRevealText(payload));
     return { dry_run: true, payload };
   }
 
