@@ -16,7 +16,7 @@ Use these exact commands:
 ```bash
 /insights
 npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
-npx --yes github:brightseth/vibestats#feat/wave-1-identity join
+npx --yes github:brightseth/vibestats#feat/wave-1-identity
 ```
 
 ## Flow
@@ -40,7 +40,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 6. Only after the user agrees, run:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity join
+npx --yes github:brightseth/vibestats#feat/wave-1-identity
 ```
 
 7. Report the profile URL, compare invite URL, and any README badge or recap links printed by the CLI.

@@ -310,7 +310,7 @@ async function assertRoutes() {
   assert(recapHtml.includes("fetch(`/api/u/${encodeURIComponent(handle)}`") && recapHtml.includes('Copy recap'), 'profile recap page should render from sanitized public profile JSON');
   assert(recapHtml.includes('Raw Claude Code /insights data stays local') && recapHtml.includes('facet shape'), 'profile recap should state derived-only privacy and facet proof');
   assert(recapHtml.includes('id="digest-cta"') && recapHtml.includes('profile.is_owner'), 'profile recap should give owners a path into digest consent');
-  assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join'), 'profile recap should let owners refresh the return surface with terminal-first CLI sync');
+  assert(recapHtml.includes('id="copy-sync"') && recapHtml.includes('Run CLI sync after more Claude Code work') && recapHtml.includes("const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';"), 'profile recap should let owners refresh the return surface with one-command terminal-first CLI sync');
   assert(recapHtml.includes('id="copy-install"') && recapHtml.includes('install-claude-command'), 'profile recap should let owners install the Claude Code /vibestats return hook');
   assert(profileHtml.includes('id="recap-cta"') && profileHtml.includes('`${profilePath}/recap`'), 'profile page should link users into the recap return surface');
   assert(digestPreviewApi.includes('requireUser(req)') && digestPreviewApi.includes('buildWeeklyDigest({'), 'digest preview should be authenticated and reuse the weekly digest builder');
@@ -420,7 +420,7 @@ async function assertRoutes() {
   assert(settingsHtml.includes('id="preview-digest"') && settingsHtml.includes('/api/digest/preview'), 'settings page should expose owner-only weekly digest preview');
   assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
-  assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join') && settingsHtml.includes('terminal-first GitHub approval'), 'settings UI should expose terminal-first CLI reveal and sync command generation');
+  assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && settingsHtml.includes('placeholder="npx --yes github:brightseth/vibestats#feat/wave-1-identity"') && settingsHtml.includes('terminal-first GitHub approval'), 'settings UI should expose terminal-first CLI reveal and one-command sync generation');
   assert(settingsHtml.includes('install-claude-command'), 'settings UI should expose the installable Claude Code command path');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="match-settings"'), 'settings UI should expose a direct anchor for match intent setup');
@@ -569,7 +569,7 @@ async function assertRoutes() {
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
   assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
-  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before terminal-first publishing');
+  assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal') && claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity') && !claudeCommand.includes('feat/wave-1-identity join') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before one-command terminal-first publishing');
   assert(claudeCommand.includes('no manual website upload is required') && claudeCommand.includes('GitHub-backed, derived-only profile') && claudeCommand.includes('README badge or recap links'), 'Claude Code command should keep terminal-only onboarding explicit after the reveal');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('copy-ready reveal text, X share URL') && claudeCommand.includes('archetype-only compare link') && claudeCommand.includes('/vibestats` install command') && claudeCommand.includes('reveal --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
@@ -1483,8 +1483,10 @@ async function assertCliDerivedPayload() {
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
   assert(DEFAULT_CLAUDE_COMMAND_PATH.endsWith(join('.claude', 'commands', 'vibestats.md')), 'CLI should default Claude command installs to the user Claude commands directory');
-  const parsedDefault = parseArgs(['node', 'vibestats', '--dry-run']);
-  assert(parsedDefault.command === 'sync' && parsedDefault.options.dryRun === true, 'CLI should default to sync so the copied npx command needs no subcommand');
+  const parsedDefault = parseArgs(['node', 'vibestats']);
+  assert(parsedDefault.command === 'onboard' && parsedDefault.options.authMode === 'device', 'CLI should default to terminal-first onboarding so the copied npx command needs no subcommand');
+  const parsedDefaultDryRun = parseArgs(['node', 'vibestats', '--dry-run']);
+  assert(parsedDefaultDryRun.command === 'onboard' && parsedDefaultDryRun.options.dryRun === true, 'CLI should keep dry-run as a no-subcommand reveal alias');
   const parsedReveal = parseArgs(['node', 'vibestats', 'reveal']);
   assert(parsedReveal.command === 'reveal' && parsedReveal.options.dryRun === true && isSyncCommand(parsedReveal.command), 'CLI should accept reveal as the first-class local dry-run command');
   const parsedJoin = parseArgs(['node', 'vibestats', 'join', '--dry-run']);
@@ -1504,11 +1506,11 @@ async function assertCliDerivedPayload() {
   assert(DEFAULT_NPX_REVEAL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'CLI should expose the current terminal-first reveal command');
   assert(DEFAULT_NPX_JOIN_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'CLI should expose the current terminal-first join command');
   assert(DEFAULT_INSTALL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command', 'CLI should expose a copyable Claude Code command installer');
-  assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use join/onboard when you want the terminal-first participation flow') && cliSource.includes('GitHub device code by default'), 'CLI help should frame reveal and join as reveal-before-publish terminal onboarding');
+  assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the terminal-first participation flow') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default'), 'CLI help should frame the no-subcommand path as reveal-before-publish terminal onboarding');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
-  assert(cliSource.includes('Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}') && cliSource.includes('Use --dry-run as a legacy alias for reveal') && cliSource.includes('Use reveal --json to print the exact derived payload'), 'CLI help should separate human reveal from payload JSON');
+  assert(cliSource.includes('Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}') && cliSource.includes('Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}') && cliSource.includes('Use --dry-run as a legacy alias for reveal') && cliSource.includes('Use reveal --json to print the exact derived payload'), 'CLI help should separate one-command claim, human reveal, and payload JSON');
   const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
-  assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(DEFAULT_NPX_REVEAL_COMMAND) && missingAdvice.includes(DEFAULT_NPX_JOIN_COMMAND), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
+  assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(DEFAULT_NPX_REVEAL_COMMAND) && missingAdvice.includes(DEFAULT_NPX_SYNC_COMMAND), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
   const cliShare = cliShareText({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
   assert(cliShare.includes('prolific Shipper') && cliShare.includes('Raw /insights stayed local') && cliShare.includes('What are you?') && cliShare.includes('compareTo=alex'), 'CLI share text should be copy-ready, privacy-aware, and compare-first');
   const cliXShare = cliXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
@@ -1526,7 +1528,7 @@ async function assertCliDerivedPayload() {
   assert(revealText.includes('Share reveal on X: https://twitter.com/intent/tweet?'), 'CLI dry-run reveal should print one-click X share before publishing');
   assert(revealText.includes('Preview a Shipper x Debugger pairing: https://vibestats.io/compare?a=shipper&b=debugger'), 'CLI dry-run reveal should print a complementary pairing preview before publishing');
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
-  assert(revealText.includes('No website upload required.') && revealText.includes(DEFAULT_NPX_JOIN_COMMAND), 'CLI dry-run reveal should hand off to exact terminal-first claim command');
+  assert(revealText.includes('No website upload required.') && revealText.includes(DEFAULT_NPX_SYNC_COMMAND), 'CLI dry-run reveal should hand off to exact one-command terminal-first claim command');
   assert(revealText.includes(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}`), 'CLI dry-run reveal should print the Claude Code command installer as a return hook');
   assert(revealText.includes(`Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_REVEAL_COMMAND}`), 'CLI dry-run reveal should print the repeat reveal loop');
   assert(revealText.includes('For machine-readable derived payload: add --json to the reveal command.'), 'CLI dry-run reveal should point auditors to JSON mode');

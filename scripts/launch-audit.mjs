@@ -365,7 +365,7 @@ async function auditLaunch(options) {
       path: '/',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy npx reveal command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'install-claude-command', 'Try the reveal demo', 'shouldAutoRunDemo()', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
+      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy npx reveal command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>', 'install-claude-command', 'Try the reveal demo', 'shouldAutoRunDemo()', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
       mustNotInclude: ['agent-insights.json', 'npx vibestats sync'],
       checkRawLeaks: false,
     },
@@ -397,7 +397,7 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
       mustInclude: expectReady && profileHasUpload
-        ? ['Copy recap', 'Copy sync command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity join', 'Copy /vibestats install', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
+        ? ['Copy recap', 'Copy sync command', "const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';", 'Copy /vibestats install', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
         : ['A privacy-preserving weekly recap'],
     },
     {

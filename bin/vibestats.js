@@ -44,6 +44,7 @@ const COMPLEMENTARY_ARCHETYPES = {
 
 function usage() {
   return `Usage:
+  vibestats [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
   vibestats reveal [--file PATH] [--dir PATH] [--json]
   vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run]
   vibestats [sync|join|onboard] --dry-run --json
@@ -56,10 +57,12 @@ Environment:
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 It reveals your archetype locally before asking for approval to publish it.
+Run without a subcommand for the terminal-first participation flow: local reveal, then GitHub approval.
 Use reveal for a local result with no sign-in and no network publish.
-Use join/onboard when you want the terminal-first participation flow; they use a GitHub device code by default.
+Use join/onboard as explicit aliases for the same terminal-first flow; they use a GitHub device code by default.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
 Use --device to force terminal device-code auth, or --browser to force local browser callback auth.
+Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}
 Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}
 Current public join command: ${DEFAULT_NPX_JOIN_COMMAND}
 Install the Claude Code /vibestats command: ${DEFAULT_INSTALL_COMMAND}
@@ -69,7 +72,7 @@ Use reveal --json to print the exact derived payload for debugging.`;
 
 export function parseArgs(argv) {
   const args = argv.slice(2);
-  const command = args[0] && !args[0].startsWith('-') ? args.shift() : 'sync';
+  const command = args[0] && !args[0].startsWith('-') ? args.shift() : 'onboard';
   const options = {
     file: DEFAULT_INSIGHTS_PATH,
     host: process.env.VIBESTATS_URL || DEFAULT_HOST,
@@ -119,7 +122,7 @@ function missingInsightsAdvice() {
     'Terminal onboarding:',
     '1. Open Claude Code and run /insights.',
     `2. Preview locally: ${DEFAULT_NPX_REVEAL_COMMAND}`,
-    `3. Publish when ready: ${DEFAULT_NPX_JOIN_COMMAND}`,
+    `3. Publish when ready: ${DEFAULT_NPX_SYNC_COMMAND}`,
     'No raw Claude Code session data leaves your machine; publishing sends derived metrics only.',
   ].join('\n');
 }
@@ -281,7 +284,7 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   lines.push(
     'Raw Claude Code /insights data stayed local. No profile was published.',
     'No website upload required.',
-    `To claim your GitHub-backed profile and share compare links, run: ${DEFAULT_NPX_JOIN_COMMAND}`,
+    `To claim your GitHub-backed profile and share compare links, run: ${DEFAULT_NPX_SYNC_COMMAND}`,
     `Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}`,
     `Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_REVEAL_COMMAND}`,
     'For machine-readable derived payload: add --json to the reveal command.',
