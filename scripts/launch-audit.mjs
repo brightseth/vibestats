@@ -6,6 +6,7 @@ const execFileAsync = promisify(execFile);
 
 const DEFAULT_HANDLE = 'brightseth';
 const DEFAULT_ARCHETYPE = 'builder';
+const DEFAULT_CLI_PACKAGE = '@lets-vibe/vibestats';
 const RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage'];
 const SECRET_NAME_PATTERNS = [
   'DATABASE_URL',
@@ -26,7 +27,9 @@ function parseArgs(argv = process.argv.slice(2)) {
     archetype: DEFAULT_ARCHETYPE,
     expectReady: false,
     expectDeviceFlow: false,
+    expectCliPackage: false,
     expectDigest: false,
+    cliPackage: process.env.VIBESTATS_CLI_PACKAGE || DEFAULT_CLI_PACKAGE,
     cronSecret: process.env.CRON_SECRET || '',
     vercelDeployment: process.env.VERCEL_DEPLOYMENT_URL || '',
     vercelScope: process.env.VERCEL_SCOPE || 'lets-vibe',
@@ -48,6 +51,9 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg.startsWith('--archetype=')) options.archetype = arg.slice('--archetype='.length);
     else if (arg === '--expect-ready') options.expectReady = true;
     else if (arg === '--expect-device-flow') options.expectDeviceFlow = true;
+    else if (arg === '--expect-cli-package') options.expectCliPackage = true;
+    else if (arg === '--cli-package') options.cliPackage = argv[++i];
+    else if (arg.startsWith('--cli-package=')) options.cliPackage = arg.slice('--cli-package='.length);
     else if (arg === '--expect-digest') options.expectDigest = true;
     else if (arg === '--vercel-deployment' || arg === '--deployment') options.vercelDeployment = argv[++i];
     else if (arg.startsWith('--vercel-deployment=')) options.vercelDeployment = arg.slice('--vercel-deployment='.length);
@@ -68,6 +74,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   if (options.vercelDeployment) options.vercelDeployment = normalizeOrigin(options.vercelDeployment);
   options.vercelScope = String(options.vercelScope || '').trim();
   options.cronSecret = String(options.cronSecret || '').trim();
+  options.cliPackage = String(options.cliPackage || '').trim();
   options.handle = String(options.handle || '').trim().replace(/^@/, '');
   options.archetype = String(options.archetype || '').trim().toLowerCase();
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(options.handle)) {
@@ -75,6 +82,9 @@ function parseArgs(argv = process.argv.slice(2)) {
   }
   if (!/^[a-z]+$/.test(options.archetype)) {
     throw new Error('--archetype must be a lowercase archetype key');
+  }
+  if (!/^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(options.cliPackage)) {
+    throw new Error('--cli-package must be an npm package name');
   }
   return options;
 }
@@ -85,13 +95,14 @@ function normalizeOrigin(value) {
 }
 
 function usage() {
-  return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-device-flow] [--expect-digest]
+  return `Usage: npm run audit:launch -- --origin https://vibestats.io --handle brightseth [--expect-ready] [--expect-device-flow] [--expect-cli-package] [--expect-digest]
        npm run audit:launch -- --deployment https://preview.vercel.app --scope lets-vibe --handle brightseth
-       CRON_SECRET=... npm run audit:launch -- --origin https://vibestats.io --handle brightseth --expect-ready --expect-device-flow --expect-digest
+       CRON_SECRET=... npm run audit:launch -- --origin https://vibestats.io --handle brightseth --expect-ready --expect-device-flow --expect-cli-package --expect-digest
 
 Checks the deployed identity loop without printing secrets:
 - /api/identity-status readiness and no-store headers
 - CLI device-code auth start when --expect-ready is used; --expect-device-flow requires a live GitHub device code instead of browser fallback
+- public npm CLI package visibility and runnable help when --expect-cli-package is used
 - public auth/session/sync failure responses do not expose internal config names
 - reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
 - profile shell, saved profile JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
@@ -211,11 +222,50 @@ function createRecorder() {
   };
 }
 
+async function auditCliPackage(options, recorder) {
+  const packageSpec = options.cliPackage || DEFAULT_CLI_PACKAGE;
+  try {
+    const view = await execFileAsync('npm', ['view', packageSpec, 'name', 'version', 'bin', '--json'], {
+      maxBuffer: 1024 * 1024,
+    });
+    const metadata = JSON.parse(view.stdout || '{}');
+    recorder.check(metadata.name === packageSpec, 'public CLI package is visible on npm', metadata.name || '(missing)');
+    recorder.check(Boolean(metadata.version), 'public CLI package has a version', metadata.version || '(missing)');
+    recorder.check(metadata.bin?.vibestats === './bin/vibestats.js' || metadata.bin?.vibestats === 'bin/vibestats.js', 'public CLI package exposes vibestats bin', JSON.stringify(metadata.bin || {}));
+  } catch (err) {
+    const detail = String(err.stderr || err.message || '').split('\n').find(Boolean) || err.message;
+    recorder.fail('public CLI package is visible on npm', detail);
+    return;
+  }
+
+  try {
+    const result = await execFileAsync('npm', ['exec', '--yes', '--package', packageSpec, '--', 'vibestats', '--help'], {
+      maxBuffer: 5 * 1024 * 1024,
+      env: {
+        ...process.env,
+        VIBESTATS_CLI_PACKAGE: packageSpec,
+      },
+    });
+    const output = `${result.stdout || ''}\n${result.stderr || ''}`;
+    recorder.check(output.includes('Current public claim command: npx --yes') && output.includes(packageSpec), 'public CLI help uses the package command', packageSpec);
+    recorder.check(output.includes('vibestats share --handle HANDLE') && output.includes('Use reveal for a local result'), 'public CLI help exposes reveal and share flows');
+    recorder.check(!hasRawLeak(output), 'public CLI help has no raw-insights field names');
+    recorder.check(!hasSecretName(output), 'public CLI help does not expose secret env names');
+  } catch (err) {
+    const output = `${err.stdout || ''}\n${err.stderr || ''}`;
+    recorder.fail('public CLI package executes vibestats help', output.split('\n').find(Boolean) || err.message);
+  }
+}
+
 async function auditLaunch(options) {
   const recorder = createRecorder();
-  const { origin, handle, archetype, expectReady, expectDeviceFlow, expectDigest } = options;
+  const { origin, handle, archetype, expectReady, expectDeviceFlow, expectCliPackage, expectDigest } = options;
   const missingHandle = `audit-missing-${Date.now().toString(36)}`.slice(0, 39);
   const comparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
+
+  if (expectCliPackage) {
+    await auditCliPackage(options, recorder);
+  }
 
   let identity = null;
   try {

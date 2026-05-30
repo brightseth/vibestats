@@ -125,8 +125,14 @@ node scripts/update-cli-command.mjs --package @lets-vibe/vibestats
 node scripts/update-cli-command.mjs --package @lets-vibe/vibestats --write
 ```
 
+After the package is published and static snippets are switched over, prove npm visibility and executable CLI help with:
+
 ```bash
-CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-digest
+npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package
+```
+
+```bash
+CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-digest
 ```
 
 `--expect-digest` also runs the protected weekly digest dry run and fails if `CRON_SECRET` is not present in the local shell. The audit does not print the secret value.

@@ -186,9 +186,10 @@ After deploying, audit the live viral and identity surfaces without printing sec
 ```bash
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow
+npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package
 ```
 
-Use the stricter `--expect-device-flow` gate before broad terminal-first sharing. It fails until the GitHub OAuth App has Device Flow enabled; browser fallback still works without it.
+Use the stricter `--expect-device-flow` gate before broad terminal-first sharing. It fails until the GitHub OAuth App has Device Flow enabled; browser fallback still works without it. After publishing `@lets-vibe/vibestats`, add `--expect-cli-package` to prove npm can see and execute the public package help output.
 
 Generate a copy-ready share kit for a minted profile:
 

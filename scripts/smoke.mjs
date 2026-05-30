@@ -531,7 +531,7 @@ async function assertRoutes() {
     'launch audit should verify discovery API cache policy',
   );
   assert(launchAudit.includes('checkRawLeaks: false'), 'launch audit should not fail the upload page for local raw-parser field names');
-  assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-device-flow') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
+  assert(launchAudit.includes('--expect-ready') && launchAudit.includes('--expect-device-flow') && launchAudit.includes('--expect-cli-package') && launchAudit.includes('--expect-digest'), 'launch audit should support strict production readiness gates');
   assert(launchAudit.includes('cronSecret: process.env.CRON_SECRET') && launchAudit.includes('weekly digest dry run has cron secret'), 'launch audit should run a protected digest dry run when strict digest readiness is expected');
   assert(launchAudit.includes('weekly digest dry run returns readiness payload') && launchAudit.includes('body.resend_ready === true'), 'launch audit should require digest dry-run readiness payload');
   assert(launchAudit.includes('weekly digest dry run has at least one candidate') && launchAudit.includes('weekly digest dry run proves return-loop content'), 'launch audit should require digest dry-run content proof');
@@ -561,10 +561,11 @@ async function assertRoutes() {
   assert(launchDoc.includes('npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready'), 'launch checklist should require deployed viral-loop audit');
   assert(launchDoc.includes('requires more than a GitHub-created user row') && launchDoc.includes('at least one saved derived upload'), 'launch checklist should explain the first-upload gate for strict readiness');
   assert(launchDoc.includes('--expect-ready --expect-device-flow') && launchDoc.includes('Enable Device Flow'), 'launch checklist should document the strict terminal-first device-flow gate');
+  assert(launchDoc.includes('--expect-ready --expect-device-flow --expect-cli-package') && launchDoc.includes('prove npm visibility and executable CLI help'), 'launch checklist should document the strict public npm CLI package gate');
   assert(launchDoc.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && launchDoc.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'launch checklist should document terminal and maintainer first-profile share kits');
   assert(launchDoc.includes('unscoped `vibestats` package is owned by another publisher') && launchDoc.includes('npm pack --dry-run') && launchDoc.includes('npm publish --access public'), 'launch checklist should document the scoped npm publish gate');
   assert(launchDoc.includes('VIBESTATS_CLI_PACKAGE') && launchDoc.includes('scoped package') && launchDoc.includes('static onboarding snippets'), 'launch checklist should document the public npm package command switchover');
-  assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-digest'), 'launch checklist should require strict device-flow and digest audit once email is configured');
+  assert(launchDoc.includes('CRON_SECRET=<cron-secret> npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package --expect-digest'), 'launch checklist should require strict device-flow, CLI package, and digest audit once email is configured');
   assert(launchDoc.includes('protected weekly digest dry run') && launchDoc.includes('does not print the secret value'), 'launch checklist should document strict digest dry-run proof');
   assert(launchDoc.includes('Digest consent can be captured before delivery env is present'), 'launch checklist should document digest consent capture before delivery readiness');
   assert(launchDoc.includes('at least one saved profile must be opted in') && launchDoc.includes('day-based streak') && launchDoc.includes('derived-only privacy copy'), 'launch checklist should require a real digest candidate for strict proof');
@@ -578,6 +579,7 @@ async function assertRoutes() {
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
   assert(readme.includes('This repo is packaged as `@lets-vibe/vibestats`') && readme.includes('npm pack --dry-run') && readme.includes('npm publish --access public'), 'README should document scoped npm package publication before broad sharing');
+  assert(readme.includes('--expect-ready --expect-device-flow --expect-cli-package') && readme.includes('prove npm can see and execute the public package help output'), 'README should document the strict public npm CLI package gate');
   assert(readme.includes('VIBESTATS_CLI_PACKAGE') && readme.includes('GitHub branch fallback'), 'README should document the public CLI package override before broad npm sharing');
   assert(readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity share --handle <saved-gh-handle>') && readme.includes('npm run share:kit -- --handle <saved-gh-handle>'), 'README should document terminal and maintainer copy-ready share kits for minted profiles');
   assert(readme.includes('Use `share --handle <saved-gh-handle>`') && readme.includes('privacy proof without opening the website'), 'README should document the CLI share command for terminal-only distribution');
@@ -620,8 +622,8 @@ async function assertLaunchAuditHelpers() {
   assert(parsed.vercelDeployment === 'https://preview.vercel.app', 'launch audit should normalize vercel deployment URL');
   assert(parsed.vercelScope === 'lets-vibe', 'launch audit should parse vercel scope');
   assert(parsed.handle === 'brightseth', 'launch audit should normalize handle while parsing deployment mode');
-  const parsedStrict = parseArgs(['--origin', 'https://vibestats.io', '--handle', 'brightseth', '--expect-ready', '--expect-device-flow', '--expect-digest']);
-  assert(parsedStrict.expectReady === true && parsedStrict.expectDeviceFlow === true && parsedStrict.expectDigest === true, 'launch audit should parse strict ready, device-flow, and digest gates independently');
+  const parsedStrict = parseArgs(['--origin', 'https://vibestats.io', '--handle', 'brightseth', '--expect-ready', '--expect-device-flow', '--expect-cli-package', '--cli-package', '@lets-vibe/vibestats', '--expect-digest']);
+  assert(parsedStrict.expectReady === true && parsedStrict.expectDeviceFlow === true && parsedStrict.expectCliPackage === true && parsedStrict.cliPackage === '@lets-vibe/vibestats' && parsedStrict.expectDigest === true, 'launch audit should parse strict ready, device-flow, CLI package, and digest gates independently');
 
   const parsedCurl = parseVercelCurlResponse(`Retrieving project...\nHTTP/2 200\r\ncache-control: no-store\r\ncontent-type: application/json; charset=utf-8\r\n\r\n{"ok":true}`);
   assert(parsedCurl.response.status === 200, 'vercel curl parser should read HTTP status');
@@ -631,6 +633,7 @@ async function assertLaunchAuditHelpers() {
   assert(launchAuditSource.includes("'/api/cli/device-start'") && launchAuditSource.includes('CLI device auth start is reachable') && launchAuditSource.includes('CLI device auth start returns live GitHub device code'), 'launch audit should verify terminal-first device auth readiness or explicit enablement action');
   assert(launchAuditSource.includes("path: '/api/me'") && launchAuditSource.includes("Cookie: 'vibestats_auth=a.b.c'"), 'launch audit should probe session failure without exposing env names');
   assert(launchAuditSource.includes("label: 'weekly digest cron guard'"), 'launch audit should probe the weekly digest cron guard without exposing env names');
+  assert(launchAuditSource.includes('auditCliPackage') && launchAuditSource.includes("execFileAsync('npm', ['view', packageSpec") && launchAuditSource.includes("execFileAsync('npm', ['exec', '--yes', '--package', packageSpec"), 'launch audit should verify the public npm CLI package when strict package readiness is expected');
   console.log('ok launch audit supports protected Vercel previews');
 }
 
