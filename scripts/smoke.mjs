@@ -361,6 +361,7 @@ async function assertRoutes() {
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Your result stayed local.'), 'upload page should explain local-only behavior when identity is unavailable');
   assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
   assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'upload page should frame onboarding as a Claude Code reveal with the real /insights to npx path');
+  assert(indexHtml.includes('install-claude-command') && indexHtml.includes('Install /vibestats in Claude Code'), 'upload page should expose the installable Claude Code command path');
   assert(indexHtml.includes('Try the reveal demo') && indexHtml.includes('Copy npx reveal command') && indexHtml.includes('claim yours only when you want a public profile'), 'upload page should let cold visitors preview the reveal before asking them to publish');
   assert(indexHtml.includes('Explore sample pairings without data') && indexHtml.includes('href="/compare?a=orchestrator&b=shipper"'), 'upload page should give no-data visitors an archetype-pairing gallery path');
   assert(!indexHtml.includes('npx vibestats sync'), 'upload page should not advertise the occupied unscoped npm package name');
@@ -393,6 +394,7 @@ async function assertRoutes() {
   assert(!settingsHtml.includes('identityStatus.weekly_digest_available !== true && optIn'), 'settings page should not block new digest opt-ins when delivery is unavailable');
   assert(settingsHtml.includes("digest_email: optIn ? email : ''"), 'settings page should clear digest email when opt-in is turned off');
   assert(settingsHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'settings UI should expose CLI sync command generation');
+  assert(settingsHtml.includes('install-claude-command'), 'settings UI should expose the installable Claude Code command path');
   assert(settingsHtml.includes('id="cli-sync"'), 'settings UI should expose a direct anchor for CLI sync setup');
   assert(settingsHtml.includes('id="match-settings"'), 'settings UI should expose a direct anchor for match intent setup');
   assert(settingsHtml.includes('id="revoke-sync-tokens"'), 'settings UI should expose CLI sync token revocation');
@@ -421,6 +423,7 @@ async function assertRoutes() {
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
   assert(npmIgnore.includes('!bin/vibestats.js') && npmIgnore.includes('!lib/claude-insights-extractor.js') && npmIgnore.includes('!lib/insights-derived.js') && npmIgnore.includes('!api/_lib/moments.js') && npmIgnore.includes('!api/_lib/signatures.js'), 'npm package allowlist should include the CLI and derived scoring helpers');
+  assert(npmIgnore.includes('!.claude/commands/vibestats.md'), 'npm package allowlist should include the installable Claude Code /vibestats command');
   assert(packageJson.scripts?.['audit:launch'] === 'node scripts/launch-audit.mjs', 'package should expose launch audit script');
   assert(identityDoctor.includes('POSTGRES_URL') && identityDoctor.includes('NEON_DATABASE_URL'), 'identity doctor should accept DB env aliases used by runtime');
   assert(identityDoctor.includes('AUTH_SECRET') && identityDoctor.includes('NEXTAUTH_SECRET'), 'identity doctor should accept session secret aliases used by runtime');
@@ -450,6 +453,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'OAuth callback failure response'") && launchAudit.includes("path: '/api/auth/github/callback?code=a&state=b'"), 'launch audit should verify OAuth callback failure responses');
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes("label: 'reveal homepage'") && launchAudit.includes('Try the reveal demo') && launchAudit.includes('agent-insights.json'), 'launch audit should prevent homepage onboarding regressions');
+  assert(launchAudit.includes('install-claude-command'), 'launch audit should require the Claude Code command installer on the homepage');
   assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
   assert(launchAudit.includes("label: 'profile JSON'") && launchAudit.includes('expectReady ? [200] : [200, 404, 503]'), 'launch audit should verify the saved profile JSON payload when identity is ready');
   assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge and share-recipient reveal surfaces');
@@ -528,7 +532,7 @@ async function assertRoutes() {
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
-  assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('project-local `/vibestats` command'), 'README should document the Claude Code /vibestats activation path');
+  assert(readme.includes('.claude/commands/vibestats.md') && readme.includes('install-claude-command') && readme.includes('~/.claude/commands/vibestats.md'), 'README should document the installable Claude Code /vibestats activation path');
   assert(claudeCommand.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run') && claudeCommand.includes('Only after the user agrees'), 'Claude Code command should reveal locally before publishing');
   assert(claudeCommand.includes('Use the local reveal output directly') && claudeCommand.includes('--dry-run --json'), 'Claude Code command should treat JSON as an explicit audit path');
   assert(claudeCommand.includes('Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/`'), 'Claude Code command should preserve raw session privacy');
@@ -820,6 +824,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('readmeBadgeMarkdown(handle, badgePath, uploadCompareUrl)') && profileHtml.includes('](${compareUrl})'), 'profile badge markdown should click through to upload-to-compare');
   assert(profileHtml.includes('id="reveal-panel"') && profileHtml.includes('renderRevealPanel(me, profile, latest)'), 'profile pages should show share recipients a direct reveal panel');
   assert(profileHtml.includes('Claude Code has already captured your build fingerprint') && profileHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'profile reveal panel should carry the command path without sending visitors hunting');
+  assert(profileHtml.includes('INSTALL_CLAUDE_COMMAND') && profileHtml.includes('install-claude-command'), 'profile reveal surfaces should let share recipients install the Claude Code command');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
@@ -1334,16 +1339,21 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, dryRunRevealText, isDirectRun, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, dryRunRevealText, installClaudeCommand, isDirectRun, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
+  assert(DEFAULT_CLAUDE_COMMAND_PATH.endsWith(join('.claude', 'commands', 'vibestats.md')), 'CLI should default Claude command installs to the user Claude commands directory');
   const parsedDefault = parseArgs(['node', 'vibestats', '--dry-run']);
   assert(parsedDefault.command === 'sync' && parsedDefault.options.dryRun === true, 'CLI should default to sync so the copied npx command needs no subcommand');
   const parsedJson = parseArgs(['node', 'vibestats', '--dry-run', '--json']);
   assert(parsedJson.options.dryRun === true && parsedJson.options.json === true, 'CLI dry-run should offer a JSON escape hatch for payload audits');
+  const parsedInstall = parseArgs(['node', 'vibestats', 'install-claude-command', '--force', '--path', '/tmp/vibestats.md']);
+  assert(parsedInstall.command === 'install-claude-command' && parsedInstall.options.force === true && parsedInstall.options.path === '/tmp/vibestats.md', 'CLI should parse Claude command installation options');
   assert(DEFAULT_NPX_SYNC_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity', 'CLI should expose the current GitHub-backed npx command');
+  assert(DEFAULT_INSTALL_COMMAND === 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command', 'CLI should expose a copyable Claude Code command installer');
   assert(cliSource.includes('It reveals your archetype locally before asking for approval to publish it.'), 'CLI help should frame sync as reveal-before-publish');
+  assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
   assert(cliSource.includes('Use --dry-run to reveal locally') && cliSource.includes('Use --dry-run --json to print the exact derived payload'), 'CLI help should separate human reveal from payload JSON');
   const revealText = dryRunRevealText(payload);
   assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
@@ -1439,6 +1449,31 @@ async function assertCliDerivedPayload() {
     assert(jsonResult.payload.archetype === 'shipper', 'CLI dry-run JSON mode should return the same derived payload');
     assert(output.join('').includes('"archetype": "shipper"'), 'CLI dry-run JSON mode should print derived payload JSON');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run JSON output must not print raw tool usage');
+
+    output.length = 0;
+    const commandPath = join(dir, 'claude', 'commands', 'vibestats.md');
+    const installResult = await installClaudeCommand({
+      path: commandPath,
+      stdout: {
+        write(chunk) {
+          output.push(String(chunk));
+          return true;
+        },
+      },
+    });
+    const installedCommand = await readFile(commandPath, 'utf8');
+    assert(installResult.path === commandPath && installResult.replaced === false, 'CLI should install the Claude Code command without replacing by default');
+    assert(installedCommand.includes('description: Reveal and optionally publish') && installedCommand.includes('Only after the user agrees'), 'installed Claude Code command should preserve reveal-before-publish instructions');
+    assert(output.join('').includes('Installed Claude Code /vibestats command') && output.join('').includes('Raw Claude Code /insights data stays on disk'), 'Claude command installer should explain installation and privacy');
+    let refusedOverwrite = false;
+    try {
+      await installClaudeCommand({ path: commandPath });
+    } catch (err) {
+      refusedOverwrite = String(err.message).includes('--force');
+    }
+    assert(refusedOverwrite, 'Claude command installer should refuse overwriting without --force');
+    const forcedInstall = await installClaudeCommand({ path: commandPath, force: true, stdout: { write() { return true; } } });
+    assert(forcedInstall.replaced === true, 'Claude command installer should support explicit replacement with --force');
 
     output.length = 0;
     const usageResult = await sync({ file: usageDir, host: 'https://example.invalid', token: '', dryRun: true });

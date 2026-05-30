@@ -2,19 +2,23 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { realpathSync } from 'node:fs';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicMoments } from '../api/_lib/moments.js';
 import { readInsightsInput } from '../lib/claude-insights-extractor.js';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
 
 const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
+export const DEFAULT_CLAUDE_COMMAND_PATH = join(homedir(), '.claude', 'commands', 'vibestats.md');
 const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
 export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE}`;
+export const DEFAULT_INSTALL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} install-claude-command`;
+const CLAUDE_COMMAND_SOURCE = new URL('../.claude/commands/vibestats.md', import.meta.url);
 const ARCHETYPE_LABELS = {
   orchestrator: 'Orchestrator',
   shipper: 'Shipper',
@@ -30,6 +34,7 @@ function usage() {
   return `Usage:
   vibestats [sync] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--no-open] [--dry-run]
   vibestats [sync] --dry-run --json
+  vibestats install-claude-command [--force] [--path PATH]
 
 Environment:
   VIBESTATS_SYNC_TOKEN  optional signed sync token from vibestats settings
@@ -40,6 +45,7 @@ By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHT
 It reveals your archetype locally before asking for approval to publish it.
 Without --token it opens a browser approval flow against your GitHub-backed vibestats session.
 Current public install command: ${DEFAULT_NPX_SYNC_COMMAND}
+Install the Claude Code /vibestats command: ${DEFAULT_INSTALL_COMMAND}
 Use --dry-run to reveal locally without signing in or sending it.
 Use --dry-run --json to print the exact derived payload for debugging.`;
 }
@@ -53,6 +59,8 @@ export function parseArgs(argv) {
     token: process.env.VIBESTATS_SYNC_TOKEN || '',
     dryRun: false,
     json: false,
+    force: false,
+    path: DEFAULT_CLAUDE_COMMAND_PATH,
     openBrowser: true,
     authTimeoutMs: DEFAULT_AUTH_TIMEOUT_MS,
   };
@@ -62,12 +70,14 @@ export function parseArgs(argv) {
     if (arg === '--help' || arg === '-h') return { command: 'help', options };
     if (arg === '--file') options.file = args[++i] || '';
     else if (arg === '--dir') options.file = args[++i] || '';
+    else if (arg === '--path') options.path = args[++i] || '';
     else if (arg === '--host') options.host = args[++i] || '';
     else if (arg === '--token') options.token = args[++i] || '';
     else if (arg === '--no-open') options.openBrowser = false;
     else if (arg === '--auth-timeout-ms') options.authTimeoutMs = Number(args[++i] || 0);
     else if (arg === '--dry-run' || arg === '--dryRun') options.dryRun = true;
     else if (arg === '--json') options.json = true;
+    else if (arg === '--force') options.force = true;
     else throw new Error(`Unknown option: ${arg}`);
   }
 
@@ -165,6 +175,30 @@ export function dryRunRevealText(payload = {}) {
   );
 
   return `${lines.join('\n')}\n`;
+}
+
+async function pathExists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function installClaudeCommand({ path = DEFAULT_CLAUDE_COMMAND_PATH, force = false, stdout = process.stdout } = {}) {
+  if (!path) throw new Error('Missing Claude command install path.');
+  const commandMarkdown = await readFile(CLAUDE_COMMAND_SOURCE, 'utf8');
+  const exists = await pathExists(path);
+  if (exists && !force) {
+    throw new Error(`Claude Code /vibestats command already exists at ${path}. Re-run with --force to replace it.`);
+  }
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, commandMarkdown, 'utf8');
+  stdout.write(`Installed Claude Code /vibestats command at ${path}\n`);
+  stdout.write('In Claude Code, run /vibestats to reveal locally before publishing.\n');
+  stdout.write('Raw Claude Code /insights data stays on disk; the command delegates extraction to the vibestats CLI.\n');
+  return { path, replaced: exists };
 }
 
 export function authUrlForLocalCallback(host, callback, nonce) {
@@ -332,6 +366,10 @@ export async function main() {
   const { command, options } = parseArgs(process.argv);
   if (command === 'help' || command === '--help' || command === '-h') {
     process.stdout.write(`${usage()}\n`);
+    return;
+  }
+  if (['install-claude-command', 'install-command', 'install-claude'].includes(command)) {
+    await installClaudeCommand(options);
     return;
   }
   if (command !== 'sync') throw new Error(`Unknown command: ${command}`);

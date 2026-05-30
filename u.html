@@ -947,6 +947,7 @@
     };
     const INSIGHTS_COMMAND = '/insights';
     const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+    const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
 
     function canonicalVibestatsUrl(pathOrUrl) {
       try {
@@ -1109,6 +1110,10 @@
             <code>${esc(REVEAL_COMMAND)}</code>
             <button type="button" data-copy-reveal="${esc(REVEAL_COMMAND)}" data-label="Copy">Copy</button>
           </div>
+          <div class="reveal-command">
+            <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>
+            <button type="button" data-copy-reveal="${esc(INSTALL_CLAUDE_COMMAND)}" data-label="Copy install">Copy install</button>
+          </div>
         </div>
       `;
       panel.querySelectorAll('[data-copy-reveal]').forEach((button) => {
@@ -1255,6 +1260,10 @@
             <div class="reveal-command">
               <code>${esc(REVEAL_COMMAND)}</code>
               <button type="button" data-copy-unclaimed="${esc(REVEAL_COMMAND)}">Copy</button>
+            </div>
+            <div class="reveal-command">
+              <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>
+              <button type="button" data-copy-unclaimed="${esc(INSTALL_CLAUDE_COMMAND)}">Copy install</button>
             </div>
           </div>
           <div class="empty-profile-actions">

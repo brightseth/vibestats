@@ -10,3 +10,6 @@
 !api/_lib
 !api/_lib/moments.js
 !api/_lib/signatures.js
+!.claude
+!.claude/commands
+!.claude/commands/vibestats.md

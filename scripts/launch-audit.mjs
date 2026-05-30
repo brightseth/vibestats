@@ -345,7 +345,7 @@ async function auditLaunch(options) {
       path: '/',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy npx reveal command', 'Try the reveal demo', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper'],
+      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy npx reveal command', 'install-claude-command', 'Try the reveal demo', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper'],
       mustNotInclude: ['agent-insights.json', 'npx vibestats sync'],
       checkRawLeaks: false,
     },

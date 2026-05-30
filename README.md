@@ -133,6 +133,7 @@ Run one-command local sync after signing in. The CLI opens a browser approval fl
 npx --yes github:brightseth/vibestats#feat/wave-1-identity
 npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run
 npx --yes github:brightseth/vibestats#feat/wave-1-identity --dry-run --json
+npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command
 ```
 
 The unscoped npm package name `vibestats` is currently owned by another publisher, so do not use `npx vibestats` for this project until a scoped package is published or package ownership changes.
@@ -145,7 +146,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity --token "$VIBESTATS_S
 
 By default the CLI reads the real Claude Code `/insights` output directory at `~/.claude/usage-data/`. It aggregates `session-meta/*.json` and `facets/*.json` into the same derived payload shape as the browser upload, then posts only derived fields to `/api/sync`; prompts, session summaries, project paths, session ids, tool maps, and language maps stay local. Use `--dry-run` to reveal the derived result locally without a token or network request, `--dry-run --json` to inspect the exact derived payload, and `--file path/to/agent-insights.json` only for legacy JSON exports. A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.
 
-Claude Code users can also invoke the project-local `/vibestats` command from `.claude/commands/vibestats.md`. It checks for `/insights` output, runs the CLI dry-run to reveal derived results first, and only publishes after the user explicitly asks to claim the profile.
+Claude Code users can also invoke the `/vibestats` command from `.claude/commands/vibestats.md`. Install it into `~/.claude/commands/vibestats.md` with `npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command`; use `--force` only if you want to replace an existing local command. It checks for `/insights` output, runs the CLI dry-run to reveal derived results first, and only publishes after the user explicitly asks to claim the profile.
 
 Run local smoke checks:
 
