@@ -344,7 +344,7 @@ async function assertRoutes() {
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
-  assert(cliBin.includes('Invite people to compare:') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface compare-first, recap, and README badge hooks');
+  assert(cliBin.includes('Invite people to compare:') && cliBin.includes('Copy/paste share:') && cliBin.includes('Share on X:') && cliBin.includes('Share your recap:') && cliBin.includes('README badge Markdown:'), 'CLI sync success output should surface compare-first social share, recap, and README badge hooks');
   assert(cliBin.includes('Install /vibestats for future reveals:') && cliBin.includes('Reserve weekly digest:'), 'CLI sync success output should surface Claude Code and digest return hooks');
   assert(cliBin.includes("'.claude', 'usage-data'") && cliBin.includes('readInsightsInput(options.file)') && cliBin.includes('--dir PATH'), 'CLI sync should parse real Claude Code /insights directories by default');
   assert(cliBin.includes('requestSyncToken') && cliBin.includes('authUrlForLocalCallback') && cliBin.includes('127.0.0.1'), 'CLI sync should authorize through a local browser callback when no token is supplied');
@@ -543,7 +543,7 @@ async function assertRoutes() {
   assert(launchDoc.includes('Identity is not production-ready until GitHub OAuth is added') && launchDoc.includes('preview identity audits will still fail until a strong session secret is also added to Preview'), 'launch checklist should record current identity env blockers');
   assert(launchDoc.includes('includes one-click unsubscribe'), 'launch checklist should require digest unsubscribe proof');
   const readme = await readFile('README.md', 'utf8');
-  assert(readme.includes('A successful sync prints the profile URL, compare-first invite URL, recap URL, and README badge Markdown.'), 'README should document CLI compare-first sync output');
+  assert(readme.includes('A successful sync prints the profile URL, compare-first invite URL, copy/paste share line, X share URL, recap URL, and README badge Markdown.'), 'README should document CLI compare-first sync output');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`join` and `onboard` are aliases'), 'README should document terminal-first CLI onboarding aliases');
   assert(readme.includes('Use `--dry-run` to reveal the derived result locally') && readme.includes('`--dry-run --json` to inspect the exact derived payload'), 'README should document human CLI reveal before payload JSON');
@@ -1364,7 +1364,7 @@ async function assertCliDerivedPayload() {
   assert(payload.raw_meta.moments.some((moment) => moment.id === 'longest_session_minutes'), 'CLI derived payload should include marathon-session moments');
   assert(!JSON.stringify(payload).includes('tool_usage'), 'CLI derived payload must not include raw tool usage');
 
-  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
+  const { DEFAULT_CLAUDE_COMMAND_PATH, DEFAULT_INSTALL_COMMAND, DEFAULT_NPX_SYNC_COMMAND, authUrlForLocalCallback, cliErrorMessage, cliShareText, cliXShareUrl, dryRunRevealText, installClaudeCommand, isDirectRun, isSyncCommand, normalizeHost, parseArgs, requestSyncToken, sync } = await import('../bin/vibestats.js');
   const parsed = parseArgs(['node', 'vibestats', 'sync', '--dry-run']);
   assert(parsed.options.dryRun === true, 'CLI sync should parse dry-run mode');
   assert(parsed.options.file.endsWith(join('.claude', 'usage-data')), 'CLI sync should default to the real Claude Code /insights output directory');
@@ -1386,6 +1386,11 @@ async function assertCliDerivedPayload() {
   assert(cliSource.includes('Use --dry-run to reveal locally') && cliSource.includes('Use --dry-run --json to print the exact derived payload'), 'CLI help should separate human reveal from payload JSON');
   const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
   assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(`${DEFAULT_NPX_SYNC_COMMAND} --dry-run`), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
+  const cliShare = cliShareText({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
+  assert(cliShare.includes('prolific Shipper') && cliShare.includes('What are you?') && cliShare.includes('compareTo=alex'), 'CLI share text should be copy-ready and compare-first');
+  const cliXShare = cliXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
+  const parsedCliXShare = new URL(cliXShare);
+  assert(parsedCliXShare.origin === 'https://twitter.com' && parsedCliXShare.pathname === '/intent/tweet' && parsedCliXShare.searchParams.get('text')?.includes('What are you?') && parsedCliXShare.searchParams.get('url')?.includes('compareTo=alex'), 'CLI X share URL should send recipients into compare-first onboarding');
   const revealText = dryRunRevealText(payload);
   assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
@@ -1569,6 +1574,9 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Revealed: prolific Shipper'), 'CLI sync should print the local reveal before publishing');
     assert(output.join('').includes('Raw Claude Code /insights data stayed local. Publishing only derived metrics.'), 'CLI sync should state the privacy boundary before publishing');
     assert(output.join('').includes('Invite people to compare: https://vibestats.example/?compareTo=alex&compareArchetype=shipper'), 'CLI sync should print compare-first invite URL');
+    assert(output.join('').includes("Copy/paste share: I just revealed my Claude Code build profile: prolific Shipper. What are you? See how you'd pair with me: https://vibestats.example/?compareTo=alex&compareArchetype=shipper"), 'CLI sync should print a copy-ready compare-first share line');
+    const printedXShare = output.join('').match(/Share on X: (https:\/\/twitter\.com\/intent\/tweet\?\S+)/)?.[1] || '';
+    assert(printedXShare && new URL(printedXShare).searchParams.get('url')?.includes('compareTo=alex'), 'CLI sync should print a one-click X share URL');
     assert(output.join('').includes('Share your recap: https://vibestats.example/u/alex/recap'), 'CLI sync should print recap return URL');
     assert(output.join('').includes('README badge Markdown: [![vibestats: @alex](https://vibestats.example/u/alex/badge.svg)](https://vibestats.example/?compareTo=alex&compareArchetype=shipper)'), 'CLI sync should print copyable README badge Markdown');
     assert(output.join('').includes('Install /vibestats for future reveals: npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command'), 'CLI sync should print the Claude Code command installer as a return hook');

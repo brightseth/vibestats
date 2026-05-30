@@ -168,6 +168,24 @@ function revealLabel(payload) {
   return payload?.raw_meta?.signature || ARCHETYPE_LABELS[payload?.archetype] || payload?.archetype || 'vibecoder';
 }
 
+function compactShareLabel(value) {
+  return String(value || 'Claude Code profile').replace(/\s+/g, ' ').trim();
+}
+
+export function cliShareText({ label, compareUrl } = {}) {
+  const shareLabel = compactShareLabel(label);
+  return `I just revealed my Claude Code build profile: ${shareLabel}. What are you? See how you'd pair with me: ${compareUrl}`;
+}
+
+export function cliXShareUrl({ label, compareUrl } = {}) {
+  const shareLabel = compactShareLabel(label);
+  const params = new URLSearchParams({
+    text: `I just revealed my Claude Code build profile: ${shareLabel}. What are you? See how you'd pair with me.`,
+    url: compareUrl || DEFAULT_HOST,
+  });
+  return `https://twitter.com/intent/tweet?${params.toString()}`;
+}
+
 export function dryRunRevealText(payload = {}) {
   const archetype = ARCHETYPE_LABELS[payload.archetype] || payload.archetype || 'Unknown';
   const score = primaryScore(payload);
@@ -381,8 +399,12 @@ export async function sync(options) {
   const digestUrl = apiUrl(host, '/settings#weekly-digest-row');
   const handle = profileHandle(profileUrl) || 'me';
   const badgeMarkdown = `[![vibestats: @${handle}](${badgeUrl})](${compareUrl})`;
+  const shareText = cliShareText({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
+  const xShare = cliXShareUrl({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
   process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
+  process.stdout.write(`Copy/paste share: ${shareText}\n`);
+  process.stdout.write(`Share on X: ${xShare}\n`);
   process.stdout.write(`Share your recap: ${recapUrl}\n`);
   process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
   process.stdout.write(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}\n`);
