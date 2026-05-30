@@ -36,6 +36,7 @@ const apiModules = [
   '../api/settings.js',
   '../api/settings/export.js',
   '../api/cron/weekly-digest.js',
+  '../api/digest/status.js',
   '../api/digest/preview.js',
   '../api/digest/unsubscribe.js',
   '../api/_lib/cache.js',
@@ -57,6 +58,7 @@ const apiModules = [
   '../api/_lib/facets.js',
   '../api/_lib/moments.js',
   '../api/_lib/digest.js',
+  '../api/_lib/digest-status.js',
   '../api/leaderboard.js',
   '../api/match.js',
   '../api/match-intros.js',
@@ -188,6 +190,8 @@ async function assertRoutes() {
   const settingsApi = await readFile('api/settings.js', 'utf8');
   const settingsExportApi = await readFile('api/settings/export.js', 'utf8');
   const weeklyDigestApi = await readFile('api/cron/weekly-digest.js', 'utf8');
+  const digestStatusApi = await readFile('api/digest/status.js', 'utf8');
+  const digestStatusHelper = await readFile('api/_lib/digest-status.js', 'utf8');
   const digestPreviewApi = await readFile('api/digest/preview.js', 'utf8');
   const digestUnsubscribeApi = await readFile('api/digest/unsubscribe.js', 'utf8');
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
@@ -519,6 +523,8 @@ async function assertRoutes() {
   assert(weeklyDigestApi.includes("'List-Unsubscribe'"), 'weekly digest sender should advertise unsubscribe headers');
   assert(weeklyDigestApi.includes('digestDryRunProof'), 'weekly digest dry run should expose non-secret content proof');
   assert(weeklyDigestApi.includes('weeklyDigestErrorMessage'), 'weekly digest cron should centralize public error serialization');
+  assert(digestStatusApi.includes('buildDigestStatus') && digestStatusApi.includes('requireUser') && digestStatusApi.includes('NO_STORE_HEADERS'), 'digest status endpoint should be owner-only and uncached');
+  assert(digestStatusHelper.includes('email_address_public: false') && digestStatusHelper.includes('saved derived metrics') && digestStatusHelper.includes('profileStreak'), 'digest status helper should report return-loop readiness without exposing email publicly');
   assert(digestUnsubscribeApi.includes('weekly_digest_opt_in = false'), 'digest unsubscribe should turn off weekly emails');
   assert(digestUnsubscribeApi.includes('digest_email = null'), 'digest unsubscribe should clear stored digest email');
   assert(packageJson.bin?.vibestats === './bin/vibestats.js', 'package should expose vibestats CLI bin');
@@ -3089,6 +3095,7 @@ async function assertStreakHelpers() {
 
 async function assertDigestHelpers() {
   const { buildWeeklyDigest, uploadStreak } = await import('../api/_lib/digest.js');
+  const { buildDigestStatus, nextWeeklyDigestAt } = await import('../api/_lib/digest-status.js');
   const { digestCronResult, digestDryRunProof, resendDigestPayload } = await import('../api/cron/weekly-digest.js');
   const uploads = [
     {
@@ -3182,6 +3189,26 @@ async function assertDigestHelpers() {
   assert(privateDigest.share_url === 'https://vibestats.io/?compareArchetype=builder', 'private digest share URL should use archetype-only comparison');
   assert(!privateDigest.share_url.includes('compareTo=privatehandle'), 'private digest share URL should not expose handle-backed comparison');
   assert(!decodeURIComponent(privateDigest.x_share_url).includes('@privatehandle'), 'private digest X share text should not expose the hidden handle');
+  assert(nextWeeklyDigestAt(new Date('2026-05-30T14:00:00.000Z')) === '2026-06-01T13:00:00.000Z', 'digest status should compute the next Monday cron run');
+  const status = buildDigestStatus({
+    user: { gh_handle: 'brightseth', privacy: 'unlisted' },
+    settings: {
+      weekly_digest_opt_in: true,
+      digest_email: 'seth@example.com',
+      email_consent_at: '2026-05-28T10:00:00.000Z',
+      weekly_digest_sent_at: null,
+    },
+    uploads,
+    origin: 'https://vibestats.io',
+    now: new Date('2026-05-30T14:00:00.000Z'),
+  });
+  assert(status.reserved === true && ['reserved', 'scheduled'].includes(status.state) && status.has_email === true && status.email_visible_to_owner_only === true, 'digest status should prove reserved consent without exposing the address');
+  assert(status.next_scheduled_at === '2026-06-01T13:00:00.000Z' && status.can_preview === true, 'digest status should expose next run and preview readiness');
+  assert(status.latest.signature_label === 'high-velocity Builder' && status.latest.score === 92, 'digest status should summarize the latest derived profile signal');
+  assert(status.links.profile_url === 'https://vibestats.io/u/brightseth' && status.links.share_url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=builder', 'digest status should expose return and compare links');
+  assert(status.links.leaderboard_url === 'https://vibestats.io/leaderboard/builder' && status.links.match_url === 'https://vibestats.io/match?goal=pair-coding&archetype=builder', 'digest status should expose leaderboard and match return loops');
+  assert(status.privacy.raw_claude_code_sessions === 'local-only' && status.privacy.email_address_public === false, 'digest status should preserve privacy proof');
+  assert(!JSON.stringify(status).includes('seth@example.com') && !JSON.stringify(status).includes('rawJson') && !JSON.stringify(status).includes('tool_usage'), 'digest status should not leak email or raw-shaped fields');
   console.log('ok weekly digest helpers render derived-only email');
 }
 
@@ -3799,6 +3826,12 @@ async function assertPrivateApiNoStore() {
       {
         label: '/api/digest/preview unauthenticated',
         module: '../api/digest/preview.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 401,
+      },
+      {
+        label: '/api/digest/status unauthenticated',
+        module: '../api/digest/status.js',
         req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
         status: 401,
       },

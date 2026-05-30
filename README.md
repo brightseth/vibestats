@@ -18,7 +18,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 - **A profile recap surface** (`/u/<handle>/recap`) for shareable weekly-style return moments without email delivery.
 - **A derived profile credential** (`/u/<handle>/credential.json`) with a canonical content hash, GitHub anchor, compare-first links, and explicit local-raw-data promises.
 - **A versioned Derived Profile Spec** (`/api/derived-profile-spec`) that names the public claim fields, source boundary, future source slots, and matchable signals before Codex/Cursor/git imports arrive.
-- **An owner-only weekly digest preview** (`/api/digest/preview`) so the return-loop email can be inspected before delivery env is enabled.
+- **Owner-only weekly digest status + preview** (`/api/digest/status`, `/api/digest/preview`) so the return-loop email can be reserved and inspected before delivery env is enabled.
 - **Profile evolution badges** that show score movement or archetype shifts between saved uploads.
 - **A scored breakdown** across all 8 (sigmoid + power-law normalized).
 - **A Spotify-Wrapped-style tap-through** (`/wrapped`).

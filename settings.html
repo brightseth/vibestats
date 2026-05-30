@@ -297,6 +297,7 @@
           <div>
             <div class="label">Weekly digest</div>
             <div class="hint" id="digest-hint">Optional email summary of your evolution, streak, and future leaderboard movement.</div>
+            <div class="hint" id="digest-status-proof"></div>
           </div>
           <div class="digest-controls" id="digest-controls">
             <label class="check-row">
@@ -443,6 +444,7 @@
       const checkbox = document.getElementById('weekly-digest');
       const email = document.getElementById('digest-email');
       const save = document.getElementById('save-digest');
+      const proof = document.getElementById('digest-status-proof');
 
       checkbox.checked = digestOptIn;
       email.value = settings?.digest_email || '';
@@ -454,6 +456,27 @@
       checkbox.disabled = false;
       email.disabled = false;
       save.disabled = false;
+      proof.textContent = '';
+    }
+
+    async function renderDigestStatusProof() {
+      const proof = document.getElementById('digest-status-proof');
+      try {
+        const res = await fetch('/api/digest/status');
+        if (!res.ok) return;
+        const status = await res.json();
+        const next = status.next_scheduled_at
+          ? new Date(status.next_scheduled_at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+          : 'next weekly run';
+        const signal = status.latest?.signature_label || status.latest?.archetype || 'your latest profile';
+        proof.textContent = status.reserved
+          ? `${status.delivery_ready ? 'Scheduled' : 'Reserved'} for ${next}. Preview uses ${signal}, streak, rarity, leaderboard, and match links from saved derived metrics only.`
+          : status.can_preview
+          ? `Preview is ready for ${signal}. Add an email to reserve the weekly return loop.`
+          : 'Save one derived profile to unlock a weekly preview.';
+      } catch {
+        proof.textContent = '';
+      }
     }
 
     async function init() {
@@ -482,6 +505,7 @@
       document.getElementById('show-languages').checked = Boolean(settings?.show_languages);
       document.getElementById('looking-for').value = settings?.looking_for || 'idle';
       document.getElementById('contact-url').value = settings?.contact_url || '';
+      renderDigestStatusProof();
 
       document.getElementById('privacy').addEventListener('change', async (event) => {
         try {
@@ -510,6 +534,7 @@
             }),
           });
           renderDigestControls(body.settings || {}, identityStatus);
+          renderDigestStatusProof();
           showMessage(body.settings?.weekly_digest_opt_in
             ? (identityStatus.weekly_digest_available === true ? 'Weekly digest saved.' : 'Weekly digest reserved.')
             : 'Weekly digest off.');
