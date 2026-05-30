@@ -317,7 +317,7 @@ async function assertRoutes() {
   assert(digestPreviewApi.includes('requireUser(req)') && digestPreviewApi.includes('buildWeeklyDigest({'), 'digest preview should be authenticated and reuse the weekly digest builder');
   assert(digestPreviewApi.includes('rarityForSignature(signature)') && digestPreviewApi.includes('weeklyLeaderboardRank(user, latest)'), 'digest preview should include scarcity and leaderboard proof');
   assert(digestPreviewApi.includes("res.setHeader('Cache-Control', NO_STORE_HEADERS['Cache-Control'])"), 'digest preview should disable public caching');
-  assert(homeApi.includes('homeMetadataForInvite') && homeApi.includes('Run /insights, then reveal yours against @${handle}'), 'homepage API should render compare-first share-recipient metadata');
+  assert(homeApi.includes('homeMetadataForInvite') && homeApi.includes('Run /insights, check status, then reveal yours against @${handle}'), 'homepage API should render compare-first share-recipient metadata with status preflight');
   assert(homeApi.includes("user.privacy === 'private'") && homeApi.includes('profileShareCacheControl(cacheUser)'), 'homepage API should avoid private profile previews and preserve profile cache policy');
   assert(homeApi.includes('profileShareProof({ rarity, leaderboard })') && homeApi.includes('rarityForSignature(signature)') && homeApi.includes('weeklyLeaderboardRank(user, latest)'), 'homepage API should include profile social proof in compare-first unfurls');
   assert(comparePageApi.includes('compareMetadataForSubjects'), 'compare page API should expose dynamic comparison metadata helpers');
@@ -493,14 +493,14 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'profile page'") && launchAudit.includes('Copy README badge') && launchAudit.includes('id="reveal-panel"'), 'launch audit should verify the profile README-badge and share-recipient reveal surfaces');
   assert(launchAudit.includes("label: 'unknown profile fallback'") && launchAudit.includes('Copy unclaimed profile'), 'launch audit should verify missing profile reveal/claim fallback');
   assert(launchAudit.includes('"metric_visibility"') && launchAudit.includes('"leaderboard"') && launchAudit.includes('"evolution"') && launchAudit.includes('"streak"'), 'launch audit should require saved profile JSON to include public profile loop fields');
-  assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare + reveal yours') && launchAudit.includes('Run /insights, then reveal yours') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof and reveal copy');
+  assert(launchAudit.includes("label: 'profile embed'") && launchAudit.includes('Compare + reveal yours') && launchAudit.includes('Run /insights, check status, then reveal yours') && launchAudit.includes('<span>signal</span>'), 'launch audit should require saved profile embeds to expose comparison-oriented score proof and status-aware reveal copy');
   assert(launchAudit.includes("label: 'profile badge'") && launchAudit.includes('GitHub-claimed') && launchAudit.includes('derived-only'), 'launch audit should require saved profile badges to expose identity and derived-only credential proof');
   assert(launchAudit.includes("label: 'profile-backed pair route'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(archetype)}`'), 'launch audit should cover profile-backed pair URLs');
   assert(launchAudit.includes("label: 'profile recap'") && launchAudit.includes('path: `/u/${encodeURIComponent(handle)}/recap`'), 'launch audit should cover profile recap return URLs');
   assert(launchAudit.includes('Copy sync command') && launchAudit.includes('Run CLI sync after more Claude Code work'), 'launch audit should verify recap-to-sync return action');
   assert(launchAudit.includes('Copy /vibestats install') && launchAudit.includes('install-claude-command'), 'launch audit should verify recap-to-Claude-command return action');
   assert(launchAudit.includes('Open the pairing, then claim yours') && launchAudit.includes('/?compareTo='), 'launch audit should verify dynamic pair metadata when identity is ready');
-  assert(launchAudit.includes("See how you'd pair with @${handle}") && launchAudit.includes('Run /insights, then reveal yours'), 'launch audit should verify compare-first homepage unfurl metadata');
+  assert(launchAudit.includes("See how you'd pair with @${handle}") && launchAudit.includes('Run /insights, check status, then reveal yours'), 'launch audit should verify compare-first homepage unfurl metadata');
   assert(launchAudit.includes('SECRET_NAME_PATTERNS') && launchAudit.includes('hasSecretName'), 'launch audit should avoid exposing secret env names');
   assert(launchAudit.includes("RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage']"), 'launch audit should scan public surfaces for raw-field markers');
   assert(launchAudit.includes("path: '/wrapped'") && launchAudit.includes("path: '/dashboard'") && launchAudit.includes("path: `/card?a="), 'launch audit should cover static and dynamic share surfaces');
@@ -1518,7 +1518,7 @@ async function assertCliDerivedPayload() {
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
   assert(cliSource.includes('Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}') && cliSource.includes('Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}') && cliSource.includes('Use --dry-run as a legacy alias for reveal') && cliSource.includes('Use reveal --json to print the exact derived payload'), 'CLI help should separate one-command claim, human reveal, and payload JSON');
   const missingAdvice = cliErrorMessage(new Error(`No Claude Code /insights session metadata found in ${join('~', '.claude', 'usage-data')}.`));
-  assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(DEFAULT_NPX_REVEAL_COMMAND) && missingAdvice.includes(DEFAULT_NPX_SYNC_COMMAND), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
+  assert(missingAdvice.includes('Terminal onboarding:') && missingAdvice.includes('/insights') && missingAdvice.includes(DEFAULT_NPX_STATUS_COMMAND) && missingAdvice.includes(DEFAULT_NPX_REVEAL_COMMAND) && missingAdvice.includes(DEFAULT_NPX_SYNC_COMMAND), 'CLI missing-insights errors should recover into a terminal onboarding checklist');
   const cliShare = cliShareText({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
   assert(cliShare.includes('prolific Shipper') && cliShare.includes('Raw /insights stayed local') && cliShare.includes('What are you?') && cliShare.includes('compareTo=alex'), 'CLI share text should be copy-ready, privacy-aware, and compare-first');
   const cliXShare = cliXShareUrl({ label: 'prolific Shipper', compareUrl: 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper' });
@@ -1538,7 +1538,7 @@ async function assertCliDerivedPayload() {
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
   assert(revealText.includes('No website upload required.') && revealText.includes(DEFAULT_NPX_SYNC_COMMAND), 'CLI dry-run reveal should hand off to exact one-command terminal-first claim command');
   assert(revealText.includes(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}`), 'CLI dry-run reveal should print the Claude Code command installer as a return hook');
-  assert(revealText.includes(`Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_REVEAL_COMMAND}`), 'CLI dry-run reveal should print the repeat reveal loop');
+  assert(revealText.includes(`Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_STATUS_COMMAND}, then ${DEFAULT_NPX_REVEAL_COMMAND}`), 'CLI dry-run reveal should print the status-aware repeat reveal loop');
   assert(revealText.includes('For machine-readable derived payload: add --json to the reveal command.'), 'CLI dry-run reveal should point auditors to JSON mode');
   assert(!revealText.includes('tool_usage') && !revealText.includes('language_usage'), 'CLI dry-run reveal must not print raw usage maps');
   const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
@@ -1653,7 +1653,7 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Share reveal on X: https://twitter.com/intent/tweet?'), 'CLI dry-run should print one-click X sharing for local reveal');
     assert(output.join('').includes('Preview a Shipper x Debugger pairing: https://example.invalid/compare?a=shipper&b=debugger'), 'CLI dry-run should respect the selected host for local pairing previews');
     assert(output.join('').includes('Install /vibestats for future reveals: npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command'), 'CLI dry-run should print the Claude Code command installer');
-    assert(output.join('').includes('Refresh after more Claude Code work: run /insights, then npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal'), 'CLI dry-run should print the repeat reveal loop');
+    assert(output.join('').includes('Refresh after more Claude Code work: run /insights, then npx --yes github:brightseth/vibestats#feat/wave-1-identity status, then npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal'), 'CLI dry-run should print the status-aware repeat reveal loop');
     assert(!output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should not dump payload JSON by default');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
     assert(!output.join('').includes('private prompt') && !output.join('').includes('/private/project'), 'CLI dry-run output must not print raw Claude Code session details');
@@ -2577,7 +2577,7 @@ async function assertHomeMetadataHelpers() {
   assert(profileMeta.description.includes('high-velocity Deep Diver'), 'homepage metadata should include profile signature proof');
   assert(profileMeta.description.includes('rare combo: 1 of 1 saved profile this month'), 'homepage metadata should include rarity proof');
   assert(profileMeta.description.includes('#1 of 3 on weekly Deep Diver board'), 'homepage metadata should include leaderboard proof');
-  assert(profileMeta.description.includes('Run /insights, then reveal yours against @brightseth'), 'homepage metadata should carry the reveal command frame');
+  assert(profileMeta.description.includes('Run /insights, check status, then reveal yours against @brightseth'), 'homepage metadata should carry the status-aware reveal command frame');
   assert(profileMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver', 'homepage metadata should preserve compare-first query params');
   assert(profileMeta.image.includes('/api/og?a=deepdiver') && profileMeta.image.includes('n=%40brightseth'), 'homepage metadata should use a profile-specific OG image');
   assert(!profileMeta.description.includes('rawJson'), 'homepage metadata must not leak raw JSON fields');
@@ -2770,7 +2770,7 @@ async function assertEmbedFallback() {
     assert(csp.includes('frame-ancestors https:'), 'embed CSP should allow HTTPS framing');
     assert(body.includes('@brightseth'), 'embed fallback should include handle');
     assert(body.includes('VIBESTATS PROFILE'), 'embed fallback should render a neutral profile card');
-    assert(body.includes('Run /insights to mint this profile.') && body.includes('Open profile'), 'embed fallback should teach the terminal reveal path for unminted profiles');
+    assert(body.includes('Run /insights, check status, then reveal to mint this profile.') && body.includes('Open profile'), 'embed fallback should teach the terminal status and reveal path for unminted profiles');
     console.log('ok embed fallback renders frameable profile card without DB');
   } finally {
     console.error = originalError;

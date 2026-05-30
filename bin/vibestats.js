@@ -125,8 +125,9 @@ function missingInsightsAdvice() {
   return [
     'Terminal onboarding:',
     '1. Open Claude Code and run /insights.',
-    `2. Preview locally: ${DEFAULT_NPX_REVEAL_COMMAND}`,
-    `3. Publish when ready: ${DEFAULT_NPX_SYNC_COMMAND}`,
+    `2. Check terminal readiness: ${DEFAULT_NPX_STATUS_COMMAND}`,
+    `3. Preview locally: ${DEFAULT_NPX_REVEAL_COMMAND}`,
+    `4. Publish when ready: ${DEFAULT_NPX_SYNC_COMMAND}`,
     'No raw Claude Code session data leaves your machine; publishing sends derived metrics only.',
   ].join('\n');
 }
@@ -290,7 +291,7 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
     'No website upload required.',
     `To claim your GitHub-backed profile and share compare links, run: ${DEFAULT_NPX_SYNC_COMMAND}`,
     `Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}`,
-    `Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_REVEAL_COMMAND}`,
+    `Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_STATUS_COMMAND}, then ${DEFAULT_NPX_REVEAL_COMMAND}`,
     'For machine-readable derived payload: add --json to the reveal command.',
   );
 

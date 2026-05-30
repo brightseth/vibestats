@@ -73,8 +73,8 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
     : profileUrl;
   const actionLabel = hasLatest ? `Compare with @${user.gh_handle}` : `Open @${user.gh_handle} on vibestats`;
   const revealLine = hasLatest
-    ? 'What are you? Run /insights, then reveal yours.'
-    : 'Run /insights to mint this profile.';
+    ? 'What are you? Run /insights, check status, then reveal yours.'
+    : 'Run /insights, check status, then reveal to mint this profile.';
   const avatar = user.avatar_url
     ? `<img class="avatar" src="${esc(user.avatar_url)}" alt="@${esc(user.gh_handle)}">`
     : '<div class="avatar fallback" aria-hidden="true">VS</div>';

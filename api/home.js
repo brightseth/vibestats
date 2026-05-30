@@ -79,7 +79,7 @@ export function archetypeInviteMetadata(archetype, origin = 'https://vibestats.i
 
   return {
     title: `Compare with a ${arch.short} | vibestats`,
-    description: `Claude Code already knows how you build. Run /insights, reveal your vibecoding personality, and see how you pair with ${arch.name}.`,
+    description: `Claude Code already knows how you build. Run /insights, check status, reveal your vibecoding personality, and see how you pair with ${arch.name}.`,
     url: compareFirstUrl(origin, { archetype: type }),
     image: `${origin}/api/og?${params.toString()}`,
   };
@@ -116,7 +116,7 @@ export function homeMetadataForInvite({
       `@${handle} is ${profileLabel}.`,
       proof ? `${proof}.` : '',
       activityProof ? `${activityProof}.` : '',
-      `Claude Code already knows how you build. Run /insights, then reveal yours against @${handle}.`,
+      `Claude Code already knows how you build. Run /insights, check status, then reveal yours against @${handle}.`,
     ].filter(Boolean).join(' '),
     url: compareFirstUrl(origin, { handle, archetype: type }),
     image: `${origin}/api/og?${params.toString()}`,
@@ -133,7 +133,7 @@ function injectHomeMeta(html, meta) {
   return html
     .replace('<title>Reveal Your Vibecoding Personality | vibestats</title>', `<title>${esc(meta.title)}</title>`)
     .replace(
-      '<meta name="description" content="Claude Code already knows how you build. Run /insights, reveal your vibecoding personality, and compare with other Claude Code users.">',
+      '<meta name="description" content="Claude Code already knows how you build. Run /insights, check status, reveal your vibecoding personality, and compare with other Claude Code users.">',
       `<meta name="description" content="${esc(meta.description)}">`,
     )
     .replace('<meta property="og:title" content="What\'s your vibecoding personality? | vibestats">', `<meta property="og:title" content="${esc(meta.title)}">`)

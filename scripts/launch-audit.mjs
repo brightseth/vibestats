@@ -413,7 +413,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}/embed`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: expectReady && profileHasUpload ? ['Compare + reveal yours', 'Run /insights, then reveal yours', '<span>signal</span>'] : null,
+      mustInclude: expectReady && profileHasUpload ? ['Compare + reveal yours', 'Run /insights, check status, then reveal yours', '<span>signal</span>'] : null,
     },
     {
       label: 'profile badge',
@@ -428,7 +428,7 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: [200],
       mustInclude: expectReady && profileHasUpload
-        ? [`See how you'd pair with @${handle}`, 'Run /insights, then reveal yours', '/api/og?']
+        ? [`See how you'd pair with @${handle}`, 'Run /insights, check status, then reveal yours', '/api/og?']
         : ['compareArchetype', 'compareTo'],
       checkRawLeaks: false,
     },
