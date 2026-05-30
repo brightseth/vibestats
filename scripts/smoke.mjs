@@ -410,7 +410,10 @@ async function assertRoutes() {
   assert(leaderboardHtml.includes('emptyStateHtml({ unavailable') && leaderboardHtml.includes('Try sample pairing') && leaderboardHtml.includes('Go public'), 'leaderboard empty states should route visitors into identity and comparison');
   assert(dashboardHtml.includes('url=https%3A%2F%2Fvibestats.io%2F%3FcompareArchetype%3Dorchestrator'), 'static dashboard X share should click through to Orchestrator comparison intake');
   assert(dashboardHtml.includes('href="/?compareArchetype=orchestrator"'), 'static dashboard final CTA should route to comparison intake');
-  assert(dashboardHtml.includes('How would you pair with an Orchestrator?'), 'static dashboard footer should use asymmetric comparison copy');
+  assert(dashboardHtml.includes('How would you pair with an Orchestrator?') && dashboardHtml.includes('What are you?'), 'static dashboard footer should use asymmetric comparison copy');
+  assert(dashboardHtml.includes('/insights') && dashboardHtml.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity'), 'static dashboard should teach share recipients the reveal command directly');
+  assert(dashboardHtml.includes("document.execCommand('copy')") && dashboardHtml.includes('[data-copy]'), 'static dashboard copy actions should fall back when Clipboard API is unavailable');
+  assert(!dashboardHtml.includes('Claude Code Analytics'), 'static dashboard metadata should not revive the old analytics-first positioning');
   assert(settingsApi.includes('ownerProfileSettings'), 'authenticated settings API should use owner-only settings serializer');
   assert(settingsApi.includes('sync_token_invalidated_at'), 'authenticated settings API should preserve sync token revocation metadata');
   assert(settingsApi.includes('includeActivity: true'), 'authenticated settings API should retain owner activity timestamps');

@@ -458,7 +458,8 @@ async function auditLaunch(options) {
       path: '/dashboard',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?'],
+      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity'],
+      mustNotInclude: 'Claude Code Analytics',
     },
     {
       label: 'browse page',
