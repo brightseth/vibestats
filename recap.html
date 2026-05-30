@@ -383,27 +383,27 @@
         <article class="panel wide" id="recipient-reveal">
           <div class="panel-title">your turn</div>
           <div class="panel-value">What are you?</div>
-          <div class="panel-copy">Claude Code already has your build fingerprint. Reveal locally, claim only when you want a persistent GitHub-backed profile, then install /vibestats for the next recap.</div>
+          <div class="panel-copy">Claude Code already has your build fingerprint. Use the no-npm local helper, claim only when you want a persistent GitHub-backed profile, then install /vibestats for the next recap.</div>
           <div class="command-list" aria-label="Reveal and claim commands">
             <div class="command-row">
               <code>/insights</code>
               <button class="btn" type="button" data-copy-command="/insights">Copy</button>
             </div>
             <div class="command-row">
-              <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity status</code>
-              <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity status">Copy status</button>
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- status">Copy status</button>
             </div>
             <div class="command-row">
-              <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal</code>
-              <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal">Copy reveal</button>
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy reveal</button>
             </div>
             <div class="command-row">
-              <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
-              <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy claim</button>
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s --">Copy claim</button>
             </div>
             <div class="command-row">
-              <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command</code>
-              <button class="btn" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command">Copy install</button>
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command">Copy install</button>
             </div>
           </div>
         </article>
@@ -437,14 +437,14 @@
       return new URL(path || '/', 'https://vibestats.io').toString();
     }
 
-    const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
-    const INSTALL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
+    const SYNC_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
+    const INSTALL_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command';
     const RESET_COPY = {
       '/insights': 'Copy',
-      'npx --yes github:brightseth/vibestats#feat/wave-1-identity status': 'Copy status',
-      'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal': 'Copy reveal',
-      'npx --yes github:brightseth/vibestats#feat/wave-1-identity': 'Copy claim',
-      'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command': 'Copy install',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s -- status': 'Copy status',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal': 'Copy reveal',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s --': 'Copy claim',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command': 'Copy install',
     };
 
     function profileProofLine(profile, latest) {

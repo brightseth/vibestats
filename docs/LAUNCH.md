@@ -119,14 +119,14 @@ npm run audit:package
 npm publish --access public
 ```
 
-Settings-generated sync-token commands and CLI follow-up output use `VIBESTATS_CLI_PACKAGE`; update static onboarding snippets in the same release so public pages, audits, and README copy agree:
+Settings-generated npm fallback commands and CLI follow-up output use `VIBESTATS_CLI_PACKAGE`. Product-facing web onboarding should keep using the no-npm `/cli.sh` helper; use the update script only for fallback docs and stale branch-package snippets:
 
 ```bash
 node scripts/update-cli-command.mjs --package @lets-vibe/vibestats
 node scripts/update-cli-command.mjs --package @lets-vibe/vibestats --write
 ```
 
-After the package is published and static snippets are switched over, prove npm visibility and executable CLI help with:
+After the package is published and fallback snippets are switched over, prove npm visibility and executable CLI help with:
 
 ```bash
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready --expect-device-flow --expect-cli-package

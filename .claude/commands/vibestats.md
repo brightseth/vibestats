@@ -15,9 +15,9 @@ Use these exact commands:
 
 ```bash
 /insights
-npx --yes github:brightseth/vibestats#feat/wave-1-identity status
-npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- status
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- sync
 ```
 
 ## Flow
@@ -25,7 +25,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
 1. Run the terminal preflight:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity status
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- status
 ```
 
    It checks whether Claude Code `/insights` output appears to exist at `~/.claude/usage-data/` using directory existence and file counts only. Do not print or inspect raw session JSON.
@@ -33,7 +33,7 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity status
 3. If it exists, run:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal
 ```
 
 4. Use the local reveal output directly. Summarize only derived fields if needed:
@@ -45,14 +45,14 @@ npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal
 6. Only after the user agrees, run:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity sync
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- sync
 ```
 
 7. Report the profile URL, derived credential proof URL, compare invite URL, and any README badge, embed, or recap links printed by the CLI.
 8. If the user wants to appear in `/match`, ask for their public contact URL and whether they want public discovery. Only after they agree, run a command shaped like:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity intent pair-coding --contact-url https://x.com/their-handle --public
+curl -fsSL https://vibestats.io/cli.sh | sh -s -- intent pair-coding --contact-url https://x.com/their-handle --public
 ```
 
    The `intent` command updates short-lived matchmaker availability through the revocable sync token. It does not read `/insights` data.
@@ -64,5 +64,5 @@ If the user does not want to publish yet, keep the reveal useful: point them to 
 - Do not `cat`, summarize, paste, upload, or quote files under `~/.claude/usage-data/session-meta/` or `~/.claude/usage-data/facets/`.
 - Do not mention `agent-insights.json` as the normal path. That was a legacy/dead path.
 - Treat the vibestats CLI as the only extractor. It computes locally and uploads only derived metrics.
-- If the user asks what would be uploaded, run `npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal --json` and answer from that derived payload shape only: archetype, scores, five profile metrics, signature metadata, and sanitized behavioral moment ids/values.
+- If the user asks what would be uploaded, run `curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal --json` and answer from that derived payload shape only: archetype, scores, five profile metrics, signature metadata, and sanitized behavioral moment ids/values.
 - If publishing fails, keep the reveal useful. The user can still share their archetype manually or retry `sync`.

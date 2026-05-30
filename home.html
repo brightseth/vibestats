@@ -825,8 +825,8 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Try the reveal demo
       </button>
-      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity status', this)">Copy status preflight</button>
-      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', this)">Copy npx reveal command</button>
+      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status', this)">Copy status preflight</button>
+      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal', this)">Copy no-npm reveal command</button>
     </div>
     <div class="demo-hint hero-demo-hint">No sign-in or upload required for the demo. See the archetype reveal first; claim yours only when you want a public profile.</div>
 
@@ -843,33 +843,33 @@
         <span class="reveal-step-num">2</span>
         <span>
           <span class="reveal-step-label">Check terminal readiness</span>
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity status</code>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
         </span>
-        <button class="copy-command" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity status', this)">Copy</button>
+        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status', this)">Copy</button>
       </div>
       <div class="reveal-step">
         <span class="reveal-step-num">3</span>
         <span>
           <span class="reveal-step-label">Reveal locally</span>
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal</code>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
         </span>
-        <button class="copy-command" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', this)">Copy</button>
+        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal', this)">Copy</button>
       </div>
       <div class="reveal-step">
         <span class="reveal-step-num">4</span>
         <span>
           <span class="reveal-step-label">Claim when ready</span>
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
         </span>
-        <button class="copy-command" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity', this)">Copy</button>
+        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this)">Copy</button>
       </div>
       <div class="reveal-step">
         <span class="reveal-step-num">+</span>
         <span>
           <span class="reveal-step-label">Install /vibestats in Claude Code</span>
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command</code>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
         </span>
-        <button class="copy-command" type="button" onclick="copyCommand('npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command', this)">Copy</button>
+        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command', this)">Copy</button>
       </div>
     </div>
 
@@ -889,7 +889,7 @@
 
     <div class="file-path" onclick="copyPath()">
       <span class="label">No file hunting</span>
-      <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity status</code>
+      <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
       <span class="subcopy">Click to copy. The CLI checks the real ~/.claude/usage-data/ output with file counts first; reveal reads locally and prints the claim command when you want persistence.</span>
     </div>
 
@@ -2233,7 +2233,7 @@
       return `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${compareUrl})`;
     }
 
-    const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
+    const INSTALL_CLAUDE_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command';
 
     function wirePostSaveActions({ profilePath, comparePath, badgePath, embedPath }, archetype, scores) {
       const handle = currentUser?.gh_handle || '';
@@ -2698,7 +2698,7 @@
     }
 
     function copyPath() {
-      copyText('npx --yes github:brightseth/vibestats#feat/wave-1-identity status').then(() => {
+      copyText('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status').then(() => {
         const el = document.querySelector('.file-path code');
         const orig = el.textContent;
         el.textContent = 'Copied!';

@@ -6,18 +6,7 @@ const FALLBACK_COMMAND = `npx --yes ${FALLBACK_PACKAGE}`;
 const TARGET_FILES = [
   '.claude/commands/vibestats.md',
   'README.md',
-  'api/card.js',
-  'browse.html',
-  'compare-template.html',
-  'dashboard.html',
-  'genome.html',
-  'home.html',
-  'leaderboard.html',
-  'match.html',
-  'recap.html',
   'settings.html',
-  'u.html',
-  'wrapped.html',
   'scripts/launch-audit.mjs',
   'scripts/smoke.mjs',
 ];
@@ -25,13 +14,13 @@ const TARGET_FILES = [
 function usage() {
   return `Usage: node scripts/update-cli-command.mjs --package @scope/vibestats [--write]
 
-Replaces static public onboarding command snippets:
+Replaces fallback npm command snippets:
   ${FALLBACK_COMMAND}
 
 With:
   npx --yes <package>
 
-Defaults to dry-run. Use --write only after the scoped package is published and VIBESTATS_CLI_PACKAGE is set in Vercel.`;
+Defaults to dry-run. Product-facing web onboarding should stay on /cli.sh; use --write only after the scoped package is published and VIBESTATS_CLI_PACKAGE is set in Vercel.`;
 }
 
 function parseArgs(argv = process.argv.slice(2)) {

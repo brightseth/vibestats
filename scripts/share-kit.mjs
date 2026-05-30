@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 import {
-  DEFAULT_INSTALL_COMMAND,
-  DEFAULT_NPX_REVEAL_COMMAND,
-  DEFAULT_NPX_STATUS_COMMAND,
-  DEFAULT_NPX_SYNC_COMMAND,
+  localHelperCommand,
 } from '../bin/vibestats.js';
 import {
   buildShareKit as buildBaseShareKit,
@@ -51,10 +48,10 @@ function buildShareKit(profile, { origin = 'https://vibestats.io', handle = '' }
     handle,
     terminalCommands: {
       insights: '/insights',
-      status: DEFAULT_NPX_STATUS_COMMAND,
-      reveal: DEFAULT_NPX_REVEAL_COMMAND,
-      claim: DEFAULT_NPX_SYNC_COMMAND,
-      install: DEFAULT_INSTALL_COMMAND,
+      status: localHelperCommand('status', { host: origin }),
+      reveal: localHelperCommand('reveal', { host: origin }),
+      claim: localHelperCommand('', { host: origin }),
+      install: localHelperCommand('install-claude-command', { host: origin }),
     },
   });
 }

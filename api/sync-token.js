@@ -13,6 +13,10 @@ function syncCommand(origin, token) {
   return `npx --yes ${shellQuote(packageSpec)} --host ${shellQuote(origin)} --token ${shellQuote(token)}`;
 }
 
+function localSyncCommand(origin, token) {
+  return `curl -fsSL ${shellQuote(`${origin}/cli.sh`)} | sh -s -- --host ${shellQuote(origin)} --token ${shellQuote(token)}`;
+}
+
 export default async function handler(req, res) {
   if (!['POST', 'DELETE'].includes(req.method)) return methodNotAllowed(res, ['POST', 'DELETE'], NO_STORE_HEADERS);
 
@@ -43,6 +47,7 @@ export default async function handler(req, res) {
       token,
       expires_at: syncTokenExpiresAt(),
       command: syncCommand(origin, token),
+      local_command: localSyncCommand(origin, token),
     }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('POST /api/sync-token error:', err);

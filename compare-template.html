@@ -385,10 +385,10 @@
     const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
-    const CLAIM_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
-    const STATUS_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status';
-    const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal';
-    const INSTALL_CLAUDE_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command';
+    const CLAIM_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
+    const STATUS_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- status';
+    const REVEAL_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal';
+    const INSTALL_CLAUDE_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command';
     let currentComparison = null;
 
     function renderStars(n) {
@@ -435,8 +435,8 @@
         ? `What are you against ${profileLabel}?`
         : 'Claude Code already knows your pattern.';
       const body = profileLabel
-        ? `Run /insights, check status, then reveal to see your real pairing with ${profileLabel}. Raw sessions stay on your machine.`
-        : 'Run /insights, check status, then reveal your real archetype. Raw sessions stay on your machine.';
+        ? `Run /insights, check status, then reveal to see your real pairing with ${profileLabel}. The no-npm helper runs locally and raw sessions stay on your machine.`
+        : 'Run /insights, check status, then reveal your real archetype. The no-npm helper runs locally and raw sessions stay on your machine.';
       const missing = options.missingHandle ? `<span>That profile is not minted yet. Only @${esc(options.missingHandle)} can claim that exact URL with GitHub.</span>` : '';
       el.innerHTML = `
         <div>
@@ -454,7 +454,7 @@
         </div>
         <div class="reveal-command-row">
           <code>${esc(REVEAL_COMMAND)}</code>
-          <button class="copy-command" type="button" onclick="copyCommand(REVEAL_COMMAND, this)">Copy npx</button>
+          <button class="copy-command" type="button" onclick="copyCommand(REVEAL_COMMAND, this)">Copy reveal</button>
         </div>
         <div class="reveal-command-row">
           <code>${esc(CLAIM_COMMAND)}</code>

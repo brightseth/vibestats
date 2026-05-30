@@ -24,6 +24,14 @@ export const DEFAULT_NPX_REVEAL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} reveal`;
 export const DEFAULT_NPX_STATUS_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} status`;
 export const DEFAULT_NPX_JOIN_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} join`;
 export const DEFAULT_INSTALL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} install-claude-command`;
+export function localHelperCommand(command = '', { host = DEFAULT_HOST } = {}) {
+  const suffix = String(command || '').trim();
+  return `curl -fsSL ${normalizeHost(host)}/cli.sh | sh -s --${suffix ? ` ${suffix}` : ''}`;
+}
+export const DEFAULT_LOCAL_SYNC_COMMAND = localHelperCommand();
+export const DEFAULT_LOCAL_REVEAL_COMMAND = localHelperCommand('reveal');
+export const DEFAULT_LOCAL_STATUS_COMMAND = localHelperCommand('status');
+export const DEFAULT_LOCAL_INSTALL_COMMAND = localHelperCommand('install-claude-command');
 const CLAUDE_COMMAND_SOURCE = new URL('../.claude/commands/vibestats.md', import.meta.url);
 const ARCHETYPE_LABELS = {
   orchestrator: 'Orchestrator',
@@ -76,11 +84,11 @@ Use join/onboard as explicit aliases for the same terminal-first flow; they use 
 Use --yes with join/onboard to publish after reveal without prompting. Use sync for explicit publish automation.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
 Use --device to force terminal device-code auth, or --browser to force local browser callback auth.
-Current public claim command: ${DEFAULT_NPX_SYNC_COMMAND}
-Current public reveal command: ${DEFAULT_NPX_REVEAL_COMMAND}
-Current public status command: ${DEFAULT_NPX_STATUS_COMMAND}
-Current public join command: ${DEFAULT_NPX_JOIN_COMMAND}
-Install the Claude Code /vibestats command: ${DEFAULT_INSTALL_COMMAND}
+Current no-npm claim command: ${DEFAULT_LOCAL_SYNC_COMMAND}
+Current no-npm reveal command: ${DEFAULT_LOCAL_REVEAL_COMMAND}
+Current no-npm status command: ${DEFAULT_LOCAL_STATUS_COMMAND}
+Current npx fallback command: ${DEFAULT_NPX_SYNC_COMMAND}
+Install the Claude Code /vibestats command: ${DEFAULT_LOCAL_INSTALL_COMMAND}
 Use --dry-run as a legacy alias for reveal.
 Use reveal --json to print the exact derived payload for debugging.`;
 }
@@ -171,9 +179,9 @@ function missingInsightsAdvice() {
   return [
     'Terminal onboarding:',
     '1. Open Claude Code and run /insights.',
-    `2. Check terminal readiness: ${DEFAULT_NPX_STATUS_COMMAND}`,
-    `3. Preview locally: ${DEFAULT_NPX_REVEAL_COMMAND}`,
-    `4. Publish when ready: ${DEFAULT_NPX_SYNC_COMMAND}`,
+    `2. Check terminal readiness: ${DEFAULT_LOCAL_STATUS_COMMAND}`,
+    `3. Preview locally: ${DEFAULT_LOCAL_REVEAL_COMMAND}`,
+    `4. Publish when ready: ${DEFAULT_LOCAL_SYNC_COMMAND}`,
     'No raw Claude Code session data leaves your machine; publishing sends derived metrics only.',
   ].join('\n');
 }
@@ -364,9 +372,9 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   lines.push(
     'Raw Claude Code /insights data stayed local. No profile was published.',
     'No website upload required.',
-    `To claim your GitHub-backed profile and share compare links, run: ${DEFAULT_NPX_SYNC_COMMAND}`,
-    `Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}`,
-    `Refresh after more Claude Code work: run /insights, then ${DEFAULT_NPX_STATUS_COMMAND}, then ${DEFAULT_NPX_REVEAL_COMMAND}`,
+    `To claim your GitHub-backed profile and share compare links, run: ${localHelperCommand('', { host })}`,
+    `Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}`,
+    `Refresh after more Claude Code work: run /insights, then ${localHelperCommand('status', { host })}, then ${localHelperCommand('reveal', { host })}`,
     'For machine-readable derived payload: add --json to the reveal command.',
   );
 
@@ -382,7 +390,7 @@ export async function confirmPublish({
   if (assumeYes) return true;
 
   if (!input?.isTTY) {
-    stdout.write(`Profile not published because this terminal is non-interactive. Claim later with: ${DEFAULT_NPX_SYNC_COMMAND} sync\n`);
+    stdout.write(`Profile not published because this terminal is non-interactive. Claim later with: ${DEFAULT_LOCAL_SYNC_COMMAND} sync\n`);
     return false;
   }
 
@@ -442,15 +450,15 @@ async function hasReportHtml(path) {
 function onboardingNextSteps(ready) {
   if (ready) {
     return [
-      `Reveal locally: ${DEFAULT_NPX_REVEAL_COMMAND}`,
-      `Claim a GitHub-backed profile: ${DEFAULT_NPX_SYNC_COMMAND}`,
-      `Install /vibestats in Claude Code: ${DEFAULT_INSTALL_COMMAND}`,
+      `Reveal locally: ${DEFAULT_LOCAL_REVEAL_COMMAND}`,
+      `Claim a GitHub-backed profile: ${DEFAULT_LOCAL_SYNC_COMMAND}`,
+      `Install /vibestats in Claude Code: ${DEFAULT_LOCAL_INSTALL_COMMAND}`,
     ];
   }
   return [
     'In Claude Code, run /insights.',
-    `Recheck terminal readiness: ${DEFAULT_NPX_STATUS_COMMAND}`,
-    `Reveal locally after /insights: ${DEFAULT_NPX_REVEAL_COMMAND}`,
+    `Recheck terminal readiness: ${DEFAULT_LOCAL_STATUS_COMMAND}`,
+    `Reveal locally after /insights: ${DEFAULT_LOCAL_REVEAL_COMMAND}`,
   ];
 }
 
@@ -460,10 +468,10 @@ export async function onboardingStatus({ file = DEFAULT_INSIGHTS_PATH } = {}) {
   const base = {
     path: target,
     display_path: displayPath(target),
-    reveal_command: DEFAULT_NPX_REVEAL_COMMAND,
-    claim_command: DEFAULT_NPX_SYNC_COMMAND,
-    status_command: DEFAULT_NPX_STATUS_COMMAND,
-    install_command: DEFAULT_INSTALL_COMMAND,
+    reveal_command: DEFAULT_LOCAL_REVEAL_COMMAND,
+    claim_command: DEFAULT_LOCAL_SYNC_COMMAND,
+    status_command: DEFAULT_LOCAL_STATUS_COMMAND,
+    install_command: DEFAULT_LOCAL_INSTALL_COMMAND,
     privacy: 'Status reads file names and counts only. Reveal and sync derive locally; publishing sends derived metrics only.',
   };
 
@@ -562,13 +570,13 @@ export async function printOnboardingStatus(options = {}, { stdout = process.std
   return status;
 }
 
-function shareKitCommands() {
+function shareKitCommands(host = DEFAULT_HOST) {
   return {
     insights: '/insights',
-    status: DEFAULT_NPX_STATUS_COMMAND,
-    reveal: DEFAULT_NPX_REVEAL_COMMAND,
-    claim: DEFAULT_NPX_SYNC_COMMAND,
-    install: DEFAULT_INSTALL_COMMAND,
+    status: localHelperCommand('status', { host }),
+    reveal: localHelperCommand('reveal', { host }),
+    claim: localHelperCommand('', { host }),
+    install: localHelperCommand('install-claude-command', { host }),
   };
 }
 
@@ -586,7 +594,7 @@ export async function printProfileShareKit(options = {}, {
   const kit = buildShareKit(profile, {
     origin,
     handle,
-    terminalCommands: shareKitCommands(),
+    terminalCommands: shareKitCommands(origin),
   });
   if (options.json) stdout.write(`${JSON.stringify(kit, null, 2)}\n`);
   else stdout.write(`${shareKitText(kit)}\n`);
@@ -957,13 +965,13 @@ export async function sync(options) {
   process.stdout.write(`Optional public discovery: ${privacyUrl}\n`);
   process.stdout.write('Profiles stay unlisted unless you choose Public.\n');
   process.stdout.write(`Set match intent: ${matchSettingsUrl}\n`);
-  process.stdout.write(`Set match intent from terminal: ${DEFAULT_NPX_SYNC_COMMAND} intent pair-coding --contact-url https://x.com/${handle} --public\n`);
+  process.stdout.write(`Set match intent from terminal: ${localHelperCommand(`intent pair-coding --contact-url https://x.com/${handle} --public`, { host })}\n`);
   process.stdout.write(`View your weekly board: ${leaderboardUrl}\n`);
   process.stdout.write(`Find complementary builders: ${matchUrl}\n`);
   process.stdout.write(`Share your recap: ${recapUrl}\n`);
   process.stdout.write(`README badge Markdown: ${badgeMarkdown}\n`);
   process.stdout.write(`Profile embed HTML: ${embedHtml}\n`);
-  process.stdout.write(`Install /vibestats for future reveals: ${DEFAULT_INSTALL_COMMAND}\n`);
+  process.stdout.write(`Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}\n`);
   process.stdout.write(`Reserve weekly digest: ${digestUrl}\n`);
   process.stdout.write(`Preview weekly digest: ${digestPreviewUrl}\n`);
   return body;

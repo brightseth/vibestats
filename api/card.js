@@ -1,7 +1,7 @@
 import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
 const INSIGHTS_COMMAND = '/insights';
-const BASE_CLI_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
+const BASE_CLI_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
 const CLAIM_COMMAND = BASE_CLI_COMMAND;
 const STATUS_COMMAND = `${BASE_CLI_COMMAND} status`;
 const REVEAL_COMMAND = `${BASE_CLI_COMMAND} reveal`;
@@ -253,7 +253,7 @@ export default function handler(req, res) {
   <a class="cta" href="/?compareArchetype=${encodeURIComponent(archetypeKey)}">Compare with this archetype &rarr;</a>
   <div class="reveal-panel" aria-label="Reveal your own vibestats">
     <div class="reveal-title">What are you?</div>
-    <div class="reveal-copy">Claude Code has already captured your build fingerprint. Reveal yours from local /insights data; raw sessions stay on your machine.</div>
+    <div class="reveal-copy">Claude Code has already captured your build fingerprint. Reveal yours with the no-npm local helper; raw /insights sessions stay on your machine.</div>
     <div class="reveal-command">
       <code>${esc(INSIGHTS_COMMAND)}</code>
       <button type="button" data-copy="${esc(INSIGHTS_COMMAND)}">Copy</button>

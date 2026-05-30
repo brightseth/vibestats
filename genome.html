@@ -418,7 +418,7 @@
       <div>
         <div class="section-label">your place in the genome</div>
         <h2 class="reveal-title">What are you?</h2>
-        <p class="reveal-copy">Claude Code already knows how you build. Run <code>/insights</code>, then reveal where your derived profile lands in the live community genome.</p>
+        <p class="reveal-copy">Claude Code already knows how you build. Run <code>/insights</code>, then use the no-npm local helper to reveal where your derived profile lands in the live community genome.</p>
       </div>
       <div class="command-card">
         <span>Step 1 in Claude Code</span>
@@ -427,23 +427,23 @@
       </div>
       <div class="command-card">
         <span>Step 2 in terminal</span>
-        <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity status</code>
-        <button class="command-copy" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity status">Copy status preflight</button>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- status">Copy status preflight</button>
       </div>
       <div class="command-card">
         <span>Step 3 in terminal</span>
-        <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal</code>
-        <button class="command-copy" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal">Copy npx reveal command</button>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy no-npm reveal command</button>
       </div>
       <div class="command-card">
         <span>Step 4 when ready</span>
-        <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
-        <button class="command-copy" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy claim command</button>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s --">Copy claim command</button>
       </div>
       <div class="command-card">
         <span>Install /vibestats for next time</span>
-        <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command</code>
-        <button class="command-copy" type="button" data-copy-command="npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command">Copy install command</button>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command">Copy install command</button>
       </div>
       <div class="privacy-note">Raw Claude Code /insights data stays local. vibestats stores derived profile metrics only when you choose to claim a public identity.</div>
     </section>

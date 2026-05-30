@@ -120,7 +120,7 @@ export async function auditPackage({ packageName = DEFAULT_PACKAGE, expectedVers
       env: { ...process.env, VIBESTATS_CLI_PACKAGE: packageName },
     });
     const helpOutput = `${help.stdout || ''}\n${help.stderr || ''}`;
-    recorder.check(helpOutput.includes(`Current public claim command: npx --yes ${packageName}`), 'packed CLI help uses the public package command');
+    recorder.check(helpOutput.includes(`Current npx fallback command: npx --yes ${packageName}`) && helpOutput.includes('/cli.sh | sh -s -- status'), 'packed CLI help uses no-npm primary commands and the public package fallback');
     recorder.check(helpOutput.includes('vibestats share --handle HANDLE') && helpOutput.includes('Use reveal for a local result'), 'packed CLI help exposes reveal and share flows');
     recorder.check(helpOutput.includes('Use claim CODE from an SSH/TUI claim session'), 'packed CLI help exposes SSH claim handoff');
     safeOutput(recorder, 'packed CLI help', helpOutput);
@@ -133,7 +133,7 @@ export async function auditPackage({ packageName = DEFAULT_PACKAGE, expectedVers
       recorder.check(false, 'packed CLI missing-input recovery exits non-zero');
     } catch (err) {
       const output = `${err.stdout || ''}\n${err.stderr || ''}`;
-      recorder.check(output.includes('Terminal onboarding:') && output.includes('/insights') && output.includes(`${packageName} status`), 'packed CLI missing-input recovery prints the /insights checklist');
+      recorder.check(output.includes('Terminal onboarding:') && output.includes('/insights') && output.includes('/cli.sh | sh -s -- status'), 'packed CLI missing-input recovery prints the no-npm /insights checklist');
       safeOutput(recorder, 'packed CLI missing-input recovery', output);
     }
   } catch (err) {

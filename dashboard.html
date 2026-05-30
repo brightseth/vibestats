@@ -801,26 +801,26 @@
       <a href="/?compareArchetype=orchestrator" class="share-btn" style="margin-top:16px;display:inline-flex;background:linear-gradient(135deg,rgba(107,143,255,0.15),rgba(167,139,250,0.1));border-color:rgba(107,143,255,0.35);color:var(--accent-bright)">Compare with Orchestrator &rarr;</a>
       <div class="reveal-panel" aria-label="Reveal your own vibestats">
         <div class="reveal-panel-title">What are you?</div>
-        <div class="reveal-panel-copy">Run /insights in Claude Code, check status, then reveal. Only derived metrics publish if you decide to claim a profile.</div>
+        <div class="reveal-panel-copy">Run /insights in Claude Code, then use the no-npm local helper. Only derived metrics publish if you decide to claim a profile.</div>
         <div class="reveal-command">
           <code>/insights</code>
           <button type="button" data-copy="/insights">Copy</button>
         </div>
         <div class="reveal-command">
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity status</code>
-          <button type="button" data-copy="npx --yes github:brightseth/vibestats#feat/wave-1-identity status">Copy status</button>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s -- status">Copy status</button>
         </div>
         <div class="reveal-command">
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal</code>
-          <button type="button" data-copy="npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal">Copy</button>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy</button>
         </div>
         <div class="reveal-command">
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>
-          <button type="button" data-copy="npx --yes github:brightseth/vibestats#feat/wave-1-identity">Copy claim</button>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s --">Copy claim</button>
         </div>
         <div class="reveal-command">
-          <code>npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command</code>
-          <button type="button" data-copy="npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command">Copy install</button>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command">Copy install</button>
         </div>
       </div>
     </div>

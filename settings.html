@@ -330,10 +330,10 @@
         <div class="row" id="cli-sync">
           <div>
             <div class="label">CLI sync</div>
-            <div class="hint">Run `npx --yes github:brightseth/vibestats#feat/wave-1-identity status` to check `/insights` readiness from file counts, `npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal` to preview locally, then `npx --yes github:brightseth/vibestats#feat/wave-1-identity` for terminal-first GitHub approval. Set match intent from the terminal with `npx --yes github:brightseth/vibestats#feat/wave-1-identity intent pair-coding --contact-url https://x.com/you --public`. Install the Claude Code slash command with `npx --yes github:brightseth/vibestats#feat/wave-1-identity install-claude-command`. It reads the local Claude Code `/insights` directory, keeps raw session data on disk, and `reveal --json` shows the exact derived payload. Manual token commands are a fallback.</div>
+            <div class="hint">Run `curl -fsSL https://vibestats.io/cli.sh | sh -s -- status` to check `/insights` readiness from file counts, `curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal` to preview locally, then `curl -fsSL https://vibestats.io/cli.sh | sh -s --` for terminal-first GitHub approval. Set match intent from the terminal with `curl -fsSL https://vibestats.io/cli.sh | sh -s -- intent pair-coding --contact-url https://x.com/you --public`. Install the Claude Code slash command with `curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command`. It reads the local Claude Code `/insights` directory, keeps raw session data on disk, and `reveal --json` shows the exact derived payload. Manual token commands are a fallback.</div>
           </div>
           <div class="cli-controls">
-            <textarea id="sync-command" readonly placeholder="npx --yes github:brightseth/vibestats#feat/wave-1-identity"></textarea>
+            <textarea id="sync-command" readonly placeholder="curl -fsSL https://vibestats.io/cli.sh | sh -s --"></textarea>
             <button class="btn" id="generate-sync-token">Copy fallback</button>
             <button class="btn danger" id="revoke-sync-tokens">Revoke</button>
           </div>
@@ -594,7 +594,7 @@
         try {
           button.textContent = 'Generating...';
           const body = await api('/api/sync-token', { method: 'POST' });
-          command.value = body.command || '';
+          command.value = body.local_command || body.command || '';
           try {
             await copyText(command.value);
             showMessage(`Fallback CLI sync command copied. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);

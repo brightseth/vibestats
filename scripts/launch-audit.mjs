@@ -7,6 +7,10 @@ const execFileAsync = promisify(execFile);
 const DEFAULT_HANDLE = 'brightseth';
 const DEFAULT_ARCHETYPE = 'builder';
 const DEFAULT_CLI_PACKAGE = '@lets-vibe/vibestats';
+const NO_NPM_CLI = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
+const NO_NPM_STATUS = `${NO_NPM_CLI} status`;
+const NO_NPM_REVEAL = `${NO_NPM_CLI} reveal`;
+const NO_NPM_INSTALL = `${NO_NPM_CLI} install-claude-command`;
 const RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage'];
 const SECRET_NAME_PATTERNS = [
   'DATABASE_URL',
@@ -520,7 +524,7 @@ async function auditLaunch(options) {
       path: '/',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy status preflight', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy npx reveal command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity</code>', 'install-claude-command', 'Try the reveal demo', 'shouldAutoRunDemo()', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
+      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy status preflight', NO_NPM_STATUS, 'Copy no-npm reveal command', NO_NPM_REVEAL, `${NO_NPM_CLI}</code>`, NO_NPM_INSTALL, 'Try the reveal demo', 'shouldAutoRunDemo()', 'No file hunting', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
       mustNotInclude: ['agent-insights.json', 'npx vibestats sync'],
       checkRawLeaks: false,
     },
@@ -567,7 +571,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="launch-kit-panel"', 'Owner launch kit', 'Copy launch kit', 'Copy terminal commands', 'id="credential-panel"', 'Verified derived profile', 'Copy credential proof', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'STATUS_COMMAND', 'CLAIM_COMMAND', 'Copy status', 'Copy claim', 'Copy badge proof', 'Share badge', 'GitHub-claimed', 'derived-only', 'id="privacy-cta"', 'id="match-intent-cta"', 'id="digest-preview-cta"'],
+      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="launch-kit-panel"', 'Owner launch kit', 'Copy launch kit', 'Copy terminal commands', 'id="credential-panel"', 'Verified derived profile', 'Copy credential proof', 'id="reveal-panel"', 'What are you?', NO_NPM_STATUS, NO_NPM_REVEAL, 'STATUS_COMMAND', 'CLAIM_COMMAND', 'Copy status', 'Copy claim', 'Copy badge proof', 'Share badge', 'GitHub-claimed', 'derived-only', 'id="privacy-cta"', 'id="match-intent-cta"', 'id="digest-preview-cta"'],
     },
     {
       label: 'profile recap',
@@ -575,7 +579,7 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
       mustInclude: expectReady && profileHasUpload
-        ? ['Copy recap', 'Copy sync command', "const SYNC_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';", 'Copy /vibestats install', 'id="recipient-reveal"', 'What are you?', 'Copy status', 'Copy reveal', 'Copy claim', 'install-claude-command', 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
+        ? ['Copy recap', 'Copy sync command', `const SYNC_COMMAND = '${NO_NPM_CLI}';`, 'Copy /vibestats install', 'id="recipient-reveal"', 'What are you?', 'Copy status', 'Copy reveal', 'Copy claim', NO_NPM_INSTALL, 'facet shape', 'Run CLI sync after more Claude Code work', 'Raw Claude Code /insights data stays local']
         : ['A privacy-preserving weekly recap'],
     },
     {
@@ -615,7 +619,7 @@ async function auditLaunch(options) {
       path: `/compare?a=${encodeURIComponent(archetype)}&b=shipper`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['Open the pairing, then claim yours', 'STATUS_COMMAND', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'CLAIM_COMMAND', 'Copy claim'],
+      mustInclude: ['Open the pairing, then claim yours', 'STATUS_COMMAND', NO_NPM_STATUS, 'Copy status', 'CLAIM_COMMAND', 'Copy claim'],
     },
     {
       label: 'profile-backed pair route',
@@ -641,7 +645,7 @@ async function auditLaunch(options) {
       path: `/card?a=${encodeURIComponent(archetype)}&n=Launch&d=7&c=2&l=3&s=4`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: [`/?compareArchetype=${encodeURIComponent(archetype)}`, 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'Copy claim', 'install-claude-command'],
+      mustInclude: [`/?compareArchetype=${encodeURIComponent(archetype)}`, 'What are you?', '/insights', NO_NPM_STATUS, 'Copy status', NO_NPM_REVEAL, 'Copy claim', NO_NPM_INSTALL],
       mustNotInclude: "What's YOUR personality?",
     },
     {
@@ -649,14 +653,14 @@ async function auditLaunch(options) {
       path: '/wrapped',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'Copy claim', 'install-claude-command'],
+      mustInclude: ['wrappedCompareUrl', '?compareArchetype=orchestrator', 'What are you?', '/insights', NO_NPM_STATUS, 'Copy status', NO_NPM_REVEAL, 'Copy claim', NO_NPM_INSTALL],
     },
     {
       label: 'dashboard share route',
       path: '/dashboard',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'Copy claim', 'install-claude-command'],
+      mustInclude: ['?compareArchetype=orchestrator', 'How would you pair with an Orchestrator?', 'What are you?', '/insights', NO_NPM_STATUS, 'Copy status', NO_NPM_REVEAL, 'Copy claim', NO_NPM_INSTALL],
       mustNotInclude: 'Claude Code Analytics',
     },
     {
@@ -664,7 +668,7 @@ async function auditLaunch(options) {
       path: '/genome',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy status preflight', 'Copy npx reveal command', 'Copy claim command', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'install-claude-command', 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
+      mustInclude: ['The Coding Genome', 'What are you?', '/insights', 'Copy status preflight', 'Copy no-npm reveal command', 'Copy claim command', NO_NPM_STATUS, NO_NPM_REVEAL, NO_NPM_INSTALL, 'Raw Claude Code /insights data stays local', '/compare?a=orchestrator&b=shipper'],
       mustNotInclude: ['>Quiz</a>', 'agent-insights.json'],
     },
     {
@@ -679,7 +683,7 @@ async function auditLaunch(options) {
       path: `/browse?archetype=${encodeURIComponent(archetype)}&intent=active`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing', 'What are you?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'Copy claim', 'install-claude-command'],
+      mustInclude: ['raw insights JSON and language details stay out', 'Copy share', 'Share on X', 'compareTo=${encodeURIComponent(handle)}', 'twitter.com/intent/tweet', 'Try sample pairing', 'What are you?', '/insights', NO_NPM_STATUS, 'Copy status', NO_NPM_REVEAL, 'Copy claim', NO_NPM_INSTALL],
     },
     {
       label: 'browse API',
@@ -694,7 +698,7 @@ async function auditLaunch(options) {
       path: `/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings', 'Find your real match', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'Copy claim', 'install-claude-command'],
+      mustInclude: ['match by goal', 'Copy intro', 'comparePath(entry, seekerArchetype)', 'Try sample pairing', '/settings#match-settings', 'Find your real match', '/insights', NO_NPM_STATUS, 'Copy status', NO_NPM_REVEAL, 'Copy claim', NO_NPM_INSTALL],
     },
     {
       label: 'match API',
@@ -709,7 +713,7 @@ async function auditLaunch(options) {
       path: `/leaderboard/${encodeURIComponent(archetype)}`,
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing', 'Where do you rank?', '/insights', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity status', 'Copy status', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'Copy claim', 'install-claude-command'],
+      mustInclude: ['public leaderboard', 'Copy invite', 'Share on X', "See how you'd pair", 'twitter.com/intent/tweet', 'Try sample pairing', 'Where do you rank?', '/insights', NO_NPM_STATUS, 'Copy status', NO_NPM_REVEAL, 'Copy claim', NO_NPM_INSTALL],
     },
     {
       label: 'leaderboard API',
