@@ -875,6 +875,10 @@ async function assertCompareShareLoop() {
   assert(compareHtml.includes("document.execCommand('copy')"), 'compare invite copy should fall back when Clipboard API is unavailable');
   assert(compareHtml.includes('Copy invite'), 'compare result copy action should be framed as an invite');
   assert(compareHtml.includes('${esc(claimAction.label)} &rarr;'), 'compare result should render the computed claim CTA label');
+  assert(compareHtml.includes("showPicker(knownSubject, { intent: 'claim', missingHandle })"), 'compare route should preserve a known profile when the other side is unminted');
+  assert(compareHtml.includes('That profile is not minted yet. Preview a pairing or reveal yours.'), 'compare route should make missing profile pair links productive');
+  assert(compareHtml.includes('Run /insights for your real pairing'), 'compare picker should teach the reveal flow for share recipients');
+  assert(compareHtml.includes("copyCommand('/insights', this)") && compareHtml.includes('copyCommand(REVEAL_COMMAND, this)'), 'compare picker should expose copy buttons for the reveal commands');
   console.log('ok compare share loop claims profile-backed comparisons');
 }
 
@@ -2105,7 +2109,7 @@ async function assertProfileCacheHelpers() {
 }
 
 async function assertCompareMetadataHelpers() {
-  const { default: handler, canExposeCompareMetadata, compareMetadataForSubjects } = await import('../api/compare-page.js');
+  const { default: handler, canExposeCompareMetadata, compareInviteMetadata, compareMetadataForSubjects } = await import('../api/compare-page.js');
   const metadata = compareMetadataForSubjects(
     {
       type: 'builder',
@@ -2131,6 +2135,20 @@ async function assertCompareMetadataHelpers() {
     'https://vibestats.io',
   );
   assert(profilePair.url === 'https://vibestats.io/u/bob/pair/alice', 'compare metadata should preserve pretty profile pair URLs');
+  const inviteMeta = compareInviteMetadata(
+    {
+      type: 'deepdiver',
+      handle: 'brightseth',
+      signature: 'high-velocity Deep Diver',
+      rarity: { count: 1, tier: 'rare' },
+    },
+    'https://vibestats.io',
+  );
+  assert(inviteMeta.title.includes("See how you'd pair with @brightseth"), 'one-sided compare metadata should preserve the known profile');
+  assert(inviteMeta.description.includes('Run /insights, then reveal yours against @brightseth'), 'one-sided compare metadata should teach the reveal path');
+  assert(inviteMeta.description.includes('Raw Claude Code sessions stay local'), 'one-sided compare metadata should carry the privacy promise');
+  assert(inviteMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver', 'one-sided compare metadata should route into upload-to-compare');
+  assert(inviteMeta.image.includes('/api/og?mode=pair'), 'one-sided compare metadata should use a dynamic pair image');
   assert(canExposeCompareMetadata({ privacy: 'public' }) === true, 'compare metadata should expose public profiles');
   assert(canExposeCompareMetadata({ privacy: 'unlisted' }) === true, 'compare metadata should expose unlisted share profiles');
   assert(canExposeCompareMetadata({ privacy: 'private' }) === false, 'compare metadata must not expose private profiles');

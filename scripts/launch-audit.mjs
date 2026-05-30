@@ -429,6 +429,16 @@ async function auditLaunch(options) {
         : ['comparisonParamsFromLocation()', 'compareTo=${encodeURIComponent(profileSubject.handle)}'],
     },
     {
+      label: 'profile-backed missing pair route',
+      path: `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(missingHandle)}`,
+      expectedType: 'text/html',
+      allowStatuses: [200],
+      mustInclude: expectReady && profileHasUpload
+        ? [`See how you'd pair with @${handle}`, 'That profile is not minted yet. Preview a pairing or reveal yours.', 'Run /insights for your real pairing']
+        : ['showPicker(knownSubject', 'Run /insights for your real pairing'],
+      checkRawLeaks: false,
+    },
+    {
       label: 'share card route',
       path: `/card?a=${encodeURIComponent(archetype)}&n=Launch&d=7&c=2&l=3&s=4`,
       expectedType: 'text/html',

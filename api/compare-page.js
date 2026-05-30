@@ -69,9 +69,39 @@ function canonicalCompareUrl(aSubject, bSubject, origin) {
 function genericMeta(origin) {
   return {
     title: 'Compare Vibecoding Personalities | vibestats',
-    description: 'Compare your vibecoding personality with a friend. See your chemistry, dynamic, and pairing name.',
+    description: 'Run /insights, reveal your vibecoding personality, and compare your Claude Code build pattern with a friend.',
     url: `${origin}/compare`,
     image: `${origin}/og-card.png`,
+  };
+}
+
+export function compareInviteMetadata(subject, origin = 'https://vibestats.io') {
+  if (!subject?.type || !ARCHETYPES[subject.type]) return genericMeta(origin);
+
+  const label = subjectLabel(subject);
+  const proof = subjectProof(subject);
+  const query = subject.handle
+    ? new URLSearchParams({ compareTo: subject.handle, compareArchetype: subject.type })
+    : new URLSearchParams({ compareArchetype: subject.type });
+  const params = new URLSearchParams({
+    mode: 'pair',
+    a: subject.type,
+    b: 'builder',
+    an: label,
+    bn: 'You',
+  });
+
+  return {
+    title: subject.handle ? `See how you'd pair with ${label} | vibestats` : `Compare with a ${ARCHETYPES[subject.type].short} | vibestats`,
+    description: [
+      proof ? `${proof}.` : '',
+      subject.handle
+        ? `Run /insights, then reveal yours against ${label}.`
+        : `Run /insights, then reveal how you pair with a ${ARCHETYPES[subject.type].short}.`,
+      'Raw Claude Code sessions stay local; only derived metrics save.',
+    ].filter(Boolean).join(' '),
+    url: `${origin}/?${query.toString()}`,
+    image: `${origin}/api/og?${params.toString()}`,
   };
 }
 
@@ -179,14 +209,18 @@ export default async function handler(req, res) {
 
   const origin = originForRequest(req);
   let meta = genericMeta(origin);
+  const aValue = req.query?.a || req.query?.me;
+  const bValue = req.query?.b;
 
   try {
     const [aSubject, bSubject] = await Promise.all([
-      resolveCompareSubject(req, req.query?.a || req.query?.me),
-      resolveCompareSubject(req, req.query?.b),
+      resolveCompareSubject(req, aValue),
+      resolveCompareSubject(req, bValue),
     ]);
     if (aSubject && bSubject) {
       meta = compareMetadataForSubjects(aSubject, bSubject, origin);
+    } else if (aSubject || bSubject) {
+      meta = compareInviteMetadata(aSubject || bSubject, origin);
     }
   } catch (err) {
     console.error('GET /api/compare-page metadata error:', err);

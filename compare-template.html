@@ -236,6 +236,35 @@
       min-height: 18px; margin: -24px 0 24px;
       color: var(--text-dim); font-family: var(--mono); font-size: 12px;
     }
+    .reveal-cta {
+      display: none; width: min(520px, 90vw); margin: -20px 0 28px;
+      padding: 16px; border: 1px solid rgba(107,143,255,0.24);
+      border-radius: 14px; background: rgba(107,143,255,0.06); text-align: left;
+    }
+    .reveal-cta.visible { display: grid; gap: 12px; }
+    .reveal-cta strong {
+      display: block; color: #fff; font-size: 14px; margin-bottom: 4px;
+    }
+    .reveal-cta span {
+      display: block; color: var(--text-muted); font-size: 13px; line-height: 1.5;
+    }
+    .reveal-command-row {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+      align-items: center;
+    }
+    .reveal-command-row code {
+      min-width: 0; overflow-x: auto; white-space: nowrap;
+      padding: 10px 12px; border-radius: 10px;
+      background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08);
+      color: #fff; font-family: var(--mono); font-size: 11px;
+    }
+    .copy-command {
+      min-height: 38px; padding: 0 12px; border-radius: 10px;
+      border: 1px solid rgba(107,143,255,0.35);
+      background: rgba(107,143,255,0.12); color: #8aadff;
+      font-family: var(--mono); font-size: 11px; cursor: pointer;
+    }
+    .copy-command:hover { border-color: var(--accent); color: #fff; }
 
     /* Enhanced /vibe footer */
     .vibe-footer { margin-top: 48px; width: min(400px, 90vw); }
@@ -280,6 +309,8 @@
       .result-actions { flex-direction: column; align-items: stretch; }
       .action-btn { justify-content: center; }
       .pair-vs { gap: 10px; }
+      .reveal-command-row { grid-template-columns: 1fr; }
+      .copy-command { width: 100%; }
     }
   </style>
 </head>
@@ -292,6 +323,7 @@
       <h1 id="picker-title">Compare with a friend</h1>
       <p class="subtitle" id="picker-subtitle">Pick your friend's archetype to see your chemistry.</p>
       <div class="compare-status" id="compare-status"></div>
+      <div class="reveal-cta" id="reveal-cta"></div>
       <div id="you-section"></div>
       <div class="pick-label" id="pick-label">Your friend is...</div>
       <div class="archetype-grid" id="archetype-grid"></div>
@@ -353,6 +385,7 @@
     const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
+    const REVEAL_COMMAND = 'npx --yes github:brightseth/vibestats#feat/wave-1-identity';
     let currentComparison = null;
 
     function renderStars(n) {
@@ -366,6 +399,65 @@
     function setStatus(message) {
       const el = document.getElementById('compare-status');
       if (el) el.textContent = message || '';
+    }
+
+    async function copyCommand(text, button) {
+      const original = button.textContent;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        button.textContent = 'Copied';
+      } catch {
+        button.textContent = 'Failed';
+      }
+      setTimeout(() => { button.textContent = original; }, 1600);
+    }
+
+    function renderRevealCta(subject, options = {}) {
+      const el = document.getElementById('reveal-cta');
+      if (!el) return;
+      const profileLabel = subject?.handle ? `@${subject.handle}` : '';
+      const title = profileLabel
+        ? `What are you against ${profileLabel}?`
+        : 'Claude Code already knows your pattern.';
+      const body = profileLabel
+        ? `Run /insights, then the npx reveal command to see your real pairing with ${profileLabel}. Raw sessions stay on your machine.`
+        : 'Run /insights, then the npx reveal command to find your real archetype. Raw sessions stay on your machine.';
+      const missing = options.missingHandle ? `<span>That profile is not minted yet. Only @${esc(options.missingHandle)} can claim that exact URL with GitHub.</span>` : '';
+      el.innerHTML = `
+        <div>
+          <strong>${esc(title)}</strong>
+          <span>${esc(body)}</span>
+          ${missing}
+        </div>
+        <div class="reveal-command-row">
+          <code>/insights</code>
+          <button class="copy-command" type="button" onclick="copyCommand('/insights', this)">Copy</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(REVEAL_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(REVEAL_COMMAND, this)">Copy npx</button>
+        </div>
+      `;
+      el.classList.add('visible');
+    }
+
+    function clearRevealCta() {
+      const el = document.getElementById('reveal-cta');
+      if (!el) return;
+      el.innerHTML = '';
+      el.classList.remove('visible');
     }
 
     function subjectParam(subject) {
@@ -465,16 +557,26 @@
           showResult(aSubject, bSubject);
           return;
         }
-        setStatus('Could not load one profile. Pick archetypes instead.');
-        showPicker(null);
+        const knownSubject = aSubject || bSubject;
+        const missingValue = aSubject ? bParam : aParam;
+        if (knownSubject) {
+          const missingHandle = HANDLE_RE.test(String(missingValue || '').trim().replace(/^@/, ''))
+            ? String(missingValue || '').trim().replace(/^@/, '')
+            : '';
+          setStatus('That profile is not minted yet. Preview a pairing or reveal yours.');
+          showPicker(knownSubject, { intent: 'claim', missingHandle });
+          return;
+        }
+        setStatus('Those profiles are not minted yet. Reveal yours or preview archetypes below.');
+        showPicker(null, { intent: 'missing' });
         return;
       }
 
       if (meParam) {
         setStatus(ARCHETYPES[meParam] ? '' : 'Resolving profile...');
         const subject = await resolveCompareSubject(meParam);
-        setStatus(subject ? '' : (meParam ? 'Could not load that profile. Pick an archetype instead.' : ''));
-        showPicker(subject);
+        setStatus(subject ? '' : (meParam ? 'Could not load that profile. Reveal yours or pick an archetype instead.' : ''));
+        showPicker(subject, { intent: subject ? '' : 'missing' });
         return;
       }
 
@@ -482,7 +584,7 @@
       showPicker(null);
     }
 
-    function showPicker(mySubject) {
+    function showPicker(mySubject, options = {}) {
       const subject = normalizeSubject(mySubject);
       const myType = subject?.type || null;
       const picker = document.getElementById('picker');
@@ -491,22 +593,28 @@
       const title = document.getElementById('picker-title');
       const subtitle = document.getElementById('picker-subtitle');
       const pickLabel = document.getElementById('pick-label');
+      const claimIntent = options.intent === 'claim';
 
       if (myType && ARCHETYPES[myType]) {
         const a = ARCHETYPES[myType];
-        title.textContent = 'Compare with a friend';
-        subtitle.textContent = 'Pick their archetype to see your chemistry.';
+        title.textContent = claimIntent && subject.handle ? `Compare with @${subject.handle}` : 'Compare with a friend';
+        subtitle.textContent = claimIntent
+          ? 'Run /insights for your real pairing, or pick an archetype to preview the chemistry.'
+          : 'Pick their archetype to see your chemistry.';
         youSection.innerHTML = `
           <div class="you-label">${subject.handle ? 'Profile' : 'You are'}</div>
           <div class="you-badge" style="background:${a.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border-color:${a.color}40">${esc(subjectLabel(subject))}</div>
           ${subjectMeta(subject) ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:-22px;margin-bottom:24px">${esc(subjectMeta(subject))}</div>` : ''}
         `;
-        pickLabel.textContent = 'Your friend is...';
+        pickLabel.textContent = claimIntent ? 'Preview yours as...' : 'Your friend is...';
+        if (claimIntent) renderRevealCta(subject, options);
+        else clearRevealCta();
       } else {
         title.textContent = 'Compare two archetypes';
-        subtitle.textContent = 'Pick two vibecoding personalities to see their chemistry.';
+        subtitle.textContent = 'Pick two vibecoding personalities, or reveal your real Claude Code pattern first.';
         youSection.innerHTML = '';
         pickLabel.textContent = 'Pick the first archetype';
+        renderRevealCta(null, options);
       }
 
       grid.innerHTML = '';
