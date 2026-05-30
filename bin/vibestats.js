@@ -16,7 +16,8 @@ const DEFAULT_INSIGHTS_PATH = join(homedir(), '.claude', 'usage-data');
 export const DEFAULT_CLAUDE_COMMAND_PATH = join(homedir(), '.claude', 'commands', 'vibestats.md');
 const DEFAULT_HOST = 'https://vibestats.io';
 const DEFAULT_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
-const DEFAULT_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+const FALLBACK_CLI_PACKAGE = 'github:brightseth/vibestats#feat/wave-1-identity';
+const DEFAULT_CLI_PACKAGE = process.env.VIBESTATS_CLI_PACKAGE || FALLBACK_CLI_PACKAGE;
 export const DEFAULT_NPX_SYNC_COMMAND = `npx --yes ${DEFAULT_CLI_PACKAGE}`;
 export const DEFAULT_NPX_REVEAL_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} reveal`;
 export const DEFAULT_NPX_STATUS_COMMAND = `${DEFAULT_NPX_SYNC_COMMAND} status`;
@@ -56,6 +57,7 @@ function usage() {
 Environment:
   VIBESTATS_SYNC_TOKEN  optional signed sync token from vibestats settings
   VIBESTATS_URL         alternate host, defaults to ${DEFAULT_HOST}
+  VIBESTATS_CLI_PACKAGE alternate npx package spec for printed follow-up commands
 
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
