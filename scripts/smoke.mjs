@@ -21,6 +21,8 @@ const apiModules = [
   '../api/me.js',
   '../api/uploads.js',
   '../api/sync.js',
+  '../api/ssh/claim-start.js',
+  '../api/ssh/claim-status.js',
   '../api/credential.js',
   '../api/sync-settings.js',
   '../api/sync-token.js',
@@ -40,6 +42,7 @@ const apiModules = [
   '../api/_lib/github-oauth.js',
   '../api/_lib/profile-links.js',
   '../api/_lib/profile-settings.js',
+  '../api/_lib/ssh-claims.js',
   '../api/_lib/achievements.js',
   '../api/_lib/public-profile.js',
   '../api/_lib/social-proof.js',
@@ -192,6 +195,9 @@ async function assertRoutes() {
   const cliDevicePollApi = await readFile('api/cli/device-poll.js', 'utf8');
   const githubOauthHelper = await readFile('api/_lib/github-oauth.js', 'utf8');
   const syncApi = await readFile('api/sync.js', 'utf8');
+  const sshClaimStartApi = await readFile('api/ssh/claim-start.js', 'utf8');
+  const sshClaimStatusApi = await readFile('api/ssh/claim-status.js', 'utf8');
+  const sshClaimsHelper = await readFile('api/_lib/ssh-claims.js', 'utf8');
   const profileLinksHelper = await readFile('api/_lib/profile-links.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
   const cliBin = await readFile('bin/vibestats.js', 'utf8');
@@ -383,6 +389,10 @@ async function assertRoutes() {
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
   assert(syncApi.includes('profileLinks(user, payload.archetype)'), 'CLI sync saves should return compare-first profile links');
+  assert(syncApi.includes('claim_code') && syncApi.includes('assertClaimSessionAttachable') && syncApi.includes('attachClaimSession') && syncApi.includes('claim_session'), 'CLI sync should support SSH claim-session attachment without changing the derived upload contract');
+  assert(sshClaimStartApi.includes('createClaimSession') && sshClaimStartApi.includes('claimLocalCommand') && sshClaimStartApi.includes('ssh_host_reads_raw_insights: false'), 'SSH claim start API should create a code and print a local-helper command with privacy proof');
+  assert(sshClaimStatusApi.includes('getClaimSessionStatus') && sshClaimStatusApi.includes("req.query?.code") && sshClaimStatusApi.includes('NO_STORE_HEADERS'), 'SSH claim status API should expose bounded no-store polling by claim code');
+  assert(sshClaimsHelper.includes('CLAIM_CODE_PATTERN') && sshClaimsHelper.includes('code_hash') && sshClaimsHelper.includes('raw_claude_code_sessions') === false && sshClaimsHelper.includes('claimLocalCommand') && sshClaimsHelper.includes('user_id'), 'SSH claim helper should hash claim codes and avoid raw-insights payload fields');
   assert(syncSettingsApi.includes('readSyncSession') && syncSettingsApi.includes('syncTokenIsRevoked'), 'CLI sync settings API should require revocable signed sync token sessions');
   assert(syncSettingsApi.includes('cleanLookingFor') && syncSettingsApi.includes('cleanContactUrl') && syncSettingsApi.includes('lookingForExpiry(7)'), 'CLI sync settings API should only accept sanitized short-lived match intent fields');
   assert(syncSettingsApi.includes("privacy = 'public'") && syncSettingsApi.includes('make_public === true'), 'CLI sync settings API should require explicit public opt-in for match discovery');
@@ -577,6 +587,7 @@ async function assertRoutes() {
   assert((await readFile('db/migrations/0009_upload_archetype_canon.sql', 'utf8')).includes('uploads_archetype_check'), 'migrations should enforce the eight-archetype upload canon');
   assert((await readFile('db/migrations/0010_validate_contact_url_constraint.sql', 'utf8')).includes('validate constraint profile_settings_contact_url_protocol'), 'migrations should validate the HTTPS contact URL constraint');
   assert((await readFile('db/migrations/0011_upload_owner_not_null.sql', 'utf8')).includes('alter column user_id set not null'), 'migrations should prevent orphaned profile uploads');
+  assert((await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('ssh_claim_sessions') && (await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('code_hash text not null unique'), 'migrations should add hashed short-lived SSH claim sessions');
   assert(githubOauthHelper.includes('gh_handle, avatar_url, privacy, last_seen_at') && githubOauthHelper.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(authCallbackApi.includes('identityReadiness, identityUnavailableMessage'), 'GitHub OAuth callback should use the shared identity readiness gate');
   assert(authCallbackApi.indexOf('identityReadiness().available') < authCallbackApi.indexOf('const statePayload = decodeStatePayload'), 'GitHub OAuth callback should fail closed before reading signed state when identity is unavailable');
@@ -611,6 +622,7 @@ async function assertRoutes() {
   const readme = await readFile('README.md', 'utf8');
   const sshRouteDoc = await readFile('docs/SSH-ROUTE.md', 'utf8');
   assert(readme.includes('A successful sync mints a GitHub-claimed, derived-only profile') && readme.includes('profile URL, derived credential proof URL, compare-first invite URL, copy/paste share line, X share URL'), 'README should document CLI compare-first sync output');
+  assert(readme.includes('SSH claim-session primitive') && readme.includes('npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-ABCD-2345') && readme.includes('`claim CODE` when an SSH/TUI session is waiting'), 'README should document the SSH claim-session handoff command');
   assert(readme.includes('derived profile credential') && readme.includes('/u/<handle>/credential.json') && readme.includes('canonical content hash'), 'README should document the machine-readable derived credential');
   assert(readme.includes('real Claude Code `/insights` output directory') && readme.includes('session-meta/*.json') && readme.includes('facets/*.json'), 'README should document the real Claude Code /insights extractor');
   assert(readme.includes('Terminal-first onboarding is intentionally short') && readme.includes('`status` is the local preflight') && readme.includes('`reveal` is the local, no-sign-in result') && readme.includes('No website upload is required') && readme.includes('Use `sync` or `join --yes` for explicit non-interactive publishing'), 'README should document terminal-first CLI status, reveal, consent, and sync without manual website upload');
@@ -625,7 +637,7 @@ async function assertRoutes() {
   assert(readme.includes('Collectible profile badges') && readme.includes('public-safe rarity'), 'README should document collectible public achievement badges');
   assert(readme.includes('derived credential proof URL') && readme.includes('README badge Markdown, and profile embed HTML'), 'README should document post-sync credential proof and portable distribution snippets');
   assert(readme.includes('docs/SSH-ROUTE.md') && readme.includes('SSH should become a social shell and claim coordinator') && readme.includes('raw `/insights` files must never be pasted'), 'README should document the planned no-install SSH route without weakening local extraction');
-  assert(sshRouteDoc.includes('Treat SSH as a no-install terminal social shell and claim coordinator, not as the raw-data extractor.') && sshRouteDoc.includes('The SSH host must never ask for raw `session-meta/*.json`') && sshRouteDoc.includes('Vercel Functions cannot host a long-lived SSH server') && sshRouteDoc.includes('Add `--claim CODE` to the existing CLI'), 'SSH route spec should preserve local-only extraction and name the implementation shape');
+  assert(sshRouteDoc.includes('Treat SSH as a no-install terminal social shell and claim coordinator, not as the raw-data extractor.') && sshRouteDoc.includes('The SSH host must never ask for raw `session-meta/*.json`') && sshRouteDoc.includes('Vercel Functions cannot host a long-lived SSH server') && sshRouteDoc.includes('vibestats claim CODE'), 'SSH route spec should preserve local-only extraction and name the implementation shape');
   assert(readme.includes('A facet radar') && readme.includes('not just one label'), 'README should document the derived facet radar');
   assert(readme.includes('Facet-aware comparisons and matches') && readme.includes('not only the top archetype'), 'README should document facet-aware social scoring');
   assert(readme.includes('A profile recap surface') && readme.includes('/u/<handle>/recap'), 'README should document profile recaps as a return surface');
@@ -796,6 +808,34 @@ async function assertDerivedProfileCredentialHelpers() {
   assert(publicPayloadHasNoRawUsageFields(credential), 'derived credential should not expose raw usage field names');
   assert(!JSON.stringify(credential).includes('tool_usage') && !JSON.stringify(credential).includes('language_usage') && !JSON.stringify(credential).includes('rawJson'), 'derived credential should strip raw-shaped input fields');
   console.log('ok derived profile credential helpers');
+}
+
+async function assertSshClaimHelpers() {
+  const {
+    CLAIM_CODE_PATTERN,
+    claimCodeHash,
+    claimLocalCommand,
+    cleanClaimCode,
+    generateClaimCode,
+    normalizeClaimCode,
+  } = await import('../api/_lib/ssh-claims.js');
+
+  const generated = generateClaimCode();
+  assert(CLAIM_CODE_PATTERN.test(generated), 'SSH claim helper should generate bounded readable claim codes');
+  assert(normalizeClaimCode(' vibeabcd2345 ') === 'VIBE-ABCD-2345', 'SSH claim helper should normalize compact codes');
+  assert(cleanClaimCode('vibe-abcd-2345') === 'VIBE-ABCD-2345', 'SSH claim helper should clean lowercase codes');
+  assert(cleanClaimCode('', { optional: true }) === '', 'SSH claim helper should allow optional claim codes');
+  assert(claimCodeHash('VIBE-ABCD-2345') === claimCodeHash('vibeabcd2345'), 'SSH claim helper should hash normalized codes consistently');
+  const command = claimLocalCommand('https://vibestats.example', 'VIBE-ABCD-2345');
+  assert(command.includes('npx --yes') && command.includes(' claim ') && command.includes('VIBE-ABCD-2345') && command.includes('--host'), 'SSH claim helper should print a local claim command');
+  let invalid = false;
+  try {
+    cleanClaimCode('../raw-session.json');
+  } catch (err) {
+    invalid = err.statusCode === 400;
+  }
+  assert(invalid, 'SSH claim helper should reject non-code input');
+  console.log('ok SSH claim helpers preserve local handoff shape');
 }
 
 async function assertIdentityReadiness() {
@@ -1726,6 +1766,10 @@ async function assertCliDerivedPayload() {
   const parsedOnboard = parseArgs(['node', 'vibestats', 'onboard', '--dry-run']);
   assert(parsedJoin.command === 'join' && isSyncCommand(parsedJoin.command) && parsedJoin.options.authMode === 'device', 'CLI should accept join as a terminal-first device-auth sync alias');
   assert(parsedOnboard.command === 'onboard' && isSyncCommand(parsedOnboard.command) && parsedOnboard.options.authMode === 'device', 'CLI should accept onboard as a terminal-first device-auth sync alias');
+  const parsedClaim = parseArgs(['node', 'vibestats', 'claim', 'VIBE-ABCD-2345', '--yes']);
+  assert(parsedClaim.command === 'claim' && isSyncCommand(parsedClaim.command) && parsedClaim.options.claimCode === 'VIBE-ABCD-2345' && parsedClaim.options.authMode === 'device' && parsedClaim.options.promptToPublish === true, 'CLI should accept SSH claim codes as a reveal-before-publish device-auth flow');
+  const parsedClaimFlag = parseArgs(['node', 'vibestats', 'sync', '--claim', 'VIBE-ABCD-2345']);
+  assert(parsedClaimFlag.options.claimCode === 'VIBE-ABCD-2345' && parsedClaimFlag.options.promptToPublish === false, 'CLI sync should attach an explicit SSH claim code without changing automation semantics');
   const parsedYes = parseArgs(['node', 'vibestats', 'join', '--yes']);
   assert(parsedYes.options.assumeYes === true && parsedYes.options.promptToPublish === true, 'CLI join should support explicit yes for non-interactive terminal publishing');
   const parsedBrowser = parseArgs(['node', 'vibestats', 'join', '--browser']);
@@ -1746,7 +1790,7 @@ async function assertCliDerivedPayload() {
     env: { ...process.env, VIBESTATS_CLI_PACKAGE: '@lets-vibe/vibestats' },
   });
   assert(overrideHelp.includes('Current public claim command: npx --yes @lets-vibe/vibestats') && overrideHelp.includes('Current public status command: npx --yes @lets-vibe/vibestats status'), 'CLI should honor VIBESTATS_CLI_PACKAGE in printed follow-up commands');
-  assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the terminal-first participation flow') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default') && cliSource.includes('Use --yes with join/onboard to publish after reveal without prompting'), 'CLI help should frame the no-subcommand path as status, reveal-before-publish terminal onboarding');
+  assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the terminal-first participation flow') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use claim CODE from an SSH/TUI claim session') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default') && cliSource.includes('Use --yes with join/onboard to publish after reveal without prompting'), 'CLI help should frame the no-subcommand path as status, reveal-before-publish terminal onboarding');
   assert(cliSource.includes('vibestats share --handle HANDLE [--host URL] [--json]') && cliSource.includes('Use share to fetch a public profile'), 'CLI help should expose terminal profile share-kit generation');
   assert(cliSource.includes('vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle>') && cliSource.includes('Use intent to set or clear your short-lived matchmaker availability from the terminal'), 'CLI help should expose terminal match-intent participation');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
@@ -2231,6 +2275,7 @@ async function assertCliDerivedPayload() {
     let postedBody = '';
     globalThis.fetch = async (url, options = {}) => {
       postedBody = String(options.body || '');
+      const requestPayload = JSON.parse(postedBody || '{}');
       assert(url === 'https://vibestats.example/api/sync', 'CLI sync should post to the selected host');
       assert(['Bearer sync-token', 'Bearer browser-token'].includes(options.headers?.Authorization), 'CLI sync should send bearer token auth');
       return {
@@ -2250,6 +2295,9 @@ async function assertCliDerivedPayload() {
             weekly_digest_preview_url: '/api/digest/preview',
             leaderboard_url: '/leaderboard/shipper',
             match_url: '/match?goal=pair-coding&archetype=shipper',
+            claim_session: requestPayload.claim_code
+              ? { state: 'synced', gh_handle: 'alex', profile_url: '/u/alex', compare_url: '/?compareTo=alex&compareArchetype=shipper', credential_url: '/u/alex/credential.json' }
+              : null,
           };
         },
       };
@@ -2277,6 +2325,14 @@ async function assertCliDerivedPayload() {
     assert(output.join('').includes('Reserve weekly digest: https://vibestats.example/settings#weekly-digest-row'), 'CLI sync should print the weekly digest setup link as a return hook');
     assert(output.join('').includes('Preview weekly digest: https://vibestats.example/api/digest/preview'), 'CLI sync should print the weekly digest preview as an immediate return hook');
     assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI sync request must not post raw usage maps');
+    assert(!JSON.parse(postedBody).claim_code, 'CLI sync should not attach a claim code unless one is provided');
+
+    output.length = 0;
+    const claimSyncResult = await sync({ file, host: 'https://vibestats.example', token: 'sync-token', dryRun: false, claimCode: 'VIBE-ABCD-2345' });
+    assert(claimSyncResult.claim_session?.state === 'synced', 'CLI sync should receive SSH claim-session attachment status');
+    assert(JSON.parse(postedBody).claim_code === 'VIBE-ABCD-2345', 'CLI sync should include an explicit SSH claim code in the derived upload request');
+    assert(output.join('').includes('Updated SSH claim session for @alex.'), 'CLI sync should tell users when the waiting SSH claim session was updated');
+    assert(!postedBody.includes('tool_usage') && !postedBody.includes('language_usage'), 'CLI claim sync request must not post raw usage maps');
 
     output.length = 0;
     const consentedOnboardResult = await sync({
@@ -3500,6 +3556,32 @@ async function assertPrivateApiNoStore() {
         allow: 'POST',
       },
       {
+        label: '/api/ssh/claim-start storage unavailable',
+        module: '../api/ssh/claim-start.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 503,
+      },
+      {
+        label: '/api/ssh/claim-start method guard',
+        module: '../api/ssh/claim-start.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'POST',
+      },
+      {
+        label: '/api/ssh/claim-status missing code',
+        module: '../api/ssh/claim-status.js',
+        req: { method: 'GET', query: {}, headers: { host: 'localhost:3000' } },
+        status: 400,
+      },
+      {
+        label: '/api/ssh/claim-status method guard',
+        module: '../api/ssh/claim-status.js',
+        req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' } },
+        status: 405,
+        allow: 'GET',
+      },
+      {
         label: '/api/match-intros invalid payload',
         module: '../api/match-intros.js',
         req: { method: 'POST', query: {}, headers: { host: 'localhost:3000' }, body: {} },
@@ -3765,6 +3847,7 @@ await assertLaunchAuditHelpers();
 await assertUpdateCliCommandScript();
 await assertShareKitScript();
 await assertDerivedProfileCredentialHelpers();
+await assertSshClaimHelpers();
 await assertIdentityReadiness();
 await assertOAuthReturnHandling();
 await assertCliLocalTokenEndpoint();

@@ -51,9 +51,10 @@ function usage() {
   vibestats [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
   vibestats status [--file PATH] [--dir PATH] [--json]
   vibestats reveal [--file PATH] [--dir PATH] [--json]
+  vibestats claim CODE [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--yes]
   vibestats share --handle HANDLE [--host URL] [--json]
   vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle> [--contact-url URL] [--public] [--host URL] [--token TOKEN] [--device|--browser] [--no-open]
-  vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--device|--browser] [--no-open] [--dry-run] [--yes]
+  vibestats [sync|join|onboard] [--file PATH] [--dir PATH] [--host URL] [--token TOKEN] [--claim CODE] [--device|--browser] [--no-open] [--dry-run] [--yes]
   vibestats [sync|join|onboard] --dry-run --json
   vibestats install-claude-command [--force] [--path PATH]
 
@@ -70,6 +71,7 @@ Run without a subcommand for the terminal-first participation flow: local reveal
 Use reveal for a local result with no sign-in and no network publish.
 Use share to fetch a public profile and print its compare link, badge, embed, and privacy proof.
 Use intent to set or clear your short-lived matchmaker availability from the terminal.
+Use claim CODE from an SSH/TUI claim session to publish locally derived metrics back to that waiting session.
 Use join/onboard as explicit aliases for the same terminal-first flow; they use a GitHub device code by default.
 Use --yes with join/onboard to publish after reveal without prompting. Use sync for explicit publish automation.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
@@ -103,10 +105,14 @@ export function parseArgs(argv) {
     authMode: process.env.VIBESTATS_AUTH_MODE || '',
     assumeYes: process.env.VIBESTATS_YES === '1' || process.env.VIBESTATS_ASSUME_YES === '1',
     promptToPublish: false,
+    claimCode: '',
   };
 
   if (command === 'intent' && args[0] && !args[0].startsWith('-')) {
     options.intent = args.shift();
+  }
+  if (command === 'claim' && args[0] && !args[0].startsWith('-')) {
+    options.claimCode = args.shift();
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -127,6 +133,8 @@ export function parseArgs(argv) {
     else if (arg.startsWith('--contact-url=')) options.contactUrl = arg.slice('--contact-url='.length);
     else if (arg === '--public') options.makePublic = true;
     else if (arg === '--token') options.token = args[++i] || '';
+    else if (arg === '--claim') options.claimCode = args[++i] || '';
+    else if (arg.startsWith('--claim=')) options.claimCode = arg.slice('--claim='.length);
     else if (arg === '--no-open') options.openBrowser = false;
     else if (arg === '--device') options.authMode = 'device';
     else if (arg === '--browser') options.authMode = 'browser';
@@ -144,15 +152,19 @@ export function parseArgs(argv) {
   options.handle = String(options.handle || '').trim().replace(/^@/, '');
   options.intent = String(options.intent || '').trim() || 'idle';
   options.contactUrl = String(options.contactUrl || '').trim();
+  options.claimCode = String(options.claimCode || '').trim();
   if (command === 'reveal') options.dryRun = true;
-  if (!options.authMode) options.authMode = ['join', 'onboard', 'intent'].includes(command) ? 'device' : 'browser';
-  options.promptToPublish = ['join', 'onboard'].includes(command) && !options.dryRun;
+  if (!options.authMode) options.authMode = ['join', 'onboard', 'claim', 'intent'].includes(command) ? 'device' : 'browser';
+  options.promptToPublish = ['join', 'onboard', 'claim'].includes(command) && !options.dryRun;
+  if (command === 'claim' && !options.claimCode && !options.dryRun) {
+    throw new Error('Missing SSH claim code.');
+  }
 
   return { command, options };
 }
 
 export function isSyncCommand(command) {
-  return ['reveal', 'sync', 'join', 'onboard'].includes(command);
+  return ['reveal', 'sync', 'join', 'onboard', 'claim'].includes(command);
 }
 
 function missingInsightsAdvice() {
@@ -902,6 +914,7 @@ export async function sync(options) {
     if (auth.handle) process.stdout.write(`Authorized CLI sync as @${auth.handle}.\n`);
   }
 
+  const syncPayload = options.claimCode ? { ...payload, claim_code: options.claimCode } : payload;
   const res = await fetch(`${host}/api/sync`, {
     method: 'POST',
     headers: {
@@ -909,7 +922,7 @@ export async function sync(options) {
       'Content-Type': 'application/json',
       'User-Agent': 'vibestats-cli',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(syncPayload),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `Sync failed with HTTP ${res.status}`);
@@ -934,6 +947,9 @@ export async function sync(options) {
   const xShare = cliXShareUrl({ label: payload.raw_meta.signature || payload.archetype, compareUrl });
   process.stdout.write(`Synced ${payload.raw_meta.signature || payload.archetype} to ${profileUrl}\n`);
   process.stdout.write('Minted GitHub-claimed, derived-only profile. Raw /insights stayed local.\n');
+  if (body.claim_session?.state === 'synced') {
+    process.stdout.write(`Updated SSH claim session for @${body.claim_session.gh_handle || handle}.\n`);
+  }
   process.stdout.write(`Verify derived credential: ${credentialUrl}\n`);
   process.stdout.write(`Invite people to compare: ${compareUrl}\n`);
   process.stdout.write(`Copy/paste share: ${shareText}\n`);

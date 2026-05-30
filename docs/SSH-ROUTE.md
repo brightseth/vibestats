@@ -65,7 +65,7 @@ scp ~/.claude/usage-data/session-meta/*.json ssh.vibestats.io:
 
 1. User chooses `claim`.
 2. SSH app creates a short-lived claim session:
-   - random code, e.g. `VIBE-7K2Q`;
+   - random code, e.g. `VIBE-7K2Q-M9PA`;
    - 10 minute expiry;
    - no raw data fields;
    - optional intended GitHub handle after auth.
@@ -73,7 +73,7 @@ scp ~/.claude/usage-data/session-meta/*.json ssh.vibestats.io:
 
 ```bash
 /insights
-npx --yes github:brightseth/vibestats#feat/wave-1-identity --claim VIBE-7K2Q
+npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-7K2Q-M9PA
 ```
 
 4. The local helper:
@@ -131,14 +131,14 @@ The SSH service should call existing HTTPS APIs where possible:
 
 ### New Backend Primitive
 
-Add claim sessions, backed by Postgres or Redis:
+Add claim sessions, backed by Postgres:
 
 ```text
-claim_sessions
+ssh_claim_sessions
 - code_hash
 - state: pending | authorized | synced | expired | revoked
+- user_id nullable
 - gh_handle nullable
-- sync_token_id nullable
 - profile_url nullable
 - compare_url nullable
 - credential_url nullable
@@ -152,6 +152,7 @@ Public API shape:
 - `POST /api/ssh/claim-start` creates a claim code.
 - `GET /api/ssh/claim-status?code=...` returns bounded status for the SSH TUI.
 - `POST /api/sync` accepts an optional `claim_code` when the local helper publishes derived metrics.
+- `vibestats claim CODE` is the local helper command shape for a waiting SSH session.
 
 The status API must never serialize raw input fields or secret env names.
 
@@ -160,14 +161,14 @@ The status API must never serialize raw input fields or secret env names.
 Keep the current CLI as the first local helper:
 
 ```bash
-npx --yes github:brightseth/vibestats#feat/wave-1-identity --claim VIBE-7K2Q
+npx --yes github:brightseth/vibestats#feat/wave-1-identity claim VIBE-7K2Q-M9PA
 ```
 
 Later, reduce npm friction with a signed binary/bootstrap:
 
 ```bash
 curl -fsSL https://vibestats.io/install | sh
-vibestats claim VIBE-7K2Q
+vibestats claim VIBE-7K2Q-M9PA
 ```
 
 SSH coordinates the reveal. Local code does the extraction.
@@ -177,7 +178,7 @@ SSH coordinates the reveal. Local code does the extraction.
 1. **Spec and copy guardrails.** Land this document, link it from the README/roadmap, and test that docs say SSH is not the extractor.
 2. **Read-only SSH TUI.** Browse public profiles, leaderboards, matchmaker, credential JSON links, and share kits using existing public APIs.
 3. **Claim-session API.** Add short-lived codes, status polling, and sync attachment. No raw payload fields.
-4. **Local helper flag.** Add `--claim CODE` to the existing CLI so a local publish can wake a waiting SSH session.
+4. **Local helper command.** Add `claim CODE` to the existing CLI so a local publish can wake a waiting SSH session.
 5. **Reveal handoff.** SSH TUI updates live after sync and prints the launch kit.
 6. **Signed binary/bootstrap.** Only after the claim loop works, add non-npm installation so SSH can print a command that does not mention npm.
 7. **Ops hardening.** Rate limits, abuse handling, session expiry, host key pinning guidance, and launch audit checks against the SSH health endpoint.

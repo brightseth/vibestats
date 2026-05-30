@@ -2,6 +2,7 @@ import { readSyncSession, syncTokenIsRevoked } from './_lib/auth.js';
 import { getUserById, sql } from './_lib/db.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, safeErrorMessage } from './_lib/http.js';
 import { profileLinks } from './_lib/profile-links.js';
+import { assertClaimSessionAttachable, attachClaimSession, cleanClaimCode } from './_lib/ssh-claims.js';
 import { sanitizeUploadPayload } from './_lib/uploads.js';
 
 export default async function handler(req, res) {
@@ -32,7 +33,10 @@ export default async function handler(req, res) {
       return json(res, 429, { error: 'Sync limit reached: 5 profile saves per day' }, NO_STORE_HEADERS);
     }
 
-    const payload = sanitizeUploadPayload(await readJson(req, { maxBytes: 64 * 1024 }), { source: 'cli' });
+    const body = await readJson(req, { maxBytes: 64 * 1024 });
+    const claimCode = cleanClaimCode(body.claim_code || body.claimCode, { optional: true });
+    if (claimCode) await assertClaimSessionAttachable(claimCode);
+    const payload = sanitizeUploadPayload(body, { source: 'cli' });
     const rows = await sql()`
       insert into uploads (user_id, archetype, scores, metrics, raw_meta)
       values (
@@ -45,10 +49,14 @@ export default async function handler(req, res) {
       returning id, archetype, scores, metrics, raw_meta, uploaded_at
     `;
     await sql()`update users set last_seen_at = now() where id = ${user.id}`;
+    const links = profileLinks(user, payload.archetype);
+    let claimSession = null;
+    if (claimCode) claimSession = await attachClaimSession(claimCode, user, links);
 
     return json(res, 201, {
       ok: true,
-      ...profileLinks(user, payload.archetype),
+      ...links,
+      claim_session: claimSession,
       upload: rows[0],
     }, NO_STORE_HEADERS);
   } catch (err) {
