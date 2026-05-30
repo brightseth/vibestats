@@ -2244,8 +2244,16 @@
       const comparePath = comparePathFromSave(result.compare_url, archetype);
       const badgePath = badgePathFromSave(result.badge_url, profilePath);
       const embedPath = embedPathFromSave(result.embed_url, profilePath);
+      const privacyPath = pathFromSaveUrl(result.privacy_url, '/settings#privacy-settings');
+      const matchSettingsPath = pathFromSaveUrl(result.match_settings_url, '/settings#match-settings');
+      const leaderboardPath = pathFromSaveUrl(result.leaderboard_url, `/leaderboard/${encodeURIComponent(archetype)}`);
+      const matchPath = pathFromSaveUrl(result.match_url, `/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`);
       const safeProfilePath = safeHtml(profilePath);
       const safePairingBuilderUrl = safeHtml(`/compare?me=${encodeURIComponent(currentUser?.gh_handle || '')}`);
+      const safePrivacyPath = safeHtml(privacyPath);
+      const safeMatchSettingsPath = safeHtml(matchSettingsPath);
+      const safeLeaderboardPath = safeHtml(leaderboardPath);
+      const safeMatchPath = safeHtml(matchPath);
       const digestInline = `
         <div class="digest-inline">
           <input type="email" id="digest-email-inline" placeholder="you@example.com" autocomplete="email" aria-label="Weekly digest email">
@@ -2256,11 +2264,15 @@
         </div>`;
       updateProfileSaveStatus(`
         Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a>
-        <div class="post-save-note">Put the README badge in your GitHub repos; every click opens your compare-first reveal path.</div>
+        <div class="post-save-note">Your profile starts unlisted. Put the README badge in your GitHub repos; every click opens your compare-first reveal path. Go public only when you want browse, match, and leaderboard discovery.</div>
         <div class="post-save-actions">
           <button type="button" id="copy-saved-invite">Copy invite</button>
           <button type="button" class="secondary" id="copy-saved-profile">Copy profile</button>
           <a href="${safePairingBuilderUrl}">Create pairing link</a>
+          <a class="secondary" href="${safePrivacyPath}">Go public</a>
+          <a class="secondary" href="${safeMatchSettingsPath}">Set match intent</a>
+          <a class="secondary" href="${safeLeaderboardPath}">View weekly board</a>
+          <a class="secondary" href="${safeMatchPath}">Find matches</a>
           <a class="secondary" href="/settings#cli-sync">Set up CLI sync</a>
           <button type="button" class="secondary" id="copy-saved-install">Copy /vibestats install</button>
           <button type="button" class="secondary" id="copy-saved-badge">Copy README badge</button>

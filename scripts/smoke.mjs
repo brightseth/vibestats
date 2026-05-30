@@ -857,6 +857,10 @@ async function assertProfileShareLoop() {
   assert(indexHtml.includes('weekly_digest_opt_in: true'), 'inline digest opt-in should use settings API');
   assert(indexHtml.includes('postSaveInviteText(profilePath, comparePath, archetype, scores)'), 'post-save save state should copy asymmetric profile invite text');
   assert(indexHtml.includes('comparePathFromSave(result.compare_url, archetype)'), 'post-save invite copy should use compare-first URL returned by save APIs');
+  assert(indexHtml.includes("pathFromSaveUrl(result.privacy_url, '/settings#privacy-settings')") && indexHtml.includes('Your profile starts unlisted.'), 'post-save save state should preserve unlisted-by-default privacy while offering public discovery opt-in');
+  assert(indexHtml.includes("pathFromSaveUrl(result.match_settings_url, '/settings#match-settings')") && indexHtml.includes('Set match intent'), 'post-save save state should route owners into match intent setup');
+  assert(indexHtml.includes('pathFromSaveUrl(result.leaderboard_url') && indexHtml.includes('View weekly board'), 'post-save save state should route owners back to their leaderboard');
+  assert(indexHtml.includes('pathFromSaveUrl(result.match_url') && indexHtml.includes('Find matches'), 'post-save save state should route owners into goal-driven matches');
   assert(indexHtml.includes('return `${parsed.pathname}${parsed.search}${parsed.hash}`'), 'post-save save state must preserve query params from API compare URLs');
   assert(indexHtml.includes('Profile: ${canonicalVibestatsUrl(profilePath)}'), 'post-save invite copy should retain the profile credential link');
   assert(indexHtml.includes("document.execCommand('copy')"), 'upload/post-save copy actions should fall back when Clipboard API is unavailable');
