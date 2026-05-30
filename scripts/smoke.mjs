@@ -584,7 +584,8 @@ async function assertRoutes() {
   assert(profileHtml.includes('id="facet-panel"') && profileHtml.includes('renderFacetRadar(latest)'), 'profile UI should render a derived facet radar');
   assert(profileHtml.includes('derived from public archetype scores') && profileHtml.includes('raw /insights data stays local'), 'profile facet radar should state its privacy boundary');
   assert(profileHtml.includes('id="achievement-panel"') && profileHtml.includes('renderAchievements(profile)'), 'profile UI should render collectible achievement badges');
-  assert(profileHtml.includes('Collectible profile badges') && profileHtml.includes('named from derived public signals'), 'profile achievements should state their derived-data boundary');
+  assert(profileHtml.includes('Collectible profile badges') && profileHtml.includes('copyable scarcity proof') && profileHtml.includes('raw /insights data stays local'), 'profile achievements should state their derived-data boundary');
+  assert(profileHtml.includes('achievementShareText(handle, latest, badge, compareUrl)') && profileHtml.includes('Copy badge proof') && profileHtml.includes('Share badge') && profileHtml.includes('data-copy-achievement') && profileHtml.includes('achievementXShareUrl(share, compareUrl)'), 'profile achievements should be copyable share objects that route recipients into comparison');
   assert(profileHtml.includes('owner history private'), 'profile UI should not render a fake history chart for visitors');
   assert(profileHtml.includes("historyVisible ? `${uploads.length} total` : 'latest only'"), 'profile UI should label visitor timeline as latest-only');
   assert((config.crons || []).some((cron) => cron.path === '/api/cron/weekly-digest'), 'weekly digest cron should be scheduled');
@@ -956,6 +957,7 @@ async function assertProfileShareLoop() {
   assert(profileHtml.includes('CLAIM_COMMAND') && profileHtml.includes('Copy claim') && profileHtml.includes('INSTALL_CLAUDE_COMMAND') && profileHtml.includes('install-claude-command'), 'profile reveal surfaces should let share recipients claim from terminal and install the Claude Code command');
   assert(profileHtml.includes("document.execCommand('copy')"), 'profile copy actions should fall back when Clipboard API is unavailable');
   assert(profileHtml.includes('profileProofLine(profile)'), 'profile share copy should include scarcity or leaderboard social proof');
+  assert(profileHtml.includes("Raw /insights stayed local. See how you'd pair:"), 'achievement share copy should preserve the privacy promise while driving comparison');
   assert(profileHtml.includes('GitHub-claimed, derived-only profile'), 'profile share copy should carry credential and privacy proof');
   assert(indexHtml.includes("const PENDING_UPLOAD_KEY = 'vibestats_pending_upload'"), 'upload page should persist pending derived saves across auth');
   assert(indexHtml.includes('Only derived profile data is persisted here. Raw insights JSON is never stored.'), 'pending auth save must document derived-only storage');

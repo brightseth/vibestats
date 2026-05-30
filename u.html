@@ -563,6 +563,28 @@
       font-size: 11px;
       line-height: 1.4;
     }
+    .achievement-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .achievement-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 6px 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 7px;
+      background: rgba(0,0,0,0.16);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .achievement-action:hover { border-color: rgba(107,143,255,0.45); color: #fff; }
     .moment-grid {
       display: none;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1014,6 +1036,19 @@
     function profileInviteText(handle, latest, profileUrl, compareUrl, profile) {
       const proof = profileProofLine(profile);
       return `See how you'd pair with @${handle}, a ${shareLabel(latest)}:${proof ? `\n${proof}` : ''}\n${compareUrl}\nProfile: ${profileUrl}`;
+    }
+
+    function achievementShareText(handle, latest, badge, compareUrl) {
+      const label = String(badge?.label || 'vibestats badge').replace(/\s+/g, ' ').trim();
+      const value = String(badge?.value || '').replace(/\s+/g, ' ').trim();
+      const detail = String(badge?.detail || 'derived public profile signal').replace(/\s+/g, ' ').trim();
+      const signature = shareLabel(latest);
+      return `@${handle}'s vibestats badge: ${label}${value ? ` ${value}` : ''}. ${detail}. ${signature}. Raw /insights stayed local. See how you'd pair: ${compareUrl}`;
+    }
+
+    function achievementXShareUrl(text, compareUrl) {
+      const params = new URLSearchParams({ text, url: compareUrl });
+      return `https://twitter.com/intent/tweet?${params.toString()}`;
     }
 
     function readmeBadgeMarkdown(handle, badgePath, compareUrl) {
@@ -1521,22 +1556,44 @@
         return;
       }
 
+      const latest = profile.uploads?.[0] || {};
+      const handle = profile.user?.gh_handle || 'vibecoder';
+      const compareUrl = canonicalVibestatsUrl(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(latest.archetype || 'builder')}`);
+
       panel.classList.add('visible');
       panel.innerHTML = `
         <div class="achievement-head">
           <div class="achievement-title">Collectible profile badges</div>
-          <div class="achievement-note">named from derived public signals<br>raw /insights data stays local</div>
+          <div class="achievement-note">copyable scarcity proof<br>raw /insights data stays local</div>
         </div>
         <div class="achievement-grid">
-          ${achievements.map((badge) => `
+          ${achievements.map((badge) => {
+            const share = achievementShareText(handle, latest, badge, compareUrl);
+            return `
             <div class="achievement ${esc(badge.tone || 'proof')}">
               <div class="achievement-label">${esc(badge.label || 'Badge')}</div>
               <div class="achievement-value">${esc(badge.value || '')}</div>
               <div class="achievement-detail">${esc(badge.detail || 'Derived public profile signal')}</div>
+              <div class="achievement-actions">
+                <button class="achievement-action" type="button" data-copy-achievement="${esc(share)}">Copy badge proof</button>
+                <a class="achievement-action" href="${esc(achievementXShareUrl(share, compareUrl))}" target="_blank" rel="noopener">Share badge</a>
+              </div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       `;
+      panel.querySelectorAll('[data-copy-achievement]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          try {
+            await copyText(button.getAttribute('data-copy-achievement') || '');
+            button.textContent = 'Badge copied!';
+          } catch {
+            button.textContent = 'Copy failed';
+          }
+          setTimeout(() => { button.textContent = 'Copy badge proof'; }, 1500);
+        });
+      });
     }
 
     function radarPoint(index, total, value, radius = 82, center = 100) {

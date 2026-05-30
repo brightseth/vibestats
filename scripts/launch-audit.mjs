@@ -389,7 +389,7 @@ async function auditLaunch(options) {
       path: `/u/${encodeURIComponent(handle)}`,
       expectedType: 'text/html',
       allowStatuses: expectReady ? [200] : [200, 404],
-      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'CLAIM_COMMAND', 'Copy claim', 'GitHub-claimed', 'derived-only', 'id="privacy-cta"', 'id="match-intent-cta"', 'id="digest-preview-cta"'],
+      mustInclude: ['id="readme-panel"', 'Copy README badge', 'id="reveal-panel"', 'What are you?', 'npx --yes github:brightseth/vibestats#feat/wave-1-identity reveal', 'CLAIM_COMMAND', 'Copy claim', 'Copy badge proof', 'Share badge', 'GitHub-claimed', 'derived-only', 'id="privacy-cta"', 'id="match-intent-cta"', 'id="digest-preview-cta"'],
     },
     {
       label: 'profile recap',
