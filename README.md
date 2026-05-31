@@ -41,7 +41,7 @@ A single-page personality engine for Claude Code users. The user runs `/insights
 
 ## Where it's going
 
-A **public profile + matchmaker** for Claude Code users — see `docs/ROADMAP.md`. The no-install terminal route is tracked in `docs/SSH-ROUTE.md`: SSH should become a social shell and claim coordinator, while `/api/ssh/manifest` gives the future TCP service a machine-readable contract and local extraction remains the privacy boundary.
+A **public profile + matchmaker** for Claude Code users — see `docs/ROADMAP.md`. The no-install terminal route is tracked in `docs/SSH-ROUTE.md`: SSH should become a social shell and claim coordinator, while `/api/ssh/manifest` gives the future TCP service a machine-readable contract and local extraction remains the privacy boundary. Cross-product interop with `/vibe`, vibeconf, and Coltrane is tracked in `docs/ECOSYSTEM-INTEGRATION.md`; those links stay out of the launch UI until the receiving flows are ready.
 
 The current product is a one-shot vanity moment. The next product is a **persistent identity** (`vibestats.io/u/<gh-handle>`) with an evolution timeline, leaderboards, and pair-finding. The vanity stays; the social tail gets built underneath it.
 

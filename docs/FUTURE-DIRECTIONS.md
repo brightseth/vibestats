@@ -24,6 +24,9 @@ The v1 card and viral loops are the wedge. The long-term product is the trusted 
 4. **No-install terminal social shell.**
    Add an SSH/TUI route (`ssh ssh.vibestats.io`) for browsing, share kits, matchmaker discovery, and claim coordination without asking cold users to trust npm first. Keep extraction local; SSH is the product shell, not the raw `/insights` reader. V1 now exposes `/api/ssh/manifest` and includes `services/ssh-shell/server.js` as the first deployable TCP service scaffold. See `docs/SSH-ROUTE.md`.
 
+5. **Ecosystem interop with `/vibe`, vibeconf, and Coltrane.**
+   Treat vibestats as the earned identity credential, `/vibe` as ambient social discovery, vibeconf as the live collaboration room, and Coltrane as the agentic host across the system. Keep launch traffic inside vibestats until the receiving products are ready. See `docs/ECOSYSTEM-INTEGRATION.md`.
+
 ## Code Catches To Preserve
 
 - **Debugger score must not reward producing bugs.** Reframe around resolution, recovery, or debug patience before ranking makes the incentive visible.
