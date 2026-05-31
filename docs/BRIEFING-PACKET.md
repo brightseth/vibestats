@@ -1,0 +1,82 @@
+# Vibestats Briefing Packet
+
+Use this as the front door for collaborators helping with first-time user experience, onboarding, launch creative, and agent setup.
+
+## Read First
+
+1. `docs/DESIGN-GTM-BRIEF.md`
+   The comprehensive design and marketing brief: product framing, current flow, audiences, FTUE review prompts, creative strategy, metrics, and constraints.
+
+2. `docs/AGENT-SETUP-GUIDE.md`
+   Copy-paste instructions for coding agents or support helpers setting up vibestats for a user without violating the raw-data privacy boundary.
+
+3. `docs/SHARE-PLAYBOOK.md`
+   Current launch copy, claims to avoid, anonymous-link rules, and DM/public-post sequencing.
+
+## Strategy Context
+
+- `docs/GOAL.md` - north star and current viral loop
+- `docs/ROADMAP.md` - wave plan
+- `docs/FUTURE-DIRECTIONS.md` - longer-term source-agnostic identity and credential direction
+- `docs/ECOSYSTEM-INTEGRATION.md` - future `/vibe`, vibeconf, and Coltrane interop
+- `docs/SSH-ROUTE.md` - planned no-install terminal social shell
+
+## Design Team Ask
+
+Help make the first-time experience feel like:
+
+```text
+Claude Code already knows how you build.
+Reveal who you are.
+Share without leaking raw data.
+Compare with people who build differently.
+```
+
+The immediate review target is the path from cold landing page to browser reveal to anonymous share link.
+
+## Launch Scope
+
+In scope:
+
+- homepage FTUE
+- browser reveal polish
+- anonymous `/r/...` share page
+- terminal output tone and hierarchy
+- eight-archetype visual system
+- mobile share-recipient path
+- creative assets for a controlled launch
+
+Out of scope for the first pass:
+
+- adding a ninth archetype
+- routing users to `/vibe`
+- in-app DMs
+- swipe matching
+- generic XP/tokens
+- raw data upload or agent-mediated raw data collection
+
+## Current Command To Test
+
+```bash
+curl -fsSL https://vibestats.io/cli.sh | sh -s --
+```
+
+Security-conscious reviewers can inspect first:
+
+```bash
+curl -fsSL https://vibestats.io/cli.sh | less
+```
+
+## What Good Feedback Looks Like
+
+Please prioritize:
+
+- where a new user hesitates
+- which labels feel unclear
+- which CTAs compete
+- whether privacy is believable
+- whether the reveal feels worth sharing
+- whether mobile recipients know what to do
+- whether the terminal output feels polished
+
+Avoid broad redesigns that require changing the privacy model, the eight-archetype canon, or the local-first extraction boundary.

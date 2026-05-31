@@ -6,6 +6,18 @@ Live: [vibestats.io](https://vibestats.io)
 
 ---
 
+## Briefing packet
+
+For design, FTUE, onboarding, agent setup, and GTM help, start with `docs/BRIEFING-PACKET.md`.
+
+Core companion docs:
+
+- `docs/DESIGN-GTM-BRIEF.md` - design review prompts, onboarding strategy, and launch creative plan.
+- `docs/AGENT-SETUP-GUIDE.md` - copy-paste setup text for agents helping users reveal vibestats safely.
+- `docs/SHARE-PLAYBOOK.md` - launch copy, claims to avoid, and anonymous-link operating rules.
+
+---
+
 ## What it is today (May 2026)
 
 A single-page personality engine for Claude Code users. The user runs `/insights` inside CC, uploads locally in the browser or runs the vibestats CLI, and gets:
