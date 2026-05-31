@@ -2551,6 +2551,12 @@
       });
     }
 
+    function wireLocalPreviewUrlCopy(buttonId) {
+      document.getElementById(buttonId)?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, location.href, 'Preview URL copied!', 'Copy preview URL');
+      });
+    }
+
     async function resumePendingProfileSave() {
       const pending = readPendingProfileSave();
       if (!pending || !currentUser) return;
@@ -2593,10 +2599,12 @@
           <div class="post-save-note">Share this reveal anonymously without GitHub${identityStatus.profile_save_available ? ', or claim a durable profile later' : ''}. Raw /insights stayed local; this page only has derived preview metrics.</div>
           <div class="post-save-actions">
             <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+            <button type="button" class="secondary" id="copy-local-preview-url">Copy preview URL</button>
             ${authAction}
           </div>
         `);
         wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
+        wireLocalPreviewUrlCopy('copy-local-preview-url');
         return;
       }
 
@@ -2606,10 +2614,12 @@
           <div class="post-save-note">GitHub profile claiming is not configured on this deployment. You can still create an anonymous unlisted reveal link from derived metrics only.</div>
           <div class="post-save-actions">
             <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+            <button type="button" class="secondary" id="copy-local-preview-url">Copy preview URL</button>
             <button type="button" class="secondary" disabled>Profile saves pending</button>
           </div>
         `, 'muted');
         wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
+        wireLocalPreviewUrlCopy('copy-local-preview-url');
         return;
       }
 
@@ -2618,11 +2628,13 @@
         <div class="post-save-note">Share anonymously, or save this derived result to @${safeHtml(currentUser.gh_handle)} and open your wrapped recap. Raw /insights stayed local.</div>
         <div class="post-save-actions">
           <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+          <button type="button" class="secondary" id="copy-local-preview-url">Copy preview URL</button>
           <button type="button" class="secondary" id="claim-local-preview">Claim this profile</button>
           <a class="secondary" href="/settings#privacy-settings">Privacy settings</a>
         </div>
       `);
       wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
+      wireLocalPreviewUrlCopy('copy-local-preview-url');
       document.getElementById('claim-local-preview')?.addEventListener('click', async (event) => {
         const button = event.currentTarget;
         button.disabled = true;
@@ -3021,6 +3033,13 @@
       return JSON.parse(new TextDecoder().decode(bytes));
     }
 
+    function encodeBase64UrlJson(value) {
+      const bytes = new TextEncoder().encode(JSON.stringify(value));
+      let binary = '';
+      bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
     function boundedLocalNumber(value, max) {
       const n = Number(value || 0);
       if (!Number.isFinite(n)) return 0;
@@ -3052,40 +3071,56 @@
         if (preview?.version !== 'vibestats.local_preview.v1') throw new Error('unsupported preview version');
         const raw = preview.insights || {};
         const metrics = raw.metrics || {};
+        const user = String(raw.meta?.user || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+        const dateRange = String(raw.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32);
+        const localMetrics = {
+          total_sessions: boundedLocalNumber(metrics.total_sessions, 100000),
+          total_messages: boundedLocalNumber(metrics.total_messages, 5000000),
+          commits: boundedLocalNumber(metrics.commits, 1000000),
+          satisfaction_rate: boundedLocalRate(metrics.satisfaction_rate),
+          multi_clauding_rate: boundedLocalRate(metrics.multi_clauding_rate),
+          buggy_code_events: boundedLocalNumber(metrics.buggy_code_events, 100000),
+          task_agent_sessions: boundedLocalNumber(metrics.task_agent_sessions, 100000),
+          longest_session_minutes: boundedLocalNumber(metrics.longest_session_minutes, 60 * 72),
+          files_modified: boundedLocalNumber(metrics.files_modified, 100000),
+          lines_changed: boundedLocalNumber(metrics.lines_changed, 5000000),
+          tool_usage: boundedLocalMap(metrics.tool_usage, 12, 5000000),
+          language_usage: boundedLocalMap(metrics.language_usage, 20, 5000000),
+        };
+        const localMeta = {};
+        if (user) localMeta.user = user;
+        if (dateRange) localMeta.date_range = dateRange;
+        const sharePreview = {
+          version: 'vibestats.local_preview.v1',
+          source: 'cli',
+          insights: {
+            meta: localMeta,
+            metrics: localMetrics,
+          },
+        };
+        const shareHash = `#vibestatsPreview=${encodeBase64UrlJson(sharePreview)}`;
+        if (location.hash !== shareHash) {
+          history.replaceState(null, document.title, location.pathname + location.search + shareHash);
+        }
         return {
           _vibestats: {
             claim_code: cleanClaimCode(preview.claim_code),
           },
           meta: {
-            user: String(raw.meta?.user || 'Local terminal reveal').replace(/\s+/g, ' ').trim().slice(0, 80),
-            date_range: String(raw.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32),
+            user,
+            date_range: dateRange,
           },
-          metrics: {
-            total_sessions: boundedLocalNumber(metrics.total_sessions, 100000),
-            total_messages: boundedLocalNumber(metrics.total_messages, 5000000),
-            commits: boundedLocalNumber(metrics.commits, 1000000),
-            satisfaction_rate: boundedLocalRate(metrics.satisfaction_rate),
-            multi_clauding_rate: boundedLocalRate(metrics.multi_clauding_rate),
-            buggy_code_events: boundedLocalNumber(metrics.buggy_code_events, 100000),
-            task_agent_sessions: boundedLocalNumber(metrics.task_agent_sessions, 100000),
-            longest_session_minutes: boundedLocalNumber(metrics.longest_session_minutes, 60 * 72),
-            files_modified: boundedLocalNumber(metrics.files_modified, 100000),
-            lines_changed: boundedLocalNumber(metrics.lines_changed, 5000000),
-            tool_usage: boundedLocalMap(metrics.tool_usage, 12, 5000000),
-            language_usage: boundedLocalMap(metrics.language_usage, 20, 5000000),
-          },
+          metrics: localMetrics,
         };
       } catch (err) {
-        showError(`Could not open local terminal preview: ${err.message}`);
+        showError(`Could not open private preview: ${err.message}`);
         return null;
-      } finally {
-        history.replaceState(null, document.title, location.pathname + location.search);
       }
     }
 
     const localPreview = localPreviewFromHash();
     if (localPreview) {
-      showInfo('Opening local terminal reveal preview. Nothing has been published.');
+      showInfo('Opening private reveal preview. Nothing has been published.');
       setTimeout(() => runAnalysis(localPreview, { localPreview: true }), 120);
     } else if (shouldAutoRunDemo()) {
       setTimeout(runDemo, 120);

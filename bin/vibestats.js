@@ -316,14 +316,16 @@ function cleanPreviewClaimCode(value) {
 
 function localWebPreviewData(insights = {}, { claimCode = '' } = {}) {
   const metrics = insights.metrics || {};
+  const user = String(insights.meta?.user || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const dateRange = String(insights.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32);
+  const meta = {};
+  if (user) meta.user = user;
+  if (dateRange) meta.date_range = dateRange;
   const preview = {
     version: 'vibestats.local_preview.v1',
     source: 'cli',
     insights: {
-      meta: {
-        user: String(insights.meta?.user || 'Local terminal reveal').replace(/\s+/g, ' ').trim().slice(0, 80),
-        date_range: String(insights.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32),
-      },
+      meta,
       metrics: {
         total_sessions: boundedNumber(metrics.total_sessions, 100000),
         total_messages: boundedNumber(metrics.total_messages, 5000000),
