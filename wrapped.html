@@ -681,7 +681,21 @@
   <a class="back-link" href="/" id="back-link">vibestats.io</a>
 
   <script src="/lib/html2canvas.min.js"></script>
+  <script src="/api/archetype-identity"></script>
   <script>
+    // This is a fixed Orchestrator sample. Keep its displayed name/tagline/title
+    // synced to the shared identity source so a public rename propagates here too;
+    // the hardcoded HTML above remains the offline fallback if the endpoint fails.
+    (function syncSampleIdentity() {
+      const a = window.VIBESTATS_ARCHETYPES && window.VIBESTATS_ARCHETYPES.orchestrator;
+      if (!a) return;
+      const nameEl = document.querySelector('.archetype-name');
+      if (nameEl && a.name) nameEl.textContent = a.name;
+      const tagEl = document.querySelector('.archetype-tagline');
+      if (tagEl && a.tagline) tagEl.textContent = '"' + a.tagline + '"';
+      if (a.name) document.title = a.name + ' | vibestats wrapped';
+    })();
+
     const TOTAL_SLIDES = 7;
     let current = 0;
     let transitioning = false;
