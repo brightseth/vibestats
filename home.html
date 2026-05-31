@@ -179,33 +179,42 @@
       gap: 10px;
       margin: -18px 0 24px;
     }
-    .hero-demo-btn {
+    /* Primary CTA — scoped to .hero-actions so it wins over the later .demo-btn base rule */
+    .hero-actions .hero-demo-btn {
       min-height: 44px;
-      border-color: rgba(107,143,255,0.46);
-      background: linear-gradient(135deg, rgba(107,143,255,0.2), rgba(34,211,238,0.1));
-      color: #dbe5ff;
+      border: 1px solid rgba(155,181,255,0.55);
+      background: linear-gradient(135deg, #6B8FFF, #22d3ee);
+      color: #06060a;
+      font-weight: 700;
+      box-shadow: 0 10px 30px -12px rgba(107,143,255,0.7);
+      transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
     }
-    .hero-demo-btn:hover {
-      border-color: rgba(34,211,238,0.65);
-      color: #fff;
-      background: linear-gradient(135deg, rgba(107,143,255,0.26), rgba(34,211,238,0.14));
+    .hero-actions .hero-demo-btn:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 14px 36px -12px rgba(107,143,255,0.85);
+      color: #06060a;
     }
-    .hero-secondary-btn {
+    .hero-actions .hero-demo-btn:active { transform: translateY(1px); }
+    .hero-actions .hero-secondary-btn {
       min-height: 44px;
       padding: 12px 14px;
       color: var(--text-muted);
-      border-color: rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      box-shadow: none;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
     }
-    .hero-secondary-btn:hover {
-      border-color: rgba(107,143,255,0.34);
+    .hero-actions .hero-secondary-btn:hover {
+      border-color: rgba(107,143,255,0.4);
       color: #fff;
-      background: rgba(107,143,255,0.08);
+      background: rgba(107,143,255,0.06);
     }
-    .hero-demo-hint {
+    .demo-hint.hero-demo-hint {
       margin: -14px 0 28px;
       max-width: 520px;
       line-height: 1.55;
+      color: #8e8ea8;
+      font-size: 12px;
     }
 
     .file-path {
@@ -266,9 +275,9 @@
     .privacy-note {
       width: min(500px, 90vw);
       margin: -18px 0 24px;
-      color: var(--text-dim);
+      color: #8e8ea8;
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1.6;
     }
 
@@ -353,6 +362,8 @@
     /* ===== WRAPPED STATE (reuses wrapped.html patterns) ===== */
     .wrapped-page { position: fixed; inset: 0; }
     .wrapped-page.hidden { display: none; }
+    /* Cinematic reveal: hide the persistent nav so the wrapped slideshow owns the screen */
+    body.wrapped-active .auth-bar { display: none; }
 
     .progress {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
@@ -885,10 +896,33 @@
   <script src="/api/archetype-identity"></script>
   <script>
     // ========================================
-    // ARCHETYPE DEFINITIONS
+    // ARCHETYPE DEFINITIONS (from /api/archetype-identity, with a safety net)
     // ========================================
-    const ARCHETYPES = window.VIBESTATS_ARCHETYPES;
-    const ARCHETYPE_PLURALS = window.VIBESTATS_ARCHETYPE_PLURALS;
+    // If the identity endpoint fails to load, synthesize a valid, brand-styled
+    // shape from the eight keys so the reveal degrades gracefully instead of
+    // throwing on an undefined map. No copy is hardcoded here — names derive
+    // from the keys — so this never drifts from the source of truth.
+    const FALLBACK_ARCHETYPE_KEYS = ['orchestrator','shipper','architect','debugger','polyglot','sprinter','deepdiver','builder'];
+    const FALLBACK_SHORT_NAMES = { deepdiver: 'Deep Diver' };
+    function buildFallbackArchetypes() {
+      const map = {};
+      for (const key of FALLBACK_ARCHETYPE_KEYS) {
+        const short = FALLBACK_SHORT_NAMES[key] || key.charAt(0).toUpperCase() + key.slice(1);
+        map[key] = {
+          name: `THE ${short.toUpperCase()}`, short, tagline: '', description: '',
+          color: '#6B8FFF', accent: '#22d3ee',
+          gradient: 'linear-gradient(135deg, #6B8FFF, #22d3ee)',
+          borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #22d3ee, transparent)',
+        };
+      }
+      return map;
+    }
+    if (!window.VIBESTATS_ARCHETYPES) {
+      console.warn('[vibestats] archetype identity did not load; using built-in fallback.');
+    }
+    const ARCHETYPES = window.VIBESTATS_ARCHETYPES || buildFallbackArchetypes();
+    const ARCHETYPE_PLURALS = window.VIBESTATS_ARCHETYPE_PLURALS
+      || Object.fromEntries(FALLBACK_ARCHETYPE_KEYS.map((k) => [k, (FALLBACK_SHORT_NAMES[k] || k.charAt(0).toUpperCase() + k.slice(1)) + 's']));
 
     // ========================================
     // ARCHETYPE SCORING (v2 — sigmoid + power-law normalization)
@@ -2741,6 +2775,7 @@
       const slideHTML = generateSlides(insights, archetype, scores, previousResult, options);
       analyzingEl.classList.add('hidden');
       document.getElementById('wrapped-page').classList.remove('hidden');
+      document.body.classList.add('wrapped-active');
       initSlideshow(slideHTML);
 
       // Save to history + submit aggregate stats (after showing results)
