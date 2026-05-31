@@ -165,20 +165,22 @@ The product should feel like a reveal, not a chore.
 
 ## Eight-Archetype Canon
 
-Do not add or rename archetypes casually. The eight-archetype canon is wired into scoring, OG images, share URLs, community aggregates, compatibility math, schema checks, and launch audit.
+The internal eight-key canon must stay stable for launch. These keys are wired into scoring, OG images, share URLs, community aggregates, compatibility math, schema checks, and launch audit.
 
-| Archetype | Current tagline | Accent |
-| --- | --- | --- |
-| Orchestrator | You don't code - you conduct. | `#6B8FFF` |
-| Shipper | Done is better than perfect. You live this. | `#22c55e` |
-| Architect | You read before you write. You plan before you build. | `#6B8FFF` |
-| Debugger | You don't guess. You investigate. | `#f59e0b` |
-| Polyglot | One language is never enough. | `#ff79c6` |
-| Sprinter | Fast, focused, ferocious. | `#ef4444` |
-| Deep Diver | You go deep, not wide. | `#3b82f6` |
-| Builder | You build things that didn't exist before. | `#22c55e` |
+Design is free to propose stronger public-facing display names, taglines, visual motifs, campaign language, and "skins" for the eight identities. Treat the current names as the working set, not sacred brand copy. The constraint is mapping integrity: every proposed public name must map back to exactly one internal key, and there is no ninth archetype.
 
-Design can sharpen presentation and supporting copy, but the public names should remain stable for this launch.
+| Internal key | Current display name | Current tagline | Accent |
+| --- | --- | --- | --- |
+| `orchestrator` | Orchestrator | You don't code - you conduct. | `#6B8FFF` |
+| `shipper` | Shipper | Done is better than perfect. You live this. | `#22c55e` |
+| `architect` | Architect | You read before you write. You plan before you build. | `#6B8FFF` |
+| `debugger` | Debugger | You don't guess. You investigate. | `#f59e0b` |
+| `polyglot` | Polyglot | One language is never enough. | `#ff79c6` |
+| `sprinter` | Sprinter | Fast, focused, ferocious. | `#ef4444` |
+| `deepdiver` | Deep Diver | You go deep, not wide. | `#3b82f6` |
+| `builder` | Builder | You build things that didn't exist before. | `#22c55e` |
+
+Good rebrand proposals should make the identities more iconic without changing the behavioral meaning behind each key. If a name changes publicly, the implementation should use a display-name layer rather than changing stored enum values or URLs.
 
 ## Primary Audiences
 
@@ -469,6 +471,7 @@ These are not all requested in the first pass. Start with critique. Produce only
 ## Product Constraints
 
 - Do not add a ninth archetype.
+- Do not change internal archetype keys for launch; public display names, taglines, and visual motifs are open for design exploration.
 - Do not upload raw `/insights`.
 - Do not add in-app DMs.
 - Do not add swipe matching.
@@ -495,5 +498,5 @@ These are not all requested in the first pass. Start with critique. Produce only
 2. What is the cleanest language for URL-hash preview vs hosted `/r/...` share?
 3. How do we make `curl | sh` feel inspectable without scaring users?
 4. What is the best mobile fallback for users who discover vibestats away from their laptop?
-5. Which archetype taglines need sharper emotional resonance without renaming the canon?
+5. Which public display names, taglines, or visual motifs would make the eight archetypes more compelling while preserving the internal keys?
 6. What would make the reveal feel less like analytics and more like identity?

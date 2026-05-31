@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Reveal Your Vibecoding Personality | vibestats</title>
-  <meta name="description" content="Claude Code already knows how you build. Run /insights, check status, reveal your vibecoding personality, and compare with other Claude Code users.">
+  <meta name="description" content="Claude Code already knows how you build. Run /insights, reveal your vibecoding personality, and compare with other coding-agent users.">
   <meta property="og:title" content="What's your vibecoding personality? | vibestats">
   <meta property="og:description" content="Claude Code already knows how you build. Reveal your archetype: The Orchestrator, The Shipper, The Architect, The Debugger...">
   <meta property="og:type" content="website">
@@ -190,11 +190,16 @@
       color: #fff;
       background: linear-gradient(135deg, rgba(107,143,255,0.26), rgba(34,211,238,0.14));
     }
-    .hero-copy-btn {
+    .hero-secondary-btn {
       min-height: 44px;
       padding: 12px 14px;
-      color: #c8d5ff;
-      border-color: rgba(107,143,255,0.32);
+      color: var(--text-muted);
+      border-color: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+    }
+    .hero-secondary-btn:hover {
+      border-color: rgba(107,143,255,0.34);
+      color: #fff;
       background: rgba(107,143,255,0.08);
     }
     .hero-demo-hint {
@@ -266,23 +271,6 @@
       font-size: 11px;
       line-height: 1.6;
     }
-    .save-toggle {
-      display: none;
-      width: min(500px, 90vw);
-      margin: -10px 0 24px;
-      justify-content: center;
-    }
-    .save-toggle.visible { display: flex; }
-    .save-toggle label {
-      display: inline-flex; align-items: center; gap: 8px;
-      min-height: 40px; padding: 8px 12px; border-radius: 10px;
-      border: 1px solid rgba(107,143,255,0.22);
-      background: rgba(107,143,255,0.06);
-      color: var(--text-muted);
-      font-family: var(--mono); font-size: 12px;
-      cursor: pointer;
-    }
-    .save-toggle input { accent-color: var(--accent); }
 
     .demo-section {
       margin-top: 32px; text-align: center;
@@ -778,6 +766,21 @@
     button, a { -webkit-tap-highlight-color: transparent; }
 
     @media (max-width: 480px) {
+      .auth-bar {
+        position: static;
+        width: 100%;
+        padding: 16px 16px 0;
+        justify-content: center;
+      }
+      .auth-pill {
+        min-height: 36px;
+        padding: 7px 10px;
+        font-size: 11px;
+      }
+      .upload-logo {
+        margin-top: 8px;
+        margin-bottom: 30px;
+      }
       .slide { padding: 50px 24px 32px; }
       .archetype-card { padding: 28px 20px 24px; }
       .share-row { flex-direction: column; align-items: stretch; }
@@ -803,20 +806,21 @@
       You already took the test by coding. Reveal your archetype from Claude Code <code>/insights</code>; raw session data stays on your machine.
     </p>
     <div class="privacy-note">
-      Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
+      Anonymous share links are public unlisted, expire in 30 days, and store only derived snapshot fields. Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
     </div>
 
     <div class="hero-actions" aria-label="Reveal preview actions">
-      <button class="demo-btn hero-demo-btn" onclick="runDemo()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Try the reveal demo
+      <button class="demo-btn hero-demo-btn" type="button" onclick="document.getElementById('reveal-steps').scrollIntoView({ behavior: 'smooth', block: 'center' })">
+        Reveal on this machine
       </button>
-      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this)">Copy reveal command</button>
-      <button class="copy-command hero-copy-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command', this)">Install /vibestats</button>
+      <button class="demo-btn hero-secondary-btn" onclick="runDemo()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        View sample reveal
+      </button>
     </div>
-    <div class="demo-hint hero-demo-hint">No sign-in or upload required for the demo. The command reveals first, opens the web preview, then lets you claim only when you are ready.</div>
+    <div class="demo-hint hero-demo-hint">Run the two steps below on your Claude Code machine. On mobile, view the sample reveal now and send yourself the command for desktop later.</div>
 
-    <div class="reveal-steps" aria-label="Reveal your vibestats profile">
+    <div class="reveal-steps" id="reveal-steps" aria-label="Reveal your vibestats profile">
       <div class="reveal-step">
         <span class="reveal-step-num">1</span>
         <span>
@@ -828,34 +832,11 @@
       <div class="reveal-step">
         <span class="reveal-step-num">2</span>
         <span>
-          <span class="reveal-step-label">Reveal, preview, then claim</span>
+          <span class="reveal-step-label">Reveal locally, then choose whether to share</span>
           <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
         </span>
-        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this)">Copy</button>
+        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this)">Copy reveal command</button>
       </div>
-      <div class="reveal-step">
-        <span class="reveal-step-num">3</span>
-        <span>
-          <span class="reveal-step-label">Install /vibestats in Claude Code</span>
-          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
-        </span>
-        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command', this)">Copy</button>
-      </div>
-      <div class="reveal-step">
-        <span class="reveal-step-num">?</span>
-        <span>
-          <span class="reveal-step-label">Troubleshooting preflight</span>
-          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
-        </span>
-        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status', this)">Copy</button>
-      </div>
-    </div>
-
-    <div class="save-toggle" id="save-toggle-row">
-      <label>
-        <input type="checkbox" id="save-to-profile" checked>
-        Save derived metrics to my profile
-      </label>
     </div>
 
     <details class="legacy-upload">
@@ -1713,8 +1694,7 @@
       if (pct) cardParams.set('p', pct);
       if (signature) cardParams.set('sig', signature.label);
       const cardShareUrl = `https://vibestats.io/card?${cardParams}`;
-      const saveToggle = document.getElementById('save-to-profile');
-      const shouldShareProfile = !options.demo && !options.localPreview && currentUser && saveToggle && saveToggle.checked;
+      const shouldShareProfile = false;
       const profileShareUrl = shouldShareProfile ? `https://vibestats.io/u/${encodeURIComponent(currentUser.gh_handle)}` : null;
       const shareClickUrl = shouldShareProfile
         ? `https://vibestats.io/?compareTo=${encodeURIComponent(currentUser.gh_handle)}&compareArchetype=${encodeURIComponent(archetype)}`
@@ -2071,7 +2051,6 @@
 
     function renderAuth() {
       const returnTo = encodeURIComponent(location.pathname + location.search);
-      const saveToggle = document.getElementById('save-toggle-row');
       if (currentUser) {
         authBar.innerHTML = `
           <a class="auth-pill" href="/u/${encodeURIComponent(currentUser.gh_handle)}">
@@ -2082,7 +2061,6 @@
           <a class="auth-pill" href="/promises">Promises</a>
           <a class="auth-pill" href="/settings">Settings</a>
         `;
-        saveToggle.classList.add('visible');
       } else {
         authBar.innerHTML = identityStatus.profile_save_available
           ? `
@@ -2095,7 +2073,6 @@
             <a class="auth-pill" href="/promises">Promises</a>
             <span class="auth-pill muted">Profile saves pending</span>
           `;
-        saveToggle.classList.remove('visible');
       }
     }
 
@@ -2490,6 +2467,30 @@
       });
     }
 
+    function wireProfileSaveAction(buttonId, archetype, scores, insights) {
+      document.getElementById(buttonId)?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const idle = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Saving...';
+        updateProfileSaveStatus('Saving derived metrics to your profile...');
+        try {
+          const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights));
+          const compareUrl = comparisonDestination(archetype);
+          if (compareUrl) {
+            updateProfileSaveStatus(`Saved to your profile. Opening your pairing with ${safeHtml(comparisonTargetLabel(comparisonIntent()))}...<br><a href="${compareUrl}">Open now</a>`);
+            setTimeout(() => { location.href = compareUrl; }, 650);
+            return;
+          }
+          renderSavedProfileStatus(body, archetype, scores);
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = idle;
+          updateProfileSaveStatus(err.message, 'error');
+        }
+      });
+    }
+
     function wireLocalPreviewUrlCopy(buttonId) {
       document.getElementById(buttonId)?.addEventListener('click', (event) => {
         copyWithButton(event.currentTarget, location.href, 'Preview URL copied!', 'Copy preview URL');
@@ -2635,25 +2636,19 @@
         wireAnonymousRevealAction('create-anon-browser-reveal', archetype, scores, insights);
         return;
       }
-      const saveToggle = document.getElementById('save-to-profile');
-      if (saveToggle && !saveToggle.checked) {
-        updateProfileSaveStatus(`Profile save is off. Your result stayed local.${comparisonReturnLink(archetype)}`, 'muted');
-        return;
-      }
-
-      updateProfileSaveStatus('Saving derived metrics to your profile...');
-      try {
-        const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights));
-        const compareUrl = comparisonDestination(archetype);
-        if (compareUrl) {
-          updateProfileSaveStatus(`Saved to your profile. Opening your pairing with ${safeHtml(comparisonTargetLabel(comparisonIntent()))}...<br><a href="${compareUrl}">Open now</a>`);
-          setTimeout(() => { location.href = compareUrl; }, 650);
-          return;
-        }
-        renderSavedProfileStatus(body, archetype, scores);
-      } catch (err) {
-        updateProfileSaveStatus(err.message, 'error');
-      }
+      const intent = comparisonIntent();
+      const saveLabel = intent ? 'Save and compare' : `Save to @${safeHtml(currentUser.gh_handle)}`;
+      updateProfileSaveStatus(`
+        <strong>Nothing published yet.</strong>
+        <div class="post-save-note">Create an anonymous unlisted reveal link, or save this derived result to @${safeHtml(currentUser.gh_handle)}. Raw /insights stayed local.</div>
+        <div class="post-save-actions">
+          <button type="button" class="primary" id="create-anon-browser-reveal">Create anonymous share link</button>
+          <button type="button" class="secondary" id="save-browser-profile">${saveLabel}</button>
+        </div>
+        ${comparisonReturnLink(archetype)}
+      `, 'muted');
+      wireAnonymousRevealAction('create-anon-browser-reveal', archetype, scores, insights);
+      wireProfileSaveAction('save-browser-profile', archetype, scores, insights);
     }
 
     function getArchetypeRarity(archetype) {

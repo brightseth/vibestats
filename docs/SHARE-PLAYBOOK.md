@@ -87,7 +87,7 @@ You can share anonymously without GitHub. Send me your archetype or reveal link.
 
 ## 8-Archetype Grid Copy
 
-Use this copy with a simple grid image or screenshot of the eight archetype cards:
+Use this as the current working copy with a simple grid image or screenshot of the eight archetype cards. Design can propose more iconic public display names, taglines, or motifs as long as they preserve a one-to-one mapping to the eight internal archetype keys.
 
 ```text
 Tag yourself:

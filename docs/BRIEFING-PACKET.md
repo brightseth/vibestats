@@ -49,7 +49,7 @@ In scope:
 - browser reveal polish
 - anonymous `/r/...` share page
 - terminal output tone and hierarchy
-- eight-archetype visual system
+- eight-archetype public naming, tagline, and visual system
 - mobile share-recipient path
 - creative assets for a controlled launch
 
@@ -61,6 +61,8 @@ Out of scope for the first pass:
 - swipe matching
 - generic XP/tokens
 - raw data upload or agent-mediated raw data collection
+
+Creative naming note: the internal eight archetype keys must stay stable for launch because they back scoring, URLs, and audits. Public-facing display names, taglines, art direction, and campaign language are open for critique and rebrand exploration if each proposal preserves a one-to-one mapping to those eight keys.
 
 ## Current Command To Test
 

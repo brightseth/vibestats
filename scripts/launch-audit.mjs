@@ -524,7 +524,7 @@ async function auditLaunch(options) {
       path: '/',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Copy reveal command', `${NO_NPM_CLI}</code>`, NO_NPM_STATUS, NO_NPM_INSTALL, 'Try the reveal demo', 'shouldAutoRunDemo()', 'Reveal, preview, then claim', 'Troubleshooting preflight', 'Have a legacy JSON export?', 'Claim with GitHub', 'Claim this profile', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
+      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Reveal on this machine', 'View sample reveal', 'Run the two steps below on your Claude Code machine', 'Copy reveal command', `${NO_NPM_CLI}</code>`, 'Reveal locally, then choose whether to share', 'Anonymous share links are public unlisted', 'shouldAutoRunDemo()', 'Have a legacy JSON export?', 'Claim with GitHub', 'Claim this profile', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
       mustNotInclude: ['agent-insights.json', 'npx vibestats sync'],
       checkRawLeaks: false,
     },
