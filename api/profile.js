@@ -33,6 +33,57 @@ function getHandle(req) {
   return String(Array.isArray(raw) ? raw[0] : raw || '').trim();
 }
 
+function queryValue(req, key) {
+  const value = req.query?.[key];
+  return String(Array.isArray(value) ? value[0] : value || '').trim();
+}
+
+function decodeLoose(value) {
+  let text = String(value || '').trim();
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const decoded = decodeURIComponent(text);
+      if (decoded === text) break;
+      text = decoded;
+    } catch {
+      break;
+    }
+  }
+  return text;
+}
+
+function embeddedParams(rawHandle) {
+  const text = decodeLoose(rawHandle);
+  const marker = text.indexOf('?');
+  return marker >= 0 ? new URLSearchParams(text.slice(marker + 1)) : new URLSearchParams();
+}
+
+function recoveredComparePath(req, rawHandle) {
+  const embedded = embeddedParams(rawHandle);
+  const compareTo = queryValue(req, 'compareTo') || embedded.get('compareTo') || '';
+  const compareArchetype = queryValue(req, 'compareArchetype') || embedded.get('compareArchetype') || '';
+  const params = new URLSearchParams();
+  if (/^[a-zA-Z0-9-]{1,39}$/.test(compareTo)) params.set('compareTo', compareTo);
+  if (ARCHETYPES[compareArchetype]) params.set('compareArchetype', compareArchetype);
+  const query = params.toString();
+  return query ? `/?${query}` : '';
+}
+
+function pastedProfileRecoveryPath(req, rawHandle) {
+  const text = decodeLoose(rawHandle);
+  if (!/[\s/]|https?:/i.test(text)) return '';
+  const match = text.match(/^([a-zA-Z0-9-]{1,39})(?=$|[\s/])/);
+  if (!match) return '';
+  return recoveredComparePath(req, rawHandle) || `/u/${encodeURIComponent(match[1])}`;
+}
+
+function redirectNoStore(res, path) {
+  res.setHeader('Cache-Control', 'private, no-store');
+  if (typeof res.redirect === 'function') return res.redirect(302, path);
+  res.setHeader('Location', path);
+  return res.status(302).send('');
+}
+
 function injectProfileMeta(html, meta) {
   const tags = `
   <meta property="og:title" content="${esc(meta.title)}">
@@ -85,7 +136,11 @@ export function profileDescription({ signature = '', arch, metrics = {}, handle,
 export default async function handler(req, res) {
   if (req.method !== 'GET') return sendPrivateMethodNotAllowed(res);
 
-  const handle = getHandle(req);
+  const rawHandle = getHandle(req);
+  const recoveryPath = pastedProfileRecoveryPath(req, rawHandle);
+  if (recoveryPath) return redirectNoStore(res, recoveryPath);
+
+  const handle = rawHandle;
   if (!/^[a-zA-Z0-9-]{1,39}$/.test(handle)) return sendPrivateNotFound(res);
 
   try {

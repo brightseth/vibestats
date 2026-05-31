@@ -509,6 +509,19 @@ async function auditLaunch(options) {
     }
   }
 
+  try {
+    const malformedPath = `/u/${encodeURIComponent(handle)}%20https:/vibestats.io?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
+    const result = await fetchText(options, malformedPath);
+    const location = result.response.headers.get('location') || '';
+    const recoveredLocation = location.startsWith('http') ? `${new URL(location).pathname}${new URL(location).search}` : location;
+    const expectedLocation = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
+    recorder.check([301, 302, 307, 308].includes(result.response.status), 'malformed profile+compare URL redirects', `${result.response.status} ${result.url}`);
+    recorder.check(recoveredLocation === expectedLocation, 'malformed profile+compare URL recovers compare route', location || '(missing)');
+    recorder.check((result.response.headers.get('cache-control') || '').includes('no-store'), 'malformed profile+compare URL recovery is not cached', result.response.headers.get('cache-control') || '(none)');
+  } catch (err) {
+    recorder.fail('malformed profile+compare URL recovery failed', err.message);
+  }
+
   const paths = [
     {
       label: 'no-npm CLI bootstrap',

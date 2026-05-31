@@ -265,6 +265,10 @@ async function assertRoutes() {
     'profile recap route should rewrite to dynamic recap page',
   );
   assert(
+    rewrites.some((rewrite) => rewrite.source === '/u/:path*' && rewrite.destination === '/api/profile?handle=:path*'),
+    'profile catch-all route should recover malformed pasted profile/compare URLs',
+  );
+  assert(
     rewrites.some((rewrite) => rewrite.source === '/r/:slug' && rewrite.destination === '/api/reveal?slug=:slug'),
     'anonymous reveal snapshot route should rewrite to dynamic reveal page',
   );
@@ -587,6 +591,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("args.push('--', '-s', '-i')"), 'launch audit should collect status and headers through vercel curl');
   assert(launchAudit.includes("label: 'OAuth callback failure response'") && launchAudit.includes("path: '/api/auth/github/callback?code=a&state=b'"), 'launch audit should verify OAuth callback failure responses');
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
+  assert(launchAudit.includes('malformed profile+compare URL redirects') && launchAudit.includes('malformed profile+compare URL recovers compare route'), 'launch audit should verify recovery from pasted profile/compare URL mistakes');
   assert(launchAudit.includes("label: 'reveal homepage'") && launchAudit.includes('View sample reveal') && launchAudit.includes('Reveal on this machine') && launchAudit.includes('shouldAutoRunDemo()') && launchAudit.includes('agent-insights.json'), 'launch audit should prevent homepage onboarding regressions');
   assert(launchAudit.includes('Anonymous share links are public unlisted'), 'launch audit should require the anonymous-share privacy promise on the homepage');
   assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
@@ -3536,6 +3541,27 @@ async function assertProfileFallback() {
   console.error = () => {};
   try {
     const { default: handler } = await import('../api/profile.js');
+    const pastedCompareRes = mockRes();
+    await handler({
+      method: 'GET',
+      query: {
+        handle: 'brightseth https:/vibestats.io',
+        compareTo: 'brightseth',
+        compareArchetype: 'deepdiver',
+      },
+      headers: { host: 'localhost:3000' },
+    }, pastedCompareRes);
+    assert(pastedCompareRes.statusCode === 302 && pastedCompareRes.body === '/?compareTo=brightseth&compareArchetype=deepdiver', 'profile route should recover pasted profile+compare URLs into the compare flow');
+    assert(pastedCompareRes.headers['Cache-Control'] === 'private, no-store', 'profile pasted-URL recovery should not be cached');
+
+    const pastedProfileRes = mockRes();
+    await handler({
+      method: 'GET',
+      query: { handle: 'brightseth/https:/vibestats.io' },
+      headers: { host: 'localhost:3000' },
+    }, pastedProfileRes);
+    assert(pastedProfileRes.statusCode === 302 && pastedProfileRes.body === '/u/brightseth', 'profile route should recover pasted profile-only URLs into the clean profile path');
+
     let statusCode = 0;
     let contentType = '';
     let cache = '';
