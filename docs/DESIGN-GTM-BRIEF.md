@@ -7,6 +7,30 @@ Live product: https://vibestats.io
 Current profile example: https://vibestats.io/u/brightseth  
 Anonymous reveal example: mint a fresh `/r/...` link before sharing publicly.
 
+## Binding Gate
+
+`docs/LAUNCH.md` is the binding source for launch readiness, credential rotation, and production gates. If this brief appears to conflict with `docs/LAUNCH.md`, follow `docs/LAUNCH.md`.
+
+For design/GTM work, the practical version is:
+
+- anonymous reveal links and existing profile links can be reviewed and shared without touching GitHub OAuth
+- do not promote "claim your GitHub profile" until the GitHub-claim gate in `docs/LAUNCH.md` is clear
+
+## Engagement Stage
+
+This is a review pass first, not a request for finished comps.
+
+The first ask is to walk the path from cold landing page to browser reveal to anonymous `/r/...` share and identify:
+
+- where a new user hesitates
+- which CTAs compete
+- which labels are unclear
+- whether privacy is believable
+- whether the reveal is worth sharing
+- what a mobile recipient can reasonably do
+
+Production deliverables should come after the review pass and should be scoped to the highest-friction moments the team agrees to fix.
+
 ## One-Sentence Product
 
 Vibestats reveals your coding-agent personality from Claude Code `/insights`, keeps raw data local, and turns the result into a shareable identity card.
@@ -36,6 +60,99 @@ The current privacy promise:
 - GitHub claim is optional and should not be the first wall
 - public profile surfaces hide exact counts unless the owner opts in
 
+## Current Visual Substrate
+
+Reviewers should start from the live surfaces, not a blank redesign.
+
+Open these current-state screens:
+
+- `https://vibestats.io` - homepage, command copy, demo path, legacy upload fallback
+- `https://vibestats.io/?demo=1` - auto-running sample reveal
+- `https://vibestats.io/u/brightseth` - claimed profile example
+- `https://vibestats.io/genome` - archetype distribution and sample population framing
+- `https://vibestats.io/compare?a=deepdiver&b=shipper` - sample pair comparison
+- `https://vibestats.io/r/<fresh-slug>` - anonymous reveal page; mint fresh before review if possible
+
+Using `/u/brightseth` as a review example is profile viewing, not permission to promote GitHub claiming. GitHub-claim promotion still follows `docs/LAUNCH.md`.
+
+Current visual language:
+
+- dark product UI: `#06060a` background, `#0d0d14` surface, `#252535` borders
+- type: Inter for UI, JetBrains Mono for commands/proof labels
+- accents: blue `#6B8FFF`, purple `#a78bfa`, green `#22c55e`, amber `#f59e0b`, red `#ef4444`, pink `#ff79c6`, cyan `#22d3ee`
+- cards and controls use compact radii, usually 8-16px
+- reveal should feel like a productized identity card, not a marketing landing page
+
+Screenshot set requested for review:
+
+- first viewport of homepage on desktop and mobile
+- terminal output after the main command
+- browser reveal opening slide
+- final archetype card
+- post-reveal action panel
+- anonymous `/r/...` page
+- profile `/u/brightseth`
+- social unfurl preview, if available
+
+## Current Surface Map
+
+| Surface | Audience | Job |
+| --- | --- | --- |
+| Homepage `/` | Heavy Claude Code user, curious lurker | Learn the premise, copy command, try demo |
+| Demo `/?demo=1` | Curious lurker, mobile recipient | See the reveal without local data |
+| Browser reveal hash URL | Tester, helper, design reviewer | Review a local derived preview before hosting |
+| Anonymous reveal `/r/<slug>` | Share recipient | View a hosted derived snapshot without GitHub |
+| Profile `/u/<handle>` | Share recipient, claimed user | Durable identity and compare-first entry |
+| Compare `/compare` | Share recipient | Understand pair dynamics |
+| Genome `/genome` | Curious lurker, skeptic | See archetype distribution framing |
+| Browse/Match/Leaderboard | Later-stage user | Explore opt-in public profiles and intent |
+
+## Mobile Constraint
+
+There is no true mobile reveal today. Extraction requires the machine that has Claude Code `/insights` output.
+
+Mobile should support:
+
+- understanding the product
+- viewing profiles and anonymous reveals
+- exploring archetypes and pairings
+- saving or sending the desktop command for later
+
+Mobile should not promise:
+
+- local extraction from a phone
+- a complete reveal without returning to the desktop Claude Code machine
+
+## What Gets Published
+
+Source of truth: `api/_lib/reveal-snapshots.js` and `api/reveal.js`.
+
+Anonymous `/r/...` links publish:
+
+- archetype
+- public archetype scores
+- derived facet radar
+- coarse metrics: sessions, days, commits per day, code-language count, messages per session
+- public-safe signature label and signature combo
+- secondary archetype
+- up to three public-safe behavioral moments
+- creation time, expiration time, reveal URL, and privacy metadata
+
+Anonymous `/r/...` links do not publish:
+
+- name
+- GitHub handle
+- prompts
+- project paths
+- session ids
+- raw `/insights` JSON
+- free-text session summaries
+- raw tool maps or language maps
+- leaderboard placement
+- matchmaker identity
+
+Claimed `/u/<handle>` profiles add durable identity and profile surfaces, but still use derived-only metrics. Public settings control how much exact activity detail visitors can see.
+
 ## Core Reframe
 
 Do not frame this as "upload your analytics file."
@@ -45,6 +162,23 @@ Frame it as:
 > Claude Code already has the signal. Reveal what kind of builder you are.
 
 The product should feel like a reveal, not a chore.
+
+## Eight-Archetype Canon
+
+Do not add or rename archetypes casually. The eight-archetype canon is wired into scoring, OG images, share URLs, community aggregates, compatibility math, schema checks, and launch audit.
+
+| Archetype | Current tagline | Accent |
+| --- | --- | --- |
+| Orchestrator | You don't code - you conduct. | `#6B8FFF` |
+| Shipper | Done is better than perfect. You live this. | `#22c55e` |
+| Architect | You read before you write. You plan before you build. | `#6B8FFF` |
+| Debugger | You don't guess. You investigate. | `#f59e0b` |
+| Polyglot | One language is never enough. | `#ff79c6` |
+| Sprinter | Fast, focused, ferocious. | `#ef4444` |
+| Deep Diver | You go deep, not wide. | `#3b82f6` |
+| Builder | You build things that didn't exist before. | `#22c55e` |
+
+Design can sharpen presentation and supporting copy, but the public names should remain stable for this launch.
 
 ## Primary Audiences
 
@@ -115,6 +249,7 @@ Design asks:
 Current strength:
 
 - It opens immediately after the terminal flow and shows the wrapped result before publishing.
+- For this launch, "Create anonymous share link" should be the primary post-reveal CTA. "Copy preview URL" is secondary for private review/testing. GitHub claim is optional and gated by `docs/LAUNCH.md`.
 
 Design asks:
 
@@ -195,7 +330,7 @@ Use:
 - "Create an anonymous share link."
 - "Public unlisted link, expires in 30 days."
 - "Compare with this archetype."
-- "I am a 1-of-1 high-velocity Deep Diver combo this month."
+- Verified rarity combo copy, e.g. "I am a 1-of-1 high-velocity Deep Diver combo this month."
 
 Avoid:
 
@@ -226,7 +361,7 @@ Claude Code users: which one are you?
 
 Orchestrator, Shipper, Architect, Debugger, Polyglot, Sprinter, Deep Diver, or Builder.
 
-I am a 1-of-1 high-velocity Deep Diver combo this month:
+My current vibestats profile:
 https://vibestats.io/u/brightseth
 
 Anonymous example, no GitHub:
@@ -281,7 +416,7 @@ Public:
 
 - Post the eight-archetype grid and a fresh anonymous example link.
 - Put the shell command after the link, not as the first CTA.
-- Avoid pushing GitHub claim in launch copy unless credentials have been rotated and confirmed.
+- Avoid pushing GitHub claim in launch copy until the `docs/LAUNCH.md` GitHub-claim gate is clear.
 
 Design/community:
 
@@ -318,7 +453,9 @@ Trust:
 - "inspect first" usage or questions
 - delete requests for anonymous links
 
-## Design Deliverables Requested
+## Possible Production Deliverables After Review
+
+These are not all requested in the first pass. Start with critique. Produce only the deliverables that map to agreed friction points.
 
 1. Revised first-screen information hierarchy.
 2. Browser reveal final-slide treatment.
@@ -347,6 +484,7 @@ Trust:
 - `bin/vibestats.js` - terminal onboarding output and browser handoff
 - `u.html` - public profile shell
 - `genome.html` - archetype distribution page
+- `docs/LAUNCH.md` - binding launch gates and production readiness
 - `docs/SHARE-PLAYBOOK.md` - launch copy and posting rules
 - `docs/AGENT-SETUP-GUIDE.md` - copy-paste guide for setup agents
 - `docs/ECOSYSTEM-INTEGRATION.md` - later `/vibe`, vibeconf, Coltrane handoffs
@@ -354,9 +492,8 @@ Trust:
 ## Open Questions For The Team
 
 1. Should the homepage lead with a demo visual, the command, or the eight-archetype grid?
-2. Should "Create anonymous share link" be the primary final-card CTA over screenshot/share buttons?
-3. What is the cleanest language for URL-hash preview vs hosted `/r/...` share?
-4. How do we make `curl | sh` feel inspectable without scaring users?
-5. What is the best mobile fallback for users who discover vibestats away from their laptop?
-6. Which archetype names/taglines need sharper emotional resonance?
-7. What would make the reveal feel less like analytics and more like identity?
+2. What is the cleanest language for URL-hash preview vs hosted `/r/...` share?
+3. How do we make `curl | sh` feel inspectable without scaring users?
+4. What is the best mobile fallback for users who discover vibestats away from their laptop?
+5. Which archetype taglines need sharper emotional resonance without renaming the canon?
+6. What would make the reveal feel less like analytics and more like identity?

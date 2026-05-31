@@ -4,13 +4,16 @@ Use this as the front door for collaborators helping with first-time user experi
 
 ## Read First
 
-1. `docs/DESIGN-GTM-BRIEF.md`
+1. `docs/LAUNCH.md`
+   Binding launch gates. If another doc appears to conflict with this file on safety, readiness, or credential posture, `docs/LAUNCH.md` wins.
+
+2. `docs/DESIGN-GTM-BRIEF.md`
    The comprehensive design and marketing brief: product framing, current flow, audiences, FTUE review prompts, creative strategy, metrics, and constraints.
 
-2. `docs/AGENT-SETUP-GUIDE.md`
+3. `docs/AGENT-SETUP-GUIDE.md`
    Copy-paste instructions for coding agents or support helpers setting up vibestats for a user without violating the raw-data privacy boundary.
 
-3. `docs/SHARE-PLAYBOOK.md`
+4. `docs/SHARE-PLAYBOOK.md`
    Current launch copy, claims to avoid, anonymous-link rules, and DM/public-post sequencing.
 
 ## Strategy Context
@@ -20,6 +23,10 @@ Use this as the front door for collaborators helping with first-time user experi
 - `docs/FUTURE-DIRECTIONS.md` - longer-term source-agnostic identity and credential direction
 - `docs/ECOSYSTEM-INTEGRATION.md` - future `/vibe`, vibeconf, and Coltrane interop
 - `docs/SSH-ROUTE.md` - planned no-install terminal social shell
+
+Internal implementation context:
+
+- `docs/CODEX-KICKOFF.md` - engineering kickoff brief. Useful for developers, but not required for design/GTM review.
 
 ## Design Team Ask
 
@@ -32,7 +39,7 @@ Share without leaking raw data.
 Compare with people who build differently.
 ```
 
-The immediate review target is the path from cold landing page to browser reveal to anonymous share link.
+This is a review pass first. The immediate target is the path from cold landing page to browser reveal to anonymous share link. Production deliverables should wait until the review identifies the highest-friction points and the team agrees on the changes.
 
 ## Launch Scope
 

@@ -2,17 +2,20 @@
 
 Use this when vibestats is being shared outside the first dogfood circle.
 
-## Hard Gate
+## Binding Launch Gate
 
-Anonymous reveal links and existing profile links are safe to share before GitHub secret rotation is confirmed: viewing those pages does not touch GitHub OAuth, and anonymous reveal publishing does not require auth.
+`docs/LAUNCH.md` is the binding source for launch gates and credential posture. If this playbook appears to conflict with `docs/LAUNCH.md`, follow `docs/LAUNCH.md`.
 
-Do not actively promote "claim your GitHub profile" until any credential that passed through chat, screenshots, shell history, or another non-secret channel has been rotated in the upstream provider. Also confirm no real secret value appears in git history. Rotation alone is not enough if the old value is still committed.
+Practical campaign rule:
+
+- Anonymous reveal links and existing profile links are safe to share before GitHub secret rotation is confirmed: viewing those pages does not touch GitHub OAuth, and anonymous reveal publishing does not require auth.
+- Do not actively promote "claim your GitHub profile" until `docs/LAUNCH.md` says that gate is clear.
 
 ## Claims To Avoid
 
 Do not say "rare Deep Diver" unless the live distribution makes that true. Deep Diver can be mid-pack. The scarcity claim belongs to the signature combo:
 
-- Good: "I am a 1-of-1 high-velocity Deep Diver combo this month."
+- Good if verified against live data: "I am a 1-of-1 high-velocity Deep Diver combo this month."
 - Good: "rare combo: high-velocity Deep Diver"
 - Avoid: "rare Deep Diver"
 
@@ -27,7 +30,7 @@ Claude Code users: which one are you?
 
 Orchestrator, Shipper, Architect, Debugger, Polyglot, Sprinter, Deep Diver, or Builder.
 
-I am a 1-of-1 high-velocity Deep Diver combo this month:
+My current vibestats profile:
 https://vibestats.io/u/brightseth
 
 Reveal yours from Claude Code:
