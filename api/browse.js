@@ -1,19 +1,11 @@
 import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
+import { ARCHETYPE_IDENTITY } from '../lib/archetype-identity.js';
 import { sql } from './_lib/db.js';
 import { LOOKING_FOR_VALUES, publicMatchSettings } from './_lib/profile-settings.js';
 import { publicActivity, publicScores, uploadRecency } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
-const ARCHETYPES = {
-  orchestrator: 'Orchestrator',
-  shipper: 'Shipper',
-  architect: 'Architect',
-  debugger: 'Debugger',
-  polyglot: 'Polyglot',
-  sprinter: 'Sprinter',
-  deepdiver: 'Deep Diver',
-  builder: 'Builder',
-};
+const ARCHETYPES = Object.fromEntries(ARCHETYPE_KEYS.map((key) => [key, ARCHETYPE_IDENTITY[key].short]));
 
 const INTENT_LABELS = {
   any: 'Any intent',

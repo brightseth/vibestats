@@ -1,19 +1,14 @@
 import { readSession, originForRequest } from './_lib/auth.js';
+import { ARCHETYPE_KEYS, ARCHETYPE_IDENTITY } from '../lib/archetype-identity.js';
 import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { metricVisibility, publicUpload } from './_lib/public-profile.js';
 import { rarityTier, signatureFromUpload } from './_lib/signatures.js';
 
-const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', short: 'Orchestrator', tagline: "You don't code. You conduct.", color: '#6B8FFF', accent: '#a78bfa' },
-  shipper: { name: 'THE SHIPPER', short: 'Shipper', tagline: 'Done is better than perfect.', color: '#22c55e', accent: '#22d3ee' },
-  architect: { name: 'THE ARCHITECT', short: 'Architect', tagline: 'You plan before you build.', color: '#3b82f6', accent: '#6B8FFF' },
-  debugger: { name: 'THE DEBUGGER', short: 'Debugger', tagline: "You don't guess. You investigate.", color: '#f59e0b', accent: '#ef4444' },
-  polyglot: { name: 'THE POLYGLOT', short: 'Polyglot', tagline: 'One language is never enough.', color: '#ff79c6', accent: '#22c55e' },
-  sprinter: { name: 'THE SPRINTER', short: 'Sprinter', tagline: 'Fast, focused, ferocious.', color: '#ef4444', accent: '#ff79c6' },
-  deepdiver: { name: 'THE DEEP DIVER', short: 'Deep Diver', tagline: 'You go deep, not wide.', color: '#3b82f6', accent: '#1e40af' },
-  builder: { name: 'THE BUILDER', short: 'Builder', tagline: "You build things that didn't exist before.", color: '#22c55e', accent: '#16a34a' },
-};
+const ARCHETYPES = Object.fromEntries(ARCHETYPE_KEYS.map((key) => {
+  const a = ARCHETYPE_IDENTITY[key];
+  return [key, { name: a.name, short: a.short, color: a.color, accent: a.accent, tagline: a.taglineShort }];
+}));
 
 function esc(value) {
   return String(value || '')

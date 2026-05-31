@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { archetypeMap } from '../lib/archetype-identity.js';
 import { originForRequest, readSession } from './_lib/auth.js';
 import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
@@ -8,16 +9,7 @@ import { signatureFromUpload } from './_lib/signatures.js';
 
 const RECAP_HTML = readFileSync(new URL('../recap.html', import.meta.url), 'utf8');
 
-const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', short: 'Orchestrator' },
-  shipper: { name: 'THE SHIPPER', short: 'Shipper' },
-  architect: { name: 'THE ARCHITECT', short: 'Architect' },
-  debugger: { name: 'THE DEBUGGER', short: 'Debugger' },
-  polyglot: { name: 'THE POLYGLOT', short: 'Polyglot' },
-  sprinter: { name: 'THE SPRINTER', short: 'Sprinter' },
-  deepdiver: { name: 'THE DEEP DIVER', short: 'Deep Diver' },
-  builder: { name: 'THE BUILDER', short: 'Builder' },
-};
+const ARCHETYPES = archetypeMap(['name', 'short']);
 
 function esc(value) {
   return String(value || '')

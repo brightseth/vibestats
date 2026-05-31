@@ -1,18 +1,10 @@
 import { NO_STORE_HEADERS, json, methodNotAllowed } from './_lib/http.js';
+import { ARCHETYPE_IDENTITY } from '../lib/archetype-identity.js';
 import { sql } from './_lib/db.js';
 import { publicActivity, publicScores, uploadRecency } from './_lib/public-profile.js';
 import { ARCHETYPE_KEYS, signatureFromUpload } from './_lib/signatures.js';
 
-const ARCHETYPES = {
-  orchestrator: { name: 'Orchestrator' },
-  shipper: { name: 'Shipper' },
-  architect: { name: 'Architect' },
-  debugger: { name: 'Debugger' },
-  polyglot: { name: 'Polyglot' },
-  sprinter: { name: 'Sprinter' },
-  deepdiver: { name: 'Deep Diver' },
-  builder: { name: 'Builder' },
-};
+const ARCHETYPES = Object.fromEntries(ARCHETYPE_KEYS.map((key) => [key, { name: ARCHETYPE_IDENTITY[key].short }]));
 
 function getArchetype(req) {
   const raw = req.query?.archetype;

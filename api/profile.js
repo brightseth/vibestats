@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { archetypeMap } from '../lib/archetype-identity.js';
 import { readSession, originForRequest } from './_lib/auth.js';
 import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFound } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
@@ -9,16 +10,7 @@ import { signatureFromUpload } from './_lib/signatures.js';
 
 const PROFILE_HTML = readFileSync(new URL('../u.html', import.meta.url), 'utf8');
 
-const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', short: 'Orchestrator', tagline: "You don't code — you conduct." },
-  shipper: { name: 'THE SHIPPER', short: 'Shipper', tagline: 'Done is better than perfect. You live this.' },
-  architect: { name: 'THE ARCHITECT', short: 'Architect', tagline: 'You read before you write. You plan before you build.' },
-  debugger: { name: 'THE DEBUGGER', short: 'Debugger', tagline: "You don't guess. You investigate." },
-  polyglot: { name: 'THE POLYGLOT', short: 'Polyglot', tagline: 'One language is never enough.' },
-  sprinter: { name: 'THE SPRINTER', short: 'Sprinter', tagline: 'Fast, focused, ferocious.' },
-  deepdiver: { name: 'THE DEEP DIVER', short: 'Deep Diver', tagline: 'You go deep, not wide.' },
-  builder: { name: 'THE BUILDER', short: 'Builder', tagline: "You build things that didn't exist before." },
-};
+const ARCHETYPES = archetypeMap(['name', 'short', 'tagline']);
 
 function esc(value) {
   return String(value || '')

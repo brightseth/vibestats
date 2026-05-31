@@ -1,19 +1,11 @@
 import { readFileSync } from 'node:fs';
+import { archetypeMap } from '../lib/archetype-identity.js';
 import { runInNewContext } from 'node:vm';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
-const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF' },
-  shipper:      { name: 'THE SHIPPER',      tagline: 'Done is better than perfect. You live this.', color: '#22c55e' },
-  architect:    { name: 'THE ARCHITECT',     tagline: 'You read before you write. You plan before you build.', color: '#6B8FFF' },
-  debugger:     { name: 'THE DEBUGGER',      tagline: "You don't guess. You investigate.", color: '#f59e0b' },
-  polyglot:     { name: 'THE POLYGLOT',      tagline: 'One language is never enough.', color: '#ff79c6' },
-  sprinter:     { name: 'THE SPRINTER',      tagline: 'Fast, focused, ferocious.', color: '#ef4444' },
-  deepdiver:    { name: 'THE DEEP DIVER',    tagline: 'You go deep, not wide.', color: '#3b82f6' },
-  builder:      { name: 'THE BUILDER',       tagline: "You build things that didn't exist before.", color: '#22c55e' },
-};
+const ARCHETYPES = archetypeMap(['name', 'tagline', 'color']);
 
 const COMPAT_SOURCE = readFileSync(new URL('../lib/compat.js', import.meta.url), 'utf8');
 const compatContext = { window: {} };

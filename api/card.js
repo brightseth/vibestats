@@ -1,4 +1,5 @@
 import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
+import { archetypeMap } from '../lib/archetype-identity.js';
 
 const INSIGHTS_COMMAND = '/insights';
 const BASE_CLI_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
@@ -7,16 +8,7 @@ const STATUS_COMMAND = `${BASE_CLI_COMMAND} status`;
 const REVEAL_COMMAND = `${BASE_CLI_COMMAND} reveal`;
 const INSTALL_CLAUDE_COMMAND = `${BASE_CLI_COMMAND} install-claude-command`;
 
-const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)' },
-  shipper: { name: 'THE SHIPPER', tagline: "Done is better than perfect. You live this.", color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)' },
-  architect: { name: 'THE ARCHITECT', tagline: "You read before you write. You plan before you build.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #3b82f6)' },
-  debugger: { name: 'THE DEBUGGER', tagline: "You don't guess. You investigate.", color: '#f59e0b', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-  polyglot: { name: 'THE POLYGLOT', tagline: "One language is never enough.", color: '#ff79c6', gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b)' },
-  sprinter: { name: 'THE SPRINTER', tagline: "Fast, focused, ferocious.", color: '#ef4444', gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)' },
-  deepdiver: { name: 'THE DEEP DIVER', tagline: "You go deep, not wide.", color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6, #1e40af)' },
-  builder: { name: 'THE BUILDER', tagline: "You build things that didn't exist before.", color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #16a34a)' },
-};
+const ARCHETYPES = archetypeMap(['name', 'tagline', 'color', 'gradient']);
 
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

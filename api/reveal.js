@@ -1,17 +1,9 @@
 import { originForRequest } from './_lib/auth.js';
+import { archetypeMap } from '../lib/archetype-identity.js';
 import { NO_STORE_HEADERS, methodNotAllowed, safeErrorMessage } from './_lib/http.js';
 import { getRevealSnapshot } from './_lib/reveal-snapshots.js';
 
-const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', short: 'Orchestrator', tagline: "You don't code - you conduct.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)' },
-  shipper: { name: 'THE SHIPPER', short: 'Shipper', tagline: 'Done is better than perfect. You live this.', color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)' },
-  architect: { name: 'THE ARCHITECT', short: 'Architect', tagline: 'You read before you write. You plan before you build.', color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #3b82f6)' },
-  debugger: { name: 'THE DEBUGGER', short: 'Debugger', tagline: "You don't guess. You investigate.", color: '#f59e0b', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-  polyglot: { name: 'THE POLYGLOT', short: 'Polyglot', tagline: 'One language is never enough.', color: '#ff79c6', gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b)' },
-  sprinter: { name: 'THE SPRINTER', short: 'Sprinter', tagline: 'Fast, focused, ferocious.', color: '#ef4444', gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)' },
-  deepdiver: { name: 'THE DEEP DIVER', short: 'Deep Diver', tagline: 'You go deep, not wide.', color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6, #1e40af)' },
-  builder: { name: 'THE BUILDER', short: 'Builder', tagline: "You build things that didn't exist before.", color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #16a34a)' },
-};
+const ARCHETYPES = archetypeMap(['name', 'short', 'color', 'gradient']);
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

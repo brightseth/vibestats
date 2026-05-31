@@ -1,17 +1,9 @@
 import { publicScores } from './public-profile.js';
+import { ARCHETYPE_KEYS, ARCHETYPE_IDENTITY } from '../../lib/archetype-identity.js';
 import { signatureFromUpload } from './signatures.js';
 import { profileStreak } from './streak.js';
 
-const ARCHETYPES = {
-  orchestrator: { name: 'The Orchestrator', short: 'Orchestrator' },
-  shipper: { name: 'The Shipper', short: 'Shipper' },
-  architect: { name: 'The Architect', short: 'Architect' },
-  debugger: { name: 'The Debugger', short: 'Debugger' },
-  polyglot: { name: 'The Polyglot', short: 'Polyglot' },
-  sprinter: { name: 'The Sprinter', short: 'Sprinter' },
-  deepdiver: { name: 'The Deep Diver', short: 'Deep Diver' },
-  builder: { name: 'The Builder', short: 'Builder' },
-};
+const ARCHETYPES = Object.fromEntries(ARCHETYPE_KEYS.map((key) => [key, { name: `The ${ARCHETYPE_IDENTITY[key].short}`, short: ARCHETYPE_IDENTITY[key].short }]));
 
 const dayMs = 24 * 60 * 60 * 1000;
 

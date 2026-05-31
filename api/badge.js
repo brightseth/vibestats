@@ -1,19 +1,14 @@
 import { readSession } from './_lib/auth.js';
+import { ARCHETYPE_KEYS, ARCHETYPE_IDENTITY } from '../lib/archetype-identity.js';
 import { profileShareCacheControl, sendPrivateMethodNotAllowed } from './_lib/cache.js';
 import { sql } from './_lib/db.js';
 import { publicScores } from './_lib/public-profile.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 
-const ARCHETYPES = {
-  orchestrator: { name: 'ORCHESTRATOR', color: '#6B8FFF' },
-  shipper: { name: 'SHIPPER', color: '#22c55e' },
-  architect: { name: 'ARCHITECT', color: '#3b82f6' },
-  debugger: { name: 'DEBUGGER', color: '#f59e0b' },
-  polyglot: { name: 'POLYGLOT', color: '#ff79c6' },
-  sprinter: { name: 'SPRINTER', color: '#ef4444' },
-  deepdiver: { name: 'DEEP DIVER', color: '#3b82f6' },
-  builder: { name: 'BUILDER', color: '#22c55e' },
-};
+const ARCHETYPES = Object.fromEntries(ARCHETYPE_KEYS.map((key) => {
+  const a = ARCHETYPE_IDENTITY[key];
+  return [key, { name: a.short.toUpperCase(), color: a.color }];
+}));
 
 function esc(value) {
   return String(value || '')
