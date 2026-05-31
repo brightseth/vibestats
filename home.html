@@ -3071,7 +3071,9 @@
         if (preview?.version !== 'vibestats.local_preview.v1') throw new Error('unsupported preview version');
         const raw = preview.insights || {};
         const metrics = raw.metrics || {};
-        const user = String(raw.meta?.user || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+        const rawUser = String(raw.meta?.user || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+        const legacyCliLabel = ['Local', 'terminal', 'reveal'].join(' ');
+        const user = rawUser === legacyCliLabel ? '' : rawUser;
         const dateRange = String(raw.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32);
         const localMetrics = {
           total_sessions: boundedLocalNumber(metrics.total_sessions, 100000),
