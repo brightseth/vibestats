@@ -57,7 +57,7 @@ const COMPLEMENTARY_ARCHETYPES = {
 
 function usage() {
   return `Usage:
-  vibestats                 reveal locally, open the web preview, then ask before publishing
+  vibestats                 reveal locally, open the web preview, then choose anonymous share or optional claim
   vibestats reveal          local reveal only; no sign-in and no publish
   vibestats status          troubleshoot /insights readiness
   vibestats install-claude-command [--force] [--path PATH]
@@ -77,14 +77,14 @@ Environment:
 The CLI reads Claude Code /insights output locally and sends only derived metrics.
 By default it parses ${DEFAULT_INSIGHTS_PATH}/session-meta and ${DEFAULT_INSIGHTS_PATH}/facets.
 Use status to check local /insights readiness without reading raw session JSON.
-It reveals your archetype locally before asking for approval to publish it.
-Run without a subcommand for the main flow: local reveal, browser preview, then GitHub-backed claim if you opt in.
-Use reveal for a local result with no sign-in and no network publish.
+It reveals your archetype locally before any optional GitHub claim.
+Run without a subcommand for the main flow: local reveal, browser preview, anonymous /r link, then GitHub-backed claim if you opt in.
+Use reveal for a local result with no sign-in and no network publish; run the bare command to open the shareable browser reveal.
 Use share to fetch a public profile and print its compare link, badge, embed, and privacy proof.
 Use intent to set or clear your short-lived matchmaker availability from the terminal.
 Use claim CODE from an SSH/TUI claim session to publish locally derived metrics back to that waiting session.
 Use join/onboard as explicit aliases for the same terminal-first flow; they use a GitHub device code by default.
-Use --yes with join/onboard to publish after reveal without prompting. Use sync for explicit publish automation.
+Use --yes with join/onboard to claim after reveal without prompting. Use sync for explicit profile automation.
 Without --token, sync opens a browser approval flow against your GitHub-backed vibestats session.
 Use --device to force terminal device-code auth, or --browser to force local browser callback auth.
 Current no-npm claim command: ${DEFAULT_LOCAL_SYNC_COMMAND}
@@ -415,6 +415,10 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
   const metrics = payload.metrics || {};
   const moments = publicMoments(payload.raw_meta?.moments || [], { exact: true });
   const links = localRevealLinks(payload, host);
+  const shareCommand = localHelperCommand('', { host });
+  const installCommand = localHelperCommand('install-claude-command', { host });
+  const statusCommand = localHelperCommand('status', { host });
+  const revealCommand = localHelperCommand('reveal', { host });
   const metricLine = [
     `${formatInt(metrics.sessions)} sessions`,
     `${formatInt(metrics.days)} days`,
@@ -441,12 +445,11 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
     lines.push(
       '',
       'Share',
-      `  Share without claiming: ${links.compare}`,
+      `  Best share: run ${shareCommand}, then click "Create anonymous share link" in the web reveal.`,
+      '  Hosted /r links are public unlisted, derived-only, and expire in 30 days.',
       '  Pasteable terminal card:',
       cliRevealTerminalCard(payload, { host }),
-      `  Copy/paste reveal: ${cliRevealShareText({ label, compareUrl: links.compare })}`,
-      `  Share reveal on X: ${cliRevealXShareUrl({ label, compareUrl: links.compare })}`,
-      `  Preview a ${archetype} x ${links.complement} pairing: ${links.pairing}`,
+      `  Pairing preview: ${links.pairing}`,
     );
   }
 
@@ -455,9 +458,11 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
     'Next',
     '  Raw Claude Code /insights data stayed local. No profile was published.',
     '  No website upload required.',
-    `  1. Claim your GitHub-backed profile: ${localHelperCommand('', { host })}`,
-    `  2. Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host })}`,
-    `  3. Refresh later: run /insights, then ${localHelperCommand('status', { host })}, then ${localHelperCommand('reveal', { host })}`,
+    `  1. Share anonymously: ${shareCommand}`,
+    '     Then choose "Create anonymous share link" in the browser reveal.',
+    '  2. Optional GitHub profile: use "Claim with GitHub" in the browser reveal, or approve the terminal fallback.',
+    `  3. Install /vibestats for future reveals: ${installCommand}`,
+    `  4. Refresh later: run /insights, then ${statusCommand}, then ${revealCommand}`,
     '  Audit mode: add --json to print the machine-readable derived payload.',
   );
 
@@ -466,6 +471,7 @@ export function dryRunRevealText(payload = {}, { host = DEFAULT_HOST } = {}) {
 
 export async function confirmPublish({
   assumeYes = false,
+  host = DEFAULT_HOST,
   input = process.stdin,
   output = process.stdout,
   stdout = process.stdout,
@@ -473,7 +479,7 @@ export async function confirmPublish({
   if (assumeYes) return true;
 
   if (!input?.isTTY) {
-    stdout.write(`Profile not published because this terminal is non-interactive. Claim later with: ${DEFAULT_LOCAL_SYNC_COMMAND} sync\n`);
+    stdout.write(`GitHub profile not claimed because this terminal is non-interactive. Share anonymously from the web reveal first: ${localHelperCommand('', { host })}\n`);
     return false;
   }
 
@@ -481,10 +487,10 @@ export async function confirmPublish({
   try {
     const answer = await rl.question([
       '',
-      'Claim this GitHub-backed profile on vibestats?',
-      '  Raw /insights stays local. Only derived metrics are published.',
-      '  You can claim from the browser preview, or use this terminal fallback.',
-      'Publish from terminal now? [y/N] ',
+      'Optional: claim a GitHub-backed profile on vibestats?',
+      '  The browser reveal can create an anonymous /r link first.',
+      '  Claiming saves only derived metrics to your GitHub handle.',
+      'Claim with GitHub from terminal now? [y/N] ',
     ].join('\n'));
     return /^(y|yes)$/i.test(answer.trim());
   } finally {
@@ -1078,7 +1084,7 @@ export async function sync(options) {
         }
       }
       const previewUrl = localWebPreviewUrl(insights, { host: options.host, claimCode: browserClaimSession?.code });
-      process.stdout.write('Opening web reveal preview in your browser.\n');
+      process.stdout.write('Opening web reveal preview in your browser. Create an anonymous share link there; GitHub claim is optional.\n');
       const opened = (options.open || openBrowser)(previewUrl);
       browserPreviewOpened = opened === true;
       if (!opened) process.stdout.write(`Browser did not open automatically. Open your reveal preview: ${previewUrl}\n`);
@@ -1088,7 +1094,7 @@ export async function sync(options) {
         Number(options.authTimeoutMs) > 0 ? Number(options.authTimeoutMs) : DEFAULT_BROWSER_CLAIM_WAIT_MS,
         DEFAULT_BROWSER_CLAIM_WAIT_MS,
       );
-      process.stdout.write('Waiting for browser claim to finish. If it does not, this terminal will offer the fallback path.\n');
+      process.stdout.write('Waiting for browser claim to finish if you choose GitHub. Anonymous share is already available in the browser.\n');
       try {
         const pollClaim = options.pollBrowserClaimSession || pollBrowserClaimSession;
         const session = await pollClaim({
@@ -1117,6 +1123,7 @@ export async function sync(options) {
       input: options.input || process.stdin,
       output: options.output || process.stdout,
       stdout: process.stdout,
+      host: options.host,
     });
     if (!publish) return { published: false, payload };
     process.stdout.write('Publishing the derived profile now. Raw Claude Code /insights data stays local.\n');

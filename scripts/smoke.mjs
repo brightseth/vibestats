@@ -423,7 +423,7 @@ async function assertRoutes() {
   assert(profileLinksHelper.includes('privacy_url') && profileLinksHelper.includes('match_settings_url') && profileLinksHelper.includes('weekly_digest_preview_url') && profileLinksHelper.includes('leaderboard_url') && profileLinksHelper.includes('match_url'), 'profile links helper should expose opt-in discovery and return-loop URLs');
   assert(uploadsApi.includes('profileLinks(user, payload.archetype)') && uploadsApi.includes('claim_code') && uploadsApi.includes('attachClaimSession'), 'browser profile saves should return compare-first profile links and attach browser-claim race sessions');
   assert(revealsApi.includes('createRevealSnapshot') && revealsApi.includes('requireSameOrigin(req)') && revealsApi.includes('assertRevealRateLimit(req)') && revealsApi.includes('readJson(req, { maxBytes: 64 * 1024 })'), 'anonymous reveal snapshot API should create same-origin rate-limited derived-only share links without auth');
-  assert(revealApi.includes('anonymous unlisted reveal') && revealApi.includes('Public unlisted link; expires') && revealApi.includes('Raw /insights stayed local') && revealApi.includes('No prompts, project paths, session ids, or free text'), 'anonymous reveal page should render expiry/privacy copy and omit durable identity');
+  assert(revealApi.includes('anonymous unlisted reveal') && revealApi.includes('Public unlisted link; expires') && revealApi.includes('Raw /insights stayed local') && revealApi.includes('No prompts, project paths, session ids, or free text') && revealApi.includes('Reveal yours to compare') && revealApi.includes('Copy command for desktop') && revealApi.includes('Reveal cannot run on a phone yet'), 'anonymous reveal page should render expiry/privacy/mobile copy and omit durable identity');
   assert(revealSnapshotsHelper.includes('reveal_snapshots') && revealSnapshotsHelper.includes('sanitizeUploadPayload') && revealSnapshotsHelper.includes("identity: 'anonymous'") && revealSnapshotsHelper.includes("link_visibility: 'public-unlisted'") && revealSnapshotsHelper.includes('retention_days: 30') && revealSnapshotsHelper.includes('listed: false') && !revealSnapshotsHelper.includes('user_id'), 'anonymous reveal snapshots should store sanitized derived metrics without user identity');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
@@ -2089,7 +2089,7 @@ async function assertCliDerivedPayload() {
     env: { ...process.env, VIBESTATS_CLI_PACKAGE: '@lets-vibe/vibestats' },
   });
   assert(overrideHelp.includes('Current npx fallback command: npx --yes @lets-vibe/vibestats') && overrideHelp.includes(`Current no-npm status command: ${NO_NPM_STATUS}`), 'CLI should honor VIBESTATS_CLI_PACKAGE for the npx fallback while keeping no-npm follow-up commands primary');
-  assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before asking for approval to publish it.') && cliSource.includes('Run without a subcommand for the main flow') && cliSource.includes('browser preview') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish') && cliSource.includes('Use claim CODE from an SSH/TUI claim session') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default') && cliSource.includes('Use --yes with join/onboard to publish after reveal without prompting'), 'CLI help should frame the no-subcommand path as status, reveal-before-publish terminal onboarding');
+  assert(cliSource.includes('Use status to check local /insights readiness without reading raw session JSON') && cliSource.includes('It reveals your archetype locally before any optional GitHub claim.') && cliSource.includes('Run without a subcommand for the main flow') && cliSource.includes('anonymous /r link') && cliSource.includes('Use reveal for a local result with no sign-in and no network publish; run the bare command to open the shareable browser reveal') && cliSource.includes('Use claim CODE from an SSH/TUI claim session') && cliSource.includes('Use join/onboard as explicit aliases') && cliSource.includes('GitHub device code by default') && cliSource.includes('Use --yes with join/onboard to claim after reveal without prompting'), 'CLI help should frame the no-subcommand path as reveal, anonymous share, then optional publish terminal onboarding');
   assert(cliSource.includes('vibestats share --handle HANDLE [--host URL] [--json]') && cliSource.includes('Use share to fetch a public profile'), 'CLI help should expose terminal profile share-kit generation');
   assert(cliSource.includes('vibestats intent <pair-coding|co-founder|hire|mentor|mentee|idle>') && cliSource.includes('Use intent to set or clear your short-lived matchmaker availability from the terminal'), 'CLI help should expose terminal match-intent participation');
   assert(cliSource.includes('install-claude-command [--force] [--path PATH]') && cliSource.includes('Install the Claude Code /vibestats command'), 'CLI help should expose Claude Code command installation');
@@ -2118,15 +2118,16 @@ async function assertCliDerivedPayload() {
   assert(revealTerminalCard.includes('Moments:') && revealTerminalCard.includes('Terminal heavy') && revealTerminalCard.includes('Code movement') && !revealTerminalCard.includes('tool_usage') && !revealTerminalCard.includes('language_usage'), 'CLI reveal terminal card should include only public-safe derived moments');
   const revealText = dryRunRevealText(payload);
   assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
-  assert(revealText.includes('Share without claiming: https://vibestats.io/?compareArchetype=shipper'), 'CLI dry-run reveal should print an archetype-only compare link before publishing');
+  assert(revealText.includes(`Best share: run ${DEFAULT_LOCAL_SYNC_COMMAND}, then click "Create anonymous share link" in the web reveal.`), 'CLI dry-run reveal should lead with the hosted anonymous reveal path');
+  assert(revealText.includes('Hosted /r links are public unlisted, derived-only, and expire in 30 days.'), 'CLI dry-run reveal should explain anonymous reveal link privacy and retention');
   assert(revealText.includes('Pasteable terminal card:\n[vibestats]\nprolific Shipper'), 'CLI dry-run reveal should print a compact terminal card before publishing');
-  assert(revealText.includes('Copy/paste reveal: I just revealed my Claude Code build profile locally: prolific Shipper. Raw /insights stayed on my machine. What are you? Compare with my archetype: https://vibestats.io/?compareArchetype=shipper'), 'CLI dry-run reveal should print copy-ready share text before publishing');
-  assert(revealText.includes('Share reveal on X: https://twitter.com/intent/tweet?'), 'CLI dry-run reveal should print one-click X share before publishing');
-  assert(revealText.includes('Preview a Shipper x Debugger pairing: https://vibestats.io/compare?a=shipper&b=debugger'), 'CLI dry-run reveal should print a complementary pairing preview before publishing');
+  assert(revealText.includes('Pairing preview: https://vibestats.io/compare?a=shipper&b=debugger'), 'CLI dry-run reveal should print a complementary pairing preview before publishing');
+  assert(!revealText.includes('Share reveal on X: https://twitter.com/intent/tweet?') && !revealText.includes('Copy/paste reveal:'), 'CLI dry-run reveal should avoid noisy raw share URLs before hosting an anonymous reveal');
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
-  assert(revealText.includes('No website upload required.') && revealText.includes(DEFAULT_LOCAL_SYNC_COMMAND), 'CLI dry-run reveal should hand off to exact no-npm one-command terminal-first claim command');
-  assert(revealText.includes(`Install /vibestats for future reveals: ${DEFAULT_LOCAL_INSTALL_COMMAND}`), 'CLI dry-run reveal should print the no-npm Claude Code command installer as a return hook');
-  assert(revealText.includes(`3. Refresh later: run /insights, then ${DEFAULT_LOCAL_STATUS_COMMAND}, then ${DEFAULT_LOCAL_REVEAL_COMMAND}`), 'CLI dry-run reveal should print the status-aware no-npm repeat reveal loop');
+  assert(revealText.includes('No website upload required.') && revealText.includes(`1. Share anonymously: ${DEFAULT_LOCAL_SYNC_COMMAND}`), 'CLI dry-run reveal should make anonymous browser sharing the first next step');
+  assert(revealText.includes('2. Optional GitHub profile: use "Claim with GitHub" in the browser reveal, or approve the terminal fallback.'), 'CLI dry-run reveal should demote GitHub claim behind anonymous sharing');
+  assert(revealText.includes(`3. Install /vibestats for future reveals: ${DEFAULT_LOCAL_INSTALL_COMMAND}`), 'CLI dry-run reveal should print the no-npm Claude Code command installer as a return hook');
+  assert(revealText.includes(`4. Refresh later: run /insights, then ${DEFAULT_LOCAL_STATUS_COMMAND}, then ${DEFAULT_LOCAL_REVEAL_COMMAND}`), 'CLI dry-run reveal should print the status-aware no-npm repeat reveal loop');
   assert(revealText.includes('Audit mode: add --json to print the machine-readable derived payload.'), 'CLI dry-run reveal should point auditors to JSON mode');
   assert(!revealText.includes('tool_usage') && !revealText.includes('language_usage'), 'CLI dry-run reveal must not print raw usage maps');
   const parsedNoOpen = parseArgs(['node', 'vibestats', 'sync', '--no-open', '--auth-timeout-ms', '1000']);
@@ -2144,7 +2145,7 @@ async function assertCliDerivedPayload() {
       },
     },
   });
-  assert(skippedPublish === false && confirmOutput.join('').includes('Profile not published because this terminal is non-interactive'), 'CLI onboarding should not publish from non-interactive terminals without explicit consent');
+  assert(skippedPublish === false && confirmOutput.join('').includes('GitHub profile not claimed because this terminal is non-interactive') && confirmOutput.join('').includes('Share anonymously from the web reveal first'), 'CLI onboarding should not claim from non-interactive terminals without explicit consent and should point back to anonymous sharing');
   const assumedPublish = await confirmPublish({ assumeYes: true, input: { isTTY: false }, stdout: { write() { return true; } } });
   assert(assumedPublish === true, 'CLI onboarding should let automation opt into publishing explicitly');
 
@@ -2393,13 +2394,12 @@ async function assertCliDerivedPayload() {
     const result = await sync({ file, host: 'https://example.invalid', token: '', dryRun: true });
     assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
     assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Revealed: prolific Shipper'), 'CLI dry-run should print a local reveal before auth');
-    assert(output.join('').includes('Share without claiming: https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should respect the selected host for local compare links');
+    assert(output.join('').includes(`Best share: run ${localHelperCommand('', { host: 'https://example.invalid' })}, then click "Create anonymous share link" in the web reveal.`), 'CLI dry-run should respect the selected host for anonymous browser sharing');
     assert(output.join('').includes('Pasteable terminal card:\n[vibestats]\nprolific Shipper') && output.join('').includes('https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should print a host-aware pasteable terminal card');
-    assert(output.join('').includes('Copy/paste reveal: I just revealed my Claude Code build profile locally: prolific Shipper. Raw /insights stayed on my machine. What are you? Compare with my archetype: https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should respect the selected host for copy-ready reveal text');
-    assert(output.join('').includes('Share reveal on X: https://twitter.com/intent/tweet?'), 'CLI dry-run should print one-click X sharing for local reveal');
-    assert(output.join('').includes('Preview a Shipper x Debugger pairing: https://example.invalid/compare?a=shipper&b=debugger'), 'CLI dry-run should respect the selected host for local pairing previews');
-    assert(output.join('').includes(`Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the no-npm Claude Code command installer');
-    assert(output.join('').includes(`3. Refresh later: run /insights, then ${localHelperCommand('status', { host: 'https://example.invalid' })}, then ${localHelperCommand('reveal', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the status-aware no-npm repeat reveal loop');
+    assert(!output.join('').includes('Copy/paste reveal:') && !output.join('').includes('Share reveal on X:'), 'CLI dry-run should avoid noisy share variants before an anonymous reveal is hosted');
+    assert(output.join('').includes('Pairing preview: https://example.invalid/compare?a=shipper&b=debugger'), 'CLI dry-run should respect the selected host for local pairing previews');
+    assert(output.join('').includes(`3. Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the no-npm Claude Code command installer');
+    assert(output.join('').includes(`4. Refresh later: run /insights, then ${localHelperCommand('status', { host: 'https://example.invalid' })}, then ${localHelperCommand('reveal', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the status-aware no-npm repeat reveal loop');
     assert(!output.join('').includes('"archetype": "shipper"'), 'CLI dry-run should not dump payload JSON by default');
     assert(!output.join('').includes('tool_usage'), 'CLI dry-run output must not print raw tool usage');
     assert(!output.join('').includes('private prompt') && !output.join('').includes('/private/project'), 'CLI dry-run output must not print raw Claude Code session details');
@@ -2414,8 +2414,8 @@ async function assertCliDerivedPayload() {
       input: { isTTY: false },
     });
     assert(skippedOnboard.published === false, 'CLI default onboarding should stop before auth/publish when consent cannot be collected');
-    assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Profile not published because this terminal is non-interactive'), 'CLI default onboarding should reveal locally before refusing non-consented publishing');
-    assert(output.join('').includes(`Claim later with: ${DEFAULT_LOCAL_SYNC_COMMAND} sync`), 'CLI default onboarding should give non-interactive users an explicit no-npm publish command');
+    assert(output.join('').includes('vibestats local reveal') && output.join('').includes('GitHub profile not claimed because this terminal is non-interactive'), 'CLI default onboarding should reveal locally before refusing non-consented GitHub claiming');
+    assert(output.join('').includes(`Share anonymously from the web reveal first: ${localHelperCommand('', { host: 'https://example.invalid' })}`), 'CLI default onboarding should give non-interactive users the anonymous-first web reveal command');
     assert(!output.join('').includes('Opening browser') && !output.join('').includes('Authorize vibestats with GitHub device login'), 'CLI default onboarding should not start auth before publish consent');
 
     output.length = 0;

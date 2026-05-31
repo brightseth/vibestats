@@ -144,6 +144,7 @@ function renderRevealHtml(snapshot, origin) {
     .btn.primary { color:#fff; background:linear-gradient(135deg, rgba(107,143,255,.42), rgba(167,139,250,.28)); border-color:rgba(107,143,255,.68); }
     .terminal { margin-top:32px; border:1px solid rgba(255,255,255,.08); border-radius:8px; background:rgba(255,255,255,.025); padding:16px; }
     .terminal-title { font-weight:800; margin-bottom:8px; }
+    .mobile-note { margin-top:12px; color:#9aa3b8; font-size:13px; line-height:1.5; }
     code { font-family:'JetBrains Mono',monospace; color:#dbe7ff; overflow-wrap:anywhere; }
     @media (max-width:760px) { .hero { grid-template-columns:1fr; } .top { align-items:flex-start; flex-direction:column; } .actions .btn { width:100%; } }
   </style>
@@ -159,7 +160,7 @@ function renderRevealHtml(snapshot, origin) {
         <p class="copy">Someone shared their vibecoding profile without attaching a name or GitHub handle. This is a hosted snapshot of derived metrics only, created from a local reveal.</p>
         <div class="privacy">Public unlisted link; expires ${esc(expiry)}. Raw /insights stayed local. No prompts, project paths, session ids, or free text are stored in this link.</div>
         <div class="actions">
-          <a class="btn primary" href="${esc(compareUrl)}">Compare with this archetype</a>
+          <a class="btn primary" href="${esc(compareUrl)}">Reveal yours to compare</a>
           <button class="btn" type="button" data-copy="${esc(meta.url)}">Copy link</button>
           <a class="btn" href="${esc(xUrl)}" target="_blank" rel="noopener">Share on X</a>
         </div>
@@ -181,8 +182,9 @@ function renderRevealHtml(snapshot, origin) {
       <div class="terminal-title">Reveal yours locally</div>
       <p class="copy" style="font-size:14px;margin:0 0 12px">Run <code>/insights</code> in Claude Code, then reveal with the terminal helper. You can share anonymously before claiming any identity.</p>
       <code>${esc(revealCommand)}</code>
+      <div class="mobile-note">On mobile? Save this command for your desktop Claude Code machine. Reveal cannot run on a phone yet because the signal lives in your local <code>~/.claude</code> data.</div>
       <div class="actions" style="margin-top:14px">
-        <button class="btn" type="button" data-copy="${esc(revealCommand)}">Copy reveal command</button>
+        <button class="btn" type="button" data-copy="${esc(revealCommand)}">Copy command for desktop</button>
         <a class="btn" href="/">Open vibestats</a>
       </div>
     </section>

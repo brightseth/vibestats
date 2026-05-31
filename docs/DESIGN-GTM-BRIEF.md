@@ -169,6 +169,8 @@ The internal eight-key canon must stay stable for launch. These keys are wired i
 
 Design is free to propose stronger public-facing display names, taglines, visual motifs, campaign language, and "skins" for the eight identities. Treat the current names as the working set, not sacred brand copy. The constraint is mapping integrity: every proposed public name must map back to exactly one internal key, and there is no ninth archetype.
 
+Each archetype needs more than a gradient. Please explore a glyph, mark, or sigil system and eight distinct color territories that still work in an 8-up grid, an OG card, a terminal card, and a small badge.
+
 | Internal key | Current display name | Current tagline | Accent |
 | --- | --- | --- | --- |
 | `orchestrator` | Orchestrator | You don't code - you conduct. | `#6B8FFF` |
@@ -463,7 +465,7 @@ These are not all requested in the first pass. Start with critique. Produce only
 2. Browser reveal final-slide treatment.
 3. Anonymous `/r/...` page visual polish.
 4. Terminal output style direction.
-5. Eight-archetype grid visual system.
+5. Eight-archetype grid visual system, including glyphs/sigils and eight distinct color territories.
 6. Mobile share-recipient landing treatment.
 7. Launch post graphics and short motion asset.
 8. Copy polish for privacy, reveal, and comparison.
