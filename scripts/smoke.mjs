@@ -26,6 +26,7 @@ const apiModules = [
   '../api/uploads.js',
   '../api/reveals.js',
   '../api/reveal.js',
+  '../api/archetype-identity.js',
   '../api/sync.js',
   '../api/ssh/manifest.js',
   '../api/ssh/claim-start.js',
@@ -204,6 +205,7 @@ async function assertRoutes() {
   const uploadsApi = await readFile('api/uploads.js', 'utf8');
   const revealsApi = await readFile('api/reveals.js', 'utf8');
   const revealApi = await readFile('api/reveal.js', 'utf8');
+  const archetypeIdentityApi = await readFile('api/archetype-identity.js', 'utf8');
   const revealSnapshotsHelper = await readFile('api/_lib/reveal-snapshots.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
   const syncSettingsApi = await readFile('api/sync-settings.js', 'utf8');
@@ -305,6 +307,25 @@ async function assertRoutes() {
   const csp = globalHeaders.find((header) => header.key.toLowerCase() === 'content-security-policy')?.value || '';
   assert(!headerKeys.has('x-frame-options'), 'global X-Frame-Options must stay off so the embed function can be frameable');
   assert(csp.includes("frame-ancestors 'none'"), 'global CSP should keep non-embed pages unframeable');
+  const archetypeIdentityLoader = '<script src="/api/archetype-identity"></script>';
+  assert(
+    archetypeIdentityApi.includes('clientIdentityScript')
+      && archetypeIdentityApi.includes('VIBESTATS_ARCHETYPES')
+      && archetypeIdentityApi.includes('VIBESTATS_ARCHETYPE_COLORS')
+      && archetypeIdentityApi.includes('VIBESTATS_ARCHETYPE_PROFILES')
+      && archetypeIdentityApi.includes('archetypeMap()')
+      && archetypeIdentityApi.includes('text/javascript; charset=utf-8')
+      && archetypeIdentityApi.includes("methodNotAllowed(res, ['GET']"),
+    'archetype identity API should expose one shared client payload for archetype display data',
+  );
+  assert(
+    [indexHtml, profileHtml, compareHtml, recapHtml, genomeHtml, browseHtml, leaderboardHtml].every((html) => html.includes(archetypeIdentityLoader)),
+    'client archetype surfaces should load the shared archetype identity API',
+  );
+  assert(
+    ![indexHtml, profileHtml, compareHtml, recapHtml, genomeHtml, browseHtml, leaderboardHtml].some((html) => /const ARCHETYPES\s*=\s*\{/.test(html) || /const ARCHETYPE_(COLORS|SHORT_NAMES|PROFILES)\s*=\s*\{/.test(html)),
+    'client archetype surfaces should not carry inline archetype identity maps',
+  );
   assert(leaderboardApi.includes("date_trunc('week', now())"), 'leaderboard API should reset weekly');
   assert(leaderboardApi.includes('limit 25'), 'leaderboard API should cap weekly boards at top 25');
   assert(!leaderboardApi.includes('languages:'), 'leaderboard API should not expose public language counts');

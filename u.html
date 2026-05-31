@@ -1123,17 +1123,9 @@
   </main>
 
   <script src="/lib/compat.js"></script>
+  <script src="/api/archetype-identity"></script>
   <script>
-    const ARCHETYPES = {
-      orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)', borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #a78bfa, transparent)' },
-      shipper: { name: 'THE SHIPPER', tagline: 'Done is better than perfect. You live this.', color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)', borderGradient: 'linear-gradient(90deg, transparent, #22c55e, #22d3ee, transparent)' },
-      architect: { name: 'THE ARCHITECT', tagline: 'You read before you write. You plan before you build.', color: '#3b82f6', gradient: 'linear-gradient(135deg, #6B8FFF, #3b82f6)', borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #3b82f6, transparent)' },
-      debugger: { name: 'THE DEBUGGER', tagline: "You don't guess. You investigate.", color: '#f59e0b', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)', borderGradient: 'linear-gradient(90deg, transparent, #f59e0b, #ef4444, transparent)' },
-      polyglot: { name: 'THE POLYGLOT', tagline: 'One language is never enough.', color: '#ff79c6', gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b, #22c55e, #6B8FFF)', borderGradient: 'linear-gradient(90deg, transparent, #ff79c6, #22c55e, #6B8FFF, transparent)' },
-      sprinter: { name: 'THE SPRINTER', tagline: 'Fast, focused, ferocious.', color: '#ef4444', gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)', borderGradient: 'linear-gradient(90deg, transparent, #ef4444, #ff79c6, transparent)' },
-      deepdiver: { name: 'THE DEEP DIVER', tagline: "You go deep, not wide.", color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6, #1e40af)', borderGradient: 'linear-gradient(90deg, transparent, #3b82f6, #1e40af, transparent)' },
-      builder: { name: 'THE BUILDER', tagline: "You build things that didn't exist before.", color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #16a34a)', borderGradient: 'linear-gradient(90deg, transparent, #22c55e, #16a34a, transparent)' },
-    };
+    const ARCHETYPES = window.VIBESTATS_ARCHETYPES;
 
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString();
@@ -1144,11 +1136,7 @@
       debugger: 'investigative', polyglot: 'multi-stack', sprinter: 'rapid-fire',
       deepdiver: 'deep-session', builder: 'prolific',
     };
-    const ARCHETYPE_SHORT_NAMES = {
-      orchestrator: 'Orchestrator', shipper: 'Shipper', architect: 'Architect',
-      debugger: 'Debugger', polyglot: 'Polyglot', sprinter: 'Sprinter',
-      deepdiver: 'Deep Diver', builder: 'Builder',
-    };
+    const ARCHETYPE_SHORT_NAMES = window.VIBESTATS_ARCHETYPE_SHORT_NAMES;
     const INSIGHTS_COMMAND = '/insights';
     const STATUS_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- status';
     const CLAIM_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';

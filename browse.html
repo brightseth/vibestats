@@ -408,18 +408,12 @@
     </section>
   </main>
 
+  <script src="/api/archetype-identity"></script>
   <script>
-    const ARCHETYPES = {
+    const ARCHETYPES = Object.freeze({
       all: 'All',
-      orchestrator: 'Orchestrator',
-      shipper: 'Shipper',
-      architect: 'Architect',
-      debugger: 'Debugger',
-      polyglot: 'Polyglot',
-      sprinter: 'Sprinter',
-      deepdiver: 'Deep Diver',
-      builder: 'Builder',
-    };
+      ...window.VIBESTATS_ARCHETYPE_SHORT_NAMES,
+    });
     const INTENTS = {
       any: 'Any',
       active: 'Active',

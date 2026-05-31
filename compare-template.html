@@ -364,17 +364,9 @@
   </div>
 
   <script src="/lib/compat.js"></script>
+  <script src="/api/archetype-identity"></script>
   <script>
-    const ARCHETYPES = {
-      orchestrator: { name: 'THE ORCHESTRATOR', short: 'Orchestrator', gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)', color: '#6B8FFF', strength: 'Parallel execution', style: 'Conductor' },
-      shipper: { name: 'THE SHIPPER', short: 'Shipper', gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)', color: '#22c55e', strength: 'Ship velocity', style: 'Deployer' },
-      architect: { name: 'THE ARCHITECT', short: 'Architect', gradient: 'linear-gradient(135deg, #6B8FFF, #3b82f6)', color: '#6B8FFF', strength: 'System design', style: 'Planner' },
-      debugger: { name: 'THE DEBUGGER', short: 'Debugger', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#f59e0b', strength: 'Investigation', style: 'Detective' },
-      polyglot: { name: 'THE POLYGLOT', short: 'Polyglot', gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b)', color: '#ff79c6', strength: 'Versatility', style: 'Multilingual' },
-      sprinter: { name: 'THE SPRINTER', short: 'Sprinter', gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)', color: '#ef4444', strength: 'Raw speed', style: 'Rapid-fire' },
-      deepdiver: { name: 'THE DEEP DIVER', short: 'Deep Diver', gradient: 'linear-gradient(135deg, #3b82f6, #1e40af)', color: '#3b82f6', strength: 'Deep focus', style: 'Immersive' },
-      builder: { name: 'THE BUILDER', short: 'Builder', gradient: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#22c55e', strength: 'Creation', style: 'Maker' },
-    };
+    const ARCHETYPES = window.VIBESTATS_ARCHETYPES;
 
     function getCompat(a, b) {
       return window.VibeCompat.getPairing(a, b);

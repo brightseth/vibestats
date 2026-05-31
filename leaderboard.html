@@ -405,17 +405,17 @@
     </section>
   </main>
 
+  <script src="/api/archetype-identity"></script>
   <script>
-    const ARCHETYPES = {
-      orchestrator: { name: 'Orchestrator', color: '#6B8FFF' },
-      shipper: { name: 'Shipper', color: '#22c55e' },
-      architect: { name: 'Architect', color: '#3b82f6' },
-      debugger: { name: 'Debugger', color: '#f59e0b' },
-      polyglot: { name: 'Polyglot', color: '#ff79c6' },
-      sprinter: { name: 'Sprinter', color: '#ef4444' },
-      deepdiver: { name: 'Deep Diver', color: '#3b82f6' },
-      builder: { name: 'Builder', color: '#22c55e' },
-    };
+    const ARCHETYPES = Object.freeze(Object.fromEntries(
+      window.VIBESTATS_ARCHETYPE_KEYS.map((key) => [
+        key,
+        {
+          name: window.VIBESTATS_ARCHETYPE_SHORT_NAMES[key],
+          color: window.VIBESTATS_ARCHETYPE_COLORS[key],
+        },
+      ]),
+    ));
 
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (value) => {

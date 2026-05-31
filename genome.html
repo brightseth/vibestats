@@ -533,69 +533,11 @@
     </div>
   </div>
 
+  <script src="/api/archetype-identity"></script>
   <script>
     /* ===== Constants ===== */
-    const ARCHETYPE_COLORS = {
-      orchestrator: '#6B8FFF',
-      shipper:      '#22c55e',
-      architect:    '#3b82f6',
-      debugger:     '#f59e0b',
-      polyglot:     '#ff79c6',
-      sprinter:     '#ef4444',
-      deepdiver:    '#1e40af',
-      builder:      '#16a34a',
-    };
-
-    const ARCHETYPE_PROFILES = {
-      orchestrator: {
-        name: 'The Orchestrator',
-        tagline: "You don't code \u2014 you conduct.",
-        desc: 'Multi-session maestro running parallel agents. Coordinates complexity across terminals, delegates with precision, and sees the whole board at once.',
-        gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)',
-      },
-      shipper: {
-        name: 'The Shipper',
-        tagline: 'Done is better than perfect. You live this.',
-        desc: 'High commit velocity. Features go from idea to production before the standup ends. The git log tells the story.',
-        gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)',
-      },
-      architect: {
-        name: 'The Architect',
-        tagline: 'You read before you write. You plan before you build.',
-        desc: 'Deep reader, careful planner. Systems are designed on paper before a single line is written. Every abstraction is intentional.',
-        gradient: 'linear-gradient(135deg, #3b82f6, #6B8FFF)',
-      },
-      debugger: {
-        name: 'The Debugger',
-        tagline: "You don't guess. You investigate.",
-        desc: 'High grep usage, systematic problem solver. Traces the bug from symptom to root cause with detective-grade precision.',
-        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-      },
-      polyglot: {
-        name: 'The Polyglot',
-        tagline: 'One language is never enough.',
-        desc: 'Diverse tech stack, versatile builder. Moves between TypeScript, Python, Rust, and Go like a native speaker in each.',
-        gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b)',
-      },
-      sprinter: {
-        name: 'The Sprinter',
-        tagline: 'Fast, focused, ferocious.',
-        desc: 'High-intensity sessions, rapid-fire. Short bursts of extreme output. The session timer barely starts before the commits roll in.',
-        gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)',
-      },
-      deepdiver: {
-        name: 'The Deep Diver',
-        tagline: 'You go deep, not wide.',
-        desc: 'Fewer sessions but much deeper. Hours-long explorations into a single problem. The code that emerges is surgical.',
-        gradient: 'linear-gradient(135deg, #1e40af, #3b82f6)',
-      },
-      builder: {
-        name: 'The Builder',
-        tagline: "You build things that didn't exist before.",
-        desc: 'High write-to-read ratio. Greenfield energy. Every session produces something new, tangible, and real.',
-        gradient: 'linear-gradient(135deg, #16a34a, #22c55e)',
-      },
-    };
+    const ARCHETYPE_COLORS = window.VIBESTATS_ARCHETYPE_COLORS;
+    const ARCHETYPE_PROFILES = window.VIBESTATS_ARCHETYPE_PROFILES;
 
     const AVG_METRICS = [
       { key: 'commitsPerDay', label: 'Commits / Day', threshold: 20, format: v => v.toFixed(1) },

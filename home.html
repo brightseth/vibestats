@@ -882,74 +882,13 @@
   </div>
 
   <script src="/lib/html2canvas.min.js"></script>
+  <script src="/api/archetype-identity"></script>
   <script>
     // ========================================
     // ARCHETYPE DEFINITIONS
     // ========================================
-    const ARCHETYPES = {
-      orchestrator: {
-        name: 'THE ORCHESTRATOR',
-        tagline: "You don't code — you conduct.",
-        description: "Multi-session maestro running parallel agents from a central command hub.",
-        gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)',
-        borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #a78bfa, transparent)',
-      },
-      shipper: {
-        name: 'THE SHIPPER',
-        tagline: "Done is better than perfect. You live this.",
-        description: "High commit velocity. You push code like it's breathing.",
-        gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)',
-        borderGradient: 'linear-gradient(90deg, transparent, #22c55e, #22d3ee, transparent)',
-      },
-      architect: {
-        name: 'THE ARCHITECT',
-        tagline: "You read before you write. You plan before you build.",
-        description: "Deep reader, careful planner. Your code is deliberate.",
-        gradient: 'linear-gradient(135deg, #6B8FFF, #3b82f6)',
-        borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #3b82f6, transparent)',
-      },
-      debugger: {
-        name: 'THE DEBUGGER',
-        tagline: "You don't guess. You investigate.",
-        description: "High grep usage, systematic problem solver. Friction doesn't stop you.",
-        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-        borderGradient: 'linear-gradient(90deg, transparent, #f59e0b, #ef4444, transparent)',
-      },
-      polyglot: {
-        name: 'THE POLYGLOT',
-        tagline: "One language is never enough.",
-        description: "Diverse tech stack, versatile builder across languages and paradigms.",
-        gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b, #22c55e, #6B8FFF)',
-        borderGradient: 'linear-gradient(90deg, transparent, #ff79c6, #22c55e, #6B8FFF, transparent)',
-      },
-      sprinter: {
-        name: 'THE SPRINTER',
-        tagline: "Fast, focused, ferocious.",
-        description: "High-intensity sessions, rapid-fire messages. You move at breakneck speed.",
-        gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)',
-        borderGradient: 'linear-gradient(90deg, transparent, #ef4444, #ff79c6, transparent)',
-      },
-      deepdiver: {
-        name: 'THE DEEP DIVER',
-        tagline: "You go deep, not wide.",
-        description: "Fewer sessions but much deeper. When you start, you don't come up for air.",
-        gradient: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-        borderGradient: 'linear-gradient(90deg, transparent, #3b82f6, #1e40af, transparent)',
-      },
-      builder: {
-        name: 'THE BUILDER',
-        tagline: "You build things that didn't exist before.",
-        description: "High write-to-read ratio. You create more than you consume.",
-        gradient: 'linear-gradient(135deg, #22c55e, #16a34a)',
-        borderGradient: 'linear-gradient(90deg, transparent, #22c55e, #16a34a, transparent)',
-      }
-    };
-
-    const ARCHETYPE_PLURALS = {
-      orchestrator: 'Orchestrators', shipper: 'Shippers', architect: 'Architects',
-      debugger: 'Debuggers', polyglot: 'Polyglots', sprinter: 'Sprinters',
-      deepdiver: 'Deep Divers', builder: 'Builders',
-    };
+    const ARCHETYPES = window.VIBESTATS_ARCHETYPES;
+    const ARCHETYPE_PLURALS = window.VIBESTATS_ARCHETYPE_PLURALS;
 
     // ========================================
     // ARCHETYPE SCORING (v2 — sigmoid + power-law normalization)
@@ -984,10 +923,7 @@
     // ========================================
     // DNA BARCODE + SUB-ARCHETYPE
     // ========================================
-    const ARCHETYPE_COLORS = {
-      orchestrator: '#6B8FFF', shipper: '#22c55e', architect: '#3b82f6', debugger: '#f59e0b',
-      polyglot: '#ff79c6', sprinter: '#ef4444', deepdiver: '#1e40af', builder: '#16a34a',
-    };
+    const ARCHETYPE_COLORS = window.VIBESTATS_ARCHETYPE_COLORS;
 
     const SUB_PREFIXES = {
       orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
@@ -995,11 +931,7 @@
       deepdiver: 'deep-session', builder: 'prolific',
     };
 
-    const ARCHETYPE_SHORT_NAMES = {
-      orchestrator: 'Orchestrator', shipper: 'Shipper', architect: 'Architect',
-      debugger: 'Debugger', polyglot: 'Polyglot', sprinter: 'Sprinter',
-      deepdiver: 'Deep Diver', builder: 'Builder',
-    };
+    const ARCHETYPE_SHORT_NAMES = window.VIBESTATS_ARCHETYPE_SHORT_NAMES;
 
     function buildDnaBarcode(scores) {
       const bars = Object.entries(ARCHETYPE_COLORS).map(([key, color]) => {
