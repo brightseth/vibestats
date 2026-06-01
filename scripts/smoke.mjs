@@ -313,6 +313,7 @@ async function assertRoutes() {
       && archetypeIdentityApi.includes('VIBESTATS_ARCHETYPES')
       && archetypeIdentityApi.includes('VIBESTATS_ARCHETYPE_COLORS')
       && archetypeIdentityApi.includes('VIBESTATS_ARCHETYPE_PROFILES')
+      && archetypeIdentityApi.includes('glyph: identity.glyph')
       && archetypeIdentityApi.includes('archetypeMap()')
       && archetypeIdentityApi.includes('text/javascript; charset=utf-8')
       && archetypeIdentityApi.includes("methodNotAllowed(res, ['GET']"),
@@ -1623,6 +1624,7 @@ async function assertShareCardCta() {
   handler(req, res);
   assert(statusCode === 200, 'share card should render HTTP 200');
   assert(body.includes('href="/?compareArchetype=deepdiver"'), 'share card CTA should send visitors into upload-to-compare');
+  assert(body.includes('<div class="glyph">__</div>'), 'share card should render the archetype glyph as a color-independent identity mark');
   assert(body.includes('Compare with this archetype'), 'share card CTA should invite comparison instead of homepage upload');
   assert(body.includes('What are you?') && body.includes('/insights') && body.includes(NO_NPM_STATUS) && body.includes('Copy status') && body.includes(NO_NPM_REVEAL) && body.includes(`data-copy="${NO_NPM_CLI}"`) && body.includes('Copy claim'), 'share card should teach recipients the no-npm terminal-first status, reveal, and claim commands without another hop');
   assert(body.includes('data-copy=') && body.includes("document.execCommand('copy')"), 'share card reveal commands should be copyable with clipboard fallback');
@@ -1652,6 +1654,7 @@ async function assertOgFallback() {
   });
   assert(archetype.mode === 'archetype', 'OG sanitizer should ignore unknown modes');
   assert(archetype.aKey === 'builder', 'OG sanitizer should default unknown archetypes to the canon');
+  assert(archetype.arch.glyph === '++', 'OG sanitizer should carry the source-of-truth archetype glyph into generated images');
   assert(archetype.name.length <= 42 && !archetype.name.includes('<'), 'OG sanitizer should bound and clean names');
   assert(archetype.days === '5000', 'OG sanitizer should clamp day counts');
   assert(archetype.commits === '?', 'OG sanitizer should reject invalid commit metrics');
@@ -2140,13 +2143,13 @@ async function assertCliDerivedPayload() {
   assert(decodedPreview.claim_code === 'VIBE-ABCD-2345', 'CLI local web preview should carry only the short browser-claim race code in addition to derived preview metrics');
   assert(!JSON.stringify(decodedPreview).includes('private prompt'), 'CLI local web preview must not include raw prompts or session text');
   const revealTerminalCard = cliRevealTerminalCard(payload, { host: 'https://vibestats.example' });
-  assert(revealTerminalCard.includes('[vibestats]') && revealTerminalCard.includes('prolific Shipper') && revealTerminalCard.includes('280 sessions |') && revealTerminalCard.includes('commits/day |') && revealTerminalCard.includes('Raw /insights stayed local. What are you?') && revealTerminalCard.includes('https://vibestats.example/?compareArchetype=shipper'), 'CLI reveal terminal card should be compact, pasteable, privacy-aware, and compare-first');
+  assert(revealTerminalCard.includes('[vibestats]') && revealTerminalCard.includes('[>>] prolific Shipper') && revealTerminalCard.includes('280 sessions |') && revealTerminalCard.includes('commits/day |') && revealTerminalCard.includes('Raw /insights stayed local. What are you?') && revealTerminalCard.includes('https://vibestats.example/?compareArchetype=shipper'), 'CLI reveal terminal card should be compact, pasteable, glyph-marked, privacy-aware, and compare-first');
   assert(revealTerminalCard.includes('Moments:') && revealTerminalCard.includes('Terminal heavy') && revealTerminalCard.includes('Code movement') && !revealTerminalCard.includes('tool_usage') && !revealTerminalCard.includes('language_usage'), 'CLI reveal terminal card should include only public-safe derived moments');
   const revealText = dryRunRevealText(payload);
   assert(revealText.includes('vibestats local reveal') && revealText.includes('Revealed: prolific Shipper'), 'CLI dry-run reveal should be human-readable');
   assert(revealText.includes(`Best share: run ${DEFAULT_LOCAL_SYNC_COMMAND}, then click "Create anonymous share link" in the web reveal.`), 'CLI dry-run reveal should lead with the hosted anonymous reveal path');
   assert(revealText.includes('Hosted /r links are public unlisted, derived-only, and expire in 30 days.'), 'CLI dry-run reveal should explain anonymous reveal link privacy and retention');
-  assert(revealText.includes('Pasteable terminal card:\n[vibestats]\nprolific Shipper'), 'CLI dry-run reveal should print a compact terminal card before publishing');
+  assert(revealText.includes('Pasteable terminal card:\n[vibestats]\n[>>] prolific Shipper'), 'CLI dry-run reveal should print a compact glyph-marked terminal card before publishing');
   assert(revealText.includes('Pairing preview: https://vibestats.io/compare?a=shipper&b=debugger'), 'CLI dry-run reveal should print a complementary pairing preview before publishing');
   assert(!revealText.includes('Share reveal on X: https://twitter.com/intent/tweet?') && !revealText.includes('Copy/paste reveal:'), 'CLI dry-run reveal should avoid noisy raw share URLs before hosting an anonymous reveal');
   assert(revealText.includes('Raw Claude Code /insights data stayed local. No profile was published.'), 'CLI dry-run reveal should preserve the privacy and no-publish boundary');
@@ -2421,7 +2424,7 @@ async function assertCliDerivedPayload() {
     assert(result.dry_run === true, 'CLI dry-run should not require a sync token');
     assert(output.join('').includes('vibestats local reveal') && output.join('').includes('Revealed: prolific Shipper'), 'CLI dry-run should print a local reveal before auth');
     assert(output.join('').includes(`Best share: run ${localHelperCommand('', { host: 'https://example.invalid' })}, then click "Create anonymous share link" in the web reveal.`), 'CLI dry-run should respect the selected host for anonymous browser sharing');
-    assert(output.join('').includes('Pasteable terminal card:\n[vibestats]\nprolific Shipper') && output.join('').includes('https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should print a host-aware pasteable terminal card');
+    assert(output.join('').includes('Pasteable terminal card:\n[vibestats]\n[>>] prolific Shipper') && output.join('').includes('https://example.invalid/?compareArchetype=shipper'), 'CLI dry-run should print a host-aware glyph-marked pasteable terminal card');
     assert(!output.join('').includes('Copy/paste reveal:') && !output.join('').includes('Share reveal on X:'), 'CLI dry-run should avoid noisy share variants before an anonymous reveal is hosted');
     assert(output.join('').includes('Pairing preview: https://example.invalid/compare?a=shipper&b=debugger'), 'CLI dry-run should respect the selected host for local pairing previews');
     assert(output.join('').includes(`3. Install /vibestats for future reveals: ${localHelperCommand('install-claude-command', { host: 'https://example.invalid' })}`), 'CLI dry-run should print the no-npm Claude Code command installer');
@@ -3658,10 +3661,12 @@ async function assertBadgeFallback() {
       label: 'high-velocity Builder',
       archetype: 'BUILDER',
       color: '#22c55e',
+      glyph: '++',
       score: 999,
     });
     assert(scored.includes('100% GitHub-claimed, derived-only signal - BUILDER'), 'badge SVG should render clamped primary score as identity and privacy credential proof');
     assert(scored.includes('>100%</text>'), 'badge SVG should show the score pill');
+    assert(scored.includes('>++</text>'), 'badge SVG should show the archetype glyph');
     assert(!scored.includes('rawJson') && !scored.includes('tool_usage') && !scored.includes('language_usage'), 'badge SVG should not include raw insight markers');
 
     let statusCode = 0;

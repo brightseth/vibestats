@@ -27,6 +27,7 @@ function clientPayload() {
       tagline: identity.tagline,
       desc: identity.description,
       gradient: identity.gradient,
+      glyph: identity.glyph,
     };
   }
 

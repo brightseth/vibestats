@@ -916,6 +916,21 @@
       text-transform: uppercase;
       margin-bottom: 14px;
     }
+    .card-glyph {
+      width: 62px;
+      height: 62px;
+      margin: 0 auto 14px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.035);
+      color: var(--card-color);
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
     .card-name {
       font-size: 34px;
       font-weight: 900;
@@ -1098,6 +1113,7 @@
 
         <aside class="card" id="archetype-card">
           <div class="card-label">current vibecoding personality</div>
+          <div class="card-glyph" id="card-glyph"></div>
           <div class="card-name" id="card-name"></div>
           <div class="card-score" id="card-score"><strong id="score-value"></strong></div>
           <div class="card-note" id="card-note"></div>
@@ -2154,6 +2170,7 @@
       ` : '';
       renderLookingFor(profile);
       document.getElementById('card-name').textContent = arch.name;
+      document.getElementById('card-glyph').textContent = arch.glyph || 'VS';
       document.getElementById('score-value').textContent = `${score}%`;
       const cardActivity = canShowCounts && m.days ? `${esc(m.days)} days tracked` : esc(activity.days || 'exact counts private');
       document.getElementById('card-note').innerHTML = `${pct ? `top ${esc(pct)}% signal` : 'primary archetype signal'}<br>${signature.label ? `${esc(signature.label)}<br>` : ''}${cardActivity}`;

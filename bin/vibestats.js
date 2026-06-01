@@ -10,6 +10,7 @@ import { createInterface } from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicMoments } from '../api/_lib/moments.js';
 import { readInsightsInput } from '../lib/claude-insights-extractor.js';
+import { archetypeMap } from '../lib/archetype-identity.js';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
 import { buildShareKit, fetchProfile, shareKitText } from '../lib/share-kit.js';
 
@@ -34,16 +35,9 @@ export const DEFAULT_LOCAL_REVEAL_COMMAND = localHelperCommand('reveal');
 export const DEFAULT_LOCAL_STATUS_COMMAND = localHelperCommand('status');
 export const DEFAULT_LOCAL_INSTALL_COMMAND = localHelperCommand('install-claude-command');
 const CLAUDE_COMMAND_SOURCE = new URL('../.claude/commands/vibestats.md', import.meta.url);
-const ARCHETYPE_LABELS = {
-  orchestrator: 'Orchestrator',
-  shipper: 'Shipper',
-  architect: 'Architect',
-  debugger: 'Debugger',
-  polyglot: 'Polyglot',
-  sprinter: 'Sprinter',
-  deepdiver: 'Deep Diver',
-  builder: 'Builder',
-};
+const ARCHETYPE_IDENTITIES = archetypeMap(['short', 'glyph']);
+const ARCHETYPE_LABELS = Object.fromEntries(Object.entries(ARCHETYPE_IDENTITIES).map(([key, value]) => [key, value.short]));
+const ARCHETYPE_GLYPHS = Object.fromEntries(Object.entries(ARCHETYPE_IDENTITIES).map(([key, value]) => [key, value.glyph || 'VS']));
 const COMPLEMENTARY_ARCHETYPES = {
   orchestrator: 'deepdiver',
   shipper: 'debugger',
@@ -382,6 +376,7 @@ export function cliRevealXShareUrl({ label, compareUrl } = {}) {
 
 export function cliRevealTerminalCard(payload = {}, { host = DEFAULT_HOST } = {}) {
   const archetype = ARCHETYPE_LABELS[payload.archetype] || payload.archetype || 'Unknown';
+  const glyph = ARCHETYPE_GLYPHS[payload.archetype] || 'VS';
   const label = revealLabel(payload);
   const score = primaryScore(payload);
   const metrics = payload.metrics || {};
@@ -395,7 +390,7 @@ export function cliRevealTerminalCard(payload = {}, { host = DEFAULT_HOST } = {}
   ].join(' | ');
   const lines = [
     '[vibestats]',
-    `${label}${score ? ` (${score}% ${archetype})` : ''}`,
+    `[${glyph}] ${label}${score ? ` (${score}% ${archetype})` : ''}`,
     pattern,
   ];
 

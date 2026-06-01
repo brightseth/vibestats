@@ -342,6 +342,16 @@
       color: var(--text-dim); letter-spacing: 0.2em;
       text-transform: uppercase; margin-bottom: 12px;
     }
+    .archetype-glyph {
+      width: 64px; height: 64px; margin: 0 auto 14px;
+      display: grid; place-items: center;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.035);
+      color: var(--accent);
+      font-family: var(--mono); font-size: 28px; font-weight: 800;
+      line-height: 1;
+    }
     .archetype-name {
       font-family: var(--sans); font-size: clamp(28px, 7vw, 40px);
       font-weight: 900; letter-spacing: -0.02em;
@@ -605,6 +615,7 @@
       <div class="archetype-card anim d1" id="archetype-card">
         <div class="shimmer-overlay"></div>
         <div class="card-label">your vibecoding personality</div>
+        <div class="archetype-glyph">||</div>
         <div class="archetype-name">THE ORCHESTRATOR</div>
         <div class="archetype-tagline">"You don't code — you conduct."</div>
         <div class="card-stats">
@@ -691,6 +702,8 @@
       if (!a) return;
       const nameEl = document.querySelector('.archetype-name');
       if (nameEl && a.name) nameEl.textContent = a.name;
+      const glyphEl = document.querySelector('.archetype-glyph');
+      if (glyphEl && a.glyph) glyphEl.textContent = a.glyph;
       const tagEl = document.querySelector('.archetype-tagline');
       if (tagEl && a.tagline) tagEl.textContent = '"' + a.tagline + '"';
       if (a.name) document.title = a.name + ' | vibestats wrapped';

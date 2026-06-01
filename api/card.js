@@ -8,7 +8,7 @@ const STATUS_COMMAND = `${BASE_CLI_COMMAND} status`;
 const REVEAL_COMMAND = `${BASE_CLI_COMMAND} reveal`;
 const INSTALL_CLAUDE_COMMAND = `${BASE_CLI_COMMAND} install-claude-command`;
 
-const ARCHETYPES = archetypeMap(['name', 'tagline', 'color', 'gradient']);
+const ARCHETYPES = archetypeMap(['name', 'tagline', 'color', 'gradient', 'glyph']);
 
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -136,6 +136,14 @@ export default function handler(req, res) {
       color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase;
       margin-bottom: 12px;
     }
+    .glyph {
+      width: 64px; height: 64px; margin: 0 auto 14px;
+      display: grid; place-items: center;
+      border-radius: 18px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.035); color: ${arch.color};
+      font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 800;
+      line-height: 1;
+    }
     .name {
       font-size: clamp(28px, 7vw, 40px); font-weight: 900;
       background: ${arch.gradient}; -webkit-background-clip: text;
@@ -228,6 +236,7 @@ export default function handler(req, res) {
 <body>
   <div class="card">
     <div class="label">vibecoding personality</div>
+    <div class="glyph">${esc(arch.glyph || 'VS')}</div>
     <div class="name">${esc(arch.name)}</div>
     <div class="tagline">"${esc(arch.tagline)}"</div>
     <div class="stats">

@@ -481,6 +481,15 @@
       font-family: var(--mono); font-size: 10px; color: var(--text-dim);
       letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px;
     }
+    .archetype-glyph {
+      width: 64px; height: 64px; margin: 0 auto 14px;
+      display: grid; place-items: center;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.035);
+      font-family: var(--mono); font-size: 28px; font-weight: 800;
+      line-height: 1; letter-spacing: 0;
+    }
     .archetype-name {
       font-family: var(--sans); font-size: clamp(28px, 7vw, 40px);
       font-weight: 900; letter-spacing: -0.02em;
@@ -904,6 +913,7 @@
     // from the keys — so this never drifts from the source of truth.
     const FALLBACK_ARCHETYPE_KEYS = ['orchestrator','shipper','architect','debugger','polyglot','sprinter','deepdiver','builder'];
     const FALLBACK_SHORT_NAMES = { deepdiver: 'Deep Diver' };
+    const FALLBACK_GLYPHS = { orchestrator: '||', shipper: '>>', architect: '[]', debugger: '??', polyglot: '{}', sprinter: '!!', deepdiver: '__', builder: '++' };
     function buildFallbackArchetypes() {
       const map = {};
       for (const key of FALLBACK_ARCHETYPE_KEYS) {
@@ -913,6 +923,7 @@
           color: '#6B8FFF', accent: '#22d3ee',
           gradient: 'linear-gradient(135deg, #6B8FFF, #22d3ee)',
           borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #22d3ee, transparent)',
+          glyph: FALLBACK_GLYPHS[key] || 'VS',
         };
       }
       return map;
@@ -957,7 +968,8 @@
     // ========================================
     // DNA BARCODE + SUB-ARCHETYPE
     // ========================================
-    const ARCHETYPE_COLORS = window.VIBESTATS_ARCHETYPE_COLORS;
+    const ARCHETYPE_COLORS = window.VIBESTATS_ARCHETYPE_COLORS
+      || Object.fromEntries(Object.entries(ARCHETYPES).map(([key, value]) => [key, value.color]));
 
     const SUB_PREFIXES = {
       orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
@@ -965,7 +977,8 @@
       deepdiver: 'deep-session', builder: 'prolific',
     };
 
-    const ARCHETYPE_SHORT_NAMES = window.VIBESTATS_ARCHETYPE_SHORT_NAMES;
+    const ARCHETYPE_SHORT_NAMES = window.VIBESTATS_ARCHETYPE_SHORT_NAMES
+      || Object.fromEntries(Object.entries(ARCHETYPES).map(([key, value]) => [key, value.short || key]));
 
     function buildDnaBarcode(scores) {
       const bars = Object.entries(ARCHETYPE_COLORS).map(([key, color]) => {
@@ -1690,6 +1703,7 @@
             <style>.archetype-card::before{background:${a.borderGradient}}</style>
             <div class="shimmer-overlay"></div>
             <div class="card-label">your vibecoding personality</div>
+            <div class="archetype-glyph" style="color:${a.color};box-shadow:0 0 34px ${a.color}24">${a.glyph || 'VS'}</div>
             <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
             ${getSubArchetype(scores, archetype)}<div class="archetype-tagline">"${a.tagline}"</div>
             ${pct ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:${rarity ? '6px' : '16px'};padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">top ${pct}%</div>` : ''}

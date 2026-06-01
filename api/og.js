@@ -5,7 +5,7 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
-const ARCHETYPES = archetypeMap(['name', 'tagline', 'color']);
+const ARCHETYPES = archetypeMap(['name', 'tagline', 'color', 'glyph']);
 
 const COMPAT_SOURCE = readFileSync(new URL('../lib/compat.js', import.meta.url), 'utf8');
 const compatContext = { window: {} };
@@ -154,6 +154,27 @@ function archetypeCard({ arch, name, days, commits, langs, sessions }) {
       type: 'div',
       props: {
         style: {
+          width: '92px',
+          height: '92px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '24px',
+          border: `2px solid ${arch.color}`,
+          backgroundColor: '#111118',
+          color: arch.color,
+          fontSize: '42px',
+          fontWeight: 900,
+          lineHeight: 1,
+          marginBottom: '22px',
+        },
+        children: arch.glyph || 'VS',
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
           fontSize: '72px',
           fontWeight: 900,
           color: arch.color,
@@ -231,7 +252,7 @@ function pairCard({
           marginBottom: '28px',
         },
         children: [
-          pairPerson(aLabel, shortName(aKey), a.color),
+          pairPerson(aLabel, shortName(aKey), a.color, a.glyph),
           {
             type: 'div',
             props: {
@@ -239,7 +260,7 @@ function pairCard({
               children: '+',
             },
           },
-          pairPerson(bLabel, shortName(bKey), b.color),
+          pairPerson(bLabel, shortName(bKey), b.color, b.glyph),
         ],
       },
     },
@@ -285,7 +306,7 @@ function pairCard({
   ]);
 }
 
-function pairPerson(label, type, color) {
+function pairPerson(label, type, color, glyph = 'VS') {
   return {
     type: 'div',
     props: {
@@ -301,6 +322,25 @@ function pairPerson(label, type, color) {
         border: `2px solid ${color}`,
       },
       children: [
+        {
+          type: 'div',
+          props: {
+            style: {
+              width: '52px',
+              height: '52px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '14px',
+              border: `1px solid ${color}`,
+              color,
+              fontSize: '24px',
+              fontWeight: 900,
+              marginBottom: '12px',
+            },
+            children: glyph,
+          },
+        },
         {
           type: 'div',
           props: {

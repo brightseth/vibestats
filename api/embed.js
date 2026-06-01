@@ -7,7 +7,7 @@ import { rarityTier, signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = Object.fromEntries(ARCHETYPE_KEYS.map((key) => {
   const a = ARCHETYPE_IDENTITY[key];
-  return [key, { name: a.name, short: a.short, color: a.color, accent: a.accent, tagline: a.taglineShort }];
+  return [key, { name: a.name, short: a.short, color: a.color, accent: a.accent, tagline: a.taglineShort, glyph: a.glyph }];
 }));
 
 function esc(value) {
@@ -59,6 +59,7 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
     tagline: 'Claim your Claude Code signature.',
     color: '#6B8FFF',
     accent: '#a78bfa',
+    glyph: 'VS',
   };
   const score = hasLatest ? Math.max(0, Math.min(100, Math.round(Number(latest?.scores?.[latest?.archetype]) || 0))) : 0;
   const signature = hasLatest ? signatureFromUpload(latest || {})?.label || arch.short : 'Waiting for an upload';
@@ -193,6 +194,21 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
       font-size: 11px;
       text-transform: uppercase;
     }
+    .embed-glyph {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.035);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
     h1 {
       margin: 0;
       color: transparent;
@@ -292,6 +308,7 @@ function embedHtml({ origin, user, latest, rarity, visibility = {} }) {
     </div>
     <div class="body">
       <div class="label">Claude Code signature</div>
+      <div class="embed-glyph">${esc(arch.glyph || 'VS')}</div>
       <h1>${esc(arch.name)}</h1>
       <div class="signature">${esc(signature)} <span class="tagline">/ ${esc(arch.tagline)}</span></div>
       <div class="reveal-line">${esc(revealLine)}</div>

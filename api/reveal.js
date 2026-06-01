@@ -3,7 +3,7 @@ import { archetypeMap } from '../lib/archetype-identity.js';
 import { NO_STORE_HEADERS, methodNotAllowed, safeErrorMessage } from './_lib/http.js';
 import { getRevealSnapshot } from './_lib/reveal-snapshots.js';
 
-const ARCHETYPES = archetypeMap(['name', 'short', 'color', 'gradient']);
+const ARCHETYPES = archetypeMap(['name', 'short', 'color', 'gradient', 'glyph']);
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -119,6 +119,7 @@ function renderRevealHtml(snapshot, origin) {
     h1 { margin:0 0 12px; font-size:clamp(46px, 9vw, 96px); line-height:.9; letter-spacing:0; background:${arch.gradient}; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
     .signature { font-size:clamp(22px, 4vw, 36px); line-height:1.08; font-weight:850; margin-bottom:18px; }
     .copy { max-width:620px; color:var(--muted); font-size:17px; line-height:1.6; }
+    .glyph { width:76px; height:76px; display:grid; place-items:center; border-radius:20px; border:1px solid ${arch.color}66; background:rgba(255,255,255,.035); color:${arch.color}; font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:900; margin-bottom:18px; }
     .privacy { margin-top:22px; padding:12px 14px; border:1px solid rgba(255,255,255,.09); border-radius:8px; color:#dbe7ff; background:rgba(255,255,255,.035); font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.5; }
     .card { border:1px solid ${arch.color}55; border-radius:8px; background:linear-gradient(145deg, rgba(13,13,24,.96), rgba(18,18,31,.9)); padding:24px; box-shadow:0 30px 90px rgba(0,0,0,.35); }
     .card-title { font-family:'JetBrains Mono',monospace; color:var(--dim); text-transform:uppercase; letter-spacing:.14em; font-size:11px; margin-bottom:12px; }
@@ -147,6 +148,7 @@ function renderRevealHtml(snapshot, origin) {
     <section class="hero">
       <div>
         <div class="eyebrow">shared Claude Code build profile</div>
+        <div class="glyph">${esc(arch.glyph || 'VS')}</div>
         <h1>${esc(arch.name)}</h1>
         <div class="signature">${esc(signature)}</div>
         <p class="copy">Someone shared their vibecoding profile without attaching a name or GitHub handle. This is a hosted snapshot of derived metrics only, created from a local reveal.</p>

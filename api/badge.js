@@ -7,7 +7,7 @@ import { signatureFromUpload } from './_lib/signatures.js';
 
 const ARCHETYPES = Object.fromEntries(ARCHETYPE_KEYS.map((key) => {
   const a = ARCHETYPE_IDENTITY[key];
-  return [key, { name: a.short.toUpperCase(), color: a.color }];
+  return [key, { name: a.short.toUpperCase(), color: a.color, glyph: a.glyph }];
 }));
 
 function esc(value) {
@@ -28,11 +28,12 @@ function truncate(value, max) {
   return text.length > max ? `${text.slice(0, max - 3)}...` : text;
 }
 
-export function badgeSvg({ handle, label = 'vibestats profile', archetype = 'vibestats', color = '#6B8FFF', score = null }) {
+export function badgeSvg({ handle, label = 'vibestats profile', archetype = 'vibestats', color = '#6B8FFF', glyph = 'VS', score = null }) {
   const safeHandle = esc(`@${truncate(handle, 20)}`);
   const safeLabel = esc(truncate(label, 25));
   const safeArchetype = esc(archetype);
   const safeColor = esc(color);
+  const safeGlyph = esc(truncate(glyph || 'VS', 2));
   const scoreValue = Number(score);
   const safeScore = Number.isFinite(scoreValue) ? esc(`${Math.max(0, Math.min(100, Math.round(scoreValue)))}%`) : '';
   const footer = safeScore
@@ -53,7 +54,7 @@ export function badgeSvg({ handle, label = 'vibestats profile', archetype = 'vib
   <rect width="520" height="120" rx="16" fill="url(#bg)"/>
   <rect x="0" y="0" width="520" height="2" fill="url(#accent)"/>
   <rect x="20" y="24" width="74" height="72" rx="12" fill="#10101d" stroke="rgba(255,255,255,0.08)"/>
-  <text x="57" y="52" text-anchor="middle" fill="${safeColor}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="800">VS</text>
+  <text x="57" y="58" text-anchor="middle" fill="${safeColor}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" font-weight="800">${safeGlyph}</text>
   <text x="57" y="72" text-anchor="middle" fill="#8888a0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9">vibestats</text>
   <text x="114" y="42" fill="#e0e0e0" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="22" font-weight="800">${safeHandle}</text>
   <text x="114" y="67" fill="${safeColor}" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="800">${safeLabel}</text>
@@ -117,6 +118,7 @@ export default async function handler(req, res) {
       label,
       archetype: arch?.name || 'vibestats',
       color: arch?.color || '#6B8FFF',
+      glyph: arch?.glyph || 'VS',
       score,
     }), profileShareCacheControl(user));
   } catch (err) {
