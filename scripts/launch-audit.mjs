@@ -114,7 +114,7 @@ Checks the deployed identity loop without printing secrets:
 - reveal homepage command path, demo-first CTA, and stale onboarding-copy regression checks
 - promises page privacy, derived-only, and anti-coercion public contract
 - profile shell, saved profile JSON, derived credential JSON, profile JSON miss cache policy, unknown-profile fallback cache policy, embed, and badge surfaces
-- card, wrapped, dashboard, profile recap, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
+- dynamic OG image, card, wrapped, dashboard, profile recap, compare-first upload route, profile-backed pair route, pair preview route, browse, match, and leaderboard surfaces
 - no-store headers on profile-derived JSON discovery APIs
 - bounded match-intro event recording when profile saves are ready
 - protected weekly digest dry run when --expect-digest is used with CRON_SECRET
@@ -633,6 +633,13 @@ async function auditLaunch(options) {
       expectedType: 'text/html',
       allowStatuses: [200],
       mustInclude: ['Open the pairing, then claim yours', 'STATUS_COMMAND', NO_NPM_STATUS, 'Copy status', 'CLAIM_COMMAND', 'Copy claim'],
+    },
+    {
+      label: 'dynamic OG image route',
+      path: `/api/og?a=${encodeURIComponent(archetype)}&n=Launch&d=7&c=2&l=3&s=4`,
+      expectedType: 'image/png',
+      allowStatuses: [200],
+      checkRawLeaks: false,
     },
     {
       label: 'profile-backed pair route',
