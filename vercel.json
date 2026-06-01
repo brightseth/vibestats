@@ -18,6 +18,7 @@
     { "source": "/cli.sh", "destination": "/api/cli/bootstrap" },
     { "source": "/compare", "destination": "/api/compare-page" },
     { "source": "/genome", "destination": "/genome.html" },
+    { "source": "/blog", "destination": "/blog.html" },
     { "source": "/promises", "destination": "/promises.html" },
     { "source": "/browse", "destination": "/browse.html" },
     { "source": "/leaderboard/:archetype", "destination": "/leaderboard?archetype=:archetype" },

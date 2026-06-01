@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>You already took the test by coding — vibestats</title>
+  <meta name="description" content="How I built a coding-personality reveal for Claude Code — without ever seeing your code.">
+  <link rel="canonical" href="https://vibestats.io/blog">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="You already took the test by coding">
+  <meta property="og:description" content="How I built a coding-personality reveal for Claude Code — without ever seeing your code.">
+  <meta property="og:url" content="https://vibestats.io/blog">
+  <meta property="og:image" content="https://vibestats.io/api/og?a=architect&n=Alex+Chen&d=45&c=6&l=4&s=120">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="You already took the test by coding">
+  <meta name="twitter:description" content="How I built a coding-personality reveal for Claude Code — without ever seeing your code.">
+  <meta name="twitter:image" content="https://vibestats.io/api/og?a=architect&n=Alex+Chen&d=45&c=6&l=4&s=120">
+  <style>
+    :root {
+      --bg: #06060a; --surface: #0d0d14; --border: #20202e;
+      --text: #e7e7ee; --muted: #9a9ab0; --dim: #6a6a80;
+      --accent: #6B8FFF;
+      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, 'Helvetica Neue', sans-serif;
+      --mono: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: var(--sans); line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      background-image: radial-gradient(120% 80% at 50% -10%, rgba(107,143,255,0.08), transparent 60%);
+      background-repeat: no-repeat;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 72px 24px 96px; }
+    .topbar { max-width: 720px; margin: 0 auto; padding: 22px 24px 0; }
+    .topbar a { font-family: var(--mono); font-size: 13px; color: var(--accent); text-decoration: none; letter-spacing: 0.04em; }
+    .topbar a:hover { text-decoration: underline; }
+    .eyebrow {
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--accent); margin: 0 0 20px;
+    }
+    h1 {
+      font-size: clamp(34px, 6vw, 54px); line-height: 1.08; font-weight: 850;
+      letter-spacing: -0.02em; margin: 0 0 16px;
+    }
+    .dek {
+      font-size: clamp(17px, 2.6vw, 21px); color: var(--muted);
+      font-weight: 400; margin: 0 0 14px; line-height: 1.5;
+    }
+    .byline {
+      font-family: var(--mono); font-size: 13px; color: var(--dim);
+      border-top: 1px solid var(--border); padding-top: 18px; margin-top: 28px;
+    }
+    p { font-size: 18px; margin: 0 0 24px; color: #d6d6e0; }
+    p strong { color: #fff; }
+    figure { margin: 40px 0; }
+    figure img {
+      width: 100%; height: auto; display: block;
+      border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: 0 30px 80px -40px rgba(0,0,0,0.9); background: var(--surface);
+    }
+    figcaption {
+      font-family: var(--mono); font-size: 12.5px; color: var(--dim);
+      line-height: 1.55; margin-top: 12px; text-align: center;
+    }
+    .pull {
+      font-size: clamp(22px, 3.4vw, 28px); line-height: 1.35; font-weight: 650;
+      letter-spacing: -0.01em; color: #fff; border-left: 3px solid var(--accent);
+      padding: 4px 0 4px 22px; margin: 44px 0;
+    }
+    hr { border: 0; border-top: 1px solid var(--border); margin: 48px 0; }
+    .cta { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+    .cta a { color: var(--accent); text-decoration: none; }
+    .cta a:hover { text-decoration: underline; }
+    code { font-family: var(--mono); font-size: 0.92em; color: #c8d5ff; }
+  </style>
+</head>
+<body>
+  <nav class="topbar"><a href="/">&larr; vibestats</a></nav>
+  <article class="wrap">
+    <p class="eyebrow">Build notes · vibestats</p>
+    <h1>You already took the test by coding</h1>
+    <p class="dek">How I built a coding-personality reveal for Claude Code — without ever seeing your code.</p>
+    <p class="byline">Seth Goldstein · vibestats.io</p>
+
+    <figure>
+      <img src="/api/og?a=architect&n=Alex+Chen&d=45&c=6&l=4&s=120" width="1200" height="630" alt="THE ARCHITECT archetype card, derived from real Claude Code activity">
+      <figcaption>The reveal: an archetype derived from how you actually build — not a quiz you fill out.</figcaption>
+    </figure>
+
+    <p>Every developer tool wants to show you a dashboard. Commits this week, lines changed, a streak you'll feel bad about breaking. I've never found those interesting. They measure volume, not character — <em>how much</em> you did, never <em>who you are</em> when you build.</p>
+
+    <p>But somewhere in Claude Code's <code>/insights</code> there's something better hiding: a fingerprint. Not how much you code — how you <em>move</em>. Whether you read before you write or write before you read. Whether you orchestrate five agents at once or disappear into one problem for six hours. Whether you ship at 2am or plan for a week first. That's not a statistic. That's a personality.</p>
+
+    <p class="pull">So vibestats started as a question: what if your tools gave that back to you — as identity, not analytics?</p>
+
+    <p>The model in my head was Spotify Wrapped. Once a year Spotify hands you a story about yourself you didn't know you were writing, and you can't help but share it. But Wrapped has an unfair advantage: Spotify already has all your data, on their servers. The whole thing is one tap.</p>
+
+    <p>I couldn't do that. And more importantly, I didn't want to.</p>
+
+    <p>The most intimate data a developer has is <em>how they think</em> — their prompts, their dead ends, the projects they're not ready to talk about. The fastest way to build this would have been "upload your insights file." It would also have been a betrayal. So the first decision, before a single archetype existed, was the one that defined everything after it: <strong>your raw data never leaves your machine.</strong> vibestats derives your result locally and only ever sends a handful of public-safe, bucketed fields — and only if you choose to. We never see the JSON.</p>
+
+    <figure>
+      <img src="/blog-assets/landing.png" alt="The vibestats landing page: reveal, don't upload">
+      <figcaption>Reveal, don't upload. The result is derived on your own machine; the raw <code>/insights</code> data never leaves it.</figcaption>
+    </figure>
+
+    <p>That one constraint rippled into the whole product. It's why there's a small, slightly awkward terminal step instead of a magic button — the derivation has to happen where your data lives, on your computer. For a while I tried to hide that friction. Eventually I decided to be honest about it instead: <em>reveal, don't upload.</em> People trust the awkward-but-honest version more than the frictionless-but-creepy one.</p>
+
+    <p>The result is eight archetypes — Orchestrator, Shipper, Architect, Debugger, Polyglot, Sprinter, Deep Diver, Builder — each derived from observable behavior, not a quiz you fill out. That's the part I find genuinely interesting: it's a personality test you can't game. You can lie to Myers-Briggs. You can't lie to your own commit history.</p>
+
+    <figure>
+      <img src="/blog-assets/eight-archetypes.png" alt="The eight archetypes, each with its own glyph and color">
+      <figcaption>The eight archetypes. Each gets its own glyph and color territory — a visual language people recognize at a glance and adopt as shorthand.</figcaption>
+    </figure>
+
+    <p>But the archetype was never the point. The point was the next question.</p>
+
+    <p>The viral instinct for a product like this is "look at me." I think the better one is "who would you build with?" An Architect and a Builder are the rarest, most productive pairing — one designs the system, the other makes it real. A Deep Diver and a Shipper are depth meeting velocity. The most valuable thing vibestats can say isn't <em>what you are</em> — it's <em>who you'd be dangerous with.</em> That's a matchmaking signal no résumé carries: connection based on how you actually build, not how you describe yourself.</p>
+
+    <figure>
+      <img src="/api/og?mode=pair&a=architect&b=builder&an=Alex&bn=Sam&d=45&c=6&l=4&s=120" width="1200" height="630" alt="A pairing card: Architect times Builder, Blueprints and Bricks, 5 of 5 chemistry">
+      <figcaption>Not "look at me" — "who would you build with?" Architect × Builder renders as "Blueprints &amp; Bricks," a perfect complement.</figcaption>
+    </figure>
+
+    <p>A surprising amount of the work was deciding what <em>not</em> to build. No raw-data upload. No ninth archetype. No swipe-matching, no DMs, no points and tokens. Every one of those would have made the demo flashier and the thing itself worse. The discipline was keeping it a clean mirror and an honest connection — and refusing the features that turn a product into another engagement trap.</p>
+
+    <p>It's opinionated and imperfect. Eight types will never capture a person; the scoring is a point of view, not a science. But that's also why it works as a thing you send to a friend — it's specific enough to argue with. "There's no way I'm a Sprinter" is exactly the reaction that makes someone go reveal their own.</p>
+
+    <p class="pull">You already took the test. You took it every time you opened Claude Code and started building. vibestats just reads the result back to you — and then asks who you'd build with next.</p>
+
+    <hr>
+    <p class="cta">Reveal yours at <a href="https://vibestats.io">vibestats.io</a>. Runs on your computer; your raw data stays there.</p>
+  </article>
+</body>
+</html>
