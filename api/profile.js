@@ -7,6 +7,7 @@ import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
 import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
 import { signatureFromUpload } from './_lib/signatures.js';
+import { attributionRefFromQuery, recordViralEvent, sourceRefForProfile } from './_lib/viral-events.js';
 
 const PROFILE_HTML = readFileSync(new URL('../u.html', import.meta.url), 'utf8');
 
@@ -203,6 +204,20 @@ export default async function handler(req, res) {
       url: `${origin}/u/${encodeURIComponent(user.gh_handle)}`,
       image: `${origin}/api/og?${imageParams.toString()}`,
     });
+
+    if (!isOwner) {
+      try {
+        await recordViralEvent({
+          eventName: 'profile_view',
+          sourceRef: attributionRefFromQuery(req.query, sourceRefForProfile(user.gh_handle)),
+          sourceSurface: 'profile',
+          profileHandle: user.gh_handle,
+          archetype: latest.archetype,
+        });
+      } catch (eventErr) {
+        console.error('GET /api/profile viral event error:', eventErr);
+      }
+    }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', profileShareCacheControl(user));

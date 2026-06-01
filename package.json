@@ -32,6 +32,7 @@
     "audit:package": "node scripts/package-audit.mjs",
     "audit:launch": "node scripts/launch-audit.mjs",
     "audit:ssh": "node scripts/ssh-audit.mjs",
+    "traffic:launch": "node scripts/launch-traffic.mjs",
     "share:kit": "node scripts/share-kit.mjs",
     "reveal:delete": "node scripts/delete-reveal-snapshot.mjs",
     "ssh:dev": "node services/ssh-shell/server.js",

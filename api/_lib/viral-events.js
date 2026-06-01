@@ -1,7 +1,7 @@
 import { hasDatabase, sql } from './db.js';
 import { ARCHETYPE_KEYS } from './uploads.js';
 
-const EVENT_NAMES = new Set(['reveal_created', 'reveal_view', 'compare_started', 'profile_claimed']);
+const EVENT_NAMES = new Set(['reveal_created', 'reveal_view', 'profile_view', 'compare_started', 'profile_claimed']);
 const SURFACES = new Set(['homepage', 'anon_reveal', 'profile', 'compare', 'cli', 'ssh', 'unknown']);
 const SOURCE_REF_RE = /^(r|u):[A-Za-z0-9_-]{1,39}$/;
 const REVEAL_SLUG_RE = /^[A-Za-z0-9_-]{10,24}$/;
