@@ -84,7 +84,7 @@ function anyPresent(alternatives) {
   return alternatives.flat().some((key) => loaded[key]);
 }
 
-const requiredTables = ['users', 'uploads', 'profile_settings', 'reveal_snapshots', 'schema_migrations'];
+const requiredTables = ['users', 'uploads', 'profile_settings', 'reveal_snapshots', 'viral_events', 'schema_migrations'];
 const requiredColumns = {
   users: ['id', 'gh_id', 'gh_handle', 'avatar_url', 'privacy', 'created_at', 'last_seen_at'],
   uploads: ['id', 'user_id', 'archetype', 'scores', 'metrics', 'raw_meta', 'uploaded_at'],
@@ -104,6 +104,7 @@ const requiredColumns = {
     'updated_at',
   ],
   reveal_snapshots: ['id', 'slug', 'archetype', 'scores', 'metrics', 'raw_meta', 'created_at', 'expires_at'],
+  viral_events: ['id', 'event_name', 'source_ref', 'source_surface', 'reveal_slug', 'profile_handle', 'archetype', 'created_at'],
 };
 const requiredIndexes = [
   'users_gh_handle_lower_idx',
@@ -112,6 +113,10 @@ const requiredIndexes = [
   'profile_settings_looking_for_idx',
   'reveal_snapshots_slug_idx',
   'reveal_snapshots_expires_at_idx',
+  'viral_events_event_created_idx',
+  'viral_events_source_created_idx',
+  'viral_events_reveal_created_idx',
+  'viral_events_profile_created_idx',
 ];
 const requiredConstraints = [
   { name: 'users_privacy_check', validated: true },
@@ -120,6 +125,10 @@ const requiredConstraints = [
   { name: 'profile_settings_contact_url_len', validated: true },
   { name: 'profile_settings_contact_url_protocol', validated: true },
   { name: 'reveal_snapshots_archetype_check', validated: true },
+  { name: 'viral_events_event_name_check', validated: true },
+  { name: 'viral_events_source_ref_check', validated: true },
+  { name: 'viral_events_source_surface_check', validated: true },
+  { name: 'viral_events_archetype_check', validated: true },
 ];
 const requiredForeignKeys = [
   {

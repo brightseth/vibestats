@@ -1,6 +1,7 @@
 import { originForRequest } from './_lib/auth.js';
 import { createRevealSnapshot } from './_lib/reveal-snapshots.js';
 import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin, safeErrorMessage } from './_lib/http.js';
+import { attributionRefFromBody, attributionSurfaceFromBody, recordViralEvent } from './_lib/viral-events.js';
 
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -53,9 +54,21 @@ export default async function handler(req, res) {
   try {
     requireSameOrigin(req);
     await assertRevealRateLimit(req);
-    const snapshot = await createRevealSnapshot(await readJson(req, { maxBytes: 64 * 1024 }), {
+    const body = await readJson(req, { maxBytes: 64 * 1024 });
+    const snapshot = await createRevealSnapshot(body, {
       origin: originForRequest(req),
     });
+    try {
+      await recordViralEvent({
+        eventName: 'reveal_created',
+        sourceRef: attributionRefFromBody(body),
+        sourceSurface: attributionSurfaceFromBody(body, 'homepage'),
+        revealSlug: snapshot.slug,
+        archetype: snapshot.archetype,
+      });
+    } catch (err) {
+      console.error('POST /api/reveals viral event error:', err);
+    }
     return json(res, 201, { ok: true, ...snapshot }, NO_STORE_HEADERS);
   } catch (err) {
     console.error('POST /api/reveals error:', err);

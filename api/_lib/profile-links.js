@@ -1,9 +1,10 @@
 export function profileLinks(user, archetype) {
   const handle = encodeURIComponent(user?.gh_handle || '');
   const type = encodeURIComponent(archetype || '');
+  const ref = encodeURIComponent(`u:${user?.gh_handle || ''}`);
   return {
-    profile_url: `/u/${handle}`,
-    compare_url: `/?compareTo=${handle}&compareArchetype=${type}`,
+    profile_url: `/u/${handle}?ref=${ref}`,
+    compare_url: `/?compareTo=${handle}&compareArchetype=${type}&ref=${ref}`,
     recap_url: `/u/${handle}/recap`,
     credential_url: `/u/${handle}/credential.json`,
     badge_url: `/u/${handle}/badge.svg`,

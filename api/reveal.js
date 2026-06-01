@@ -2,6 +2,7 @@ import { originForRequest } from './_lib/auth.js';
 import { archetypeMap } from '../lib/archetype-identity.js';
 import { NO_STORE_HEADERS, methodNotAllowed, safeErrorMessage } from './_lib/http.js';
 import { getRevealSnapshot } from './_lib/reveal-snapshots.js';
+import { attributionRefFromQuery, recordViralEvent, sourceRefForReveal } from './_lib/viral-events.js';
 
 const ARCHETYPES = archetypeMap(['name', 'short', 'color', 'gradient', 'glyph']);
 
@@ -69,10 +70,11 @@ export function revealMetadata(snapshot, origin = 'https://vibestats.io') {
     l: snapshot?.metrics?.languages ?? '?',
     s: snapshot?.metrics?.sessions ?? '?',
   });
+  const shareUrl = snapshot?.share_url || `${origin.replace(/\/$/, '')}/r/${encodeURIComponent(snapshot.slug)}`;
   return {
     title: `Anonymous ${arch.short} reveal | vibestats`,
     description: `${signature}. Shared from a local Claude Code reveal. Raw /insights stayed local; this link stores derived metrics only.`,
-    url: `${origin.replace(/\/$/, '')}/r/${encodeURIComponent(snapshot.slug)}`,
+    url: shareUrl,
     image: `${origin.replace(/\/$/, '')}/api/og?${params.toString()}`,
   };
 }
@@ -85,7 +87,10 @@ function renderRevealHtml(snapshot, origin) {
   const scores = scoreRows(snapshot.scores || {}, snapshot.archetype);
   const meta = revealMetadata(snapshot, origin);
   const expiry = dateLabel(snapshot.expires_at);
-  const compareUrl = `/?compareArchetype=${encodeURIComponent(snapshot.archetype)}`;
+  const sourceRef = sourceRefForReveal(snapshot.slug);
+  const compareParams = new URLSearchParams({ compareArchetype: snapshot.archetype });
+  if (sourceRef) compareParams.set('ref', sourceRef);
+  const compareUrl = `/?${compareParams.toString()}`;
   const revealCommand = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
   const shareText = `Anonymous vibestats reveal: ${signature}. Raw /insights stayed local. What are you?`;
   const xUrl = `https://twitter.com/intent/tweet?${new URLSearchParams({ text: shareText, url: meta.url }).toString()}`;
@@ -221,6 +226,17 @@ export default async function handler(req, res) {
     const snapshot = await getRevealSnapshot(firstParam(req.query?.slug), { origin });
     setRevealHeaders(res);
     if (req.method === 'HEAD') return res.status(200).end();
+    try {
+      await recordViralEvent({
+        eventName: 'reveal_view',
+        sourceRef: attributionRefFromQuery(req.query, sourceRefForReveal(snapshot.slug)),
+        sourceSurface: 'anon_reveal',
+        revealSlug: snapshot.slug,
+        archetype: snapshot.archetype,
+      });
+    } catch (eventErr) {
+      console.error('GET /api/reveal viral event error:', eventErr);
+    }
     return res.status(200).send(renderRevealHtml(snapshot, origin));
   } catch (err) {
     setRevealHeaders(res);

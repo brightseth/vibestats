@@ -2112,6 +2112,26 @@
       }
     }
 
+    function currentAttributionRef() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const ref = params.get('ref') || '';
+        if (/^(r|u):[A-Za-z0-9_-]{1,39}$/.test(ref)) return ref;
+        const compareTo = (params.get('compareTo') || '').replace(/^@/, '');
+        if (/^[A-Za-z0-9-]{1,39}$/.test(compareTo)) return `u:${compareTo}`;
+      } catch (e) { /* ignore malformed URL state */ }
+      return '';
+    }
+
+    function payloadWithAttribution(payload, surface = 'homepage') {
+      const ref = currentAttributionRef();
+      if (!ref) return payload;
+      return {
+        ...payload,
+        attribution: { ref, surface },
+      };
+    }
+
     function pathFromSaveUrl(url, fallback = '/') {
       if (url) {
         try {
@@ -2368,7 +2388,7 @@
       const res = await fetch('/api/uploads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadWithAttribution(payload, 'homepage')),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || 'Profile save failed');
@@ -2379,7 +2399,7 @@
       const res = await fetch('/api/reveals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadWithAttribution(payload, 'homepage')),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || 'Reveal link failed');
@@ -2401,7 +2421,8 @@
 
     function renderAnonymousRevealStatus(snapshot, archetype, scores) {
       const revealPath = pathFromSaveUrl(snapshot.reveal_path || snapshot.reveal_url, '/');
-      const revealUrl = canonicalVibestatsUrl(snapshot.reveal_url || revealPath);
+      const sharePath = pathFromSaveUrl(snapshot.share_path || snapshot.share_url || snapshot.reveal_path || snapshot.reveal_url, revealPath);
+      const revealUrl = canonicalVibestatsUrl(snapshot.share_url || sharePath);
       const text = anonymousRevealShareText(archetype, scores, revealUrl);
       const expiry = revealExpiryLabel(snapshot.expires_at);
       const claimLaterAction = identityStatus.profile_save_available

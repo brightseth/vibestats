@@ -1168,6 +1168,19 @@
       }
     }
 
+    function profileAttributionRef(handle) {
+      const clean = String(handle || '').replace(/^@/, '');
+      return /^[A-Za-z0-9-]{1,39}$/.test(clean) ? `u:${clean}` : '';
+    }
+
+    function withAttributionRef(pathOrUrl, ref) {
+      if (!ref) return pathOrUrl;
+      const url = new URL(pathOrUrl || '/', location.origin);
+      url.searchParams.set('ref', ref);
+      if (/^https?:\/\//i.test(String(pathOrUrl || ''))) return url.toString();
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
     function handleFromLocation() {
       const query = new URLSearchParams(location.search).get('handle');
       if (query) return query;
@@ -1400,6 +1413,7 @@
     function renderLaunchKitPanel(me, profile, latest, paths) {
       const panel = document.getElementById('launch-kit-panel');
       const handle = profile.user.gh_handle;
+      const sourceRef = profileAttributionRef(handle);
       if (!panel || !sameHandle(me?.gh_handle, handle)) {
         if (panel) {
           panel.classList.remove('visible');
@@ -1408,8 +1422,10 @@
         return;
       }
 
-      const profileUrl = canonicalVibestatsUrl(paths.profilePath);
-      const compareUrl = canonicalVibestatsUrl(paths.comparePath);
+      const profileSharePath = withAttributionRef(paths.profilePath, sourceRef);
+      const compareSharePath = withAttributionRef(paths.comparePath, sourceRef);
+      const profileUrl = canonicalVibestatsUrl(profileSharePath);
+      const compareUrl = canonicalVibestatsUrl(compareSharePath);
       const credentialUrl = canonicalVibestatsUrl(paths.credentialPath);
       const recapUrl = canonicalVibestatsUrl(paths.recapPath);
       const badgeUrl = canonicalVibestatsUrl(paths.badgePath);
@@ -1435,7 +1451,7 @@
           </div>
         </div>
         <div class="launch-kit-grid">
-          <a class="launch-kit-item" href="${esc(paths.comparePath)}"><strong>Compare invite</strong><span>${esc(compareUrl)}</span></a>
+          <a class="launch-kit-item" href="${esc(compareSharePath)}"><strong>Compare invite</strong><span>${esc(compareUrl)}</span></a>
           <a class="launch-kit-item" href="${esc(paths.credentialPath)}" target="_blank" rel="noopener"><strong>Credential proof</strong><span>${esc(credentialUrl)}</span></a>
           <a class="launch-kit-item" href="${esc(paths.badgePath)}" target="_blank" rel="noopener"><strong>README badge SVG</strong><span>${esc(badgeUrl)}</span></a>
           <a class="launch-kit-item" href="${esc(paths.embedPath)}" target="_blank" rel="noopener"><strong>Embed card</strong><span>${esc(embedUrl)}</span></a>
@@ -1795,9 +1811,11 @@
       const note = document.getElementById('viral-note');
       const handle = profile.user.gh_handle;
       const hostArchetype = latest.archetype;
+      const sourceRef = profileAttributionRef(handle);
       const profilePath = `/u/${encodeURIComponent(handle)}`;
-      const uploadComparePath = `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`;
-      const profileUrl = canonicalVibestatsUrl(profilePath);
+      const profileSharePath = withAttributionRef(profilePath, sourceRef);
+      const uploadComparePath = withAttributionRef(`/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(hostArchetype)}`, sourceRef);
+      const profileUrl = canonicalVibestatsUrl(profileSharePath);
       const uploadCompareUrl = canonicalVibestatsUrl(uploadComparePath);
       const inviteText = profileInviteText(handle, latest, profileUrl, uploadCompareUrl, profile);
       const proof = profileProofLine(profile);
@@ -1823,7 +1841,7 @@
       if (me && me.gh_handle !== handle) {
         const myLatest = await latestForHandle(me.gh_handle);
         if (myLatest?.archetype) {
-          compareCta.href = `/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(me.gh_handle)}`;
+          compareCta.href = withAttributionRef(`/u/${encodeURIComponent(handle)}/pair/${encodeURIComponent(me.gh_handle)}`, sourceRef);
           compareCta.textContent = `See your pairing with @${handle}`;
           note.textContent = 'Instant comparison from your latest saved profile.';
           renderCompatibilityPanel(me, myLatest, profile, latest);

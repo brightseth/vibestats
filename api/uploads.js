@@ -4,6 +4,7 @@ import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin, 
 import { profileLinks } from './_lib/profile-links.js';
 import { attachClaimSession, cleanClaimCode } from './_lib/ssh-claims.js';
 import { sanitizeUploadPayload } from './_lib/uploads.js';
+import { attributionRefFromBody, attributionSurfaceFromBody, recordViralEvent } from './_lib/viral-events.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST'], NO_STORE_HEADERS);
@@ -39,6 +40,17 @@ export default async function handler(req, res) {
     `;
     await sql()`update users set last_seen_at = now() where id = ${user.id}`;
     const links = profileLinks(user, payload.archetype);
+    try {
+      await recordViralEvent({
+        eventName: 'profile_claimed',
+        sourceRef: attributionRefFromBody(body),
+        sourceSurface: attributionSurfaceFromBody(body, 'homepage'),
+        profileHandle: user.gh_handle,
+        archetype: payload.archetype,
+      });
+    } catch (err) {
+      console.error('POST /api/uploads viral event error:', err);
+    }
     let claimSession = null;
     if (claimCode) {
       try {

@@ -613,14 +613,32 @@
     }
 
     function canonicalShareUrl(aSubject, bSubject) {
-      if (aSubject.handle && bSubject.handle) {
-        return `https://vibestats.io/u/${encodeURIComponent(bSubject.handle)}/pair/${encodeURIComponent(aSubject.handle)}`;
-      }
-      return `https://vibestats.io/compare?a=${encodeURIComponent(subjectParam(aSubject))}&b=${encodeURIComponent(subjectParam(bSubject))}`;
+      const profileSubject = primaryProfileSubject(aSubject, bSubject);
+      const ref = profileSubject?.handle ? `u:${profileSubject.handle}` : currentAttributionRef();
+      const url = aSubject.handle && bSubject.handle
+        ? new URL(`/u/${encodeURIComponent(bSubject.handle)}/pair/${encodeURIComponent(aSubject.handle)}`, 'https://vibestats.io')
+        : new URL(`/compare?a=${encodeURIComponent(subjectParam(aSubject))}&b=${encodeURIComponent(subjectParam(bSubject))}`, 'https://vibestats.io');
+      if (ref) url.searchParams.set('ref', ref);
+      return url.toString();
     }
 
     function absoluteUrl(path) {
       return new URL(path, location.origin).toString();
+    }
+
+    function currentAttributionRef() {
+      try {
+        const ref = new URLSearchParams(location.search).get('ref') || '';
+        if (/^(r|u):[A-Za-z0-9_-]{1,39}$/.test(ref)) return ref;
+      } catch (e) { /* ignore malformed URL state */ }
+      return '';
+    }
+
+    function withRef(path, ref) {
+      if (!ref) return path;
+      const url = new URL(path, location.origin);
+      url.searchParams.set('ref', ref);
+      return `${url.pathname}${url.search}${url.hash}`;
     }
 
     function primaryProfileSubject(aSubject, bSubject) {
@@ -641,13 +659,15 @@
       const profileSubject = primaryProfileSubject(aSubject, bSubject);
       if (!profileSubject) {
         const archetypeSubject = aSubject?.type ? aSubject : bSubject;
+        const ref = currentAttributionRef();
         return {
-          href: `/?compareArchetype=${encodeURIComponent(archetypeSubject.type)}`,
+          href: withRef(`/?compareArchetype=${encodeURIComponent(archetypeSubject.type)}`, ref),
           label: `Compare with The ${archetypeInviteLabel(archetypeSubject)}`,
         };
       }
+      const ref = `u:${profileSubject.handle}`;
       return {
-        href: `/?compareTo=${encodeURIComponent(profileSubject.handle)}&compareArchetype=${encodeURIComponent(profileSubject.type)}`,
+        href: withRef(`/?compareTo=${encodeURIComponent(profileSubject.handle)}&compareArchetype=${encodeURIComponent(profileSubject.type)}`, ref),
         label: `Compare with @${profileSubject.handle}`,
       };
     }
@@ -758,13 +778,12 @@
       // Share URL
       const shareUrl = canonicalShareUrl(aSubject, bSubject);
       const claimAction = comparisonClaimAction(aSubject, bSubject);
-      const claimUrl = absoluteUrl(claimAction.href);
       const inviteText = comparisonInviteText(aSubject, bSubject, compat, shareUrl);
       currentComparison = { a: aSubject, b: bSubject, shareUrl, inviteText };
       const tweetText = `${inviteText}\n\n#vibestats #vibecoding`;
 
       document.getElementById('result-actions').innerHTML = `
-        <a class="action-btn action-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(claimUrl)}" target="_blank" rel="noopener">
+        <a class="action-btn action-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}" target="_blank" rel="noopener">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
           Share
         </a>

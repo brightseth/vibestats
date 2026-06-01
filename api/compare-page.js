@@ -7,6 +7,7 @@ import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
 import { signatureFromUpload } from './_lib/signatures.js';
+import { attributionRefFromQuery, recordViralEvent, sourceRefForProfile } from './_lib/viral-events.js';
 
 const COMPARE_HTML = readFileSync(new URL('../compare-template.html', import.meta.url), 'utf8');
 const COMPAT_SOURCE = readFileSync(new URL('../lib/compat.js', import.meta.url), 'utf8');
@@ -49,12 +50,17 @@ function subjectProof(subject) {
 
 function canonicalCompareUrl(aSubject, bSubject, origin) {
   if (aSubject?.handle && bSubject?.handle) {
-    return `${origin}/u/${encodeURIComponent(bSubject.handle)}/pair/${encodeURIComponent(aSubject.handle)}`;
+    const ref = sourceRefForProfile(bSubject.handle);
+    const query = ref ? `?${new URLSearchParams({ ref }).toString()}` : '';
+    return `${origin}/u/${encodeURIComponent(bSubject.handle)}/pair/${encodeURIComponent(aSubject.handle)}${query}`;
   }
   const query = new URLSearchParams({
     a: subjectParam(aSubject),
     b: subjectParam(bSubject),
   });
+  const profileSubject = bSubject?.handle ? bSubject : (aSubject?.handle ? aSubject : null);
+  const ref = profileSubject ? sourceRefForProfile(profileSubject.handle) : null;
+  if (ref) query.set('ref', ref);
   return `${origin}/compare?${query.toString()}`;
 }
 
@@ -73,7 +79,7 @@ export function compareInviteMetadata(subject, origin = 'https://vibestats.io') 
   const label = subjectLabel(subject);
   const proof = subjectProof(subject);
   const query = subject.handle
-    ? new URLSearchParams({ compareTo: subject.handle, compareArchetype: subject.type })
+    ? new URLSearchParams({ compareTo: subject.handle, compareArchetype: subject.type, ref: sourceRefForProfile(subject.handle) })
     : new URLSearchParams({ compareArchetype: subject.type });
   const params = new URLSearchParams({
     mode: 'pair',
@@ -213,6 +219,21 @@ export default async function handler(req, res) {
       meta = compareMetadataForSubjects(aSubject, bSubject, origin);
     } else if (aSubject || bSubject) {
       meta = compareInviteMetadata(aSubject || bSubject, origin);
+    }
+    const profileSubject = bSubject?.handle ? bSubject : (aSubject?.handle ? aSubject : null);
+    const sourceRef = attributionRefFromQuery(req.query, profileSubject ? sourceRefForProfile(profileSubject.handle) : null);
+    if (aSubject || bSubject || sourceRef) {
+      try {
+        await recordViralEvent({
+          eventName: 'compare_started',
+          sourceRef,
+          sourceSurface: 'compare',
+          profileHandle: profileSubject?.handle || null,
+          archetype: profileSubject?.type || aSubject?.type || bSubject?.type || null,
+        });
+      } catch (eventErr) {
+        console.error('GET /api/compare-page viral event error:', eventErr);
+      }
     }
   } catch (err) {
     console.error('GET /api/compare-page metadata error:', err);

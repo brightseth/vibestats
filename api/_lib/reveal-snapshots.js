@@ -22,6 +22,10 @@ export function generateRevealSlug() {
   return randomBytes(9).toString('base64url');
 }
 
+function revealSharePath(slug) {
+  return `/r/${encodeURIComponent(slug)}?ref=${encodeURIComponent(`r:${slug}`)}`;
+}
+
 function safeMetric(value, max) {
   const n = Number(value);
   if (!Number.isFinite(n)) return null;
@@ -57,6 +61,8 @@ export function publicRevealSnapshot(row = {}, { origin = 'https://vibestats.io'
   const metrics = publicMetrics(upload.metrics);
   const slug = row.slug;
   const path = `/r/${encodeURIComponent(slug)}`;
+  const sharePath = revealSharePath(slug);
+  const originBase = String(origin || 'https://vibestats.io').replace(/\/$/, '');
 
   return {
     slug,
@@ -73,7 +79,9 @@ export function publicRevealSnapshot(row = {}, { origin = 'https://vibestats.io'
     created_at: row.created_at,
     expires_at: row.expires_at,
     reveal_path: path,
-    reveal_url: `${String(origin || 'https://vibestats.io').replace(/\/$/, '')}${path}`,
+    reveal_url: `${originBase}${path}`,
+    share_path: sharePath,
+    share_url: `${originBase}${sharePath}`,
     privacy: {
       identity: 'anonymous',
       link_visibility: 'public-unlisted',

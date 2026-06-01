@@ -56,6 +56,7 @@ const apiModules = [
   '../api/_lib/ssh-shell.js',
   '../api/_lib/ssh-claims.js',
   '../api/_lib/reveal-snapshots.js',
+  '../api/_lib/viral-events.js',
   '../api/_lib/achievements.js',
   '../api/_lib/public-profile.js',
   '../api/_lib/social-proof.js',
@@ -207,6 +208,7 @@ async function assertRoutes() {
   const revealApi = await readFile('api/reveal.js', 'utf8');
   const archetypeIdentityApi = await readFile('api/archetype-identity.js', 'utf8');
   const revealSnapshotsHelper = await readFile('api/_lib/reveal-snapshots.js', 'utf8');
+  const viralEventsHelper = await readFile('api/_lib/viral-events.js', 'utf8');
   const syncTokenApi = await readFile('api/sync-token.js', 'utf8');
   const syncSettingsApi = await readFile('api/sync-settings.js', 'utf8');
   const matchIntrosApi = await readFile('api/match-intros.js', 'utf8');
@@ -457,12 +459,13 @@ async function assertRoutes() {
   assert(badgeApi.includes('select archetype, scores, raw_meta'), 'profile badge should fetch only derived badge fields');
   assert(embedApi.includes('sendPrivateNotFound(res)'), 'profile embed private 404 should not be cacheable');
   assert(badgeApi.includes('function sendBadgeNotFound') && badgeApi.includes('profileShareCacheControl(null)'), 'profile badge private 404 should not be cacheable');
-  assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('recap_url') && profileLinksHelper.includes('credential_url'), 'profile links helper should expose compare-first, recap, and credential URLs');
+  assert(profileLinksHelper.includes('compare_url') && profileLinksHelper.includes('compareArchetype') && profileLinksHelper.includes('ref') && profileLinksHelper.includes('recap_url') && profileLinksHelper.includes('credential_url'), 'profile links helper should expose attributed compare-first, recap, and credential URLs');
   assert(profileLinksHelper.includes('privacy_url') && profileLinksHelper.includes('match_settings_url') && profileLinksHelper.includes('weekly_digest_preview_url') && profileLinksHelper.includes('leaderboard_url') && profileLinksHelper.includes('match_url'), 'profile links helper should expose opt-in discovery and return-loop URLs');
   assert(uploadsApi.includes('profileLinks(user, payload.archetype)') && uploadsApi.includes('claim_code') && uploadsApi.includes('attachClaimSession'), 'browser profile saves should return compare-first profile links and attach browser-claim race sessions');
   assert(revealsApi.includes('createRevealSnapshot') && revealsApi.includes('requireSameOrigin(req)') && revealsApi.includes('assertRevealRateLimit(req)') && revealsApi.includes('readJson(req, { maxBytes: 64 * 1024 })'), 'anonymous reveal snapshot API should create same-origin rate-limited derived-only share links without auth');
   assert(revealApi.includes('anonymous unlisted reveal') && revealApi.includes('Public unlisted link; expires') && revealApi.includes('Raw /insights stayed local') && revealApi.includes('No prompts, project paths, session ids, or free text') && revealApi.includes('Reveal yours to compare') && revealApi.includes('Copy command for desktop') && revealApi.includes('Reveal cannot run on a phone yet'), 'anonymous reveal page should render expiry/privacy/mobile copy and omit durable identity');
-  assert(revealSnapshotsHelper.includes('reveal_snapshots') && revealSnapshotsHelper.includes('sanitizeUploadPayload') && revealSnapshotsHelper.includes("identity: 'anonymous'") && revealSnapshotsHelper.includes("link_visibility: 'public-unlisted'") && revealSnapshotsHelper.includes('retention_days: 30') && revealSnapshotsHelper.includes('listed: false') && !revealSnapshotsHelper.includes('user_id'), 'anonymous reveal snapshots should store sanitized derived metrics without user identity');
+  assert(revealSnapshotsHelper.includes('reveal_snapshots') && revealSnapshotsHelper.includes('sanitizeUploadPayload') && revealSnapshotsHelper.includes("identity: 'anonymous'") && revealSnapshotsHelper.includes("link_visibility: 'public-unlisted'") && revealSnapshotsHelper.includes('retention_days: 30') && revealSnapshotsHelper.includes('listed: false') && revealSnapshotsHelper.includes('share_url') && revealSnapshotsHelper.includes('r:${slug}') && !revealSnapshotsHelper.includes('user_id'), 'anonymous reveal snapshots should store sanitized derived metrics without user identity and return attributed share URLs');
+  assert(viralEventsHelper.includes('viral_events') && viralEventsHelper.includes('reveal_created') && viralEventsHelper.includes('reveal_view') && viralEventsHelper.includes('compare_started') && viralEventsHelper.includes('profile_claimed') && viralEventsHelper.includes('SOURCE_REF_RE') && !viralEventsHelper.includes('user-agent') && !viralEventsHelper.includes('x-forwarded-for'), 'viral events helper should record bounded attribution events without raw request identifiers');
   assert(syncApi.includes('readSyncSession'), 'sync API should require signed CLI sync token sessions');
   assert(syncApi.includes('syncTokenIsRevoked'), 'sync API should reject owner-revoked CLI sync tokens');
   assert(!syncApi.includes('requireSameOrigin'), 'sync API should not require browser same-origin cookies');
@@ -610,6 +613,7 @@ async function assertRoutes() {
   assert(identityDoctor.includes('users_privacy_check'), 'identity doctor schema check should verify the profile privacy enum');
   assert(identityDoctor.includes('uploads_archetype_check'), 'identity doctor schema check should verify the saved upload archetype canon');
   assert(identityDoctor.includes('reveal_snapshots') && identityDoctor.includes('reveal_snapshots_archetype_check'), 'identity doctor schema check should verify anonymous reveal snapshot storage');
+  assert(identityDoctor.includes('viral_events') && identityDoctor.includes('viral_events_source_ref_check'), 'identity doctor schema check should verify viral event attribution storage');
   assert(identityDoctor.includes('profile_settings_looking_for_check'), 'identity doctor schema check should verify match intent enum constraint');
   assert(identityDoctor.includes('profile_settings_contact_url_len'), 'identity doctor schema check should verify contact URL length constraint');
   assert(identityDoctor.includes('profile_settings_contact_url_protocol'), 'identity doctor schema check should verify HTTPS contact URL constraint');
@@ -626,6 +630,7 @@ async function assertRoutes() {
   assert(launchAudit.includes("label: 'OAuth callback failure response'") && launchAudit.includes("path: '/api/auth/github/callback?code=a&state=b'"), 'launch audit should verify OAuth callback failure responses');
   assert(launchAudit.includes("label: 'profile JSON miss'") && launchAudit.includes('expectedType: \'application/json\''), 'launch audit should verify profile JSON miss cache policy');
   assert(launchAudit.includes('malformed profile+compare URL redirects') && launchAudit.includes('malformed profile+compare URL recovers compare route'), 'launch audit should verify recovery from pasted profile/compare URL mistakes');
+  assert(launchAudit.includes('auditViralEventsForReveal') && launchAudit.includes('viral loop records reveal_created') && launchAudit.includes('viral loop records compare_started from shared link'), 'launch audit should canary the anonymous reveal attribution loop');
   assert(launchAudit.includes("label: 'reveal homepage'") && launchAudit.includes('View sample reveal') && launchAudit.includes('Reveal on this machine') && launchAudit.includes('shouldAutoRunDemo()') && launchAudit.includes('agent-insights.json'), 'launch audit should prevent homepage onboarding regressions');
   assert(launchAudit.includes('Anonymous share links are public unlisted'), 'launch audit should require the anonymous-share privacy promise on the homepage');
   assert(launchAudit.includes('Explore sample pairings without data') && launchAudit.includes('/compare?a=orchestrator&b=shipper'), 'launch audit should verify the no-data archetype exploration path');
@@ -682,6 +687,7 @@ async function assertRoutes() {
   assert((await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('ssh_claim_sessions') && (await readFile('db/migrations/0013_ssh_claim_sessions.sql', 'utf8')).includes('code_hash text not null unique'), 'migrations should add hashed short-lived SSH claim sessions');
   assert((await readFile('db/migrations/0014_match_feedback_actions.sql', 'utf8')).includes('outcome_positive') && (await readFile('db/migrations/0014_match_feedback_actions.sql', 'utf8')).includes('intro_accept'), 'migrations should preserve bounded match feedback action enums');
   assert((await readFile('db/migrations/0015_reveal_snapshots.sql', 'utf8')).includes('reveal_snapshots') && (await readFile('db/migrations/0015_reveal_snapshots.sql', 'utf8')).includes('slug text not null unique'), 'migrations should add anonymous unlisted reveal snapshots');
+  assert((await readFile('db/migrations/0016_viral_events.sql', 'utf8')).includes('viral_events') && (await readFile('db/migrations/0016_viral_events.sql', 'utf8')).includes('reveal_created') && (await readFile('db/migrations/0016_viral_events.sql', 'utf8')).includes('compare_started'), 'migrations should add bounded viral-loop attribution events');
   assert(githubOauthHelper.includes('gh_handle, avatar_url, privacy, last_seen_at') && githubOauthHelper.includes("'unlisted'"), 'GitHub OAuth should explicitly create unlisted profiles by default');
   assert(authCallbackApi.includes('identityReadiness, identityUnavailableMessage'), 'GitHub OAuth callback should use the shared identity readiness gate');
   assert(authCallbackApi.indexOf('identityReadiness().available') < authCallbackApi.indexOf('const statePayload = decodeStatePayload'), 'GitHub OAuth callback should fail closed before reading signed state when identity is unavailable');
@@ -930,8 +936,8 @@ async function assertShareKitScript() {
     achievements: [{ id: 'rarity-rare', label: 'Rare signature' }],
   };
   const kit = buildShareKit(profile, { origin: 'https://vibestats.example', handle: 'alex' });
-  assert(kit.urls.profile === 'https://vibestats.example/u/alex', 'share kit should include the public profile URL');
-  assert(kit.urls.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper', 'share kit should route the primary invite into compare-first onboarding');
+  assert(kit.urls.profile === 'https://vibestats.example/u/alex?ref=u%3Aalex', 'share kit should include the attributed public profile URL');
+  assert(kit.urls.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper&ref=u%3Aalex', 'share kit should route the attributed primary invite into compare-first onboarding');
   assert(kit.urls.credential === 'https://vibestats.example/u/alex/credential.json', 'share kit should include the public derived credential URL');
   assert(kit.copy.share_text.includes('@alex is prolific Shipper') && kit.copy.share_text.includes('Raw /insights stayed local'), 'share kit should generate privacy-aware copy text');
   assert(kit.copy.x_share_url.startsWith('https://twitter.com/intent/tweet?') && new URL(kit.copy.x_share_url).searchParams.get('url') === kit.urls.compare, 'share kit should generate an X intent URL that clicks into compare');
@@ -940,7 +946,7 @@ async function assertShareKitScript() {
   assert(kit.copy.terminal_onboarding.includes('/insights') && kit.copy.terminal_onboarding.some((line) => line.includes('status')), 'share kit should include terminal onboarding commands');
   assert(kit.privacy_proof.public_payload_has_no_raw_usage_fields === true, 'share kit should prove public profile payload has no raw usage fields');
   const text = shareKitText(kit);
-  assert(text.includes('vibestats share kit: @alex') && text.includes('Compare invite: https://vibestats.example/?compareTo=alex&compareArchetype=shipper') && text.includes('Credential: https://vibestats.example/u/alex/credential.json') && text.includes('Privacy proof:'), 'share kit text should be copy-ready and include credential/privacy proof');
+  assert(text.includes('vibestats share kit: @alex') && text.includes('Compare invite: https://vibestats.example/?compareTo=alex&compareArchetype=shipper&ref=u%3Aalex') && text.includes('Credential: https://vibestats.example/u/alex/credential.json') && text.includes('Privacy proof:'), 'share kit text should be copy-ready and include credential/privacy proof');
 
   const fetched = await fetchProfile({
     origin: 'https://vibestats.example',
@@ -1572,8 +1578,8 @@ async function assertCompareShareLoop() {
   assert(!compareHtml.includes("href: '/', label: \"What's YOUR archetype?\""), 'anonymous compare result should not fall back to generic homepage upload');
   assert(compareHtml.includes("See how you'd pair with @${profileSubject.handle}:"), 'profile-backed compare shares should use asymmetric invite copy');
   assert(compareHtml.includes('comparisonInviteText(aSubject, bSubject, compat, shareUrl)'), 'compare result should build portable invite copy');
-  assert(compareHtml.includes('const claimUrl = absoluteUrl(claimAction.href)'), 'compare result X share should derive a direct claim URL');
-  assert(compareHtml.includes('url=${encodeURIComponent(claimUrl)}'), 'compare result X share should click through to the comparison claim target');
+  assert(compareHtml.includes('const shareUrl = canonicalShareUrl(aSubject, bSubject)'), 'compare result X share should derive a first-class pair artifact URL');
+  assert(compareHtml.includes('url=${encodeURIComponent(shareUrl)}'), 'compare result X share should click through to the shareable pairing artifact');
   assert(compareHtml.includes('copyComparisonInvite(this)'), 'compare result should copy invite text, not just a bare URL');
   assert(compareHtml.includes("document.execCommand('copy')"), 'compare invite copy should fall back when Clipboard API is unavailable');
   assert(compareHtml.includes('Copy invite'), 'compare result copy action should be framed as an invite');
@@ -2305,7 +2311,7 @@ async function assertCliDerivedPayload() {
         };
       },
     });
-    assert(shareKit.urls.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper', 'CLI share should build a compare-first invite URL from the public profile');
+    assert(shareKit.urls.compare === 'https://vibestats.example/?compareTo=alex&compareArchetype=shipper&ref=u%3Aalex', 'CLI share should build an attributed compare-first invite URL from the public profile');
     assert(output.join('').includes('vibestats share kit: @alex') && output.join('').includes('README badge: [![vibestats: @alex]') && output.join('').includes(localHelperCommand('reveal', { host: 'https://vibestats.example' })), 'CLI share should print the copy-ready share kit and no-npm terminal reveal command');
     assert(output.join('').includes('Privacy proof: raw /insights stays local; public payload has no raw usage fields: yes'), 'CLI share should print privacy proof from the public payload');
     assert(!output.join('').includes('tool_usage') && !output.join('').includes('language_usage'), 'CLI share output must not print raw usage fields');
@@ -3471,7 +3477,7 @@ async function assertCompareMetadataHelpers() {
     { type: 'shipper', handle: 'bob' },
     'https://vibestats.io',
   );
-  assert(profilePair.url === 'https://vibestats.io/u/bob/pair/alice', 'compare metadata should preserve pretty profile pair URLs');
+  assert(profilePair.url === 'https://vibestats.io/u/bob/pair/alice?ref=u%3Abob', 'compare metadata should preserve attributed pretty profile pair URLs');
   const inviteMeta = compareInviteMetadata(
     {
       type: 'deepdiver',
@@ -3484,7 +3490,7 @@ async function assertCompareMetadataHelpers() {
   assert(inviteMeta.title.includes("See how you'd pair with @brightseth"), 'one-sided compare metadata should preserve the known profile');
   assert(inviteMeta.description.includes('Run /insights, check status, then reveal yours against @brightseth'), 'one-sided compare metadata should teach the status and reveal path');
   assert(inviteMeta.description.includes('Raw Claude Code sessions stay local'), 'one-sided compare metadata should carry the privacy promise');
-  assert(inviteMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver', 'one-sided compare metadata should route into upload-to-compare');
+  assert(inviteMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver&ref=u%3Abrightseth', 'one-sided compare metadata should route into attributed upload-to-compare');
   assert(inviteMeta.image.includes('/api/og?mode=pair'), 'one-sided compare metadata should use a dynamic pair image');
   assert(canExposeCompareMetadata({ privacy: 'public' }) === true, 'compare metadata should expose public profiles');
   assert(canExposeCompareMetadata({ privacy: 'unlisted' }) === true, 'compare metadata should expose unlisted share profiles');
@@ -3537,7 +3543,7 @@ async function assertHomeMetadataHelpers() {
   assert(profileMeta.description.includes('rare combo: 1 of 1 saved profile this month'), 'homepage metadata should include rarity proof');
   assert(profileMeta.description.includes('#1 of 3 on weekly Deep Diver board'), 'homepage metadata should include leaderboard proof');
   assert(profileMeta.description.includes('Run /insights, check status, then reveal yours against @brightseth'), 'homepage metadata should carry the status-aware reveal command frame');
-  assert(profileMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver', 'homepage metadata should preserve compare-first query params');
+  assert(profileMeta.url === 'https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver&ref=u%3Abrightseth', 'homepage metadata should preserve attributed compare-first query params');
   assert(profileMeta.image.includes('/api/og?a=deepdiver') && profileMeta.image.includes('n=%40brightseth'), 'homepage metadata should use a profile-specific OG image');
   assert(!profileMeta.description.includes('rawJson'), 'homepage metadata must not leak raw JSON fields');
 

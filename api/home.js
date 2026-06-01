@@ -7,6 +7,7 @@ import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, publicActivity, visibleMetrics } from './_lib/public-profile.js';
 import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
 import { signatureFromUpload } from './_lib/signatures.js';
+import { attributionRefFromQuery, recordViralEvent, sourceRefForProfile } from './_lib/viral-events.js';
 
 const HOME_HTML = readFileSync(new URL('../home.html', import.meta.url), 'utf8');
 const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
@@ -43,6 +44,7 @@ function compareFirstUrl(origin, { handle = '', archetype = '' } = {}) {
   const params = new URLSearchParams();
   if (handle) params.set('compareTo', handle);
   if (archetype) params.set('compareArchetype', archetype);
+  if (handle) params.set('ref', `u:${handle}`);
   const query = params.toString();
   return query ? `${origin}/?${query}` : `${origin}/`;
 }
@@ -210,6 +212,21 @@ export default async function handler(req, res) {
     const resolved = await resolveInviteMetadata(req, origin);
     meta = resolved.meta;
     cacheUser = resolved.cacheUser;
+    if (req.method === 'GET' && (req.query?.compareArchetype || req.query?.compareTo || req.query?.ref)) {
+      const handle = cleanHandle(req.query?.compareTo);
+      const archetype = cleanArchetype(req.query?.compareArchetype);
+      try {
+        await recordViralEvent({
+          eventName: 'compare_started',
+          sourceRef: attributionRefFromQuery(req.query, handle ? sourceRefForProfile(handle) : null),
+          sourceSurface: 'homepage',
+          profileHandle: HANDLE_RE.test(handle) ? handle : null,
+          archetype,
+        });
+      } catch (eventErr) {
+        console.error('GET /api/home viral event error:', eventErr);
+      }
+    }
   } catch (err) {
     console.error('GET /api/home metadata error:', err);
   }
