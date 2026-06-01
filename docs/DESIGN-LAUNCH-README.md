@@ -21,6 +21,29 @@ As of June 1, 2026:
 
 Claude Code already knows how you build; vibestats lets you reveal that build identity, share it safely, and compare with other builders.
 
+## Copy/Paste Ask To The Design Team
+
+```text
+We are in final pre-launch polish for vibestats.io.
+
+Please review the first-time path from cold landing -> terminal helper -> browser reveal -> anonymous share or GitHub claim. The product is live and launch-audit green, so the ask is not a broad redesign. We need the smallest set of web, copy, visual identity, and launch-creative changes that make a new user think:
+
+"Claude Code already knows how I build. I want to reveal mine and share it."
+
+Start here:
+- https://vibestats.io
+- https://vibestats.io/u/brightseth
+- https://vibestats.io/genome
+- https://vibestats.io/compare?a=orchestrator&b=shipper
+
+Then read:
+- docs/DESIGN-LAUNCH-README.md
+- docs/BRIEFING-PACKET.md
+- docs/DESIGN-GTM-BRIEF.md
+
+Please focus feedback on where users hesitate, what feels unclear or untrustworthy, what makes the reveal less shareable, and what final visual/copy changes would increase conversion before launch.
+```
+
 ## Core Funnel
 
 1. User runs `/insights` inside Claude Code.
@@ -121,6 +144,59 @@ Please focus on final touches that improve conversion without changing the produ
    - Profile card / OG preview polish.
    - Short visual showing `/insights` -> reveal -> share.
 
+## Final Touches Checklist
+
+Use this as the concrete review pass before launch:
+
+- Landing page has one dominant action and no dead-looking button.
+- Landing page frames this as a reveal, not an upload chore.
+- Mobile visitors understand they can browse now but reveal from desktop.
+- Browser reveal makes anonymous share the obvious first share action.
+- GitHub claim reads as optional durability, not a privacy trap.
+- Anonymous `/r/...` page tells recipients the link is public, unlisted, derived-only, and expires.
+- Every social preview image looks intentional in Slack/X/iMessage.
+- Archetype cards are legible without relying only on color.
+- Terminal output is short enough to understand after one scan.
+- Launch copy avoids unsupported rarity claims like "rare Deep Diver" unless live data proves it.
+- No primary launch UI points users to `/vibe` yet.
+
+## Launch Copy Starters
+
+Mobile-first public post:
+
+```text
+Claude Code users: which one are you?
+
+Orchestrator, Shipper, Architect, Debugger, Polyglot, Sprinter, Deep Diver, or Builder.
+
+My vibestats profile:
+https://vibestats.io/u/brightseth
+
+Reveal yours from Claude Code:
+1. Run /insights
+2. Then on desktop:
+curl -fsSL https://vibestats.io/cli.sh | sh -s --
+
+Raw /insights stays local. Share anonymously or claim your GitHub-backed profile.
+```
+
+Tag-yourself grid prompt:
+
+```text
+Tag yourself:
+
+Orchestrator - conducts agents and systems
+Shipper - turns ambiguity into output
+Architect - plans before building
+Debugger - investigates before guessing
+Polyglot - crosses stacks naturally
+Sprinter - moves in fast bursts
+Deep Diver - stays with hard problems
+Builder - makes new things real
+
+Claude Code already has the signal. Run /insights, then reveal yours.
+```
+
 ## Do Not Reopen Before Launch
 
 - Raw data upload to servers.
@@ -167,4 +243,3 @@ Best feedback is specific and launch-scoped:
 - what visual/copy change would increase "I want to send this"
 
 Production comps are welcome after the review pass, but the first ask is: identify the few changes that most improve first-time conversion before launch.
-
