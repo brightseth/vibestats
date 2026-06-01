@@ -14,8 +14,7 @@ As of June 1, 2026:
 
 - Production is live on Vercel under `lets-vibe/vibestats`.
 - Strict launch audit is green.
-- GitHub OAuth production secret and session secret have been rotated.
-- The GitHub-claim launch gate is clear.
+- The GitHub-claim launch gate is clear: OAuth production secret and session secret rotated and verified (cleared 2026-06-01). `docs/LAUNCH.md` is the authority for this gate's status.
 - Anonymous reveal links, profile pages, compare routes, badge, embed, genome, share card, and dynamic OG image previews are working.
 
 ## Product In One Sentence

@@ -19,6 +19,8 @@ Required for GitHub-backed profiles:
 
 Hard GitHub-claim gate: rotate any credential that passed through chat, screenshots, shell history, or another non-secret channel before actively promoting "claim your GitHub profile." Rotation must be verified in the upstream provider and the old value must not appear in git history. Do not treat this as a nice-to-have launch caveat.
 
+**Gate status — CLEARED 2026-06-01.** The GitHub OAuth production secret and the session secret (`VIBE_SESSION_SECRET`) have been rotated and verified in the upstream provider, and the old values do not appear in git history. GitHub-claim promotion is unblocked. This line is the single source of truth for the gate; other docs (`SHARE-PLAYBOOK.md`, `DESIGN-LAUNCH-README.md`) defer here.
+
 Required for anonymous reveal links:
 
 - One database URL: `DATABASE_URL`, `POSTGRES_URL`, or `NEON_DATABASE_URL`
