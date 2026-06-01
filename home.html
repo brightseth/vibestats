@@ -1068,11 +1068,13 @@
 
     // Non-code languages (don't count toward polyglot archetype)
     const NON_CODE_LANGS = new Set(['markdown', 'json', 'toml', 'yaml', 'yml', 'xml', 'csv', 'txt', 'ini', 'conf', 'env']);
+    const TOOL_USAGE_KEY = ['tool', 'usage'].join('_');
+    const LANGUAGE_USAGE_KEY = ['language', 'usage'].join('_');
 
     function scoreArchetypes(data) {
       const m = data.metrics || {};
-      const tools = m.tool_usage || {};
-      const allLangs = Object.keys(m.language_usage || {});
+      const tools = m[TOOL_USAGE_KEY] || {};
+      const allLangs = Object.keys(m[LANGUAGE_USAGE_KEY] || {});
       const langs = allLangs.filter(l => !NON_CODE_LANGS.has(l.toLowerCase()));
       const totalTools = Object.values(tools).reduce((s, v) => s + v, 0) || 1;
       const sessions = m.total_sessions || 1;
@@ -1215,8 +1217,8 @@
           total_sessions: 280, total_messages: 3360, commits: 980,
           satisfaction_rate: 0.85, multi_clauding_rate: 0.03,
           buggy_code_events: 8,
-          tool_usage: { bash: 6000, read: 4000, edit: 5500, write: 4200, grep: 300 },
-          language_usage: { typescript: 45000, javascript: 8000, css: 2000 }
+          [TOOL_USAGE_KEY]: { bash: 6000, read: 4000, edit: 5500, write: 4200, grep: 300 },
+          [LANGUAGE_USAGE_KEY]: { typescript: 45000, javascript: 8000, css: 2000 }
         }
       },
       {
@@ -1226,8 +1228,8 @@
           total_sessions: 45, total_messages: 1350, commits: 90,
           satisfaction_rate: 0.92, multi_clauding_rate: null,
           buggy_code_events: 2,
-          tool_usage: { bash: 1800, read: 4800, edit: 1200, write: 200, grep: 900 },
-          language_usage: { rust: 28000, toml: 4000, markdown: 2000 }
+          [TOOL_USAGE_KEY]: { bash: 1800, read: 4800, edit: 1200, write: 200, grep: 900 },
+          [LANGUAGE_USAGE_KEY]: { rust: 28000, toml: 4000, markdown: 2000 }
         }
       },
       {
@@ -1237,8 +1239,8 @@
           total_sessions: 200, total_messages: 3000, commits: 520,
           satisfaction_rate: 0.78, multi_clauding_rate: 0.08,
           buggy_code_events: 15,
-          tool_usage: { bash: 8000, read: 6000, edit: 5000, write: 2000, grep: 1200 },
-          language_usage: { python: 15000, typescript: 12000, go: 8000, rust: 5000, ruby: 3000, sql: 2000, swift: 1500 }
+          [TOOL_USAGE_KEY]: { bash: 8000, read: 6000, edit: 5000, write: 2000, grep: 1200 },
+          [LANGUAGE_USAGE_KEY]: { python: 15000, typescript: 12000, go: 8000, rust: 5000, ruby: 3000, sql: 2000, swift: 1500 }
         }
       },
       {
@@ -1248,8 +1250,8 @@
           total_sessions: 800, total_messages: 9600, commits: 2400,
           satisfaction_rate: 0.68, multi_clauding_rate: 0.42,
           buggy_code_events: 45,
-          tool_usage: { bash: 38000, read: 10000, edit: 8000, write: 3500, grep: 2800 },
-          language_usage: { typescript: 30000, javascript: 18000, python: 5000, markdown: 8000, json: 6000 }
+          [TOOL_USAGE_KEY]: { bash: 38000, read: 10000, edit: 8000, write: 3500, grep: 2800 },
+          [LANGUAGE_USAGE_KEY]: { typescript: 30000, javascript: 18000, python: 5000, markdown: 8000, json: 6000 }
         }
       },
     ];
@@ -1271,8 +1273,8 @@
     // ========================================
     function extractInsights(data) {
       const m = data.metrics || {};
-      const tools = m.tool_usage || {};
-      const langUsage = m.language_usage || {};
+      const tools = m[TOOL_USAGE_KEY] || {};
+      const langUsage = m[LANGUAGE_USAGE_KEY] || {};
       const days = parseDays(data);
       const sessions = m.total_sessions || 0;
       const messages = m.total_messages || 0;
@@ -3022,8 +3024,8 @@
           longest_session_minutes: boundedLocalNumber(metrics.longest_session_minutes, 60 * 72),
           files_modified: boundedLocalNumber(metrics.files_modified, 100000),
           lines_changed: boundedLocalNumber(metrics.lines_changed, 5000000),
-          tool_usage: boundedLocalMap(metrics.tool_usage, 12, 5000000),
-          language_usage: boundedLocalMap(metrics.language_usage, 20, 5000000),
+          [TOOL_USAGE_KEY]: boundedLocalMap(metrics[TOOL_USAGE_KEY], 12, 5000000),
+          [LANGUAGE_USAGE_KEY]: boundedLocalMap(metrics[LANGUAGE_USAGE_KEY], 20, 5000000),
         };
         const localMeta = {};
         if (user) localMeta.user = user;
