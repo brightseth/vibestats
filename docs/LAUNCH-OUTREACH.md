@@ -262,6 +262,29 @@ Do not amplify until every box is checked.
 - [ ] **Rarity claims only where live `/genome` distribution supports them.**
 - [ ] **GitHub-claim gate is cleared** (`docs/LAUNCH.md` is the authority — cleared 2026-06-01).
 
+## Launch Traffic Pulse
+
+Run this after each wave: after the tweet, after the first 5 DMs, after the next 15, and during any HN/PH spike.
+
+```bash
+vercel env run -e production -- npm run traffic:launch
+```
+
+Watch for:
+
+- `/u views` climbing with no `compares`: profile interest exists, but the profile CTA is not pulling people into "reveal yours."
+- `compares` climbing with no `created`: people are curious but the desktop/terminal step is the wall.
+- `created` climbing with no `/r views`: users reveal but do not publish/share the anonymous link.
+- Any 429s in Vercel logs: raise `REVEAL_LINKS_PER_HOUR` during the launch window.
+- Any 500s in Vercel logs: pause amplification until fixed.
+
+Vercel log checks:
+
+```bash
+vercel logs --environment production --since 1h --status-code 429 --scope lets-vibe --no-branch
+vercel logs --environment production --since 1h --query "status:500" --scope lets-vibe --no-branch
+```
+
 ---
 
 ## What NOT to say
