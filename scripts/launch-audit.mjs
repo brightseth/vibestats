@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import postgres from 'postgres';
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +24,32 @@ const SECRET_NAME_PATTERNS = [
   'RESEND_API_KEY',
   'CRON_SECRET',
 ];
+
+const AUDIT_REVEAL_PAYLOAD = Object.freeze({
+  archetype: 'builder',
+  scores: {
+    orchestrator: 20,
+    shipper: 42,
+    architect: 56,
+    debugger: 31,
+    polyglot: 38,
+    sprinter: 24,
+    deepdiver: 64,
+    builder: 92,
+  },
+  metrics: {
+    sessions: 17,
+    days: 14,
+    commitsPerDay: 3,
+    languages: 4,
+    msgsPerSession: 120,
+  },
+  raw_meta: {
+    moments: [
+      { label: 'Audit-safe reveal', value: 'derived snapshot' },
+    ],
+  },
+});
 
 function parseArgs(argv = process.argv.slice(2)) {
   const options = {
@@ -154,6 +181,21 @@ function responseFromHeaders(status, headers) {
       },
     },
   };
+}
+
+function databaseUrl() {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL || '';
+}
+
+async function deleteAuditRevealSlug(slug) {
+  if (!slug || !databaseUrl()) return false;
+  const sql = postgres(databaseUrl(), { max: 1, ssl: 'require' });
+  try {
+    await sql`delete from reveal_snapshots where slug = ${slug}`;
+    return true;
+  } finally {
+    await sql.end();
+  }
 }
 
 function parseVercelCurlResponse(output) {
@@ -319,6 +361,66 @@ async function auditSshClaim(options, recorder) {
   }
 }
 
+async function auditAnonymousRevealRoundTrip(options, recorder) {
+  let slug = '';
+
+  try {
+    const created = await fetchText(options, '/api/reveals', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: options.origin,
+      },
+      body: JSON.stringify(AUDIT_REVEAL_PAYLOAD),
+    });
+    const cache = created.response.headers.get('cache-control') || '';
+    const type = created.response.headers.get('content-type') || '';
+    const body = JSON.parse(created.body || '{}');
+    slug = body.slug || '';
+
+    recorder.check(created.response.status === 201, 'anonymous reveal round-trip creates snapshot', `${created.response.status} ${created.url}`);
+    recorder.check(type.includes('application/json'), 'anonymous reveal round-trip create content type', type || '(none)');
+    recorder.check(cache.includes('no-store'), 'anonymous reveal round-trip create disables public caching', cache || '(none)');
+    recorder.check(body.ok === true && /^[A-Za-z0-9_-]{10,24}$/.test(slug) && String(body.reveal_path || '') === `/r/${slug}`, 'anonymous reveal round-trip returns bounded slug and path', slug || created.body);
+    recorder.check(body.privacy?.identity === 'anonymous' && body.privacy?.raw_insights === 'local-only' && body.privacy?.retention_days === 30, 'anonymous reveal round-trip returns privacy proof', JSON.stringify(body.privacy || {}));
+    recorder.check(!hasRawLeak(created.body), 'anonymous reveal round-trip create has no raw-insights field names');
+    recorder.check(!hasSecretName(created.body), 'anonymous reveal round-trip create does not expose secret env names');
+
+    if (slug) {
+      const viewed = await fetchText(options, `/r/${encodeURIComponent(slug)}`);
+      const viewType = viewed.response.headers.get('content-type') || '';
+      recorder.check(viewed.response.status === 200, 'anonymous reveal round-trip renders share page', `${viewed.response.status} ${viewed.url}`);
+      recorder.check(viewType.includes('text/html'), 'anonymous reveal round-trip view content type', viewType || '(none)');
+      recorder.check(
+        includesAll(viewed.body, ['anonymous unlisted reveal', 'Public unlisted link', 'Raw /insights stayed local', 'Reveal yours to compare', 'THE BUILDER']),
+        'anonymous reveal round-trip view contains share and privacy copy',
+      );
+      recorder.check(!hasRawLeak(viewed.body), 'anonymous reveal round-trip view has no raw-insights field names');
+      recorder.check(!hasSecretName(viewed.body), 'anonymous reveal round-trip view does not expose secret env names');
+    }
+
+    const missingSlug = `audit-miss-${Date.now().toString(36)}`;
+    const missing = await fetchText(options, `/r/${missingSlug}`);
+    const missingType = missing.response.headers.get('content-type') || '';
+    recorder.check(missing.response.status === 404, 'anonymous reveal missing slug returns 404', `${missing.response.status} ${missing.url}`);
+    recorder.check(missingType.includes('text/html'), 'anonymous reveal missing slug content type', missingType || '(none)');
+    recorder.check(includesAll(missing.body, ['Reveal link not found', 'Reveal yours']), 'anonymous reveal missing slug renders graceful fallback');
+    recorder.check(!hasRawLeak(missing.body), 'anonymous reveal missing slug has no raw-insights field names');
+    recorder.check(!hasSecretName(missing.body), 'anonymous reveal missing slug does not expose secret env names');
+  } catch (err) {
+    recorder.fail('anonymous reveal round-trip failed', err.message);
+  } finally {
+    if (slug) {
+      try {
+        const deleted = await deleteAuditRevealSlug(slug);
+        recorder.check(deleted, 'anonymous reveal round-trip cleanup deleted audit snapshot', deleted ? slug : 'run through `vercel env run -e production -- ...` or set DATABASE_URL/POSTGRES_URL locally to allow cleanup');
+      } catch (err) {
+        recorder.fail('anonymous reveal round-trip cleanup failed', err.message);
+      }
+    }
+  }
+}
+
 async function auditLaunch(options) {
   const recorder = createRecorder();
   const { origin, handle, archetype, expectReady, expectDeviceFlow, expectCliPackage, expectDigest, expectSshClaim } = options;
@@ -332,6 +434,8 @@ async function auditLaunch(options) {
   if (expectSshClaim) {
     await auditSshClaim(options, recorder);
   }
+
+  await auditAnonymousRevealRoundTrip(options, recorder);
 
   let identity = null;
   try {

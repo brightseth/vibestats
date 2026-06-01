@@ -111,7 +111,13 @@ Run the full launch audit against the public origin after a saved profile exists
 npm run audit:launch -- --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
 ```
 
-This checks identity readiness, no-store fallback headers, profile/embed/badge/card/recap share surfaces, compare-first route metadata, browse/match/leaderboard surfaces, and public raw-field leak markers. Add digest readiness to the same gate once email delivery is configured:
+This checks identity readiness, a real anonymous `/api/reveals` -> `/r/<slug>` round-trip, no-store fallback headers, profile/embed/badge/card/recap share surfaces, compare-first route metadata, browse/match/leaderboard surfaces, and public raw-field leak markers. Because the anonymous reveal probe creates and deletes a production test snapshot, run the audit with production DB env loaded when you are auditing `vibestats.io`:
+
+```bash
+vercel env run -e production -- node scripts/launch-audit.mjs --origin https://vibestats.io --handle <saved-gh-handle> --expect-ready
+```
+
+Add digest readiness to the same gate once email delivery is configured:
 
 `--expect-ready` requires more than a GitHub-created user row. The handle must have at least one saved derived upload, because the viral profile, embed, badge, pair metadata, rarity, leaderboard, evolution, and streak proofs all hang off the minted signature.
 
