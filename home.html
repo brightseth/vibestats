@@ -210,11 +210,57 @@
       background: rgba(107,143,255,0.06);
     }
     .demo-hint.hero-demo-hint {
-      margin: -14px 0 28px;
+      margin: 6px 0 28px;
       max-width: 520px;
       line-height: 1.55;
       color: #8e8ea8;
       font-size: 12px;
+    }
+
+    /* Reliable hide: author display rules (e.g. .reveal-steps grid) would beat UA [hidden] */
+    [hidden] { display: none !important; }
+
+    /* Show-first reveal teaser: a live, cycling payoff preview */
+    .reveal-teaser { display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+    .reveal-teaser-card {
+      --rt-color: #6B8FFF;
+      width: min(330px, 84vw);
+      padding: 28px 24px 24px;
+      border: 1px solid rgba(107,143,255,0.4);
+      border-radius: 18px;
+      background: radial-gradient(120% 130% at 50% 0%, rgba(255,255,255,0.055), rgba(255,255,255,0.012));
+      box-shadow: 0 22px 60px -26px rgba(107,143,255,0.55);
+      text-align: center;
+    }
+    .reveal-teaser-glyph {
+      font-family: var(--mono); font-size: 34px; font-weight: 800; line-height: 1;
+      color: var(--rt-color); margin-bottom: 14px;
+    }
+    .reveal-teaser-name {
+      font-size: clamp(22px, 4.5vw, 30px); font-weight: 900; letter-spacing: -0.01em;
+      color: var(--rt-color); margin-bottom: 8px;
+    }
+    .reveal-teaser-tag { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+    .reveal-teaser-cap {
+      margin-top: 14px; font-family: var(--mono); font-size: 10px;
+      letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase;
+    }
+    @keyframes rtIn { from { opacity: 0; transform: translateY(8px) scale(0.99); } to { opacity: 1; transform: none; } }
+    .reveal-teaser-card.rt-in { animation: rtIn 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+    @media (prefers-reduced-motion: reduce) { .reveal-teaser-card.rt-in { animation: none; } }
+
+    /* Privacy reassurance: one calm line, full detail on tap */
+    .privacy-line {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin: 2px 0 10px; padding: 6px 10px;
+      background: none; border: 0; cursor: pointer;
+      font-family: var(--mono); font-size: 12px; color: #8e8ea8;
+    }
+    .privacy-line:hover { color: #b8b8cc; }
+    .privacy-line span { color: var(--text-dim); }
+    .privacy-details {
+      width: min(500px, 90vw); margin: 0 auto 18px;
+      font-family: var(--mono); font-size: 12px; line-height: 1.6; color: #8e8ea8;
     }
 
     .file-path {
@@ -821,26 +867,38 @@
   <!-- UPLOAD STATE -->
   <div class="upload-page" id="upload-page">
     <div class="upload-logo">vibestats</div>
+    <div class="reveal-teaser" aria-hidden="true">
+      <div class="reveal-teaser-card rt-in" id="reveal-teaser-card">
+        <div class="reveal-teaser-glyph" id="rt-glyph">&gt;&gt;</div>
+        <div class="reveal-teaser-name" id="rt-name">THE SHIPPER</div>
+        <div class="reveal-teaser-tag" id="rt-tag">Done is better than perfect.</div>
+      </div>
+      <div class="reveal-teaser-cap">a live example &middot; yours uses your real Claude Code activity</div>
+    </div>
+
     <h1 class="upload-title">What kind of coder are you? Claude Code already knows.</h1>
     <p class="upload-sub">
-      You already took the test by coding. Reveal your archetype from Claude Code <code>/insights</code>; raw session data stays on your machine.
+      Your Claude Code coding personality &mdash; like Spotify Wrapped, for how you build. Reveal yours; your raw session data never leaves your computer.
     </p>
-    <div class="privacy-note">
+
+    <div class="hero-actions" aria-label="Reveal actions">
+      <button class="demo-btn hero-demo-btn" type="button" onclick="revealMine()">
+        Reveal mine &rarr;
+      </button>
+      <button class="demo-btn hero-secondary-btn" type="button" onclick="runDemo()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        See an example
+      </button>
+    </div>
+    <button class="privacy-line" type="button" id="privacy-toggle" aria-expanded="false">
+      &#128274; Runs on your computer. Nothing leaves it. <span aria-hidden="true">&rsaquo;</span>
+    </button>
+    <div class="privacy-details" id="privacy-details" hidden>
       Anonymous share links are public unlisted, expire in 30 days, and store only derived snapshot fields. Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
     </div>
+    <div class="demo-hint hero-demo-hint" id="reveal-hint" hidden>Two quick steps on the computer where you use Claude Code. On a phone? Watch an example now and send yourself the command for later.</div>
 
-    <div class="hero-actions" aria-label="Reveal preview actions">
-      <button class="demo-btn hero-demo-btn" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this); document.getElementById('reveal-steps').scrollIntoView({ behavior: 'smooth', block: 'center' })">
-        Reveal on this machine
-      </button>
-      <button class="demo-btn hero-secondary-btn" onclick="runDemo()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        View sample reveal
-      </button>
-    </div>
-    <div class="demo-hint hero-demo-hint">Run the two steps below on your Claude Code machine. On mobile, view the sample reveal now and send yourself the command for desktop later.</div>
-
-    <div class="reveal-steps" id="reveal-steps" aria-label="Reveal your vibestats profile">
+    <div class="reveal-steps" id="reveal-steps" aria-label="Reveal your vibestats profile" hidden>
       <div class="reveal-step">
         <span class="reveal-step-num">1</span>
         <span>
@@ -934,6 +992,64 @@
     const ARCHETYPES = window.VIBESTATS_ARCHETYPES || buildFallbackArchetypes();
     const ARCHETYPE_PLURALS = window.VIBESTATS_ARCHETYPE_PLURALS
       || Object.fromEntries(FALLBACK_ARCHETYPE_KEYS.map((k) => [k, (FALLBACK_SHORT_NAMES[k] || k.charAt(0).toUpperCase() + k.slice(1)) + 's']));
+
+    // ========================================
+    // SHOW-FIRST FTUE: teaser, progressive reveal, privacy toggle
+    // ========================================
+    // Cycle archetype cards in the hero so a first-timer SEES the payoff before
+    // doing anything (Spotify-Wrapped style). Uses the shared identity (or its
+    // fallback), so glyphs/colors stay on the single source of truth.
+    function startRevealTeaser() {
+      const card = document.getElementById('reveal-teaser-card');
+      const glyphEl = document.getElementById('rt-glyph');
+      const nameEl = document.getElementById('rt-name');
+      const tagEl = document.getElementById('rt-tag');
+      if (!card || !nameEl) return;
+      const keys = Object.keys(ARCHETYPES || {});
+      if (!keys.length) return;
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let i = 0;
+      function show(idx) {
+        const a = ARCHETYPES[keys[idx]];
+        if (!a) return;
+        const c = a.color || '#6B8FFF';
+        card.style.setProperty('--rt-color', c);
+        card.style.borderColor = c + '66';
+        card.style.boxShadow = '0 22px 60px -26px ' + c + '99';
+        if (glyphEl) glyphEl.textContent = a.glyph || '·';
+        nameEl.textContent = a.name || '';
+        if (tagEl) tagEl.textContent = a.taglineShort || a.tagline || '';
+      }
+      show(0);
+      if (reduce) return;
+      setInterval(function () {
+        i = (i + 1) % keys.length;
+        card.classList.remove('rt-in'); void card.offsetWidth; card.classList.add('rt-in');
+        show(i);
+      }, 2600);
+    }
+
+    // "Reveal mine" reveals the guided steps on demand — first-timers never see
+    // a raw curl command until they opt in.
+    function revealMine() {
+      const hint = document.getElementById('reveal-hint');
+      const steps = document.getElementById('reveal-steps');
+      if (hint) hint.hidden = false;
+      if (steps) { steps.hidden = false; steps.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+
+    (function wirePrivacyToggle() {
+      const toggle = document.getElementById('privacy-toggle');
+      const details = document.getElementById('privacy-details');
+      if (!toggle || !details) return;
+      toggle.addEventListener('click', function () {
+        const opening = details.hidden;
+        details.hidden = !opening;
+        toggle.setAttribute('aria-expanded', String(opening));
+      });
+    })();
+
+    startRevealTeaser();
 
     // ========================================
     // ARCHETYPE SCORING (v2 — sigmoid + power-law normalization)
