@@ -7,13 +7,16 @@ Use this as the front door for collaborators helping with first-time user experi
 1. `docs/LAUNCH.md`
    Binding launch gates. If another doc appears to conflict with this file on safety, readiness, or credential posture, `docs/LAUNCH.md` wins.
 
-2. `docs/DESIGN-GTM-BRIEF.md`
+2. `docs/DESIGN-LAUNCH-README.md`
+   Short launch-status handoff for final website, FTUE, and creative polish.
+
+3. `docs/DESIGN-GTM-BRIEF.md`
    The comprehensive design and marketing brief: product framing, current flow, audiences, FTUE review prompts, creative strategy, metrics, and constraints.
 
-3. `docs/AGENT-SETUP-GUIDE.md`
+4. `docs/AGENT-SETUP-GUIDE.md`
    Copy-paste instructions for coding agents or support helpers setting up vibestats for a user without violating the raw-data privacy boundary.
 
-4. `docs/SHARE-PLAYBOOK.md`
+5. `docs/SHARE-PLAYBOOK.md`
    Current launch copy, claims to avoid, anonymous-link rules, and DM/public-post sequencing.
 
 ## Strategy Context

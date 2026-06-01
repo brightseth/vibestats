@@ -13,6 +13,7 @@ For design, FTUE, onboarding, agent setup, and GTM help, start with `docs/BRIEFI
 Core companion docs:
 
 - `docs/LAUNCH.md` - binding launch gates and credential/readiness posture.
+- `docs/DESIGN-LAUNCH-README.md` - short current-state handoff for final design and website polish.
 - `docs/DESIGN-GTM-BRIEF.md` - design review prompts, onboarding strategy, and launch creative plan.
 - `docs/AGENT-SETUP-GUIDE.md` - copy-paste setup text for agents helping users reveal vibestats safely.
 - `docs/SHARE-PLAYBOOK.md` - launch copy, claims to avoid, and anonymous-link operating rules.
