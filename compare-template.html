@@ -223,15 +223,6 @@
     }
     .action-btn-cta:hover { border-color: var(--accent); }
 
-    .action-btn-vibe {
-      background: linear-gradient(135deg, rgba(107,143,255,0.2), rgba(167,139,250,0.15));
-      border: 1px solid rgba(107,143,255,0.5); color: #8aadff;
-    }
-    .action-btn-vibe:hover {
-      border-color: var(--accent);
-      background: linear-gradient(135deg, rgba(107,143,255,0.3), rgba(167,139,250,0.2));
-      color: #fff;
-    }
     .compare-status {
       min-height: 18px; margin: -24px 0 24px;
       color: var(--text-dim); font-family: var(--mono); font-size: 12px;
@@ -265,39 +256,6 @@
       font-family: var(--mono); font-size: 11px; cursor: pointer;
     }
     .copy-command:hover { border-color: var(--accent); color: #fff; }
-
-    /* Enhanced /vibe footer */
-    .vibe-footer { margin-top: 48px; width: min(400px, 90vw); }
-    .vibe-footer-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: 20px 24px; text-align: center;
-    }
-    .vibe-footer-logo {
-      font-family: var(--mono); font-size: 16px; font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), var(--purple));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .vibe-footer-tagline { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-    .vibe-footer-presence {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 11px; color: var(--text-muted);
-      margin: 12px 0;
-    }
-    .vibe-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
-      animation: dotPulse 2s ease-in-out infinite;
-    }
-    @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .vibe-footer-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 20px; border-radius: 10px;
-      background: linear-gradient(135deg, rgba(107,143,255,0.12), rgba(167,139,250,0.08));
-      border: 1px solid rgba(107,143,255,0.3);
-      font-family: var(--mono); font-size: 12px; font-weight: 500;
-      color: #8aadff; text-decoration: none; transition: all 0.2s;
-    }
-    .vibe-footer-btn:hover { border-color: var(--accent); color: #fff; }
 
     @supports (padding: env(safe-area-inset-bottom)) {
       .page { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
@@ -345,21 +303,6 @@
         <div class="pair-brand">vibestats.io</div>
       </div>
       <div class="result-actions" id="result-actions"></div>
-    </div>
-
-    <div class="vibe-footer">
-      <div class="vibe-footer-card">
-        <div class="vibe-footer-logo">/vibe</div>
-        <div class="vibe-footer-tagline">The social network for Claude Code</div>
-        <div class="vibe-footer-presence">
-          <span class="vibe-dot"></span>
-          <span id="vibe-online-count">&mdash;</span> online now
-        </div>
-        <br>
-        <a class="vibe-footer-btn" href="https://www.slashvibe.dev/join?ref=vibestats_compare" target="_blank" rel="noopener" onclick="trackVibeReferral('compare_footer')">
-          Join /vibe &rarr;
-        </a>
-      </div>
     </div>
   </div>
 
@@ -831,59 +774,13 @@
         <a class="action-btn action-btn-cta" href="${esc(claimAction.href)}" style="text-decoration:none">
           ${esc(claimAction.label)} &rarr;
         </a>
-        <a class="action-btn action-btn-vibe" href="https://www.slashvibe.dev/join?ref=vibestats_compare&archetype=${aType}&vsid=${getAnonId()}" target="_blank" rel="noopener" onclick="trackVibeReferral('compare_pairing', '${aType}')">
-          Find this pairing on /vibe &rarr;
-        </a>
         <button class="action-btn action-btn-copy" onclick="tryDifferent()" style="border-color:var(--border);color:var(--text-dim)">
           Try different pair
         </button>
       `;
-
-      // Fetch live pairing data from /vibe
-      fetchPairingData(aType, bType, compat);
-    }
-
-    async function fetchPairingData(aType, bType, compat) {
-      const container = document.createElement('div');
-      container.id = 'vibe-pairings';
-      container.style.cssText = 'margin-top:24px;width:min(480px,90vw);opacity:0;transition:opacity 0.5s';
-      document.getElementById('result').appendChild(container);
-
-      try {
-        const res = await fetch('https://www.slashvibe.dev/api/coding-dna');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data.community) return;
-
-        const myKey = [aType, bType].sort().join(':');
-        const pairings = (data.community.topPairings || []).slice(0, 3);
-
-        let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;text-align:center">';
-        html += '<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:12px">Popular pairings on /vibe</div>';
-
-        if (pairings.length > 0) {
-          pairings.forEach(p => {
-            const isYours = [p.a, p.b].sort().join(':') === myKey;
-            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${isYours ? 'color:var(--accent)' : 'color:var(--text-muted)'}">
-              <span style="font-family:var(--mono);font-size:12px">${p.name}${isYours ? ' (you!)' : ''}</span>
-              <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${p.count} pairs</span>
-            </div>`;
-          });
-        }
-
-        if (data.community.total > 0) {
-          html += `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${data.community.total} vibecoders with archetypes on /vibe</div>`;
-        }
-        html += '</div>';
-
-        container.innerHTML = html;
-        requestAnimationFrame(() => container.style.opacity = '1');
-      } catch (e) { /* graceful degradation */ }
     }
 
     function tryDifferent() {
-      const vp = document.getElementById('vibe-pairings');
-      if (vp) vp.remove();
       const url = new URL(window.location);
       const seed = currentComparison?.a || null;
       url.searchParams.delete('b');
@@ -894,44 +791,8 @@
       showPicker(seed);
     }
 
-    // /vibe funnel tracking + presence
-    function getAnonId() {
-      let id = localStorage.getItem('vibestats_anon_id');
-      if (!id) {
-        id = 'vs_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        localStorage.setItem('vibestats_anon_id', id);
-      }
-      return id;
-    }
-
-    function trackVibeReferral(source, archetype) {
-      fetch('https://www.slashvibe.dev/api/funnel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stage: 'vibestats_referral',
-          anonymousId: getAnonId(),
-          metadata: { archetype: archetype || null, source: source || 'vibestats_compare' }
-        })
-      }).catch(() => {});
-    }
-
-    (async function fetchVibePresence() {
-      try {
-        const res = await fetch('https://www.slashvibe.dev/api/presence');
-        if (res.ok) {
-          const data = await res.json();
-          const count = Array.isArray(data) ? data.length : (data.online || data.count || 0);
-          const el = document.getElementById('vibe-online-count');
-          if (el && count > 0) el.textContent = count;
-        }
-      } catch (e) { /* graceful degradation */ }
-    })();
-
     // Handle browser back/forward
     window.addEventListener('popstate', () => {
-      const vp = document.getElementById('vibe-pairings');
-      if (vp) vp.remove();
       document.getElementById('result').classList.remove('visible');
       document.getElementById('picker').style.display = '';
       routeCompare();

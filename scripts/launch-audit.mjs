@@ -13,6 +13,14 @@ const NO_NPM_STATUS = `${NO_NPM_CLI} status`;
 const NO_NPM_REVEAL = `${NO_NPM_CLI} reveal`;
 const NO_NPM_INSTALL = `${NO_NPM_CLI} install-claude-command`;
 const RAW_LEAK_PATTERNS = ['rawJson', 'tool_usage', 'language_usage'];
+const STALE_VIBE_UI_PATTERNS = [
+  'slashvibe',
+  'Join /vibe',
+  'Find this pairing on /vibe',
+  ' on /vibe',
+  'Popular pairings on /vibe',
+  'made with <a href="https://slashvibe.dev">/vibe</a>',
+];
 const SECRET_NAME_PATTERNS = [
   'DATABASE_URL',
   'POSTGRES_URL',
@@ -854,8 +862,10 @@ async function auditLaunch(options) {
       const result = await fetchText(options, item.path);
       const cache = result.response.headers.get('cache-control') || '';
       const type = result.response.headers.get('content-type') || '';
+      const csp = result.response.headers.get('content-security-policy') || '';
       recorder.check(item.allowStatuses.includes(result.response.status), `${item.label} status`, `${result.response.status} ${result.url}`);
       recorder.check(type.includes(item.expectedType), `${item.label} content type`, type || '(none)');
+      if (csp) recorder.check(!csp.includes('slashvibe'), `${item.label} CSP has no stale /vibe connect allowlist`);
       if (item.requireNoStore) recorder.check(cache.includes('no-store'), `${item.label} disables public caching`, cache || '(none)');
       if (item.mustInclude) {
         const needles = Array.isArray(item.mustInclude) ? item.mustInclude : [item.mustInclude];
@@ -864,6 +874,9 @@ async function auditLaunch(options) {
       if (item.mustNotInclude) {
         const needles = Array.isArray(item.mustNotInclude) ? item.mustNotInclude : [item.mustNotInclude];
         recorder.check(includesNone(result.body, needles), `${item.label} removed stale generic share copy`);
+      }
+      if (item.expectedType === 'text/html') {
+        recorder.check(includesNone(result.body, STALE_VIBE_UI_PATTERNS), `${item.label} has no stale /vibe links`);
       }
       if (item.checkRawLeaks !== false) {
         recorder.check(!hasRawLeak(result.body), `${item.label} has no raw-insights field names`);

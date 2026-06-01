@@ -224,6 +224,7 @@ async function assertRoutes() {
   const sshClaimsHelper = await readFile('api/_lib/ssh-claims.js', 'utf8');
   const profileLinksHelper = await readFile('api/_lib/profile-links.js', 'utf8');
   const statsApi = await readFile('api/stats.js', 'utf8');
+  const cardApi = await readFile('api/card.js', 'utf8');
   const cliBin = await readFile('bin/vibestats.js', 'utf8');
   const identityStatusApi = await readFile('api/identity-status.js', 'utf8');
   const identityReadiness = await readFile('api/_lib/identity-readiness.js', 'utf8');
@@ -307,6 +308,17 @@ async function assertRoutes() {
   const csp = globalHeaders.find((header) => header.key.toLowerCase() === 'content-security-policy')?.value || '';
   assert(!headerKeys.has('x-frame-options'), 'global X-Frame-Options must stay off so the embed function can be frameable');
   assert(csp.includes("frame-ancestors 'none'"), 'global CSP should keep non-embed pages unframeable');
+  assert(!csp.includes('slashvibe'), 'global CSP should not allow slashvibe while live launch UI has no /vibe handoff');
+  const launchUiNoVibe = [
+    ['compare page', compareHtml],
+    ['genome page', genomeHtml],
+    ['dashboard share page', dashboardHtml],
+    ['share card API', cardApi],
+  ];
+  const staleVibePatterns = ['slashvibe', 'Join /vibe', 'Find this pairing on /vibe', ' on /vibe', 'Popular pairings on /vibe', 'made with <a href="https://slashvibe.dev">/vibe</a>'];
+  for (const [label, source] of launchUiNoVibe) {
+    assert(staleVibePatterns.every((pattern) => !source.includes(pattern)), `${label} should not link to /vibe in launch UI`);
+  }
   const archetypeIdentityLoader = '<script src="/api/archetype-identity"></script>';
   assert(
     archetypeIdentityApi.includes('clientIdentityScript')
@@ -1630,7 +1642,7 @@ async function assertShareCardCta() {
   assert(body.includes('data-copy=') && body.includes("document.execCommand('copy')"), 'share card reveal commands should be copyable with clipboard fallback');
   assert(body.includes('install-claude-command'), 'share card should expose the installable Claude Code /vibestats command');
   assert(!body.includes("What's YOUR personality?"), 'share card should not use the old generic homepage CTA');
-  assert(body.includes('archetype=deepdiver'), 'share card /vibe CTA should use the sanitized archetype key');
+  assert(!body.includes('slashvibe') && !body.includes('Find other') && !body.includes('on /vibe'), 'share card should not link to /vibe while that service is not ready');
   assert(!body.includes('raw-json-should-not-propagate'), 'share card HTML should only use sanitized allowlisted query params');
 
   const methodRes = mockRes();
