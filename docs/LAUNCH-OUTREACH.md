@@ -113,6 +113,33 @@ tap through the eight archetypes to find your type. Which one are you?
 5. **Pairing teaser** — "Deep Diver × Shipper: what would you build?" (sets up the day-2 beat).
 6. **Anonymous share `/r` page** — shows the recipient experience + "reveal yours to compare."
 
+## 8-archetype grid spec
+
+This is the day-1 lead artifact. It should work as a screenshot, X image, PH thumbnail, Discord drop, and mobile-native "tag yourself" meme even before someone can run the desktop reveal.
+
+**Format:**
+- Primary: 1600 × 1200 PNG, dark background, 2 × 4 grid.
+- Secondary: 1080 × 1350 vertical crop for X/mobile.
+- Safe area: keep names/taglines inside the center 85%; thumbnails will crop edges.
+- Top copy: `Which Claude Code archetype are you?`
+- Bottom copy: `You did not take a quiz. Your actual coding revealed it.`
+- Footer microcopy: `Reveal yours on desktop at vibestats.io`
+
+**Card language and visual source:**
+
+| Key | Public name | Glyph | Color | One-line |
+|---|---|---:|---|---|
+| orchestrator | Orchestrator | `||` | `#6B8FFF` | You don't code. You conduct. |
+| shipper | Shipper | `>>` | `#22c55e` | Done is better than perfect. |
+| architect | Architect | `[]` | `#0891b2` | You plan before you build. |
+| debugger | Debugger | `??` | `#f59e0b` | You don't guess. You investigate. |
+| polyglot | Polyglot | `{}` | `#ff79c6` | One language is never enough. |
+| sprinter | Sprinter | `!!` | `#ef4444` | Fast, focused, ferocious. |
+| deepdiver | Deep Diver | `__` | `#3b82f6` | You go deep, not wide. |
+| builder | Builder | `++` | `#84cc16` | You build things that didn't exist before. |
+
+Use the current values from `lib/archetype-identity.js` as the binding source. If design changes a public name, tagline, glyph, or color, update that module first and regenerate the grid from the new source.
+
 ---
 
 ## X launch thread
@@ -224,7 +251,7 @@ drop your archetype. Which one are you?
 Do not amplify until every box is checked.
 
 - [ ] **`/r` create→view round-trip verified under real traffic** (the migration-0015 500 must never recur on a spike) + a post-deploy canary on the create path.
-- [ ] **Rate limit pressure-tested.** The 12/hr/IP reveal-link cap is good abuse protection but may block legit creation behind shared NATs / coworking / launch-day repeat testing. Verify it won't throttle real users, or temporarily raise it for the launch window. (`REVEAL_LINKS_PER_HOUR` in `api/reveals.js`.)
+- [ ] **Rate limit pressure-tested.** The default 12/hr/IP reveal-link cap is good abuse protection but may block legit creation behind shared NATs / coworking / launch-day repeat testing. Verify it will not throttle real users, or set `REVEAL_LINKS_PER_HOUR` higher for the launch deployment. The app clamps it to `1..240`.
 - [ ] **8–10 real, varied archetype examples collected** (the launch proof / gallery / first comments).
 - [ ] **Fresh `/r` slugs minted at blast time** (30-day window covers the campaign; never reuse stale testing slugs in launch copy).
 - [ ] **Every public surface sets the "reveal on desktop" expectation** (no mobile-reveal promise).

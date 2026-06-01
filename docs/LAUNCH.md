@@ -2,6 +2,8 @@
 
 Use this as the production gate for the identity loop. Green PR checks prove the code builds; they do not prove the deployed profile flow is ready.
 
+Launch copy, outreach sequencing, and channel-specific post drafts live in [LAUNCH-OUTREACH.md](./LAUNCH-OUTREACH.md). Use that playbook only after the production gates in this file are green.
+
 ## 1. Vercel Env
 
 Inspect env names without printing secret values:
@@ -40,6 +42,7 @@ Optional but launch-relevant:
 
 - `VIBESTATS_URL` for a stable OAuth callback origin when host inference is not enough
 - `KV_REST_API_URL` + `KV_REST_API_TOKEN` or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` for aggregate community stats
+- `REVEAL_LINKS_PER_HOUR` to temporarily raise anonymous reveal-link creation capacity during launch windows. Default is `12` per IP per hour; the app clamps the value to `1..240`.
 - `CRON_SECRET`, `RESEND_API_KEY`, and `DIGEST_FROM_EMAIL` for weekly digest delivery
 
 Digest consent can be captured before delivery env is present. Missing digest env should disable sending and strict `--expect-digest`, not block users from opting into the future retention loop.

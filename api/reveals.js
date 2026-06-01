@@ -5,7 +5,14 @@ import { attributionRefFromBody, attributionSurfaceFromBody, recordViralEvent } 
 
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-const REVEAL_LINKS_PER_HOUR = 12;
+const DEFAULT_REVEAL_LINKS_PER_HOUR = 12;
+const MAX_REVEAL_LINKS_PER_HOUR = 240;
+
+function revealLinksPerHour() {
+  const configured = Number(process.env.REVEAL_LINKS_PER_HOUR || DEFAULT_REVEAL_LINKS_PER_HOUR);
+  if (!Number.isFinite(configured)) return DEFAULT_REVEAL_LINKS_PER_HOUR;
+  return Math.max(1, Math.min(MAX_REVEAL_LINKS_PER_HOUR, Math.floor(configured)));
+}
 
 async function redisPipeline(commands) {
   if (!REDIS_URL || !REDIS_TOKEN) return null;
@@ -41,7 +48,7 @@ async function assertRevealRateLimit(req) {
     return;
   }
   const count = Number(result?.[0]?.result || 0);
-  if (count > REVEAL_LINKS_PER_HOUR) {
+  if (count > revealLinksPerHour()) {
     const err = new Error('Reveal link limit reached. Try again in an hour.');
     err.statusCode = 429;
     throw err;
