@@ -27,7 +27,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node scripts/compat-test.mjs && node scripts/smoke.mjs",
+    "test": "node scripts/facet-signals-test.mjs && node scripts/compat-test.mjs && node scripts/smoke.mjs",
     "doctor:identity": "node scripts/identity-doctor.mjs",
     "audit:package": "node scripts/package-audit.mjs",
     "audit:launch": "node scripts/launch-audit.mjs",

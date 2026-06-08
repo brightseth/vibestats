@@ -1,5 +1,6 @@
 import { ARCHETYPE_KEYS, signatureFromUpload, topArchetype } from './signatures.js';
 import { sanitizeMoments } from './moments.js';
+import { sanitizeFacetSignals } from './facet-signals.js';
 
 export { ARCHETYPE_KEYS };
 
@@ -56,6 +57,10 @@ export function sanitizeUploadPayload(body = {}, { source = 'browser' } = {}) {
     const value = clampNumber(sourceMetrics[key], max);
     if (value != null) metrics[key] = value;
   }
+  // Depth layer: re-validate counts-only facet signals against the allowlist.
+  // This is the boundary — free-text keys (incl. secret_leak) cannot get through.
+  const facetSignals = sanitizeFacetSignals(sourceMetrics.facet_signals);
+  if (facetSignals) metrics.facet_signals = facetSignals;
 
   const rawMeta = {};
   const sourceMeta = body.raw_meta && typeof body.raw_meta === 'object' ? body.raw_meta : {};

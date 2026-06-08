@@ -858,6 +858,18 @@
       aspect-ratio: 1;
       display: block;
     }
+    .signals-panel { display: none; flex-direction: column; gap: 18px; }
+    .signals-panel.visible { display: flex; }
+    .signals-head { font-weight: 700; font-size: 15px; }
+    .signals-sub { color: var(--text-dim, #8a8f98); font-size: 12px; margin-top: 2px; }
+    .signal-strip { display: flex; flex-direction: column; gap: 6px; }
+    .signal-title { font-size: 12px; font-weight: 600; }
+    .signal-caption { font-size: 12px; color: var(--text-muted, #b5bac1); }
+    .signal-track { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,0.05); }
+    .signal-seg { height: 100%; }
+    .signal-legend { display: flex; flex-wrap: wrap; gap: 10px; font-family: var(--mono, monospace); font-size: 10px; color: var(--text-dim, #8a8f98); }
+    .signal-key { display: inline-flex; align-items: center; gap: 4px; }
+    .signal-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
     .facet-list {
       display: grid;
       gap: 9px;
@@ -1109,6 +1121,7 @@
           <section class="achievement-panel" id="achievement-panel" aria-label="Collectible achievements"></section>
           <div class="moment-grid" id="moment-grid" aria-label="Behavioral moments"></div>
           <section class="facet-panel" id="facet-panel" aria-label="Facet radar"></section>
+          <section class="signals-panel" id="signals-panel" aria-label="How you build"></section>
         </div>
 
         <aside class="card" id="archetype-card">
@@ -2054,6 +2067,76 @@
       `;
     }
 
+    // Depth layer: counts-only facet distributions ("how you build"). Public surfaces
+    // get percentage shapes; owner / opted-in profiles get exact counts (sig.mode).
+    function renderFacetSignals(upload) {
+      const panel = document.getElementById('signals-panel');
+      if (!panel) return;
+      const sig = upload && upload.facet_signals;
+      if (!sig || typeof sig !== 'object') { panel.classList.remove('visible'); panel.innerHTML = ''; return; }
+      const isCounts = sig.mode === 'counts';
+      const PALETTE = ['#22c55e', '#6B8FFF', '#f59e0b', '#ff79c6', '#3b82f6', '#84cc16', '#ef4444'];
+      const LABELS = {
+        outcome_mix: { fully: 'fully achieved', mostly: 'mostly', partially: 'partially', not_achieved: 'not achieved', unclear: 'unclear' },
+        helpfulness_mix: { essential: 'essential', very_helpful: 'very helpful', moderately_helpful: 'moderately', slightly_helpful: 'slightly', unhelpful: 'unhelpful' },
+        session_type_mix: { multi_task: 'multi-task', single_task: 'single-task', exploration: 'exploration', quick_question: 'quick question', iterative: 'iterative' },
+        success_mix: { proactive_help: 'proactive help', multi_file_changes: 'multi-file changes', good_explanations: 'explanations', good_debugging: 'debugging', search: 'search', code_edits: 'code edits', none: 'none' },
+        friction_taxonomy: { collaboration: 'collaboration', code: 'code', tooling: 'tooling', platform: 'platform' },
+      };
+      const TITLES = {
+        outcome_mix: 'How your sessions land',
+        helpfulness_mix: 'Your partnership grade',
+        session_type_mix: 'Your working mode',
+        success_mix: 'What you actually ship',
+        friction_taxonomy: 'Where it rubs',
+      };
+      const fmtVal = (n) => (isCounts ? String(n) : `${n}%`);
+
+      function strip(key) {
+        const mix = sig[key];
+        if (!mix || typeof mix !== 'object') return '';
+        const entries = Object.entries(mix).map(([k, v]) => [k, Number(v) || 0]).filter(([, v]) => v > 0);
+        if (!entries.length) return '';
+        entries.sort((a, b) => b[1] - a[1]);
+        const total = entries.reduce((sum, [, v]) => sum + v, 0) || 1;
+        const labels = LABELS[key] || {};
+        const segs = entries.map(([k, v], i) => `<span class="signal-seg" style="width:${(v / total * 100).toFixed(1)}%;background:${PALETTE[i % PALETTE.length]}" title="${esc(labels[k] || k)} ${fmtVal(v)}"></span>`).join('');
+        const legend = entries.map(([k, v], i) => `<span class="signal-key"><i style="background:${PALETTE[i % PALETTE.length]}"></i>${esc(labels[k] || k)} ${fmtVal(v)}</span>`).join('');
+        return `<div class="signal-strip"><div class="signal-title">${TITLES[key]}</div><div class="signal-track">${segs}</div><div class="signal-legend">${legend}</div></div>`;
+      }
+
+      function share(mix, keys) {
+        if (!mix) return 0;
+        const total = Object.values(mix).reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
+        const part = keys.reduce((sum, k) => sum + (Number(mix[k]) || 0), 0);
+        return part / total;
+      }
+      const verdicts = [];
+      if (share(sig.outcome_mix, ['fully', 'mostly']) >= 0.6) verdicts.push('You finish what you start.');
+      if (share(sig.helpfulness_mix, ['essential', 'very_helpful']) >= 0.6) verdicts.push('You build with Claude, not at it.');
+      const fr = sig.friction_taxonomy;
+      if (fr && (Number(fr.collaboration) || 0) > ((Number(fr.code) || 0) + (Number(fr.tooling) || 0) + (Number(fr.platform) || 0))) {
+        verdicts.push('Your friction is human, not machine.');
+      }
+
+      const strips = ['outcome_mix', 'helpfulness_mix', 'session_type_mix', 'success_mix', 'friction_taxonomy'].map(strip).filter(Boolean).join('');
+      if (!strips) { panel.classList.remove('visible'); panel.innerHTML = ''; return; }
+
+      const satPos = sig.satisfaction_mix ? Math.round(share(sig.satisfaction_mix, ['positive']) * 100) : null;
+      const subBits = [];
+      if (sig.sessions_analyzed) subBits.push(`${sig.sessions_analyzed} sessions analyzed`);
+      if (satPos != null) subBits.push(`${satPos}% positive sentiment`);
+      subBits.push('counts-only · raw /insights stays local');
+
+      panel.classList.add('visible');
+      panel.innerHTML = `
+        <div>
+          <div class="signals-head">How you build${verdicts.length ? ` — ${esc(verdicts[0])}` : ''}</div>
+          <div class="signals-sub">${esc(subBits.join(' · '))}</div>
+        </div>
+        ${strips}`;
+    }
+
     function renderSparkline(uploads, archetype, color, { historyVisible = true } = {}) {
       const svg = document.getElementById('sparkline');
       if (!historyVisible) {
@@ -2222,6 +2305,7 @@
       renderBehavioralMoments(latest);
       renderAchievements(profile);
       renderFacetRadar(latest);
+      renderFacetSignals(latest);
       renderRevealPanel(me, profile, latest);
       renderSparkline(profile.uploads, latest.archetype, arch.color, { historyVisible });
       renderTimeline(profile.uploads, arch.color, { historyVisible });
