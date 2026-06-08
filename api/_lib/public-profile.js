@@ -1,6 +1,7 @@
 import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
 import { publicFacetRadar } from './facets.js';
 import { publicMoments } from './moments.js';
+import { sanitizeFacetSignals } from './facet-signals.js';
 
 const OWNER_RAW_META_KEYS = [
   'dateRange',
@@ -115,8 +116,11 @@ export function visibleMetrics(metrics = {}, visibility = {}) {
 // Depth layer for public surfaces. The DISTRIBUTION SHAPE (percentages) is always
 // public — it's the shareable "feel seen" content — but EXACT counts and the session
 // total are gated behind show_raw_counts, consistent with the rest of the profile.
-export function publicFacetSignals(signals, { showRaw = false } = {}) {
-  if (!signals || typeof signals !== 'object') return null;
+export function publicFacetSignals(rawSignals, { showRaw = false } = {}) {
+  // Never trust the stored row: re-run the same allowlist on read, so a poisoned or
+  // legacy DB row cannot republish arbitrary keys (e.g. secret_leak) to visitors.
+  const signals = sanitizeFacetSignals(rawSignals);
+  if (!signals) return null;
   const mixes = ['outcome_mix', 'helpfulness_mix', 'session_type_mix', 'success_mix', 'satisfaction_mix', 'friction_taxonomy'];
   const out = { mode: showRaw ? 'counts' : 'percent' };
   let any = false;

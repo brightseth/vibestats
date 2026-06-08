@@ -112,7 +112,9 @@ function clampInt(value) {
 function tallyEnum(facets, field, keymap) {
   const out = {};
   for (const facet of facets) {
-    const canon = keymap[facet?.[field]];
+    const raw = facet?.[field];
+    // Object.hasOwn guard: never resolve inherited keys (__proto__, constructor, …)
+    const canon = (typeof raw === 'string' && Object.hasOwn(keymap, raw)) ? keymap[raw] : null;
     if (canon) out[canon] = (out[canon] || 0) + 1;
   }
   return out;
@@ -142,8 +144,8 @@ export function aggregateFacetSignals(facets = []) {
       // unknown satisfaction labels: dropped
     }
     for (const [key, value] of Object.entries(facet?.friction_counts || {})) {
-      const bucket = FRICTION_MAP[key];
-      if (!bucket) continue; // drops secret_leak + any unrecognized key
+      const bucket = Object.hasOwn(FRICTION_MAP, key) ? FRICTION_MAP[key] : null;
+      if (!bucket) continue; // drops secret_leak, inherited keys, + any unrecognized key
       const n = Number(value) || 0;
       if (!n) continue;
       friction[bucket] = (friction[bucket] || 0) + n;

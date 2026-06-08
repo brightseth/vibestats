@@ -17,7 +17,7 @@ function assertNoForbiddenKeys(signals) {
   const keys = deepValues(signals);
   assert.ok(!keys.includes('secret_leak'), 'secret_leak must never appear');
   const allowed = new Set([
-    'sessions_analyzed', 'outcome_mix', 'helpfulness_mix', 'session_type_mix',
+    'mode', 'sessions_analyzed', 'outcome_mix', 'helpfulness_mix', 'session_type_mix',
     'success_mix', 'satisfaction_mix', 'friction_taxonomy',
     ...Object.values(FACET_SIGNAL_TAXONOMY).flat(),
   ]);
@@ -95,5 +95,35 @@ assert.equal(sanitizeFacetSignals({ outcome_mix: { hacker: 1 } }), null, 'all-in
 
 // ---- 4. Round trip: aggregate output passes the sanitizer unchanged ----
 assert.deepEqual(sanitizeFacetSignals(s), s, 'clean aggregate must survive sanitize unchanged');
+
+// ---- 5. Prototype-key hardening (inherited keys must not resolve) ----
+const proto = [
+  { outcome: '__proto__', claude_helpfulness: 'constructor', session_type: 'toString', primary_success: 'hasOwnProperty',
+    friction_counts: { __proto__: 5, constructor: 3, toString: 1, wrong_approach: 2 } },
+];
+const ps = aggregateFacetSignals(proto);
+// only the one legitimate friction key survives; every inherited/enum key is dropped
+assert.deepEqual(ps && ps.friction_taxonomy, { collaboration: 2 }, 'inherited friction keys must not resolve');
+assert.ok(!ps || !ps.outcome_mix, 'inherited enum value must not produce an outcome key');
+assertNoForbiddenKeys(ps || {});
+const allKeys = deepValues(ps || {});
+for (const bad of ['__proto__', 'constructor', 'toString', '[object Object]']) {
+  assert.ok(!allKeys.includes(bad), `prototype key ${bad} must never appear`);
+}
+console.log('  prototype-key hardening OK — inherited keys dropped');
+
+// ---- 6. Public read path never trusts the stored row ----
+const { publicFacetSignals } = await import('../api/_lib/public-profile.js');
+const poisoned = { mode: 'counts', sessions_analyzed: 43,
+  outcome_mix: { fully: 13, mostly: 17, secret_leak: 99, evil_label: 5 },
+  friction_taxonomy: { collaboration: 10, secret_leak: 50 } };
+const pubOut = publicFacetSignals(poisoned, { showRaw: false });
+assertNoForbiddenKeys(pubOut || {});
+assert.ok(!('sessions_analyzed' in (pubOut || {})), 'non-owner must not see session totals');
+assert.ok(pubOut.outcome_mix && !('secret_leak' in pubOut.outcome_mix) && !('evil_label' in pubOut.outcome_mix), 'poisoned keys must not reach visitors');
+const ownerOut = publicFacetSignals(poisoned, { showRaw: true });
+assert.equal(ownerOut.sessions_analyzed, 43, 'owner sees session total');
+assert.ok(!JSON.stringify(pubOut).includes('secret_leak') && !JSON.stringify(ownerOut).includes('secret_leak'), 'secret_leak never in public output');
+console.log('  public read path OK — stored row re-validated, poisoned keys dropped');
 
 console.log('facet-signals-test: OK — counts exact, secret_leak + free-text never cross');
