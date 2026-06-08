@@ -1,6 +1,7 @@
 import { ARCHETYPE_KEYS, signatureFromUpload } from './signatures.js';
 import { publicFacetRadar } from './facets.js';
 import { publicMoments } from './moments.js';
+import { sanitizeFacetSignals } from './facet-signals.js';
 
 const OWNER_RAW_META_KEYS = [
   'dateRange',
@@ -112,6 +113,37 @@ export function visibleMetrics(metrics = {}, visibility = {}) {
   return out;
 }
 
+// Depth layer for public surfaces. The DISTRIBUTION SHAPE (percentages) is always
+// public — it's the shareable "feel seen" content — but EXACT counts and the session
+// total are gated behind show_raw_counts, consistent with the rest of the profile.
+export function publicFacetSignals(rawSignals, { showRaw = false } = {}) {
+  // Never trust the stored row: re-run the same allowlist on read, so a poisoned or
+  // legacy DB row cannot republish arbitrary keys (e.g. secret_leak) to visitors.
+  const signals = sanitizeFacetSignals(rawSignals);
+  if (!signals) return null;
+  const mixes = ['outcome_mix', 'helpfulness_mix', 'session_type_mix', 'success_mix', 'satisfaction_mix', 'friction_taxonomy'];
+  const out = { mode: showRaw ? 'counts' : 'percent' };
+  let any = false;
+  for (const mix of mixes) {
+    const src = signals[mix];
+    if (!src || typeof src !== 'object') continue;
+    const total = Object.values(src).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    if (!total) continue;
+    any = true;
+    const entry = {};
+    for (const [key, value] of Object.entries(src)) {
+      const n = Number(value) || 0;
+      entry[key] = showRaw ? n : Math.round((n / total) * 100);
+    }
+    out[mix] = entry;
+  }
+  if (!any) return null;
+  if (showRaw && Number.isFinite(Number(signals.sessions_analyzed))) {
+    out.sessions_analyzed = Number(signals.sessions_analyzed);
+  }
+  return out;
+}
+
 export function publicRawMeta(rawMeta = {}, { isOwner = false, signature = null, visibility = {} } = {}) {
   const out = {};
   for (const key of isOwner ? OWNER_RAW_META_KEYS : []) {
@@ -139,6 +171,8 @@ export function publicUpload(upload = {}, visibility = {}, { isOwner = false } =
     updated: uploadRecency(upload.uploaded_at),
     raw_meta: publicRawMeta(upload.raw_meta || {}, { isOwner, signature, visibility }),
   };
+  const facetSignals = publicFacetSignals(upload.metrics?.facet_signals, { showRaw: visibility.show_raw_counts });
+  if (facetSignals) out.facet_signals = facetSignals;
   if (isOwner) out.uploaded_at = upload.uploaded_at;
   if (isOwner) out.id = upload.id;
   return out;

@@ -27,6 +27,7 @@ const DERIVED_PROFILE_SPEC_BODY = Object.freeze({
     'rarity cohort',
     'leaderboard proof',
     'collectible badges',
+    'counts-only facet signal distributions',
   ],
   synced_fields: 'derived-only',
   forbidden_synced_fields: [
