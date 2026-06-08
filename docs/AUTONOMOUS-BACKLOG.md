@@ -47,13 +47,18 @@ through the browser-claim/preview path so browser-claimed profiles show depth to
   bars are supporting detail. Browser-verified. Commit a3d0090, live.
   ⏸️ (a) split to G2a in Deferred section — couldn't verify the full claim→DB round trip headless.
 
-### - [ ] G3 — One-click private scoreboard
+### - [x] G3 — One-click private scoreboard
 Replace "run a scary terminal command" with an owner-only page that shows the
 compare-intent funnel (landed → saw pairing → shared → reveal) and top attributed
 sources. Reuse the existing `traffic:launch` query logic server-side.
 - Files: new `api/dashboard.js` (owner-gated via session), small client page or JSON.
 - Acceptance: owner opens the page, sees live funnel numbers; non-owners get 404/401.
-- Result:
+- Result: ✅ at **/scoreboard** (not /dashboard — a pre-existing dashboard.html shadows
+  that path via cleanUrls). Gated by requireUser + owner allowlist
+  (VIBESTATS_OWNER_HANDLES, default brightseth). Verified live: anon → 401 + sign-in,
+  no data leak. ⚠️ Owner-authenticated view couldn't be headless-verified (no operator
+  session) — reuses the proven requireUser pattern + funnel queries; needs a one-time
+  eyeball: log in as brightseth, open https://vibestats.io/scoreboard. Commits f2ea6b2, 58d3931.
 
 ---
 
@@ -73,3 +78,4 @@ source at all — out of scope.) Secondary path, lower priority.
 (Claude appends a one-line entry per completed goal: date · goal · commit · live check.)
 - 2026-06-08 · G1 primary-share leak · 96226d0 · live (home 200, share-fix present)
 - 2026-06-08 · G2 depth receipt one-liner (G2a deferred) · a3d0090 · live (receipt code present)
+- 2026-06-08 · G3 /scoreboard owner funnel page · 58d3931 · live (anon→401; owner view needs eyeball)
