@@ -860,6 +860,8 @@
     }
     .signals-panel { display: none; flex-direction: column; gap: 18px; }
     .signals-panel.visible { display: flex; }
+    .signals-eyebrow { font-family: var(--mono, monospace); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim, #8a8f98); }
+    .signals-receipt { font-weight: 800; font-size: 22px; line-height: 1.25; margin: 4px 0 2px; background: linear-gradient(90deg, var(--card-color, #6B8FFF), #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
     .signals-head { font-weight: 700; font-size: 15px; }
     .signals-sub { color: var(--text-dim, #8a8f98); font-size: 12px; margin-top: 2px; }
     .signal-strip { display: flex; flex-direction: column; gap: 6px; }
@@ -2130,9 +2132,13 @@
       subBits.push('counts-only · raw /insights stays local');
 
       panel.classList.add('visible');
+      // Lead with one opinionated, screenshot-worthy line (the "receipt"); the bars
+      // are supporting detail below it.
+      const receipt = verdicts[0] || 'Here is how you actually build with Claude Code.';
       panel.innerHTML = `
         <div>
-          <div class="signals-head">How you build${verdicts.length ? ` — ${esc(verdicts[0])}` : ''}</div>
+          <div class="signals-eyebrow">How you build</div>
+          <div class="signals-receipt">${esc(receipt)}</div>
           <div class="signals-sub">${esc(subBits.join(' · '))}</div>
         </div>
         ${strips}`;
