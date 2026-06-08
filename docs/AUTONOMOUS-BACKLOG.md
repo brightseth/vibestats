@@ -25,14 +25,14 @@ top unchecked `- [ ]` goal each iteration.
 
 ## Goals (priority order)
 
-### - [ ] G1 — Fix the primary-share leak (`shouldShareProfile`)
+### - [x] G1 — Fix the primary-share leak (`shouldShareProfile`)
 When a logged-in user reveals their own card, the share/copy buttons route to
 `?compareArchetype=` (archetype-only) and lose the person. Make the primary reveal
 share carry the sender (`?compareTo=<handle>&compareArchetype=<type>`) when the user
 has a claimed handle, falling back to archetype-only for anonymous users.
 - Files: `home.html` (`shouldShareProfile`, `shareClickUrl`, tweet variants ~1820).
 - Acceptance: logged-in reveal → share link is `?compareTo=<handle>…`; anon → unchanged.
-- Result:
+- Result: ✅ flag gated on claimed handle; browser-verified both states; tweet keeps Profile credential anchor (smoke-enforced). Commit 96226d0, live.
 
 ### - [ ] G2 — Depth for everyone + a brag-worthy one-liner
 Two parts: (a) the "How you build" facet signals only flow via CLI sync; carry them
@@ -57,3 +57,4 @@ sources. Reuse the existing `traffic:launch` query logic server-side.
 
 ## Log
 (Claude appends a one-line entry per completed goal: date · goal · commit · live check.)
+- 2026-06-08 · G1 primary-share leak · 96226d0 · live (home 200, share-fix present)
