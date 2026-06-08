@@ -989,6 +989,7 @@
   </div>
 
   <script src="/lib/html2canvas.min.js"></script>
+  <script src="/lib/compat.js"></script>
   <script src="/api/archetype-identity"></script>
   <script>
     // ========================================
@@ -1805,7 +1806,6 @@
       if (predSlide) slides.push(predSlide);
 
       // Archetype Card (the shareable moment)
-      const pct = scores._percentiles ? scores._percentiles[archetype] : null;
       const rarity = getArchetypeRarity(archetype);
       const communityTotal = aggregateStats ? aggregateStats.total : null;
       const signature = buildVibeSignature(scores, archetype);
@@ -1817,7 +1817,6 @@
         s: insights.sessions,
       });
       if (insights.satisfaction !== null) cardParams.set('sat', insights.satisfaction);
-      if (pct) cardParams.set('p', pct);
       if (signature) cardParams.set('sig', signature.label);
       const cardShareUrl = `https://vibestats.io/card?${cardParams}`;
       const shouldShareProfile = false;
@@ -1834,12 +1833,12 @@
       const tweetVariants = profileShareUrl
         ? [
             `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\nSee how you'd pair with me:\nProfile: ${profileShareUrl}\n\nvia vibestats.io #vibestats #claudecode`,
-            `My Claude Code signature: ${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\nProfile: ${profileShareUrl}\n\n#vibestats`,
+            `My Claude Code signature: ${signature ? signature.label : a.name}${rarity ? ` — ${rarity}% of vibecoders` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\nProfile: ${profileShareUrl}\n\n#vibestats`,
             `This is how I build with Claude Code: ${signature ? signature.label : a.name}\n\nHow do you compare?\nProfile: ${profileShareUrl}\n\nvia vibestats.io #vibestats`,
           ]
         : [
             `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nSee how you'd pair with this archetype:\nCard: ${cardShareUrl}\n\nvia vibestats.io #vibestats`,
-            `${signature ? signature.label : a.name}${pct ? ` — top ${pct}%` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nCompare with this archetype:\nCard: ${cardShareUrl}\n\n#vibestats #claudecode`,
+            `${signature ? signature.label : a.name}${rarity ? ` — ${rarity}% of vibecoders` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nCompare with this archetype:\nCard: ${cardShareUrl}\n\n#vibestats #claudecode`,
             `My vibecoding signature: ${signature ? signature.label : a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nSee how you'd pair:\nCard: ${cardShareUrl}\n\nvia vibestats.io #vibestats`,
           ];
       const tweetText = tweetVariants[Math.floor(Math.random() * tweetVariants.length)];
@@ -1853,8 +1852,7 @@
             <div class="archetype-glyph" style="color:${a.color};box-shadow:0 0 34px ${a.color}24">${a.glyph || 'VS'}</div>
             <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
             ${getSubArchetype(scores, archetype)}<div class="archetype-tagline">"${a.tagline}"</div>
-            ${pct ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:${rarity ? '6px' : '16px'};padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">top ${pct}%</div>` : ''}
-            ${rarity ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:16px">${rarity}% of vibecoders are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
+            ${rarity ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:16px;padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">${rarity}% of vibecoders are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
             ${signature ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin:${rarity ? '-8px' : '0'} 0 16px">1 of 56 Claude Code signature combos</div>` : ''}
             <div class="card-stats">
               <div class="card-stat">
@@ -2067,22 +2065,137 @@
       return { kind: 'archetype', archetype };
     }
 
-    function renderComparisonIntent() {
+    // Keystone: every shared compare link lands on a real card + an instant,
+    // in-browser pairing result — before any terminal ask. No upload, nothing
+    // published; the pairing math is synthesized locally by window.VibeCompat.
+    // Hoisted (not a const) so renderComparisonIntent — called during init, before this
+    // point in the script — can use it without a temporal-dead-zone error.
+    function compareArchetypeOrder() {
+      return ['orchestrator', 'shipper', 'architect', 'debugger', 'polyglot', 'sprinter', 'deepdiver', 'builder'];
+    }
+
+    function intentSelectMarkup(defaultType) {
+      const opts = compareArchetypeOrder()
+        .filter((k) => ARCHETYPES[k])
+        .map((k) => `<option value="${k}"${k === defaultType ? ' selected' : ''}>${archetypeDisplayName(k)}</option>`)
+        .join('');
+      return `<select id="ci-select" class="ci-select" aria-label="Your archetype"><option value="">I'm a…</option>${opts}</select>`;
+    }
+
+    function intentPairing(visitorType, host) {
+      const VC = window.VibeCompat;
+      if (!VC || !visitorType || !host?.type) return null;
+      const compat = VC.profileCompatibility(visitorType, host.type, host.handle || '', null, host.subject || null);
+      const pairing = VC.getPairing(visitorType, host.type);
+      const name = pairing && pairing.name && pairing.name !== 'Unknown Pairing' ? pairing.name : '';
+      return { score: compat.score, line: compat.line, name };
+    }
+
+    function renderIntentResult(host) {
+      const sel = document.getElementById('ci-select');
+      const out = document.getElementById('ci-result');
+      if (!sel || !out) return;
+      const v = sel.value;
+      if (!v) { out.innerHTML = ''; return; }
+      const p = intentPairing(v, host);
+      if (!p) { out.innerHTML = ''; return; }
+      out.innerHTML = `
+        <div class="ci-score">${p.score}<span>% chemistry</span></div>
+        ${p.name ? `<div class="ci-pairing">${archetypeDisplayName(v)} &times; ${host.label} = ${p.name}</div>` : ''}
+        <div class="ci-line">${p.line}</div>
+        <div class="ci-make">Make it real with your own Claude Code data &mdash; <button type="button" class="ci-make-link" onclick="revealMine()">reveal yours &darr;</button></div>`;
+    }
+
+    function ciStyleOnce() {
+      if (document.getElementById('ci-style')) return '';
+      return `<style id="ci-style">
+        .ci-panel{max-width:420px;margin:18px auto 8px;display:flex;flex-direction:column;align-items:center;gap:14px}
+        .ci-card{width:100%;border:1px solid;border-image:var(--ci-grad) 1;border-radius:16px;padding:20px 18px;text-align:center;background:rgba(255,255,255,0.02)}
+        .ci-glyph{font-family:var(--mono);font-size:26px;font-weight:700;margin-bottom:6px}
+        .ci-name{font-weight:800;font-size:20px;letter-spacing:0.02em;-webkit-text-fill-color:transparent}
+        .ci-tag{color:var(--text-muted);font-size:13px;margin:4px 0 8px}
+        .ci-meta{font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+        .ci-from{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;letter-spacing:0.05em}
+        .ci-pick{width:100%}
+        .ci-select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(107,143,255,0.3);background:rgba(10,12,20,0.6);color:var(--text);font-size:15px;font-family:inherit;cursor:pointer}
+        .ci-result:empty{display:none}
+        .ci-result{width:100%;text-align:center;border:1px solid rgba(107,143,255,0.18);border-radius:14px;padding:16px;background:radial-gradient(ellipse at 50% 0%,rgba(107,143,255,0.08),transparent 70%)}
+        .ci-score{font-weight:800;font-size:38px;line-height:1}
+        .ci-score span{font-weight:600;font-size:13px;color:var(--text-dim);margin-left:4px}
+        .ci-pairing{font-family:var(--mono);font-size:13px;color:var(--accent);margin:8px 0 6px}
+        .ci-line{color:var(--text-muted);font-size:13px;line-height:1.45}
+        .ci-make{font-size:12px;color:var(--text-dim);margin-top:12px}
+        .ci-make-link{background:none;border:none;color:var(--accent);font:inherit;font-size:12px;cursor:pointer;padding:0;text-decoration:underline}
+      </style>`;
+    }
+
+    function buildIntentPanel(host) {
+      if (document.getElementById('compare-intent-panel')) return;
+      const sub = document.querySelector('.upload-sub');
+      if (!sub) return;
+      const a = ARCHETYPES[host.type] || {};
+      const grad = a.borderGradient || a.gradient || 'var(--accent)';
+      const cardHtml = `
+        <div class="ci-card" style="--ci-grad:${grad}">
+          <div class="ci-glyph" style="color:${a.color || 'var(--accent)'}">${a.glyph || 'VS'}</div>
+          <div class="ci-name" style="background:${a.gradient || 'var(--accent)'};-webkit-background-clip:text;background-clip:text">${a.name || host.label}</div>
+          <div class="ci-tag">"${a.tagline || ''}"</div>
+          ${host.card?.signature ? `<div class="ci-meta">${host.card.signature}</div>` : ''}
+          ${host.card?.tier ? `<div class="ci-meta">${host.card.tier} signature</div>` : ''}
+          ${host.handle ? `<div class="ci-from">@${host.handle}'s vibestats &middot; how do you pair?</div>` : ''}
+        </div>`;
+      const panel = document.createElement('div');
+      panel.id = 'compare-intent-panel';
+      panel.className = 'ci-panel';
+      panel.innerHTML = `${ciStyleOnce()}${cardHtml}<div class="ci-pick">${intentSelectMarkup('')}</div><div id="ci-result" class="ci-result" aria-live="polite"></div>`;
+      sub.parentNode.insertBefore(panel, sub.nextSibling);
+      const sel = panel.querySelector('#ci-select');
+      if (sel) sel.addEventListener('change', () => renderIntentResult(host));
+    }
+
+    async function renderComparisonIntent() {
       const intent = comparisonIntent();
       if (!intent) return;
+      const titleEl = document.querySelector('.upload-title');
+      const subEl = document.querySelector('.upload-sub');
+      // Host defaults to the URL archetype hint; upgraded with real profile data when available.
+      const host = { type: intent.archetype, label: archetypeDisplayName(intent.archetype), handle: '', subject: null, card: null };
+
       if (intent.kind === 'profile') {
-        document.querySelector('.upload-title').textContent = `Compare with @${intent.handle}`;
-        document.querySelector('.upload-sub').textContent = `Claude Code already has your build fingerprint. Run /insights, then the npx command below to reveal your pairing with @${intent.handle}.`;
-        document.querySelector('.drop-zone-text').textContent = `Drop legacy insights JSON to compare with @${intent.handle}`;
-        document.querySelector('.drop-zone-hint').textContent = 'or use the npx command above for the real /insights directory';
-        return;
+        host.handle = intent.handle;
+        if (titleEl) titleEl.textContent = `Compare with @${intent.handle}`;
+        if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with @${intent.handle} — instantly, no terminal.`;
+        try {
+          const res = await fetch(`/api/u/${encodeURIComponent(intent.handle)}`);
+          if (res.ok) {
+            const data = await res.json();
+            const up = data.uploads && data.uploads[0];
+            if (up && up.archetype && ARCHETYPES[up.archetype]) {
+              // API is the source of truth; the URL archetype is only a hint (sender may have re-uploaded).
+              host.type = up.archetype;
+              host.label = archetypeDisplayName(up.archetype);
+              host.subject = Array.isArray(up.facets) && up.facets.length ? { facets: up.facets } : null;
+              host.card = {
+                signature: (up.raw_meta && up.raw_meta.signature) || '',
+                tier: (data.rarity && data.rarity.tier) || '',
+              };
+            }
+          }
+        } catch (e) {
+          // Graceful: keep the URL-archetype hint so the visitor still gets an interactive pairing.
+        }
+      } else {
+        if (titleEl) titleEl.textContent = `Compare with The ${host.label}`;
+        if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with The ${host.label} — instantly, no terminal.`;
+        host.card = {};
       }
 
-      const label = archetypeDisplayName(intent.archetype);
-      document.querySelector('.upload-title').textContent = `Compare with The ${label}`;
-      document.querySelector('.upload-sub').textContent = `Claude Code already knows your pattern. Run /insights, then the npx command below to reveal how you pair with this ${label} archetype.`;
-      document.querySelector('.drop-zone-text').textContent = `Drop legacy insights JSON to compare with The ${label}`;
-      document.querySelector('.drop-zone-hint').textContent = 'or use the npx command above for the real /insights directory';
+      const dzt = document.querySelector('.drop-zone-text');
+      if (dzt) dzt.textContent = intent.handle ? `Drop legacy insights JSON to compare with @${intent.handle}` : `Drop legacy insights JSON to compare with The ${host.label}`;
+      const dzh = document.querySelector('.drop-zone-hint');
+      if (dzh) dzh.textContent = 'or use the reveal command above for the real /insights directory';
+
+      buildIntentPanel(host);
     }
 
     // ========================================

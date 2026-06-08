@@ -246,7 +246,6 @@ export default function handler(req, res) {
     </div>
     <div class="user">${displayName}</div>
     <div class="period">${displayDays} days of vibecoding</div>
-    ${percentile ? `<div class="percentile">top ${esc(percentile)}%</div>` : ''}
     <div class="brand">vibestats.io</div>
   </div>
   <a class="cta" href="/?compareArchetype=${encodeURIComponent(archetypeKey)}">Compare with this archetype &rarr;</a>
