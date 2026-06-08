@@ -126,4 +126,12 @@ assert.equal(ownerOut.sessions_analyzed, 43, 'owner sees session total');
 assert.ok(!JSON.stringify(pubOut).includes('secret_leak') && !JSON.stringify(ownerOut).includes('secret_leak'), 'secret_leak never in public output');
 console.log('  public read path OK — stored row re-validated, poisoned keys dropped');
 
+// ---- 7. Low-N privacy gate: visitors don't see near-exact judgments ----
+const lowN = { mode: 'counts', sessions_analyzed: 2, outcome_mix: { fully: 1, not_achieved: 1 }, friction_taxonomy: { collaboration: 2 } };
+assert.equal(publicFacetSignals(lowN, { showRaw: false }), null, 'non-owner must not see facets below the session threshold');
+assert.ok(publicFacetSignals(lowN, { showRaw: true }), 'owner always sees their own facets');
+const okN = { mode: 'counts', sessions_analyzed: 5, outcome_mix: { fully: 3, mostly: 2 } };
+assert.ok(publicFacetSignals(okN, { showRaw: false }), 'non-owner sees facets at/above the threshold');
+console.log('  low-N gate OK — visitors gated below threshold, owner always sees');
+
 console.log('facet-signals-test: OK — counts exact, secret_leak + free-text never cross');

@@ -101,7 +101,6 @@ function xShareUrl(shareUrl, text) {
 
 function ogUrl(origin, user, latest) {
   const metrics = latest.metrics || {};
-  const percentiles = publicScores(latest.scores || {})._percentiles || {};
   const params = new URLSearchParams({
     a: latest.archetype,
     n: `@${user.gh_handle}`,
@@ -110,7 +109,6 @@ function ogUrl(origin, user, latest) {
     l: String(metrics.languages || metrics.codeLangCount || '?'),
     s: String(metrics.sessions || '?'),
   });
-  if (percentiles[latest.archetype]) params.set('p', String(percentiles[latest.archetype]));
   return `${origin}/api/og?${params.toString()}`;
 }
 

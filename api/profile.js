@@ -173,7 +173,6 @@ export default async function handler(req, res) {
     `;
     const visibility = metricVisibility(settingsRows[0] || {}, { isOwner: false });
     const metrics = visibleMetrics(latest.metrics || {}, visibility);
-    const percentiles = latest.scores?._percentiles || {};
     const signature = signatureFromUpload(latest);
     const signatureLabel = signature?.label || '';
     const [rarity, leaderboard] = await Promise.all([
@@ -189,7 +188,6 @@ export default async function handler(req, res) {
       l: String(metrics.languages || '?'),
       s: String(metrics.sessions || '?'),
     });
-    if (percentiles[latest.archetype]) imageParams.set('p', String(percentiles[latest.archetype]));
 
     const html = injectProfileMeta(PROFILE_HTML, {
       title: `@${user.gh_handle} is ${signatureLabel || arch.name} | vibestats`,

@@ -2111,12 +2111,13 @@
         const part = keys.reduce((sum, k) => sum + (Number(mix[k]) || 0), 0);
         return part / total;
       }
+      // Phrased as interpretations, not diagnoses — these are coarse reads of a small sample.
       const verdicts = [];
-      if (share(sig.outcome_mix, ['fully', 'mostly']) >= 0.6) verdicts.push('You finish what you start.');
-      if (share(sig.helpfulness_mix, ['essential', 'very_helpful']) >= 0.6) verdicts.push('You build with Claude, not at it.');
+      if (share(sig.outcome_mix, ['fully', 'mostly']) >= 0.6) verdicts.push('Looks like you mostly finish what you start.');
+      if (share(sig.helpfulness_mix, ['essential', 'very_helpful']) >= 0.6) verdicts.push('Reads like you build with Claude, not just at it.');
       const fr = sig.friction_taxonomy;
       if (fr && (Number(fr.collaboration) || 0) > ((Number(fr.code) || 0) + (Number(fr.tooling) || 0) + (Number(fr.platform) || 0))) {
-        verdicts.push('Your friction is human, not machine.');
+        verdicts.push('Your friction looks more human than machine.');
       }
 
       const strips = ['outcome_mix', 'helpfulness_mix', 'session_type_mix', 'success_mix', 'friction_taxonomy'].map(strip).filter(Boolean).join('');
@@ -2221,7 +2222,6 @@
 
       const arch = ARCHETYPES[latest.archetype] || ARCHETYPES.builder;
       const score = Number(latest.scores?.[latest.archetype] || 0);
-      const pct = latest.scores?._percentiles?.[latest.archetype];
       const m = latest.metrics || {};
       const activity = latest.activity || {};
       const visibility = profile.metric_visibility || {};
@@ -2274,7 +2274,7 @@
       document.getElementById('card-glyph').textContent = arch.glyph || 'VS';
       document.getElementById('score-value').textContent = `${score}%`;
       const cardActivity = canShowCounts && m.days ? `${esc(m.days)} days tracked` : esc(activity.days || 'exact counts private');
-      document.getElementById('card-note').innerHTML = `${pct ? `top ${esc(pct)}% signal` : 'primary archetype signal'}<br>${signature.label ? `${esc(signature.label)}<br>` : ''}${cardActivity}`;
+      document.getElementById('card-note').innerHTML = `primary archetype signal<br>${signature.label ? `${esc(signature.label)}<br>` : ''}${cardActivity}`;
 
       const summary = canShowCounts ? [
         ['commits/day', fmt(m.commitsPerDay), metricContext(m.commitsPerDay, avg.commitsPerDay)],

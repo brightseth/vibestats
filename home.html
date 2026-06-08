@@ -1852,7 +1852,7 @@
             <div class="archetype-glyph" style="color:${a.color};box-shadow:0 0 34px ${a.color}24">${a.glyph || 'VS'}</div>
             <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
             ${getSubArchetype(scores, archetype)}<div class="archetype-tagline">"${a.tagline}"</div>
-            ${rarity ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:16px;padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">${rarity}% of vibecoders are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
+            ${rarity ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:16px;padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">${rarity}% of the vibestats sample are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
             ${signature ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin:${rarity ? '-8px' : '0'} 0 16px">1 of 56 Claude Code signature combos</div>` : ''}
             <div class="card-stats">
               <div class="card-stat">
@@ -1876,7 +1876,7 @@
             <div class="card-period">${insights.days} days &middot; ${insights.dateRange}</div>
             ${buildScoreBreakdown(scores, archetype)}
             ${buildDnaBarcode(scores)}<div class="card-brand">vibestats.io</div>
-            ${communityTotal ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em">${communityTotal.toLocaleString()} vibecoders analyzed</div>` : ''}
+            ${communityTotal ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em">sample of ${communityTotal.toLocaleString()} &middot; early launch data</div>` : ''}
           </div>
           <div class="share-row anim d3">
             <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareClickUrl)}" target="_blank" rel="noopener">
@@ -2099,10 +2099,11 @@
       if (!v) { out.innerHTML = ''; return; }
       const p = intentPairing(v, host);
       if (!p) { out.innerHTML = ''; return; }
+      const score = Number(p.score) || 0;
       out.innerHTML = `
-        <div class="ci-score">${p.score}<span>% chemistry</span></div>
-        ${p.name ? `<div class="ci-pairing">${archetypeDisplayName(v)} &times; ${host.label} = ${p.name}</div>` : ''}
-        <div class="ci-line">${p.line}</div>
+        <div class="ci-score">${score}<span>% chemistry</span></div>
+        ${p.name ? `<div class="ci-pairing">${safeHtml(archetypeDisplayName(v))} &times; ${safeHtml(host.label)} = ${safeHtml(p.name)}</div>` : ''}
+        <div class="ci-line">${safeHtml(p.line)}</div>
         <div class="ci-make">Make it real with your own Claude Code data &mdash; <button type="button" class="ci-make-link" onclick="revealMine()">reveal yours &darr;</button></div>`;
     }
 
@@ -2129,28 +2130,42 @@
       </style>`;
     }
 
+    // Idempotent: renders immediately with the URL-archetype preview, then re-renders
+    // when the real profile resolves. The identity claim ("@handle's vibestats") is
+    // shown ONLY when host.confirmed — an unresolved/private/missing handle never gets
+    // a card asserting it is some archetype.
     function buildIntentPanel(host) {
-      if (document.getElementById('compare-intent-panel')) return;
       const sub = document.querySelector('.upload-sub');
       if (!sub) return;
       const a = ARCHETYPES[host.type] || {};
       const grad = a.borderGradient || a.gradient || 'var(--accent)';
+      const confirmed = Boolean(host.confirmed && host.handle);
+      const footer = confirmed
+        ? `<div class="ci-from">@${safeHtml(host.handle)}'s vibestats &middot; how do you pair?</div>`
+        : (host.note ? `<div class="ci-from">${safeHtml(host.note)}</div>` : '');
       const cardHtml = `
         <div class="ci-card" style="--ci-grad:${grad}">
-          <div class="ci-glyph" style="color:${a.color || 'var(--accent)'}">${a.glyph || 'VS'}</div>
-          <div class="ci-name" style="background:${a.gradient || 'var(--accent)'};-webkit-background-clip:text;background-clip:text">${a.name || host.label}</div>
-          <div class="ci-tag">"${a.tagline || ''}"</div>
-          ${host.card?.signature ? `<div class="ci-meta">${host.card.signature}</div>` : ''}
-          ${host.card?.tier ? `<div class="ci-meta">${host.card.tier} signature</div>` : ''}
-          ${host.handle ? `<div class="ci-from">@${host.handle}'s vibestats &middot; how do you pair?</div>` : ''}
+          <div class="ci-glyph" style="color:${a.color || 'var(--accent)'}">${safeHtml(a.glyph || 'VS')}</div>
+          <div class="ci-name" style="background:${a.gradient || 'var(--accent)'};-webkit-background-clip:text;background-clip:text">${safeHtml(a.name || host.label)}</div>
+          <div class="ci-tag">"${safeHtml(a.tagline || '')}"</div>
+          ${confirmed && host.card?.signature ? `<div class="ci-meta">${safeHtml(host.card.signature)}</div>` : ''}
+          ${confirmed && host.card?.tier ? `<div class="ci-meta">${safeHtml(host.card.tier)} signature</div>` : ''}
+          ${footer}
         </div>`;
-      const panel = document.createElement('div');
-      panel.id = 'compare-intent-panel';
-      panel.className = 'ci-panel';
-      panel.innerHTML = `${ciStyleOnce()}${cardHtml}<div class="ci-pick">${intentSelectMarkup('')}</div><div id="ci-result" class="ci-result" aria-live="polite"></div>`;
-      sub.parentNode.insertBefore(panel, sub.nextSibling);
+      let panel = document.getElementById('compare-intent-panel');
+      if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'compare-intent-panel';
+        panel.className = 'ci-panel';
+        sub.parentNode.insertBefore(panel, sub.nextSibling);
+      }
+      const preserved = (document.getElementById('ci-select') || {}).value || '';
+      panel.innerHTML = `${ciStyleOnce()}${cardHtml}<div class="ci-pick">${intentSelectMarkup(preserved)}</div><div id="ci-result" class="ci-result" aria-live="polite"></div>`;
       const sel = panel.querySelector('#ci-select');
-      if (sel) sel.addEventListener('change', () => renderIntentResult(host));
+      if (sel) {
+        sel.addEventListener('change', () => renderIntentResult(host));
+        if (preserved) renderIntentResult(host); // keep the visitor's result across re-render
+      }
     }
 
     async function renderComparisonIntent() {
@@ -2158,43 +2173,56 @@
       if (!intent) return;
       const titleEl = document.querySelector('.upload-title');
       const subEl = document.querySelector('.upload-sub');
-      // Host defaults to the URL archetype hint; upgraded with real profile data when available.
-      const host = { type: intent.archetype, label: archetypeDisplayName(intent.archetype), handle: '', subject: null, card: null };
+      // The URL archetype is only an UNVERIFIED hint. host.confirmed stays false until a
+      // real profile resolves, so a crafted ?compareTo=realuser&compareArchetype=x can
+      // never render a card claiming that user is archetype x.
+      const host = { type: intent.archetype, label: archetypeDisplayName(intent.archetype), handle: '', confirmed: false, subject: null, card: {}, note: '' };
 
-      if (intent.kind === 'profile') {
-        host.handle = intent.handle;
-        if (titleEl) titleEl.textContent = `Compare with @${intent.handle}`;
-        if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with @${intent.handle} — instantly, no terminal.`;
-        try {
-          const res = await fetch(`/api/u/${encodeURIComponent(intent.handle)}`);
-          if (res.ok) {
-            const data = await res.json();
-            const up = data.uploads && data.uploads[0];
-            if (up && up.archetype && ARCHETYPES[up.archetype]) {
-              // API is the source of truth; the URL archetype is only a hint (sender may have re-uploaded).
-              host.type = up.archetype;
-              host.label = archetypeDisplayName(up.archetype);
-              host.subject = Array.isArray(up.facets) && up.facets.length ? { facets: up.facets } : null;
-              host.card = {
-                signature: (up.raw_meta && up.raw_meta.signature) || '',
-                tier: (data.rarity && data.rarity.tier) || '',
-              };
-            }
-          }
-        } catch (e) {
-          // Graceful: keep the URL-archetype hint so the visitor still gets an interactive pairing.
-        }
-      } else {
-        if (titleEl) titleEl.textContent = `Compare with The ${host.label}`;
-        if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with The ${host.label} — instantly, no terminal.`;
-        host.card = {};
-      }
-
-      const dzt = document.querySelector('.drop-zone-text');
-      if (dzt) dzt.textContent = intent.handle ? `Drop legacy insights JSON to compare with @${intent.handle}` : `Drop legacy insights JSON to compare with The ${host.label}`;
       const dzh = document.querySelector('.drop-zone-hint');
       if (dzh) dzh.textContent = 'or use the reveal command above for the real /insights directory';
 
+      if (intent.kind !== 'profile') {
+        if (titleEl) titleEl.textContent = `Compare with The ${host.label}`;
+        if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with The ${host.label} — instantly, no terminal.`;
+        const dzt = document.querySelector('.drop-zone-text');
+        if (dzt) dzt.textContent = `Drop legacy insights JSON to compare with The ${host.label}`;
+        buildIntentPanel(host);
+        return;
+      }
+
+      // Profile intent: show the interactive preview IMMEDIATELY (no fetch wait, no
+      // identity claim yet), then upgrade — or honestly downgrade — once /api/u resolves.
+      if (titleEl) titleEl.textContent = `Compare with @${intent.handle}`;
+      if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with @${intent.handle} — instantly, no terminal.`;
+      const dzt = document.querySelector('.drop-zone-text');
+      if (dzt) dzt.textContent = `Drop legacy insights JSON to compare with @${intent.handle}`;
+      buildIntentPanel(host);
+
+      try {
+        const res = await fetch(`/api/u/${encodeURIComponent(intent.handle)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const up = data.uploads && data.uploads[0];
+          if (up && up.archetype && ARCHETYPES[up.archetype]) {
+            // Verified: API is the source of truth (sender may have re-uploaded).
+            host.type = up.archetype;
+            host.label = archetypeDisplayName(up.archetype);
+            host.handle = intent.handle;
+            host.confirmed = true;
+            host.subject = Array.isArray(up.facets) && up.facets.length ? { facets: up.facets } : null;
+            host.card = { signature: (up.raw_meta && up.raw_meta.signature) || '', tier: (data.rarity && data.rarity.tier) || '' };
+            buildIntentPanel(host);
+            return;
+          }
+        }
+      } catch (e) {
+        // fall through to the honest unavailable state
+      }
+      // Could not verify @handle: drop the identity claim, preview the archetype only.
+      host.handle = '';
+      host.confirmed = false;
+      host.note = `Couldn't load @${intent.handle} — previewing the ${host.label} archetype`;
+      if (subEl) subEl.textContent = `We couldn't load @${intent.handle}'s profile. Previewing the ${host.label} archetype — reveal yours to compare for real.`;
       buildIntentPanel(host);
     }
 
