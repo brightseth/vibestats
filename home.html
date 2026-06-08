@@ -1819,7 +1819,9 @@
       if (insights.satisfaction !== null) cardParams.set('sat', insights.satisfaction);
       if (signature) cardParams.set('sig', signature.label);
       const cardShareUrl = `https://vibestats.io/card?${cardParams}`;
-      const shouldShareProfile = false;
+      // Carry the person: a claimed (logged-in) user's share routes to the asymmetric
+      // "pair with me" link; anonymous users keep the archetype-only share.
+      const shouldShareProfile = Boolean(currentUser && currentUser.gh_handle);
       const profileShareUrl = shouldShareProfile ? `https://vibestats.io/u/${encodeURIComponent(currentUser.gh_handle)}` : null;
       const shareClickUrl = shouldShareProfile
         ? `https://vibestats.io/?compareTo=${encodeURIComponent(currentUser.gh_handle)}&compareArchetype=${encodeURIComponent(archetype)}`
