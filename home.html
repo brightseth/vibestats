@@ -2068,6 +2068,19 @@
     // Keystone: every shared compare link lands on a real card + an instant,
     // in-browser pairing result — before any terminal ask. No upload, nothing
     // published; the pairing math is synthesized locally by window.VibeCompat.
+    // Fire-and-forget funnel beacon for the compare-intent loop (measures in-browser
+    // drop-off: landed -> saw pairing -> shared -> revealed). Never blocks or throws.
+    function trackFunnel(event, meta) {
+      try {
+        const payload = JSON.stringify({ event, archetype: meta && meta.archetype });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/event', new Blob([payload], { type: 'application/json' }));
+        } else {
+          fetch('/api/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
+        }
+      } catch (e) { /* analytics must never break the page */ }
+    }
+
     // Hoisted (not a const) so renderComparisonIntent — called during init, before this
     // point in the script — can use it without a temporal-dead-zone error.
     function compareArchetypeOrder() {
@@ -2100,11 +2113,27 @@
       const p = intentPairing(v, host);
       if (!p) { out.innerHTML = ''; return; }
       const score = Number(p.score) || 0;
+      // The durable, shareable pairing artifact: /compare?a=<your archetype>&b=<host>
+      // unfurls on X as an "X × host = PairingName" card and lands clickers on a page
+      // with a "reveal yours" CTA — so the payoff itself becomes the next share.
+      const hostParam = host.confirmed && host.handle ? host.handle : host.type;
+      const hostName = host.confirmed && host.handle ? `@${host.handle}` : `The ${host.label}`;
+      // Attribute downstream /compare views to the host profile when known (valid u:<handle> ref).
+      const refQ = host.confirmed && host.handle ? `&ref=u:${encodeURIComponent(host.handle)}` : '';
+      const pairUrl = `https://vibestats.io/compare?a=${encodeURIComponent(v)}&b=${encodeURIComponent(hostParam)}${refQ}`;
+      const tweetText = `My Claude Code pairing: ${archetypeDisplayName(v)} × ${hostName} = ${p.name || 'a match'} · ${score}% chemistry\n\nWho would you build with?`;
+      const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(pairUrl)}`;
       out.innerHTML = `
         <div class="ci-score">${score}<span>% chemistry</span></div>
         ${p.name ? `<div class="ci-pairing">${safeHtml(archetypeDisplayName(v))} &times; ${safeHtml(host.label)} = ${safeHtml(p.name)}</div>` : ''}
         <div class="ci-line">${safeHtml(p.line)}</div>
-        <div class="ci-make">Make it real with your own Claude Code data &mdash; <button type="button" class="ci-make-link" onclick="revealMine()">reveal yours &darr;</button></div>`;
+        <div class="ci-share-row">
+          <a class="ci-share-btn ci-share-x" href="${xHref}" target="_blank" rel="noopener" onclick="trackFunnel('pairing_share_x')">Share our pairing</a>
+          <button type="button" class="ci-share-btn" onclick="copyShareLink(this, '${pairUrl}'); trackFunnel('pairing_share_copy')">Copy link</button>
+          <a class="ci-share-btn" href="${pairUrl}" onclick="trackFunnel('pairing_open_full')">See full pairing &rarr;</a>
+        </div>
+        <div class="ci-make">Make it real with your own Claude Code data &mdash; <button type="button" class="ci-make-link" onclick="trackFunnel('pairing_reveal_click'); revealMine()">reveal yours &darr;</button></div>`;
+      trackFunnel('pairing_shown', { archetype: v, host_confirmed: host.confirmed });
     }
 
     function ciStyleOnce() {
@@ -2127,6 +2156,9 @@
         .ci-line{color:var(--text-muted);font-size:13px;line-height:1.45}
         .ci-make{font-size:12px;color:var(--text-dim);margin-top:12px}
         .ci-make-link{background:none;border:none;color:var(--accent);font:inherit;font-size:12px;cursor:pointer;padding:0;text-decoration:underline}
+        .ci-share-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+        .ci-share-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid rgba(107,143,255,0.3);background:rgba(10,12,20,0.5);color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-decoration:none}
+        .ci-share-btn.ci-share-x{background:var(--accent);border-color:var(--accent);color:#0a0c14;font-weight:600}
       </style>`;
     }
 
@@ -2171,6 +2203,7 @@
     async function renderComparisonIntent() {
       const intent = comparisonIntent();
       if (!intent) return;
+      trackFunnel('compare_intent_view', { archetype: intent.archetype });
       const titleEl = document.querySelector('.upload-title');
       const subEl = document.querySelector('.upload-sub');
       // The URL archetype is only an UNVERIFIED hint. host.confirmed stays false until a

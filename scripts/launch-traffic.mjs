@@ -95,6 +95,34 @@ async function windowSummary(sql, interval) {
   };
 }
 
+async function funnelSummary(sql, interval) {
+  let rows = [];
+  try {
+    rows = await sql`
+      select event, count(*)::int as count
+      from funnel_events
+      where created_at >= now() - ${interval}::interval
+      group by event
+    `;
+  } catch (err) {
+    if (err?.code === '42P01' || String(err?.message || '').includes('funnel_events')) return null;
+    throw err;
+  }
+  const m = {
+    compare_intent_view: 0, pairing_shown: 0, pairing_share_x: 0,
+    pairing_share_copy: 0, pairing_open_full: 0, pairing_reveal_click: 0,
+  };
+  for (const row of rows) if (row.event in m) m[row.event] = Number(row.count || 0);
+  const shares = m.pairing_share_x + m.pairing_share_copy + m.pairing_open_full;
+  return {
+    ...m,
+    shares,
+    view_to_shown: percent(m.pairing_shown, m.compare_intent_view),
+    shown_to_share: percent(shares, m.pairing_shown),
+    shown_to_reveal: percent(m.pairing_reveal_click, m.pairing_shown),
+  };
+}
+
 async function buildReport(sql) {
   const generatedAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const windows = {};
@@ -141,9 +169,12 @@ async function buildReport(sql) {
     limit 10
   `;
 
+  const funnel24h = await funnelSummary(sql, '24 hours');
+
   return {
     generated_at: generatedAt,
     windows,
+    funnel_24h: funnel24h,
     top_sources_24h: topSources.map((row) => ({
       source_ref: row.source_ref,
       events: Number(row.events || 0),
@@ -191,6 +222,18 @@ function printTable(report) {
       String(row.uploads).padStart(8),
       row.view_to_compare.padStart(13),
     ].join('  '));
+  }
+
+  console.log('');
+  console.log('Compare-intent funnel, 24h  (who should I build with — the pairing loop)');
+  const f = report.funnel_24h;
+  if (!f) {
+    console.log('- funnel_events table not migrated yet (run npm run migrate)');
+  } else {
+    console.log(`- landed on pairing link : ${f.compare_intent_view}`);
+    console.log(`- saw a pairing          : ${f.pairing_shown}  (${f.view_to_shown} of landed)`);
+    console.log(`- shared the pairing     : ${f.shares}  (${f.shown_to_share} of saw)  [x:${f.pairing_share_x} copy:${f.pairing_share_copy} open:${f.pairing_open_full}]`);
+    console.log(`- clicked reveal yours   : ${f.pairing_reveal_click}  (${f.shown_to_reveal} of saw)`);
   }
 
   console.log('');
