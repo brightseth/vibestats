@@ -34,7 +34,7 @@ has a claimed handle, falling back to archetype-only for anonymous users.
 - Acceptance: logged-in reveal → share link is `?compareTo=<handle>…`; anon → unchanged.
 - Result: ✅ flag gated on claimed handle; browser-verified both states; tweet keeps Profile credential anchor (smoke-enforced). Commit 96226d0, live.
 
-### - [ ] G2 — Depth for everyone + a brag-worthy one-liner
+### - [x] G2 — Depth for everyone + a brag-worthy one-liner
 Two parts: (a) the "How you build" facet signals only flow via CLI sync; carry them
 through the browser-claim/preview path so browser-claimed profiles show depth too.
 (b) Turn the bar charts into one opinionated, screenshot-worthy line (codex note:
@@ -43,7 +43,9 @@ through the browser-claim/preview path so browser-claimed profiles show depth to
   (~2324), `u.html` `renderFacetSignals`, `api/og.js` (optional: put the line on the card).
 - Acceptance: a browser-claimed profile renders "How you build"; the section leads with
   a single verdict line; privacy unchanged (counts-only, allowlist).
-- Result:
+- Result: ✅ (b) shipped — "How you build" now leads with a big gradient receipt line,
+  bars are supporting detail. Browser-verified. Commit a3d0090, live.
+  ⏸️ (a) split to G2a in Deferred section — couldn't verify the full claim→DB round trip headless.
 
 ### - [ ] G3 — One-click private scoreboard
 Replace "run a scary terminal command" with an owner-only page that shows the
@@ -55,6 +57,19 @@ sources. Reuse the existing `traffic:launch` query logic server-side.
 
 ---
 
+## Deferred (NOT loop-eligible — need a human or a verification harness first)
+
+### G2a — Carry facet_signals through the CLI→browser claim path
+CLI computes facet_signals but the browser-preview claim strips them, so claiming via
+browser publishes no "How you build." (Pure browser legacy-JSON upload has no facet
+source at all — out of scope.) Secondary path, lower priority.
+- Touchpoints: `bin/vibestats.js` `localWebPreviewData` (~311), `home.html`
+  `localPreviewFromHash` (~3338), client `extractInsights`, `wireProfileSaveAction`
+  payload. Server `sanitizeUploadPayload` already validates facet_signals.
+- Blocked on: a CLI→preview-hash→login→save→/u round-trip verification harness. Do not
+  ship without it.
+
 ## Log
 (Claude appends a one-line entry per completed goal: date · goal · commit · live check.)
 - 2026-06-08 · G1 primary-share leak · 96226d0 · live (home 200, share-fix present)
+- 2026-06-08 · G2 depth receipt one-liner (G2a deferred) · a3d0090 · live (receipt code present)
