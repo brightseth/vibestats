@@ -26,7 +26,7 @@
     { "source": "/match", "destination": "/match.html" },
     { "source": "/settings", "destination": "/settings.html" },
     { "source": "/card", "destination": "/api/card" },
-    { "source": "/dashboard", "destination": "/api/dashboard" }
+    { "source": "/scoreboard", "destination": "/api/dashboard" }
   ],
   "headers": [
     {

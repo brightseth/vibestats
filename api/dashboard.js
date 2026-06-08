@@ -111,7 +111,7 @@ export default async function handler(req, res) {
       res.statusCode = 401;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'no-store');
-      return res.end('<!doctype html><meta charset="utf-8"><body style="font:16px system-ui;background:#0b0d14;color:#eef1f7;padding:40px"><h1>Sign in required</h1><p>This scoreboard is operator-only. <a style="color:#6B8FFF" href="/api/auth/github/start?returnTo=/dashboard">Sign in with GitHub</a></p>');
+      return res.end('<!doctype html><meta charset="utf-8"><body style="font:16px system-ui;background:#0b0d14;color:#eef1f7;padding:40px"><h1>Sign in required</h1><p>This scoreboard is operator-only. <a style="color:#6B8FFF" href="/api/auth/github/start?returnTo=/scoreboard">Sign in with GitHub</a></p>');
     }
     if (!OWNERS.includes(String(user.gh_handle || '').toLowerCase())) {
       res.statusCode = 404;
