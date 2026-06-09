@@ -61,7 +61,7 @@ sources. Reuse the existing `traffic:launch` query logic server-side.
   eyeball: log in as brightseth, open https://vibestats.io/scoreboard. Commits f2ea6b2, 58d3931.
 
 
-### - [ ] K2 — Personal Wrapped: /wrapped hydrates from any profile
+### - [x] K2 — Personal Wrapped: /wrapped hydrates from any profile
 FLYWHEEL #11. /wrapped is the most screenshot-shared artifact but always shows the static
 sample. Read ?handle, fetch /api/u/<handle>, hydrate the slides from the derived payload
 (respect metric_visibility — bucketed for visitors, never force exact). Keep static sample
@@ -69,7 +69,10 @@ when no handle, with a persistent "Reveal your own →" footer. Fix slide-7 shar
 the unified /compare destination.
 - Files: wrapped.html (~692, ~877). Verify: headless render for owner-mode + visitor-mode
   + no-handle; no raw counts for visitors; suite green.
-- Result:
+- Result: ✅ dynamic deck from public payload (opening/personality/how-you-build/receipts/card);
+  share routes to ?compareTo= pairing invite; sample + footer when no handle; 404 falls back.
+  4-mode harness incl. visitor zero-leak canary (scripts/verify-k2-wrapped.mjs). Live-verified
+  with real brightseth data. Commit 0fdcc05.
 
 ### - [ ] K3 — Compare invite gets the in-browser paste path
 FLYWHEEL #9. The compare invite (highest-intent share) still dead-ends visitors who have
@@ -107,3 +110,4 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-09 · G2a depth via browser claim + G3 owner-view machine-verified (rubric + independent grader, VERDICT: SATISFIED) · 0a6e200 · live
 - 2026-06-09 · K0 owner profile synced with depth (act-for-owner, app sanitizer + sync-equivalent insert; prod secret is write-only sensitive so token mint impossible) · upload 30ef631f · live
 - 2026-06-09 · K1 OG card carries signature + moments (visually verified live PNG) · 9f5065b · live
+- 2026-06-09 · K2 personal Wrapped (?handle hydration, visitor zero-leak verified) · 0fdcc05 · live (real-data prod check)
