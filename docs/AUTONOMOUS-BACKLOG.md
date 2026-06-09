@@ -92,6 +92,31 @@ No in-app DM. Verify: headless render of both branches. Result: ✅ contact_url 
 "No contact set — start with a comparison →" to /compare, tracked as compare_click;
 real contact unchanged. Both branches headless-verified. Commit 6900c92.
 
+
+### - [ ] K5 — Dynamic OG for personal Wrapped
+/wrapped?handle= shares currently unfurl with the STATIC sample meta — the most
+shareable surface wastes its unfurl. Serve /wrapped via an api route (pattern:
+compare-template) injecting per-handle title/description/og:image (reuse the depth
+og params: sig + m1v..m3l). Mind the cleanUrls static-shadow trap (the /dashboard
+lesson): rename wrapped.html → wrapped-template.html.
+- Verify: live unfurl meta for ?handle=brightseth carries sig+moments image; sample
+  meta unchanged without handle; suite green (smoke reads the template file). Result:
+
+### - [ ] K6 — Wrapped funnel events
+Add wrapped_view / wrapped_share to the funnel allowlist + beacons in the hydrated
+deck (privacy: event name + archetype only, same as existing). Extend /scoreboard +
+traffic:launch funnel block. Verify: beacon fires headless; allowlist test extended. Result:
+
+### - [ ] K7 — Witness watch (monitoring, not code)
+Each loop iteration: read the funnel (vercel env run … traffic:launch --json). When
+real events appear (landed>1 or any share/reveal click), notify Seth with the read
++ what it suggests. Track last-seen counts in research/funnel-watch.json (gitignored). Result:
+
+### - [ ] K8 — Compatibility-first home headline (FLAG TASTE — propose, do not ship)
+Seth pivoted the thesis to "who should I build with > what am I". Home still leads
+"What kind of coder are you?". Draft 2-3 headline/sub variants in research/, present
+for approval. DO NOT deploy copy changes autonomously. Result:
+
 ---
 
 ## Deferred (NOT loop-eligible — need a human or a verification harness first)
