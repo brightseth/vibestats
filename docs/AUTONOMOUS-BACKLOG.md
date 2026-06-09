@@ -81,3 +81,5 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-08 · G2 depth receipt one-liner (G2a deferred) · a3d0090 · live (receipt code present)
 - 2026-06-08 · G3 /scoreboard owner funnel page · 58d3931 · live (anon→401; owner view needs eyeball)
 - 2026-06-09 · G2a depth via browser claim + G3 owner-view machine-verified (rubric + independent grader, VERDICT: SATISFIED) · 0a6e200 · live
+- 2026-06-09 · K0 owner profile synced with depth (act-for-owner, app sanitizer + sync-equivalent insert; prod secret is write-only sensitive so token mint impossible) · upload 30ef631f · live
+- 2026-06-09 · K1 OG card carries signature + moments (visually verified live PNG) · 9f5065b · live
