@@ -93,14 +93,16 @@ No in-app DM. Verify: headless render of both branches. Result: ✅ contact_url 
 real contact unchanged. Both branches headless-verified. Commit 6900c92.
 
 
-### - [ ] K5 — Dynamic OG for personal Wrapped
+### - [x] K5 — Dynamic OG for personal Wrapped
 /wrapped?handle= shares currently unfurl with the STATIC sample meta — the most
 shareable surface wastes its unfurl. Serve /wrapped via an api route (pattern:
 compare-template) injecting per-handle title/description/og:image (reuse the depth
 og params: sig + m1v..m3l). Mind the cleanUrls static-shadow trap (the /dashboard
 lesson): rename wrapped.html → wrapped-template.html.
 - Verify: live unfurl meta for ?handle=brightseth carries sig+moments image; sample
-  meta unchanged without handle; suite green (smoke reads the template file). Result:
+  meta unchanged without handle; suite green (smoke reads the template file). Result: ✅
+  api/wrapped-page.js serves /wrapped; personal title/desc/og verified live; /wrapped.html
+  308s; deck still hydrates via the new route. Commit 209d772.
 
 ### - [ ] K6 — Wrapped funnel events
 Add wrapped_view / wrapped_share to the funnel allowlist + beacons in the hydrated
@@ -143,3 +145,4 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-09 · K2 personal Wrapped (?handle hydration, visitor zero-leak verified) · 0fdcc05 · live (real-data prod check)
 - 2026-06-09 · K3 compare invite no-terminal path · 646fb81 · live
 - 2026-06-09 · K4 match no-contact → comparison CTA · 6900c92 · live (all surfaces 200)
+- 2026-06-10 · K5 dynamic Wrapped OG (personal unfurl with sig+moments) · 209d772 · live
