@@ -373,11 +373,17 @@
         ? `Run /insights, check status, then reveal to see your real pairing with ${profileLabel}. The no-npm helper runs locally and raw sessions stay on your machine.`
         : 'Run /insights, check status, then reveal your real archetype. The no-npm helper runs locally and raw sessions stay on your machine.';
       const missing = options.missingHandle ? `<span>That profile is not minted yet. Only @${esc(options.missingHandle)} can claim that exact URL with GitHub.</span>` : '';
+      // No-terminal path: the home landing has instant in-browser pairing + the
+      // legacy-JSON drop zone, so nobody dead-ends on the curl commands here.
+      const browserHref = subject?.handle
+        ? `/?compareTo=${encodeURIComponent(subject.handle)}&compareArchetype=${encodeURIComponent(subject.type || '')}`
+        : (subject?.type ? `/?compareArchetype=${encodeURIComponent(subject.type)}` : '/');
       el.innerHTML = `
         <div>
           <strong>${esc(title)}</strong>
           <span>${esc(body)}</span>
           ${missing}
+          <span>No terminal handy? <a href="${esc(browserHref)}" style="color:var(--accent)">Reveal in your browser instead &rarr;</a></span>
         </div>
         <div class="reveal-command-row">
           <code>/insights</code>
