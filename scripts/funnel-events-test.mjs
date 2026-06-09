@@ -5,8 +5,8 @@
 import assert from 'node:assert/strict';
 import { isFunnelEvent, recordFunnelEvent, FUNNEL_EVENT_NAMES } from '../api/_lib/funnel-events.js';
 
-assert.equal(FUNNEL_EVENT_NAMES.length, 6, 'expected 6 funnel steps');
-for (const name of ['compare_intent_view', 'pairing_shown', 'pairing_share_x', 'pairing_share_copy', 'pairing_open_full', 'pairing_reveal_click']) {
+assert.equal(FUNNEL_EVENT_NAMES.length, 8, 'expected 8 funnel steps');
+for (const name of ['compare_intent_view', 'pairing_shown', 'pairing_share_x', 'pairing_share_copy', 'pairing_open_full', 'pairing_reveal_click', 'wrapped_view', 'wrapped_share']) {
   assert.ok(isFunnelEvent(name), `${name} must be allowlisted`);
 }
 for (const bad of ['secret_leak', '__proto__', 'drop table', '', 'PAIRING_SHOWN', 'pairing_shown ']) {

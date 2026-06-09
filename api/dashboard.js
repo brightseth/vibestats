@@ -8,7 +8,7 @@ import { NO_STORE_HEADERS, json, methodNotAllowed, safeErrorMessage } from './_l
 const OWNERS = String(process.env.VIBESTATS_OWNER_HANDLES || 'brightseth')
   .toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
 
-const FUNNEL_KEYS = ['compare_intent_view', 'pairing_shown', 'pairing_share_x', 'pairing_share_copy', 'pairing_open_full', 'pairing_reveal_click'];
+const FUNNEL_KEYS = ['compare_intent_view', 'pairing_shown', 'pairing_share_x', 'pairing_share_copy', 'pairing_open_full', 'pairing_reveal_click', 'wrapped_view', 'wrapped_share'];
 
 function pct(n, d) { return d ? Math.round((Number(n || 0) / Number(d)) * 100) : 0; }
 function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -64,6 +64,8 @@ function funnelBlock(title, f) {
     ${bar('Saw a pairing', f.pairing_shown, landed, 'pick → chemistry shown')}
     ${bar('Shared the pairing', f.shares, f.pairing_shown, `x:${f.pairing_share_x} · copy:${f.pairing_share_copy} · open:${f.pairing_open_full}`)}
     ${bar('Clicked “reveal yours”', f.pairing_reveal_click, f.pairing_shown)}
+    ${bar('Personal Wrapped views', f.wrapped_view, 0)}
+    ${bar('Wrapped shares', f.wrapped_share, f.wrapped_view)}
   </div>`;
 }
 

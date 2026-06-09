@@ -1023,6 +1023,15 @@ Card: ${wrappedUrl}
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Fire-and-forget funnel beacon (event name + archetype only — counts, no PII).
+    function trackWrapped(event, archetype) {
+      try {
+        const payload = JSON.stringify({ event, archetype });
+        if (navigator.sendBeacon) navigator.sendBeacon('/api/event', new Blob([payload], { type: 'application/json' }));
+        else fetch('/api/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
+      } catch (e) { /* analytics must never break the page */ }
+    }
+
     function wrappedShare(mix, keys) {
       if (!mix) return 0;
       const total = Object.values(mix).reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
@@ -1126,9 +1135,9 @@ Card: ${wrappedUrl}
           <div class="card-brand">vibestats.io</div>
         </div>
         <div class="share-row anim d3">
-          <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}&url=${encodeURIComponent(pairUrl)}" target="_blank" rel="noopener">Share</a>
-          <button class="share-btn" onclick="saveCard()">Save card</button>
-          <button class="share-btn share-btn-copy" onclick="(navigator.clipboard&&navigator.clipboard.writeText(location.href)),this.textContent='Copied'">Copy link</button>
+          <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}&url=${encodeURIComponent(pairUrl)}" target="_blank" rel="noopener" onclick="trackWrapped('wrapped_share','${escW(arch)}')">Share</a>
+          <button class="share-btn" onclick="trackWrapped('wrapped_share','${escW(arch)}');saveCard()">Save card</button>
+          <button class="share-btn share-btn-copy" onclick="trackWrapped('wrapped_share','${escW(arch)}');(navigator.clipboard&&navigator.clipboard.writeText(location.href)),this.textContent='Copied'">Copy link</button>
         </div>
         <div class="cta-generate anim d4">See how you'd pair with @${handle}<br><a href="${escW(pairUrl)}">Pick your type &rarr;</a></div>
       </div>`);
@@ -1137,6 +1146,7 @@ Card: ${wrappedUrl}
       TOTAL_SLIDES = slides.length;
       current = 0;
       buildProgress();
+      trackWrapped('wrapped_view', arch);
       document.title = `@${data.user && data.user.gh_handle || rawHandle} wrapped | vibestats`;
       const hint = document.getElementById('tap-hint');
       if (hint) hint.style.display = '';

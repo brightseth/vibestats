@@ -9,6 +9,8 @@ import { ARCHETYPE_KEYS } from './uploads.js';
 //   pairing_share_copy   — copied the pairing link
 //   pairing_open_full    — opened the full /compare pairing page
 //   pairing_reveal_click — clicked "reveal yours" (entered the create path)
+//   wrapped_view         — personal Wrapped deck hydrated for a handle
+//   wrapped_share        — share/copy clicked from a personal Wrapped
 const FUNNEL_EVENTS = new Set([
   'compare_intent_view',
   'pairing_shown',
@@ -16,6 +18,8 @@ const FUNNEL_EVENTS = new Set([
   'pairing_share_copy',
   'pairing_open_full',
   'pairing_reveal_click',
+  'wrapped_view',
+  'wrapped_share',
 ]);
 
 export const FUNNEL_EVENT_NAMES = [...FUNNEL_EVENTS];
