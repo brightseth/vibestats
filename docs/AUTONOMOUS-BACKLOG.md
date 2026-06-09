@@ -104,10 +104,12 @@ lesson): rename wrapped.html → wrapped-template.html.
   api/wrapped-page.js serves /wrapped; personal title/desc/og verified live; /wrapped.html
   308s; deck still hydrates via the new route. Commit 209d772.
 
-### - [ ] K6 — Wrapped funnel events
+### - [x] K6 — Wrapped funnel events
 Add wrapped_view / wrapped_share to the funnel allowlist + beacons in the hydrated
 deck (privacy: event name + archetype only, same as existing). Extend /scoreboard +
-traffic:launch funnel block. Verify: beacon fires headless; allowlist test extended. Result:
+traffic:launch funnel block. Verify: beacon fires headless; allowlist test extended. Result: ✅
+  wrapped_view + wrapped_share live (beacons verified headless; prod accepts; scoreboard +
+  traffic report extended). Commit below.
 
 ### - [ ] K7 — Witness watch (monitoring, not code)
 Each loop iteration: read the funnel (vercel env run … traffic:launch --json). When
@@ -146,3 +148,4 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-09 · K3 compare invite no-terminal path · 646fb81 · live
 - 2026-06-09 · K4 match no-contact → comparison CTA · 6900c92 · live (all surfaces 200)
 - 2026-06-10 · K5 dynamic Wrapped OG (personal unfurl with sig+moments) · 209d772 · live
+- 2026-06-10 · K6 wrapped funnel events (view/share beacons, scoreboard rows) · live
