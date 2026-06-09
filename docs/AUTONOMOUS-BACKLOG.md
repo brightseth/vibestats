@@ -60,6 +60,30 @@ sources. Reuse the existing `traffic:launch` query logic server-side.
   session) — reuses the proven requireUser pattern + funnel queries; needs a one-time
   eyeball: log in as brightseth, open https://vibestats.io/scoreboard. Commits f2ea6b2, 58d3931.
 
+
+### - [ ] K2 — Personal Wrapped: /wrapped hydrates from any profile
+FLYWHEEL #11. /wrapped is the most screenshot-shared artifact but always shows the static
+sample. Read ?handle, fetch /api/u/<handle>, hydrate the slides from the derived payload
+(respect metric_visibility — bucketed for visitors, never force exact). Keep static sample
+when no handle, with a persistent "Reveal your own →" footer. Fix slide-7 share links to
+the unified /compare destination.
+- Files: wrapped.html (~692, ~877). Verify: headless render for owner-mode + visitor-mode
+  + no-handle; no raw counts for visitors; suite green.
+- Result:
+
+### - [ ] K3 — Compare invite gets the in-browser paste path
+FLYWHEEL #9. The compare invite (highest-intent share) still dead-ends visitors who have
+no minted handle: add archetype-pick (reuse VibeCompat pattern from the keystone) so the
+visitor side computes live against the host preview instead of "not minted yet."
+- Files: compare-template.html renderRevealCta (~365-406) + missing-handle branch (~516).
+- Verify: headless — visitor picks type on a /compare?a=<type>&b=<handle> page and sees a
+  live pairing; funnel beacon fires. Result:
+
+### - [ ] K4 — Match dead-end → comparison
+FLYWHEEL #12. match.html contactUrl (~554): when contact_url is absent, render "Start with
+a comparison →" routing to /compare + copy-intro, instead of dumping on bare /u/<handle>.
+No in-app DM. Verify: headless render of both branches. Result:
+
 ---
 
 ## Deferred (NOT loop-eligible — need a human or a verification harness first)
