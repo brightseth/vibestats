@@ -13,7 +13,7 @@ const PORT = 3042;
 const ROOT = process.cwd();
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
 const server = createServer((req, res) => {
-  const file = join(ROOT, req.url.split('?')[0] === '/' ? 'wrapped.html' : req.url.split('?')[0].slice(1));
+  const file = join(ROOT, req.url.split('?')[0] === '/' ? 'wrapped-template.html' : req.url.split('?')[0].slice(1));
   try { res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'text/plain' }); res.end(readFileSync(file)); }
   catch { res.writeHead(404); res.end(); }
 });
@@ -60,7 +60,7 @@ async function load(url, apiBody, apiStatus = 200) {
   return { text, html, segs, slides, errors };
 }
 
-const base = `http://localhost:${PORT}/wrapped.html`;
+const base = `http://localhost:${PORT}/wrapped-template.html`;
 
 // 1. sample mode
 const s = await load(base, null, 404);

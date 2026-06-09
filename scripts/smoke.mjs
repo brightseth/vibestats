@@ -1755,7 +1755,7 @@ async function assertStatsApiGuards() {
 }
 
 async function assertWrappedShareLoop() {
-  const wrappedHtml = await readFile('wrapped.html', 'utf8');
+  const wrappedHtml = await readFile('wrapped-template.html', 'utf8');
   assert(wrappedHtml.includes('/?compareArchetype=orchestrator'), 'wrapped CTA should route to upload-to-compare');
   assert(wrappedHtml.includes('wrappedCompareUrl'), 'wrapped page should centralize the compare-first share target');
   assert(wrappedHtml.includes("'&url=' + encodeURIComponent(wrappedCompareUrl)"), 'wrapped X share should click through directly to upload-to-compare');
