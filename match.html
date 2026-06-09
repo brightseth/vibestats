@@ -551,6 +551,7 @@
           ? `<img class="avatar" src="${esc(entry.user.avatar_url)}" alt="@${esc(handle)}">`
           : '<div class="avatar" aria-hidden="true"></div>';
         const profilePath = `/u/${encodeURIComponent(handle)}`;
+        const hasContact = Boolean(entry.match?.contact_url);
         const contactUrl = entry.match?.contact_url || profilePath;
         const intro = introText(entry, goalLabel, seekerArchetype);
         const comparison = comparePath(entry, seekerArchetype);
@@ -574,7 +575,9 @@
             </div>
             <div class="actions">
               <a class="btn primary" href="${esc(comparison)}" data-match-action="compare_click" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Compare</a>
-              <a class="btn" href="${esc(contactUrl)}" target="${contactUrl.startsWith('/') ? '_self' : '_blank'}" rel="noopener" data-match-action="contact_click" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Contact</a>
+              ${hasContact
+                ? `<a class="btn" href="${esc(contactUrl)}" target="${contactUrl.startsWith('/') ? '_self' : '_blank'}" rel="noopener" data-match-action="contact_click" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Contact</a>`
+                : `<a class="btn" href="${esc(comparison)}" data-match-action="compare_click" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">No contact set &mdash; start with a comparison &rarr;</a>`}
               <button class="btn" type="button" data-intro="${esc(intro)}" data-match-action="copy_intro" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Copy intro</button>
               <a class="btn" href="${esc(xShareUrl(entry, goalLabel, seekerArchetype))}" target="_blank" rel="noopener" data-match-action="share_x" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Share on X</a>
               <button class="btn" type="button" data-feedback-label="Met" data-match-action="intro_accept" data-target-handle="${esc(handle)}" data-target-archetype="${esc(entry.archetype)}">Met</button>
