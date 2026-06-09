@@ -126,19 +126,27 @@ for approval. DO NOT deploy copy changes autonomously. Result: ✅ 3 variants dr
 ### - [ ] D1 — FRED takes the test (first AI-agent reveal)
 Extract FRED的 /insights ON the agent server (privacy boundary: raw stays there),
 POST derived payload to /api/reveals (anonymous path, no auth), verify /r live, draft
-share copy for Seth. Result:
+share copy for Seth. Result: ⏸️ BLOCKED on one human step — agent-server claude CLI is
+not logged in (349MB of session logs ready; /insights never run; headless run would
+require raw API-key spend without approval = hard-stop). UNBLOCK: ssh agent server →
+claude → /login → /insights. Reveal POST script ready to fire the moment facets exist.
 
 ### - [ ] D2 — Badge wall (/wall)
 Grid of PUBLIC-privacy profiles only (never unlisted!) rendering existing badge.svg +
-"add yours to your README" CTA. Verify privacy filter + live. Result:
+"add yours to your README" CTA. Verify privacy filter + live. Result: ✅ /wall live; privacy
+  filter unit-verified (unlisted absent) + live-verified. Commit 77fd282.
 
 ### - [ ] D3 — Meta-story chapter 2 (draft → Seth approves before /blog)
 "Then the AI took over" — the Fable verifier-loop release story. Outward content in
-Seth voice = draft to research/, STAGE for approval, do not publish. Result:
+Seth voice = draft to research/, STAGE for approval, do not publish. Result: ✅ drafted at
+  research/META-STORY-CH2.md (~700 words, all claims repo-checkable, incl. the honest
+  privacy-mistake paragraph). Awaiting Seth approval → then Claude publishes to /blog.
 
 ### - [ ] D4 — Genome census automation
 scripts/genome-census.mjs: read /api/stats, diff vs stored snapshot, emit ready-to-post
-weekly census draft to research/census-drafts/. Wire into witness-watch loop weekly. Result:
+weekly census draft to research/census-drafts/. Wire into witness-watch loop weekly. Result: ✅
+  scripts/genome-census.mjs built + first census generated; loop instructed to re-run when
+  snapshot >6 days old. Drafts stay in research/ — human posts.
 
 ---
 
@@ -170,3 +178,7 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-10 · K6 wrapped funnel events (view/share beacons, scoreboard rows) · live
 - 2026-06-10 · K8 headline A shipped (compatibility-first, Seth-delegated) · 42d68a1 · live
 - 2026-06-10 · DM launcher built (research/send-dms.html, one-click prefilled composers)
+- 2026-06-10 · D2 badge wall /wall (public-only, privacy-verified) · 77fd282 · live
+- 2026-06-10 · D3 meta-story ch2 drafted (awaiting approval) · research/META-STORY-CH2.md
+- 2026-06-10 · D4 genome census automation · scripts/genome-census.mjs · first draft generated
+- 2026-06-10 · D1 FRED reveal BLOCKED on agent-server claude /login (script ready)
