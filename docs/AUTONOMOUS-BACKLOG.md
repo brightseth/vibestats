@@ -122,6 +122,24 @@ Seth pivoted the thesis to "who should I build with > what am I". Home still lea
 for approval. DO NOT deploy copy changes autonomously. Result: ✅ 3 variants drafted in
   research/HEADLINE-PROPOSALS.md. Seth delegated the pick → VARIANT A SHIPPED (commit 42d68a1, live-verified: new H1 + teammate sub + og:title). B/C held for post-funnel-proof.
 
+
+### - [ ] D1 — FRED takes the test (first AI-agent reveal)
+Extract FRED的 /insights ON the agent server (privacy boundary: raw stays there),
+POST derived payload to /api/reveals (anonymous path, no auth), verify /r live, draft
+share copy for Seth. Result:
+
+### - [ ] D2 — Badge wall (/wall)
+Grid of PUBLIC-privacy profiles only (never unlisted!) rendering existing badge.svg +
+"add yours to your README" CTA. Verify privacy filter + live. Result:
+
+### - [ ] D3 — Meta-story chapter 2 (draft → Seth approves before /blog)
+"Then the AI took over" — the Fable verifier-loop release story. Outward content in
+Seth voice = draft to research/, STAGE for approval, do not publish. Result:
+
+### - [ ] D4 — Genome census automation
+scripts/genome-census.mjs: read /api/stats, diff vs stored snapshot, emit ready-to-post
+weekly census draft to research/census-drafts/. Wire into witness-watch loop weekly. Result:
+
 ---
 
 ## Deferred (NOT loop-eligible — need a human or a verification harness first)
