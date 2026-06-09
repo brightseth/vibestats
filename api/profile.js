@@ -5,6 +5,7 @@ import { profileShareCacheControl, sendPrivateMethodNotAllowed, sendPrivateNotFo
 import { sql } from './_lib/db.js';
 import { weeklyLeaderboardRank } from './_lib/leaderboard-rank.js';
 import { metricVisibility, visibleMetrics } from './_lib/public-profile.js';
+import { publicMoments } from './_lib/moments.js';
 import { profileShareProof, rarityForSignature } from './_lib/social-proof.js';
 import { signatureFromUpload } from './_lib/signatures.js';
 import { attributionRefFromQuery, recordViralEvent, sourceRefForProfile } from './_lib/viral-events.js';
@@ -188,6 +189,15 @@ export default async function handler(req, res) {
       l: String(metrics.languages || '?'),
       s: String(metrics.sessions || '?'),
     });
+    // Depth on the traveling card: signature subtitle + public-safe moments
+    // (bucketed unless the owner opted into raw counts).
+    if (signatureLabel) imageParams.set('sig', signatureLabel);
+    publicMoments(latest.raw_meta?.moments, { exact: Boolean(visibility.show_raw_counts) })
+      .slice(0, 3)
+      .forEach((moment, index) => {
+        imageParams.set(`m${index + 1}v`, String(moment.value || ''));
+        imageParams.set(`m${index + 1}l`, String(moment.label || ''));
+      });
 
     const html = injectProfileMeta(PROFILE_HTML, {
       title: `@${user.gh_handle} is ${signatureLabel || arch.name} | vibestats`,

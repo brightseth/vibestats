@@ -70,6 +70,16 @@ export function revealMetadata(snapshot, origin = 'https://vibestats.io') {
     l: snapshot?.metrics?.languages ?? '?',
     s: snapshot?.metrics?.sessions ?? '?',
   });
+  // Depth on the anonymous unfurl: signature + stored public-safe moments.
+  if (snapshot?.raw_meta?.signature) params.set('sig', String(snapshot.raw_meta.signature));
+  (Array.isArray(snapshot?.raw_meta?.moments) ? snapshot.raw_meta.moments : [])
+    .slice(0, 3)
+    .forEach((moment, index) => {
+      if (moment?.value && moment?.label) {
+        params.set(`m${index + 1}v`, String(moment.value));
+        params.set(`m${index + 1}l`, String(moment.label));
+      }
+    });
   const shareUrl = snapshot?.share_url || `${origin.replace(/\/$/, '')}/r/${encodeURIComponent(snapshot.slug)}`;
   return {
     title: `Anonymous ${arch.short} reveal | vibestats`,

@@ -58,6 +58,16 @@ export function sanitizeOgQuery(query = {}) {
   const aKey = ARCHETYPES[aRaw] ? aRaw : 'builder';
   const bKey = ARCHETYPES[bRaw] ? bRaw : 'shipper';
 
+  // Depth: signature subtitle + up to 3 behavioral moments (public-safe labels/values,
+  // already bucketed upstream unless the owner opted into raw counts).
+  const sig = labelParam(query.sig, '', 36);
+  const moments = [];
+  for (let i = 1; i <= 3; i += 1) {
+    const value = labelParam(query[`m${i}v`], '', 24);
+    const label = labelParam(query[`m${i}l`], '', 24);
+    if (value && label) moments.push({ value, label });
+  }
+
   return {
     mode: firstParam(query.mode) === 'pair' ? 'pair' : 'archetype',
     aKey,
@@ -70,6 +80,8 @@ export function sanitizeOgQuery(query = {}) {
     sessions: numberParam(query.s, '?', { max: 100000 }),
     aLabel: labelParam(query.an, shortName(aKey)),
     bLabel: labelParam(query.bn, shortName(bKey)),
+    sig,
+    moments,
   };
 }
 
@@ -135,7 +147,7 @@ function page(children) {
   };
 }
 
-function archetypeCard({ arch, name, days, commits, langs, sessions }) {
+function archetypeCard({ arch, name, days, commits, langs, sessions, sig = '', moments = [] }) {
   return page([
     {
       type: 'div',
@@ -185,6 +197,20 @@ function archetypeCard({ arch, name, days, commits, langs, sessions }) {
         children: arch.name,
       },
     },
+    // Signature subtitle (e.g. "high-velocity Deep Diver") — the rare-combo identity line.
+    ...(sig ? [{
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '26px',
+          fontWeight: 900,
+          color: '#c9cfe2',
+          marginBottom: '10px',
+          textAlign: 'center',
+        },
+        children: sig,
+      },
+    }] : []),
     {
       type: 'div',
       props: {
@@ -192,7 +218,7 @@ function archetypeCard({ arch, name, days, commits, langs, sessions }) {
           fontSize: '20px',
           color: '#8888a0',
           fontStyle: 'italic',
-          marginBottom: '48px',
+          marginBottom: sig ? '36px' : '48px',
           textAlign: 'center',
         },
         children: `"${arch.tagline}"`,
@@ -206,12 +232,15 @@ function archetypeCard({ arch, name, days, commits, langs, sessions }) {
           gap: '24px',
           marginBottom: '40px',
         },
-        children: [
-          sb(sessions, 'SESSIONS'),
-          sb(`${commits}/day`, 'COMMITS'),
-          sb(langs, 'LANGUAGES'),
-          sb(`${days}d`, 'VIBECODING'),
-        ],
+        // Brag-worthy behavioral moments when available; coarse stats otherwise.
+        children: moments.length
+          ? moments.map((m) => sb(m.value, m.label.toUpperCase()))
+          : [
+            sb(sessions, 'SESSIONS'),
+            sb(`${commits}/day`, 'COMMITS'),
+            sb(langs, 'LANGUAGES'),
+            sb(`${days}d`, 'VIBECODING'),
+          ],
       },
     },
     brandBlock(name),
