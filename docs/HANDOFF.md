@@ -21,7 +21,7 @@ prior session's chat memory.
 - G3 — owner-only funnel page at **/scoreboard** (gate: `requireUser` + `VIBESTATS_OWNER_HANDLES`, default `brightseth`). `58d3931`
 - Funnel instrumentation: `/api/event` → `funnel_events`; `npm run traffic:launch` prints the compare-intent funnel.
 
-## Deferred (need a verifier/harness — IDEAL FABLE WORK)
+## Deferred — CLOSED 2026-06-09 by the Fable session (rubric + independent grader)
 These were deferred *only* because the prior session self-judged with no independent verifier
 or real environment. Fable's verifier-sub-agent + Outcomes + a real harness is built to close them:
 - **G2a** — carry `facet_signals` through the CLI→browser claim path. Touchpoints in
@@ -36,7 +36,7 @@ or real environment. Fable's verifier-sub-agent + Outcomes + a real harness is b
    funnel had only 1 event (a test beacon) — **no real conversion data yet.**
 2. **Re-run CLI sync** (`curl -fsSL https://vibestats.io/cli.sh | sh -s --`) so `/u/brightseth`
    shows the new "How you build" depth (currently absent — saved before the feature shipped).
-3. **/scoreboard eyeball:** log in as brightseth, open `/scoreboard`, confirm numbers render.
+3. ~~/scoreboard eyeball~~ — machine-verified 2026-06-09 (owner 200 with live funnel data via real session token).
 4. **X post decision:** HOLD until the scoreboard shows people *sharing* (proof the loop
    converts). Don't spend the X audience on an unproven loop. Copy ready in `LAUNCH-BATCH.md`.
 

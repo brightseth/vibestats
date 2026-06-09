@@ -64,18 +64,20 @@ sources. Reuse the existing `traffic:launch` query logic server-side.
 
 ## Deferred (NOT loop-eligible — need a human or a verification harness first)
 
-### G2a — Carry facet_signals through the CLI→browser claim path
-CLI computes facet_signals but the browser-preview claim strips them, so claiming via
-browser publishes no "How you build." (Pure browser legacy-JSON upload has no facet
-source at all — out of scope.) Secondary path, lower priority.
-- Touchpoints: `bin/vibestats.js` `localWebPreviewData` (~311), `home.html`
-  `localPreviewFromHash` (~3338), client `extractInsights`, `wireProfileSaveAction`
-  payload. Server `sanitizeUploadPayload` already validates facet_signals.
-- Blocked on: a CLI→preview-hash→login→save→/u round-trip verification harness. Do not
-  ship without it.
+### - [x] G2a — Carry facet_signals through the CLI→browser claim path — DONE 2026-06-09
+Closed via the Fable verifier pattern: rubric (`docs/rubrics/G2A-G3-RUBRIC.md`) →
+implement (CLI encoder + hash decode + extractInsights + POST payload) → executable
+harness (`scripts/verify-g2a-roundtrip.mjs`: real CLI encoder, real headless browser
+clicking the real claim button, network intercept, real server sanitize) → independent
+grader sub-agent in a fresh context re-executed all evidence → VERDICT: SATISFIED.
+Negative (injected secret_leak/junk dropped) + legacy-hash compat both executed.
+G3 owner-view also machine-verified the same day (`scripts/verify-g3-owner.mjs`: real
+session token + real handler + live DB — owner 200 with live funnel, non-owner 404,
+anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 
 ## Log
 (Claude appends a one-line entry per completed goal: date · goal · commit · live check.)
 - 2026-06-08 · G1 primary-share leak · 96226d0 · live (home 200, share-fix present)
 - 2026-06-08 · G2 depth receipt one-liner (G2a deferred) · a3d0090 · live (receipt code present)
 - 2026-06-08 · G3 /scoreboard owner funnel page · 58d3931 · live (anon→401; owner view needs eyeball)
+- 2026-06-09 · G2a depth via browser claim + G3 owner-view machine-verified (rubric + independent grader, VERDICT: SATISFIED) · 0a6e200 · live
