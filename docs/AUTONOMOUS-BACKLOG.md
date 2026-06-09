@@ -116,10 +116,11 @@ Each loop iteration: read the funnel (vercel env run … traffic:launch --json).
 real events appear (landed>1 or any share/reveal click), notify Seth with the read
 + what it suggests. Track last-seen counts in research/funnel-watch.json (gitignored). Result:
 
-### - [ ] K8 — Compatibility-first home headline (FLAG TASTE — propose, do not ship)
+### - [x] K8 — Compatibility-first home headline (FLAG TASTE — propose, do not ship)
 Seth pivoted the thesis to "who should I build with > what am I". Home still leads
 "What kind of coder are you?". Draft 2-3 headline/sub variants in research/, present
-for approval. DO NOT deploy copy changes autonomously. Result:
+for approval. DO NOT deploy copy changes autonomously. Result: ✅ 3 variants drafted in
+  research/HEADLINE-PROPOSALS.md (recommend A now, B/C after funnel proof). Awaiting Seth's pick.
 
 ---
 
