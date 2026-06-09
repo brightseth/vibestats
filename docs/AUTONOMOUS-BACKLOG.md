@@ -120,7 +120,7 @@ real events appear (landed>1 or any share/reveal click), notify Seth with the re
 Seth pivoted the thesis to "who should I build with > what am I". Home still leads
 "What kind of coder are you?". Draft 2-3 headline/sub variants in research/, present
 for approval. DO NOT deploy copy changes autonomously. Result: ✅ 3 variants drafted in
-  research/HEADLINE-PROPOSALS.md (recommend A now, B/C after funnel proof). Awaiting Seth's pick.
+  research/HEADLINE-PROPOSALS.md. Seth delegated the pick → VARIANT A SHIPPED (commit 42d68a1, live-verified: new H1 + teammate sub + og:title). B/C held for post-funnel-proof.
 
 ---
 
@@ -150,3 +150,5 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-09 · K4 match no-contact → comparison CTA · 6900c92 · live (all surfaces 200)
 - 2026-06-10 · K5 dynamic Wrapped OG (personal unfurl with sig+moments) · 209d772 · live
 - 2026-06-10 · K6 wrapped funnel events (view/share beacons, scoreboard rows) · live
+- 2026-06-10 · K8 headline A shipped (compatibility-first, Seth-delegated) · 42d68a1 · live
+- 2026-06-10 · DM launcher built (research/send-dms.html, one-click prefilled composers)
