@@ -1469,6 +1469,8 @@
         codeLangCount: codeLangs.length,
         workingStyle: data.user_profile?.working_style || '',
         isEmerging: sessions < 50,
+        // Depth layer: carried from the CLI preview so browser claims keep "How you build".
+        facetSignals: boundedLocalFacetSignals(m.facet_signals),
       };
     }
 
@@ -2396,6 +2398,7 @@
           languages: insights.codeLangCount,
           msgsPerSession: insights.msgsPerSession,
           days: insights.days,
+          ...(insights.facetSignals ? { facet_signals: insights.facetSignals } : {}),
         },
         raw_meta: {
           dateRange: insights.dateRange,
@@ -3321,6 +3324,29 @@
         .slice(0, maxEntries));
     }
 
+    // Counts-only depth signals from the CLI preview. Client keeps this bounded
+    // (known top-level keys, integer leaf counts); the SERVER allowlist
+    // (sanitizeFacetSignals) is the authoritative boundary on ingest.
+    function boundedLocalFacetSignals(input) {
+      if (!input || typeof input !== 'object') return null;
+      const KEYS = ['outcome_mix', 'helpfulness_mix', 'session_type_mix', 'success_mix', 'satisfaction_mix', 'friction_taxonomy'];
+      const out = {};
+      const sessions = Number(input.sessions_analyzed);
+      if (Number.isFinite(sessions) && sessions > 0) out.sessions_analyzed = Math.min(Math.round(sessions), 10000000);
+      let any = false;
+      for (const key of KEYS) {
+        const src = input[key];
+        if (!src || typeof src !== 'object') continue;
+        const map = {};
+        for (const [k, v] of Object.entries(src).slice(0, 12)) {
+          const n = Number(v);
+          if (typeof k === 'string' && k.length <= 40 && Number.isFinite(n) && n > 0) map[k] = Math.min(Math.round(n), 10000000);
+        }
+        if (Object.keys(map).length) { out[key] = map; any = true; }
+      }
+      return any ? out : null;
+    }
+
     function localPreviewFromHash() {
       const params = new URLSearchParams(location.hash.replace(/^#/, ''));
       const encoded = params.get('vibestatsPreview');
@@ -3348,6 +3374,8 @@
           [TOOL_USAGE_KEY]: boundedLocalMap(metrics[TOOL_USAGE_KEY], 12, 5000000),
           [LANGUAGE_USAGE_KEY]: boundedLocalMap(metrics[LANGUAGE_USAGE_KEY], 20, 5000000),
         };
+        const localFacetSignals = boundedLocalFacetSignals(metrics.facet_signals);
+        if (localFacetSignals) localMetrics.facet_signals = localFacetSignals;
         const localMeta = {};
         if (user) localMeta.user = user;
         if (dateRange) localMeta.date_range = dateRange;

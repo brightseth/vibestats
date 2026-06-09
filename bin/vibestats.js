@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicMoments } from '../api/_lib/moments.js';
+import { sanitizeFacetSignals } from '../api/_lib/facet-signals.js';
 import { readInsightsInput } from '../lib/claude-insights-extractor.js';
 import { archetypeMap } from '../lib/archetype-identity.js';
 import { derivedUploadPayloadFromInsights } from '../lib/insights-derived.js';
@@ -336,6 +337,11 @@ function localWebPreviewData(insights = {}, { claimCode = '' } = {}) {
       },
     },
   };
+  // Depth layer: carry counts-only facet signals into the browser preview so a
+  // browser-claimed profile keeps "How you build". Allowlist-sanitized here AND
+  // re-validated server-side on ingest.
+  const facetSignals = sanitizeFacetSignals(metrics.facet_signals);
+  if (facetSignals) preview.insights.metrics.facet_signals = facetSignals;
   const cleanClaimCode = cleanPreviewClaimCode(claimCode);
   if (cleanClaimCode) preview.claim_code = cleanClaimCode;
   return preview;
