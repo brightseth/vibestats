@@ -51,8 +51,8 @@ function compareFirstUrl(origin, { handle = '', archetype = '' } = {}) {
 
 function genericHomeMetadata(origin) {
   return {
-    title: "What's your vibecoding personality? | vibestats",
-    description: 'Claude Code already knows how you build. Reveal your archetype: The Orchestrator, The Shipper, The Architect, The Debugger...',
+    title: "Who would you build best with? | vibestats",
+    description: 'Claude Code already knows how you build. Reveal your archetype and your pairing chemistry: The Orchestrator, The Shipper, The Deep Diver...',
     url: `${origin}/`,
     image: `${origin}/og-card.png`,
   };
@@ -127,11 +127,11 @@ function injectHomeMeta(html, meta) {
   return html
     .replace('<title>Reveal Your Vibecoding Personality | vibestats</title>', `<title>${esc(meta.title)}</title>`)
     .replace(
-      '<meta name="description" content="Claude Code already knows how you build. Run /insights, check status, reveal your vibecoding personality, and compare with other Claude Code users.">',
+      '<meta name="description" content="Claude Code already knows how you build. Run /insights, reveal your vibecoding personality, and compare with other coding-agent users.">',
       `<meta name="description" content="${esc(meta.description)}">`,
     )
-    .replace('<meta property="og:title" content="What\'s your vibecoding personality? | vibestats">', `<meta property="og:title" content="${esc(meta.title)}">`)
-    .replace('<meta property="og:description" content="Claude Code already knows how you build. Reveal your archetype: The Orchestrator, The Shipper, The Architect, The Debugger...">', `<meta property="og:description" content="${esc(meta.description)}">`)
+    .replace('<meta property="og:title" content="Who would you build best with? | vibestats">', `<meta property="og:title" content="${esc(meta.title)}">`)
+    .replace('<meta property="og:description" content="Claude Code already knows how you build. Reveal your archetype and your pairing chemistry: The Orchestrator, The Shipper, The Deep Diver...">', `<meta property="og:description" content="${esc(meta.description)}">`)
     .replace('<meta property="og:url" content="https://vibestats.io">', `<meta property="og:url" content="${esc(meta.url)}">`)
     .replace('<meta property="og:image" content="https://vibestats.io/og-card.png">', `<meta property="og:image" content="${esc(meta.image)}">`)
     .replace(

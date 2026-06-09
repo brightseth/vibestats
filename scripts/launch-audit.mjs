@@ -446,7 +446,7 @@ async function auditAnonymousRevealRoundTrip(options, recorder) {
       const compareType = compared.response.headers.get('content-type') || '';
       recorder.check(compared.response.status === 200, 'anonymous reveal round-trip opens attributed compare intake', `${compared.response.status} ${compared.url}`);
       recorder.check(compareType.includes('text/html'), 'anonymous reveal round-trip compare intake content type', compareType || '(none)');
-      recorder.check(includesAll(compared.body, ['What kind of coder are you? Claude Code already knows.', 'Reveal mine']), 'anonymous reveal round-trip compare intake contains primary CTA');
+      recorder.check(includesAll(compared.body, ['Who would you build best with? Claude Code already knows.', 'Reveal mine']), 'anonymous reveal round-trip compare intake contains primary CTA');
       recorder.check(!hasRawLeak(compared.body), 'anonymous reveal round-trip compare intake has no raw-insights field names');
       recorder.check(!hasSecretName(compared.body), 'anonymous reveal round-trip compare intake does not expose secret env names');
 
@@ -703,7 +703,7 @@ async function auditLaunch(options) {
       path: '/',
       expectedType: 'text/html',
       allowStatuses: [200],
-      mustInclude: ['What kind of coder are you? Claude Code already knows.', '<code>/insights</code>', 'Reveal mine', 'See an example', 'like Spotify Wrapped, for how you build', 'Copy reveal command', `${NO_NPM_CLI}</code>`, 'Reveal locally, then choose whether to share', 'Anonymous share links are public unlisted', 'shouldAutoRunDemo()', 'Have a legacy JSON export?', 'Claim with GitHub', 'Claim this profile', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
+      mustInclude: ['Who would you build best with? Claude Code already knows.', '<code>/insights</code>', 'Reveal mine', 'See an example', 'like Spotify Wrapped, for how you build', 'Copy reveal command', `${NO_NPM_CLI}</code>`, 'Reveal locally, then choose whether to share', 'Anonymous share links are public unlisted', 'shouldAutoRunDemo()', 'Have a legacy JSON export?', 'Claim with GitHub', 'Claim this profile', 'Explore sample pairings without data', '/compare?a=orchestrator&b=shipper', 'Your profile starts unlisted.', '/settings#privacy-settings', 'Set match intent', 'View weekly board', 'Find matches'],
       mustNotInclude: ['agent-insights.json', 'npx vibestats sync'],
       checkRawLeaks: false,
     },

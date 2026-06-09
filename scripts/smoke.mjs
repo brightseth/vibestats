@@ -518,7 +518,7 @@ async function assertRoutes() {
   assert(indexHtml.includes('identityStatus.profile_save_available'), 'upload page should gate profile saves on identity readiness');
   assert(indexHtml.includes('Profile saves are not configured on this deployment yet. Create an anonymous unlisted reveal link instead; raw /insights stays local.'), 'upload page should route unavailable identity into anonymous local-only sharing');
   assert(!indexHtml.includes('agent-insights.json'), 'upload page should not teach the dead Claude Code agent-insights.json path');
-  assert(indexHtml.includes('What kind of coder are you? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('Reveal mine') && indexHtml.includes('See an example') && indexHtml.includes('like Spotify Wrapped, for how you build') && indexHtml.includes('Copy reveal command') && indexHtml.includes(NO_NPM_CLI) && indexHtml.includes('Reveal locally, then choose whether to share') && indexHtml.includes('Anonymous share links are public unlisted'), 'upload page should frame onboarding as a reveal-first Claude Code path (Wrapped-style) with the command step and anonymous sharing available');
+  assert(indexHtml.includes('Who would you build best with? Claude Code already knows.') && indexHtml.includes('<code>/insights</code>') && indexHtml.includes('Reveal mine') && indexHtml.includes('See an example') && indexHtml.includes('like Spotify Wrapped, for how you build') && indexHtml.includes('Copy reveal command') && indexHtml.includes(NO_NPM_CLI) && indexHtml.includes('Reveal locally, then choose whether to share') && indexHtml.includes('Anonymous share links are public unlisted'), 'upload page should frame onboarding as a reveal-first Claude Code path (Wrapped-style) with the command step and anonymous sharing available');
   assert(indexHtml.includes('function shouldAutoRunDemo()') && indexHtml.includes('setTimeout(runDemo, 120)'), 'demo-first URLs should auto-start the reveal instead of landing on manual upload');
   assert(!indexHtml.includes('Save derived metrics to my profile') && !indexHtml.includes('id="save-to-profile"'), 'upload page should not show an opt-out profile save control before the reveal');
   assert(indexHtml.includes('See an example') && indexHtml.includes('Copy reveal command') && indexHtml.includes('send yourself the command for later') && indexHtml.includes('id="reveal-teaser-card"') && indexHtml.includes('function revealMine()') && indexHtml.includes('id="reveal-steps" aria-label="Reveal your vibestats profile" hidden'), 'upload page should show a reveal teaser first and disclose the desktop command steps on demand, with mobile guidance');
@@ -3560,7 +3560,7 @@ async function assertHomeMetadataHelpers() {
   assert(res.statusCode === 200, 'homepage API should render HTTP 200 without requiring database access');
   assert(String(res.headers['Content-Type']).includes('text/html'), 'homepage API should return HTML');
   assert(res.headers['Cache-Control'] === 'private, no-store', 'homepage API should avoid caching generic dynamic shells');
-  assert(String(res.body).includes("What's your vibecoding personality? | vibestats"), 'homepage API should preserve generic reveal metadata');
+  assert(String(res.body).includes("Who would you build best with? | vibestats"), 'homepage API should preserve generic reveal metadata');
 
   const headRes = mockRes();
   await handler({
