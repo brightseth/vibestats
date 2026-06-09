@@ -22,13 +22,15 @@ prior session's chat memory.
 - Funnel instrumentation: `/api/event` → `funnel_events`; `npm run traffic:launch` prints the compare-intent funnel.
 
 ## Deferred — CLOSED 2026-06-09 by the Fable session (rubric + independent grader)
-These were deferred *only* because the prior session self-judged with no independent verifier
-or real environment. Fable's verifier-sub-agent + Outcomes + a real harness is built to close them:
-- **G2a** — carry `facet_signals` through the CLI→browser claim path. Touchpoints in
-  `AUTONOMOUS-BACKLOG.md` Deferred section. Blocked on a CLI→preview→login→save→/u round-trip harness.
-- **G3 owner-view** — `/scoreboard` deny-path is verified (anon→401), but the authenticated
-  owner render was never eyeballed (couldn't hold an operator session). Needs a headless
-  auth'd grader OR a human login.
+Both items were deferred only because the prior session self-judged with no independent
+verifier. Closed using the verifier pattern (rubric → implement → independent grader
+sub-agent re-executes evidence in a fresh context → VERDICT: SATISFIED):
+- **G2a** ✅ — facet_signals now survive CLI→browser→server; browser-claimed profiles keep
+  "How you build." Harness: `scripts/verify-g2a-roundtrip.mjs` (real CLI encoder, real
+  headless claim click, network intercept, real server sanitize; negative + legacy cases).
+- **G3 owner-view** ✅ — machine-verified with a real signed session token against the real
+  handler + live DB: owner 200 with live funnel, non-owner 404, anon 401. Harness:
+  `scripts/verify-g3-owner.mjs`. Rubric: `docs/rubrics/G2A-G3-RUBRIC.md`. Commit 0a6e200.
 
 ## Pending HUMAN actions (only Seth can do — not lost)
 1. **Funnel smoke test:** open `https://vibestats.io/?compareTo=brightseth&compareArchetype=deepdiver`,
