@@ -74,18 +74,23 @@ the unified /compare destination.
   4-mode harness incl. visitor zero-leak canary (scripts/verify-k2-wrapped.mjs). Live-verified
   with real brightseth data. Commit 0fdcc05.
 
-### - [ ] K3 — Compare invite gets the in-browser paste path
+### - [x] K3 — Compare invite gets the in-browser paste path
 FLYWHEEL #9. The compare invite (highest-intent share) still dead-ends visitors who have
 no minted handle: add archetype-pick (reuse VibeCompat pattern from the keystone) so the
 visitor side computes live against the host preview instead of "not minted yet."
 - Files: compare-template.html renderRevealCta (~365-406) + missing-handle branch (~516).
 - Verify: headless — visitor picks type on a /compare?a=<type>&b=<handle> page and sees a
-  live pairing; funnel beacon fires. Result:
+  live pairing; funnel beacon fires. Result: ✅ picker→live-pairing already worked (verified,
+  not re-shipped); real gap was the terminal-only reveal CTA — added "Reveal in your browser
+  instead →" routing to the keystone landing. Headless-verified (picker, exact href, live
+  pairing on grid click, zero errors). Commit 646fb81.
 
-### - [ ] K4 — Match dead-end → comparison
+### - [x] K4 — Match dead-end → comparison
 FLYWHEEL #12. match.html contactUrl (~554): when contact_url is absent, render "Start with
 a comparison →" routing to /compare + copy-intro, instead of dumping on bare /u/<handle>.
-No in-app DM. Verify: headless render of both branches. Result:
+No in-app DM. Verify: headless render of both branches. Result: ✅ contact_url absent →
+"No contact set — start with a comparison →" to /compare, tracked as compare_click;
+real contact unchanged. Both branches headless-verified. Commit 6900c92.
 
 ---
 
@@ -111,3 +116,5 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-09 · K0 owner profile synced with depth (act-for-owner, app sanitizer + sync-equivalent insert; prod secret is write-only sensitive so token mint impossible) · upload 30ef631f · live
 - 2026-06-09 · K1 OG card carries signature + moments (visually verified live PNG) · 9f5065b · live
 - 2026-06-09 · K2 personal Wrapped (?handle hydration, visitor zero-leak verified) · 0fdcc05 · live (real-data prod check)
+- 2026-06-09 · K3 compare invite no-terminal path · 646fb81 · live
+- 2026-06-09 · K4 match no-contact → comparison CTA · 6900c92 · live (all surfaces 200)
