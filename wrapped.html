@@ -709,18 +709,22 @@
       if (a.name) document.title = a.name + ' | vibestats wrapped';
     })();
 
-    const TOTAL_SLIDES = 7;
+    let TOTAL_SLIDES = 7; // mutable: ?handle= hydration replaces the deck
     let current = 0;
     let transitioning = false;
 
-    // Build progress bar
-    const progressEl = document.getElementById('progress');
-    for (let i = 0; i < TOTAL_SLIDES; i++) {
-      const seg = document.createElement('div');
-      seg.className = 'progress-seg' + (i === 0 ? ' active' : '');
-      seg.dataset.index = i;
-      progressEl.appendChild(seg);
+    // Build progress bar (re-run after hydration)
+    function buildProgress() {
+      const progressEl = document.getElementById('progress');
+      progressEl.innerHTML = '';
+      for (let i = 0; i < TOTAL_SLIDES; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'progress-seg' + (i === 0 ? ' active' : '');
+        seg.dataset.index = i;
+        progressEl.appendChild(seg);
+      }
     }
+    buildProgress();
 
     function updateProgress() {
       document.querySelectorAll('.progress-seg').forEach((seg, i) => {
@@ -747,8 +751,8 @@
         current = index;
         updateProgress();
 
-        // Build clock bars when slide 3 becomes active
-        if (index === 2) buildClockBars();
+        // Build clock bars when sample slide 3 becomes active (absent in hydrated decks)
+        if (index === 2 && document.getElementById('clock-bars')) buildClockBars();
 
         // Update tap hint
         const hint = document.getElementById('tap-hint');
@@ -1008,6 +1012,137 @@ Card: ${wrappedUrl}
 
     // Init
     updateProgress();
+    // ========================================
+    // K2 — PERSONAL WRAPPED (?handle= hydration)
+    // Builds a deck from the PUBLIC derived payload only. /api/u already applies
+    // metric visibility (bucketed for visitors), so rendering it verbatim cannot
+    // leak raw counts. Sample deck stays untouched when no/invalid handle.
+    // ========================================
+    function escW(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function wrappedShare(mix, keys) {
+      if (!mix) return 0;
+      const total = Object.values(mix).reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
+      return keys.reduce((sum, k) => sum + (Number(mix[k]) || 0), 0) / total;
+    }
+
+    function addSampleFooter() {
+      if (document.getElementById('wrapped-own-footer')) return;
+      const footer = document.createElement('a');
+      footer.id = 'wrapped-own-footer';
+      footer.href = '/';
+      footer.textContent = 'This is a sample — reveal your own →';
+      footer.style.cssText = 'position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:60;font-family:var(--mono,monospace);font-size:12px;color:#8aadff;background:rgba(10,12,20,0.85);border:1px solid rgba(107,143,255,0.35);border-radius:999px;padding:8px 16px;text-decoration:none';
+      document.body.appendChild(footer);
+    }
+
+    async function hydrateWrapped() {
+      const rawHandle = String(new URLSearchParams(location.search).get('handle') || '').trim().replace(/^@/, '');
+      if (!/^[a-zA-Z0-9-]{1,39}$/.test(rawHandle)) { addSampleFooter(); return; }
+      let data = null;
+      try {
+        const res = await fetch(`/api/u/${encodeURIComponent(rawHandle)}`);
+        if (res.ok) data = await res.json();
+      } catch (e) { /* fall through to sample */ }
+      const up = data && Array.isArray(data.uploads) ? data.uploads[0] : null;
+      const A = (window.VIBESTATS_ARCHETYPES || {})[up && up.archetype];
+      if (!up || !A) { addSampleFooter(); return; }
+
+      const handle = escW(data.user && data.user.gh_handle || rawHandle);
+      const arch = up.archetype;
+      const signature = escW(up.raw_meta && up.raw_meta.signature || '');
+      const activity = up.activity || {};
+      const metrics = up.metrics || {};
+      const moments = (Array.isArray(up.raw_meta && up.raw_meta.moments) ? up.raw_meta.moments : []).slice(0, 3);
+      const sig = up.facet_signals || null;
+      const rarity = data.rarity || null;
+      const pairUrl = `https://vibestats.io/?compareTo=${encodeURIComponent(rawHandle)}&compareArchetype=${encodeURIComponent(arch)}`;
+      const slides = [];
+
+      slides.push(`<div class="slide slide-1 active" data-slide="0">
+        <div class="slide-label anim">vibestats wrapped</div>
+        <div class="open-name anim d1" style="font-size:44px">@${handle}</div>
+        <div class="open-days-label anim d2">${escW(activity.days || 'a builder in motion')}</div>
+        <div class="open-date anim d3">${escW(activity.cadence || '')}${activity.depth ? ' &middot; ' + escW(activity.depth) : ''}</div>
+      </div>`);
+
+      slides.push(`<div class="slide slide-2" data-slide="1">
+        <div class="slide-label anim">your personality</div>
+        <div class="archetype-glyph anim d1" style="font-size:54px;color:${escW(A.color || '#6B8FFF')}">${escW(A.glyph || 'VS')}</div>
+        <div class="big-unit anim d2" style="font-size:46px;font-weight:900;color:${escW(A.color || '#6B8FFF')}">${escW(A.name || arch)}</div>
+        ${signature ? `<div class="slide-body anim d3"><strong>${signature}</strong></div>` : ''}
+        ${rarity && rarity.tier ? `<div class="stat-row anim d4">${escW(rarity.tier)} signature combo</div>` : ''}
+        <div class="slide-body anim d5" style="font-style:italic">"${escW(A.tagline || '')}"</div>
+      </div>`);
+
+      if (sig) {
+        const landed = Math.round(wrappedShare(sig.outcome_mix, ['fully', 'mostly']) * 100);
+        const partner = Math.round(wrappedShare(sig.helpfulness_mix, ['essential', 'very_helpful']) * 100);
+        const fr = sig.friction_taxonomy || {};
+        const human = (Number(fr.collaboration) || 0) > ((Number(fr.code) || 0) + (Number(fr.tooling) || 0) + (Number(fr.platform) || 0));
+        const receipt = landed >= 60 ? 'You finish what you start.' : partner >= 60 ? 'You build with Claude, not at it.' : 'Your sessions tell a story.';
+        slides.push(`<div class="slide slide-6" data-slide="x">
+          <div class="slide-label anim">how you build</div>
+          <div class="big-unit anim d1" style="font-size:34px;font-weight:900">${escW(receipt)}</div>
+          <div class="chaos-stats anim d2">
+            ${sig.outcome_mix ? `<div class="chaos-stat"><strong>${landed}%</strong> of sessions landed</div>` : ''}
+            ${sig.helpfulness_mix ? `<div class="chaos-stat"><strong>${partner}%</strong> Claude essential or very helpful</div>` : ''}
+            ${Object.keys(fr).length ? `<div class="chaos-stat">friction runs <strong>${human ? 'human' : 'machine'}</strong>, not ${human ? 'machine' : 'human'}</div>` : ''}
+          </div>
+          <div class="slide-body anim d4" style="font-size:13px">counts-only signals &middot; raw /insights stays local</div>
+        </div>`);
+      }
+
+      if (moments.length) {
+        slides.push(`<div class="slide slide-5" data-slide="x">
+          <div class="slide-label anim">your receipts</div>
+          ${moments.map((m, i) => `<div class="anim d${i + 1}" style="margin:10px 0;text-align:center">
+            <div style="font-size:34px;font-weight:900">${escW(m.value)}</div>
+            <div style="font-family:var(--mono,monospace);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8888a0">${escW(m.label)}</div>
+          </div>`).join('')}
+        </div>`);
+      }
+
+      const stats = [];
+      if (metrics.sessions != null) stats.push(['' + metrics.sessions, 'sessions']);
+      if (metrics.commitsPerDay != null) stats.push([metrics.commitsPerDay + '/day', 'commits']);
+      if (metrics.languages != null) stats.push(['' + metrics.languages, 'languages']);
+      if (metrics.days != null) stats.push([metrics.days + 'd', 'tracked']);
+      const statCells = (stats.length ? stats : [[escW(activity.days || 'derived'), 'activity'], [escW(activity.cadence || 'private'), 'cadence']])
+        .map(([v, l]) => `<div class="card-stat"><div class="card-stat-val">${escW(v)}</div><div class="card-stat-label">${escW(l)}</div></div>`).join('');
+      const tweet = `My Claude Code wrapped: ${signature || (A.name || arch)}\n\nSee how you'd pair with me:\n${pairUrl}\n\n#vibestats`;
+      slides.push(`<div class="slide slide-7" data-slide="x">
+        <div class="archetype-card anim d1" id="archetype-card">
+          <div class="shimmer-overlay"></div>
+          <div class="card-label">your vibecoding personality</div>
+          <div class="archetype-glyph">${escW(A.glyph || 'VS')}</div>
+          <div class="archetype-name">${escW(A.name || arch)}</div>
+          <div class="archetype-tagline">${signature ? signature : '"' + escW(A.tagline || '') + '"'}</div>
+          <div class="card-stats">${statCells}</div>
+          <div class="card-user">@${handle}</div>
+          <div class="card-brand">vibestats.io</div>
+        </div>
+        <div class="share-row anim d3">
+          <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}&url=${encodeURIComponent(pairUrl)}" target="_blank" rel="noopener">Share</a>
+          <button class="share-btn" onclick="saveCard()">Save card</button>
+          <button class="share-btn share-btn-copy" onclick="(navigator.clipboard&&navigator.clipboard.writeText(location.href)),this.textContent='Copied'">Copy link</button>
+        </div>
+        <div class="cta-generate anim d4">See how you'd pair with @${handle}<br><a href="${escW(pairUrl)}">Pick your type &rarr;</a></div>
+      </div>`);
+
+      document.getElementById('slides').innerHTML = slides.join('\n');
+      TOTAL_SLIDES = slides.length;
+      current = 0;
+      buildProgress();
+      document.title = `@${data.user && data.user.gh_handle || rawHandle} wrapped | vibestats`;
+      const hint = document.getElementById('tap-hint');
+      if (hint) hint.style.display = '';
+    }
+
+    hydrateWrapped();
   </script>
 </body>
 </html>
