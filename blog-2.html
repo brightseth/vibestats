@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Then the AI took over — vibestats</title>
+  <meta name="description" content="The last twenty-odd releases of vibestats were shipped by Claude — planning, coding, testing, deploying, and grading its own work.">
+  <link rel="canonical" href="https://vibestats.io/blog/2">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Then the AI took over">
+  <meta property="og:description" content="The last twenty-odd releases of vibestats were shipped by Claude — with an independent AI verifier grading every one. My contribution: four decisions and five DMs.">
+  <meta property="og:url" content="https://vibestats.io/blog/2">
+  <meta property="og:image" content="https://vibestats.io/api/og?mode=pair&amp;a=orchestrator&amp;b=deepdiver&amp;an=Seth&amp;bn=Claude&amp;d=45&amp;c=6&amp;l=4&amp;s=120">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Then the AI took over">
+  <meta name="twitter:description" content="The last twenty-odd releases of vibestats were shipped by Claude — with an independent AI verifier grading every one.">
+  <meta name="twitter:image" content="https://vibestats.io/api/og?mode=pair&amp;a=orchestrator&amp;b=deepdiver&amp;an=Seth&amp;bn=Claude&amp;d=45&amp;c=6&amp;l=4&amp;s=120">
+  <style>
+    :root {
+      --bg: #06060a; --surface: #0d0d14; --border: #20202e;
+      --text: #e7e7ee; --muted: #9a9ab0; --dim: #6a6a80;
+      --accent: #6B8FFF;
+      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, 'Helvetica Neue', sans-serif;
+      --mono: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: var(--sans); line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      background-image: radial-gradient(120% 80% at 50% -10%, rgba(107,143,255,0.08), transparent 60%);
+      background-repeat: no-repeat;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 72px 24px 96px; }
+    .topbar { max-width: 720px; margin: 0 auto; padding: 22px 24px 0; }
+    .topbar a { font-family: var(--mono); font-size: 13px; color: var(--accent); text-decoration: none; letter-spacing: 0.04em; }
+    .topbar a:hover { text-decoration: underline; }
+    .eyebrow {
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--accent); margin: 0 0 20px;
+    }
+    h1 {
+      font-size: clamp(34px, 6vw, 54px); line-height: 1.08; font-weight: 850;
+      letter-spacing: -0.02em; margin: 0 0 16px;
+    }
+    h2 {
+      font-size: clamp(20px, 3.2vw, 26px); line-height: 1.25; font-weight: 750;
+      letter-spacing: -0.015em; margin: 44px 0 14px;
+    }
+    .dek {
+      font-size: clamp(17px, 2.6vw, 21px); color: var(--muted);
+      font-weight: 400; margin: 0 0 14px; line-height: 1.5;
+    }
+    .byline {
+      font-family: var(--mono); font-size: 13px; color: var(--dim);
+      border-top: 1px solid var(--border); padding-top: 18px; margin-top: 28px;
+    }
+    p { font-size: 18px; margin: 0 0 24px; color: #d6d6e0; }
+    p strong { color: #fff; }
+    ol, ul { font-size: 18px; color: #d6d6e0; margin: 0 0 24px; padding-left: 26px; }
+    li { margin: 0 0 10px; }
+    li strong { color: #fff; }
+    .pull {
+      font-size: clamp(22px, 3.4vw, 28px); line-height: 1.35; font-weight: 650;
+      letter-spacing: -0.01em; color: #fff; border-left: 3px solid var(--accent);
+      padding: 4px 0 4px 22px; margin: 44px 0;
+    }
+    hr { border: 0; border-top: 1px solid var(--border); margin: 48px 0; }
+    .cta { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+    .cta a { color: var(--accent); text-decoration: none; }
+    .cta a:hover { text-decoration: underline; }
+    code { font-family: var(--mono); font-size: 0.92em; color: #c8d5ff; }
+    .party {
+      border: 1px solid var(--accent); border-radius: 14px; background: rgba(107,143,255,0.06);
+      padding: 22px 24px; margin: 48px 0 0;
+    }
+    .party .eyebrow { margin-bottom: 10px; }
+    .party p { margin: 0 0 10px; font-size: 16.5px; }
+    .party p:last-child { margin-bottom: 0; }
+    .party a { color: var(--accent); text-decoration: none; }
+    .party a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <nav class="topbar"><a href="/blog">&larr; chapter 1</a></nav>
+  <article class="wrap">
+    <p class="eyebrow">Build notes · vibestats · chapter 2</p>
+    <h1>Then the AI took over</h1>
+    <p class="dek">The last twenty-odd releases of vibestats were shipped by Claude — planning, coding, testing, deploying, and grading its own work with a second, independent AI verifier.</p>
+    <p class="byline">Seth Goldstein · vibestats.io</p>
+
+    <p>The <a style="color:var(--accent);text-decoration:none" href="/blog">first chapter of this story</a> ended with a product: vibestats, a privacy-preserving personality layer for Claude Code, built largely with Codex. It worked. Nobody came.</p>
+
+    <p>What happened next is the part I didn't expect to write: <strong>the last twenty-odd releases of vibestats were shipped by Claude — planning, coding, testing, deploying, and grading its own work with a second, independent AI verifier.</strong> My total contribution across those releases was four decisions and five DMs.</p>
+
+    <h2>The diagnosis</h2>
+
+    <p>It started with a question I asked Claude: <em>why isn't this thing spreading?</em> Instead of opinions, it ran a 53-agent review of the whole codebase and funnel, and came back with one sentence that hurt: <strong>"Every share path dead-ends at a shell command, and the one number people screenshot is fake."</strong></p>
+
+    <p>The "top 2%" badge on my own share card was self-referential math — no population in it at all. And when someone clicked a shared card, they landed on… a curl command.</p>
+
+    <h2>The loop</h2>
+
+    <p>Fixing that list became an autonomous loop, and the loop is the actual story. Each goal ran the same way:</p>
+
+    <ol>
+      <li><strong>A rubric file</strong> — pass/fail criteria written before any code.</li>
+      <li><strong>Implementation</strong> — code, tests, headless-browser verification.</li>
+      <li><strong>An independent grader</strong> — a <em>separate</em> AI agent, in a fresh context, re-runs every piece of evidence and tries to refute the work. Not "looks good to me" — adversarial re-execution.</li>
+      <li><strong>Deploy only on VERDICT: SATISFIED.</strong></li>
+    </ol>
+
+    <p>The graders caught real things: a temporal-dead-zone bug in the landing page, a prototype-pollution path in a privacy-critical allowlist, an OG image that would have shown "TOP 95%" to the most <em>common</em> users. One independent review (by a different model entirely) found that a crafted URL could imply a real user had an archetype they never revealed — fixed and erased before anyone hit it.</p>
+
+    <p class="pull">Models grade their own work badly. A verifier in an independent context window is a different animal.</p>
+
+    <p>That pattern comes straight from how Anthropic describes working with their newest models, and I can confirm it: this setup shipped things I'd have been afraid to let an agent ship alone — including changes to the privacy boundary that is this product's whole moat.</p>
+
+    <h2>What it shipped while I slept</h2>
+
+    <ul>
+      <li>The dead-end fix: shared links now land on a real card and an instant, in-browser pairing — "you two would be <em>Blitz Commanders</em>, 87% chemistry" — before any terminal ask.</li>
+      <li>A depth layer mined from signals the product had been throwing away: "you finish what you start," "your friction is human, not machine." Counts-only; raw data never syncs.</li>
+      <li>A personal Wrapped for every profile, with proper unfurls.</li>
+      <li>Funnel instrumentation, an owner scoreboard, a badge wall.</li>
+      <li>And the share card you're probably seeing this post through.</li>
+    </ul>
+
+    <h2>The honest part</h2>
+
+    <p>The AI also made one real mistake: it committed an outreach list naming two <strong>unlisted</strong> users to this public repo. It caught the leak itself the next day while checking repo visibility, force-erased the commit, moved everything to a gitignored directory, and wrote itself a standing rule. I'm telling you because the failure mode and the recovery are both part of the truth of working this way.</p>
+
+    <h2>Where it goes</h2>
+
+    <p>The product thesis changed along the way, and the homepage with it: not <em>"what kind of coder are you?"</em> but <strong>"who would you build best with?"</strong> Claude Code already knows.</p>
+
+    <hr>
+    <p class="cta">Try it: pick your type against mine and see our chemistry — no signup, nothing leaves your machine: <a href="https://vibestats.io/?compareTo=brightseth&amp;compareArchetype=deepdiver">vibestats.io</a></p>
+
+    <div class="party">
+      <p class="eyebrow">Terminal Party #1</p>
+      <p><strong>Friday, June 19 · 3:00pm PT / 6:00pm ET · 90 minutes · online.</strong> Bring whatever you're building and code live alongside other Claude Code builders. Blind pairing reveals mid-party, two-minute demos at the end — and yes, the AI that shipped this product will be in the room.</p>
+      <p><a href="/party">Details &amp; RSVP →</a></p>
+    </div>
+  </article>
+</body>
+</html>

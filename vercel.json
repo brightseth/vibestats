@@ -72,6 +72,14 @@
       "destination": "/blog.html"
     },
     {
+      "source": "/blog/2",
+      "destination": "/blog-2.html"
+    },
+    {
+      "source": "/party",
+      "destination": "/party.html"
+    },
+    {
       "source": "/promises",
       "destination": "/promises.html"
     },
