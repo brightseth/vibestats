@@ -32,6 +32,45 @@ async function funnel(interval) {
   return m;
 }
 
+// 🌉 Bridge gates: the phase-transition meters (see research/THE-BRIDGE.md).
+// Phase 0 gate = 10 lifetime reveals (claimed users + live anonymous snapshots)
+// AND ≥1 organic share (a human clicked share on a pairing or wrapped — beacons only
+// humans fire). Phase 1 preview = week-1 returning users.
+async function bridgeGates() {
+  try {
+    const [u] = await sql()`select count(*)::int as n from users`;
+    const [r] = await sql()`select count(*)::int as n from reveal_snapshots`;
+    const [s] = await sql()`
+      select count(*)::int as n from funnel_events
+      where event in ('pairing_share_x', 'pairing_share_copy', 'wrapped_share')
+    `;
+    const [ret] = await sql()`
+      select count(*)::int as n from users
+      where last_seen_at > created_at + interval '20 hours'
+    `;
+    return {
+      reveals: (u?.n || 0) + (r?.n || 0),
+      organicShares: s?.n || 0,
+      returning: ret?.n || 0,
+    };
+  } catch (err) {
+    console.error('bridge gates error:', err);
+    return null;
+  }
+}
+
+function bridgeBlock(g) {
+  if (!g) return '';
+  const gate0 = g.reveals >= 10 && g.organicShares >= 1;
+  const phase = gate0 ? (g.returning >= 1 ? 'PHASE 2 — SHIPS AS ROOMS' : 'PHASE 1 — SPREAD IDENTITY') : 'PHASE 0 — PROVE THE WEDGE';
+  return `<div class="card"><h2>🌉 The Bridge — ${esc(phase)}</h2>
+    ${bar('Reveals (gate: 10)', Math.min(g.reveals, 10), 10, `${g.reveals} lifetime · claimed + anonymous`)}
+    ${bar('Organic shares (gate: 1)', Math.min(g.organicShares, 1), 1, `${g.organicShares} human share clicks`)}
+    ${bar('Week-1 returns (P1 gate)', g.returning, 0)}
+    <p class="hint" style="margin-left:0">${gate0 ? '✅ Gate 0 PASSED — Phase 1 re-lights unlock (Buddy first).' : 'Phase 0 rule: nothing new gets built until both bars fill. Witnesses are the work.'}</p>
+  </div>`;
+}
+
 async function topSources() {
   try {
     return await sql()`
@@ -69,7 +108,7 @@ function funnelBlock(title, f) {
   </div>`;
 }
 
-function page({ f24, f1, sources, handle }) {
+function page({ f24, f1, sources, handle, gates }) {
   const srcRows = sources.length
     ? sources.map((s) => `<tr><td>${esc(s.source_ref)}</td><td>${s.events}</td><td>${s.compares}</td><td>${s.reveals}</td></tr>`).join('')
     : '<tr><td colspan="4" class="muted">none yet</td></tr>';
@@ -93,7 +132,8 @@ function page({ f24, f1, sources, handle }) {
   .foot{color:var(--dim);font-size:12px;margin-top:18px;text-align:center}
 </style></head><body><div class="wrap">
   <h1>📊 vibestats scoreboard</h1>
-  <p class="sub">The compatibility experiment — does “who should I build with” spread? · @${esc(handle)} · auto-refreshes every 60s</p>
+  <p class=”sub”>The compatibility experiment — does “who should I build with” spread? · @${esc(handle)} · auto-refreshes every 60s</p>
+  ${bridgeBlock(gates)}
   ${funnelBlock('Compare-intent funnel — last 24h', f24)}
   ${funnelBlock('Last 1h', f1)}
   <div class="card"><h2>Top attributed sources — 24h (new entrants from pairing shares)</h2>
@@ -121,11 +161,11 @@ export default async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return res.end('<!doctype html><meta charset="utf-8"><title>Not found</title><body style="font:16px system-ui;background:#0b0d14;color:#eef1f7;padding:40px"><h1>404</h1>');
     }
-    const [f24, f1, sources] = await Promise.all([funnel('24 hours'), funnel('1 hour'), topSources()]);
+    const [f24, f1, sources, gates] = await Promise.all([funnel('24 hours'), funnel('1 hour'), topSources(), bridgeGates()]);
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
-    return res.end(page({ f24, f1, sources, handle: user.gh_handle }));
+    return res.end(page({ f24, f1, sources, handle: user.gh_handle, gates }));
   } catch (err) {
     console.error('GET /api/dashboard error:', err);
     return json(res, err.statusCode || 500, { error: safeErrorMessage(err, 'Dashboard failed') }, NO_STORE_HEADERS);
