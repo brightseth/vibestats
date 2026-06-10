@@ -182,3 +182,9 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-10 · D3 meta-story ch2 drafted (awaiting approval) · research/META-STORY-CH2.md
 - 2026-06-10 · D4 genome census automation · scripts/genome-census.mjs · first draft generated
 - 2026-06-10 · D1 FRED reveal BLOCKED on agent-server claude /login (script ready)
+- 2026-06-11 · Bridge phase gates on /scoreboard (live meters) · 2e27da4 · live
+- 2026-06-11 · D3 SHIPPED: blog ch2 "Then the AI took over" at /blog/2 (Seth-approved) · 6df0c79 · live curl 200
+- 2026-06-11 · /party page — Terminal Party #1, Fri Jun 19 3pm PT · 6df0c79 · live curl 200
+- 2026-06-11 · cleanUrls lesson: nested rewrite needs extensionless destination · f-commit · /blog/2 200
+- 2026-06-11 · X thread + invites drafted (research/X-THREAD-CH2-PARTY.md, Seth posts)
+- 2026-06-11 · Party run-of-show written (research/PARTY-1-RUNOFSHOW.md)
