@@ -1,3 +1,7 @@
+> **HISTORICAL (June 2026):** Codex built Wave 1 from this brief. Authorship has since
+> transitioned to Claude (Fable 5) — see /CLAUDE.md (engineering charter) and
+> docs/HANDOFF.md. Codex remains the cross-model reviewer via /codex review.
+
 # Codex Kickoff: vibestats Wave 1
 
 **You're picking up vibestats.io to add persistent identity.** This doc is everything you need to start.
