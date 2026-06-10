@@ -73,7 +73,7 @@
     },
     {
       "source": "/blog/2",
-      "destination": "/blog-2.html"
+      "destination": "/blog-2"
     },
     {
       "source": "/party",
