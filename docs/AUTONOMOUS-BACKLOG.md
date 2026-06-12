@@ -197,6 +197,7 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - [ ] V5 SSO identity bridge + room-presence bridge (spec: research/, paper done 6/13). BUILD GATE: ships with wire v1 (Gate 0 + party signal).
 - [ ] V6 Buddy relight — re-point desktop client at v2 APIs + archetype badges + wire notifications (spec: research/, paper done 6/13). BUILD GATE: wire v1 week-1 usage signal.
 - [ ] V7 Platform deletion sprint (spec: research/, paper done 6/13). BUILD GATE: after V6 rollout +2wk (legacy endpoints still serve installed clients).
+- [ ] V8 Door Audit — walk the full newcomer journey (party page → join → test → reveal → share → fishbowl) headless on desktop+mobile as a first-timer; file friction list ranked by drop-off risk; fix copy/links/rendering under verifier loop; propose (not ship) taste changes. Pre-gate legal: funnel/party infra. DoD: friction list in research/, fixes live-verified, npm test green, no privacy-boundary changes.
 
 - 2026-06-12 · For Fable album exported (72 imgs) + convergence synthesis in v4 doc · research/
 - 2026-06-12 · Party hero art live on /party (Jan pixel campaign) · live curl 200
