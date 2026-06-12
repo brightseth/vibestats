@@ -131,18 +131,18 @@ not logged in (349MB of session logs ready; /insights never run; headless run wo
 require raw API-key spend without approval = hard-stop). UNBLOCK: ssh agent server →
 claude → /login → /insights. Reveal POST script ready to fire the moment facets exist.
 
-### - [ ] D2 — Badge wall (/wall)
+### - [x] D2 — Badge wall (/wall)
 Grid of PUBLIC-privacy profiles only (never unlisted!) rendering existing badge.svg +
 "add yours to your README" CTA. Verify privacy filter + live. Result: ✅ /wall live; privacy
   filter unit-verified (unlisted absent) + live-verified. Commit 77fd282.
 
-### - [ ] D3 — Meta-story chapter 2 (draft → Seth approves before /blog)
+### - [x] D3 — Meta-story chapter 2 (draft → Seth approves before /blog)
 "Then the AI took over" — the Fable verifier-loop release story. Outward content in
 Seth voice = draft to research/, STAGE for approval, do not publish. Result: ✅ drafted at
   research/META-STORY-CH2.md (~700 words, all claims repo-checkable, incl. the honest
   privacy-mistake paragraph). Awaiting Seth approval → then Claude publishes to /blog.
 
-### - [ ] D4 — Genome census automation
+### - [x] D4 — Genome census automation
 scripts/genome-census.mjs: read /api/stats, diff vs stored snapshot, emit ready-to-post
 weekly census draft to research/census-drafts/. Wire into witness-watch loop weekly. Result: ✅
   scripts/genome-census.mjs built + first census generated; loop instructed to re-run when
@@ -204,3 +204,4 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-12 · slashvibe.dev RELAUNCHED: Fishbowl homepage live (presence board + party marquee + door code) · platform@17983fd · verified live, 13 online at ship time
 - 2026-06-12 · Funnel check 21:35Z: 38 compares/24h all no-JS crawlers, zero client beacons. Thread still unposted.
 - 2026-06-13 · V3 DONE (paper): research/WIRE-RELIGHT-SPEC.md — reuse table (verified-live endpoints), 4-verb skill client, loop-cadence delivery (no poll hack), consented payload allowlist (only server change ~20 lines), provenance labeling (human/agent/blend), v1 scope fence, ~1 day build estimate. BUILD GATED on Gate 0 + party signal.
+- 2026-06-13 · Loop resumed in fresh session (prior closed). Funnel: 40 compares/24h all no-JS crawlers, zero humans, Gate 0 0/10·0/1. D2/D3/D4 boxes ticked (were done, live-verified /wall /blog/2 200).
