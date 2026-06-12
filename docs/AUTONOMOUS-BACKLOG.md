@@ -191,7 +191,7 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 
 ## Vision goals (added 2026-06-12 — converged /vibe mandate, gates still rule)
 - [x] V1 "lets vibe" skill — tiny CC skill: join party vibeconf room + hello. DoD: one-command install, verified in-session join. (Party infra — allowed pre-gate.)
-- [ ] V2 Party reveal pipeline — script: attendee handles → pairing-card markdown gallery for the whiteboard. DoD: `node scripts/party-reveals.mjs a,b,c` emits ready-to-paste markdown; cards verified rendering.
+- [x] V2 Party reveal pipeline — script: attendee handles → pairing-card markdown gallery for the whiteboard. DoD: `node scripts/party-reveals.mjs a,b,c` emits ready-to-paste markdown; cards verified rendering.
 - [ ] V3 Wire re-light spec (PAPER ONLY) — map exact reuse of slashvibe /api/v2/messages + presence into a CC skill; identity bridge w/ vibestats JWT. DoD: spec in research/, zero code. Build gate: Gate 0 passed + party repeat-attendance signal.
 - [ ] V4 Weekly genome census when research/genome-census.json >6 days old.
 
@@ -200,3 +200,6 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-12 · X thread image assignments added (incl. PLEASE STAND BY teaser Jun 15)
 - 2026-06-12 · V1 DONE: "lets vibe" skill live (skills/lets-vibe/SKILL.md + party.json + /party install card) · live curls 200 · install = one command
 - 2026-06-12 · Funnel check: 35 compares/24h, ALL no-JS (crawler incl. blog-ch2 CTA sweep). Zero humans. Baseline updated. Thread still unposted.
+- 2026-06-12 · V2 DONE: party reveal pipeline (scripts/party-reveals.mjs) · credential fetch verified (brightseth→deepdiver), og card 200, shuffled pairs + odd-guest-pairs-host + unrevealed list
+- 2026-06-12 · slashvibe.dev RELAUNCHED: Fishbowl homepage live (presence board + party marquee + door code) · platform@17983fd · verified live, 13 online at ship time
+- 2026-06-12 · Funnel check 21:35Z: 38 compares/24h all no-JS crawlers, zero client beacons. Thread still unposted.
