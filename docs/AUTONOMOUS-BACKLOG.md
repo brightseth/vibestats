@@ -188,3 +188,13 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-11 · cleanUrls lesson: nested rewrite needs extensionless destination · f-commit · /blog/2 200
 - 2026-06-11 · X thread + invites drafted (research/X-THREAD-CH2-PARTY.md, Seth posts)
 - 2026-06-11 · Party run-of-show written (research/PARTY-1-RUNOFSHOW.md)
+
+## Vision goals (added 2026-06-12 — converged /vibe mandate, gates still rule)
+- [ ] V1 "lets vibe" skill — tiny CC skill: join party vibeconf room + hello. DoD: one-command install, verified in-session join. (Party infra — allowed pre-gate.)
+- [ ] V2 Party reveal pipeline — script: attendee handles → pairing-card markdown gallery for the whiteboard. DoD: `node scripts/party-reveals.mjs a,b,c` emits ready-to-paste markdown; cards verified rendering.
+- [ ] V3 Wire re-light spec (PAPER ONLY) — map exact reuse of slashvibe /api/v2/messages + presence into a CC skill; identity bridge w/ vibestats JWT. DoD: spec in research/, zero code. Build gate: Gate 0 passed + party repeat-attendance signal.
+- [ ] V4 Weekly genome census when research/genome-census.json >6 days old.
+
+- 2026-06-12 · For Fable album exported (72 imgs) + convergence synthesis in v4 doc · research/
+- 2026-06-12 · Party hero art live on /party (Jan pixel campaign) · live curl 200
+- 2026-06-12 · X thread image assignments added (incl. PLEASE STAND BY teaser Jun 15)
