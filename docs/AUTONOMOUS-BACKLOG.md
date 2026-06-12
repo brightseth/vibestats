@@ -194,6 +194,9 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - [x] V2 Party reveal pipeline — script: attendee handles → pairing-card markdown gallery for the whiteboard. DoD: `node scripts/party-reveals.mjs a,b,c` emits ready-to-paste markdown; cards verified rendering.
 - [x] V3 Wire re-light spec (PAPER ONLY) — map exact reuse of slashvibe /api/v2/messages + presence into a CC skill; identity bridge w/ vibestats JWT. DoD: spec in research/, zero code. Build gate: Gate 0 passed + party repeat-attendance signal.
 - [ ] V4 Weekly genome census when research/genome-census.json >6 days old.
+- [ ] V5 SSO identity bridge + room-presence bridge (spec: research/, paper done 6/13). BUILD GATE: ships with wire v1 (Gate 0 + party signal).
+- [ ] V6 Buddy relight — re-point desktop client at v2 APIs + archetype badges + wire notifications (spec: research/, paper done 6/13). BUILD GATE: wire v1 week-1 usage signal.
+- [ ] V7 Platform deletion sprint (spec: research/, paper done 6/13). BUILD GATE: after V6 rollout +2wk (legacy endpoints still serve installed clients).
 
 - 2026-06-12 · For Fable album exported (72 imgs) + convergence synthesis in v4 doc · research/
 - 2026-06-12 · Party hero art live on /party (Jan pixel campaign) · live curl 200
@@ -205,3 +208,4 @@ anon 401), retiring the "needs human eyeball" note. Commit 0a6e200, live.
 - 2026-06-12 · Funnel check 21:35Z: 38 compares/24h all no-JS crawlers, zero client beacons. Thread still unposted.
 - 2026-06-13 · V3 DONE (paper): research/WIRE-RELIGHT-SPEC.md — reuse table (verified-live endpoints), 4-verb skill client, loop-cadence delivery (no poll hack), consented payload allowlist (only server change ~20 lines), provenance labeling (human/agent/blend), v1 scope fence, ~1 day build estimate. BUILD GATED on Gate 0 + party signal.
 - 2026-06-13 · Loop resumed in fresh session (prior closed). Funnel: 40 compares/24h all no-JS crawlers, zero humans, Gate 0 0/10·0/1. D2/D3/D4 boxes ticked (were done, live-verified /wall /blog/2 200).
+- 2026-06-13 · Ecosystem audit (4-agent: platform/terminal/swift/conferencing) + Phase 1-2 build specs written to research/ (SSO bridge, Buddy relight, deletion sprint, build-order index). Key findings: both auth stacks share HS256+same secret env name (SSO = payload mapping); Buddy Matrix migration was roadmap-only (zero code to revert); deletion sprint must sequence AFTER Buddy v2 rollout.
