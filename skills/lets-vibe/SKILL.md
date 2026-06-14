@@ -38,20 +38,43 @@ grace (shipping), martingrasser (type & systems)…". If a party is on (Step 4),
 cat ~/.vibe/config.json 2>/dev/null
 ```
 - **Has `authToken`** → they can message. Note their `handle`. Go to Step 2/3 as asked.
-- **No token / no file** → they can still *watch* presence, but to talk they claim a handle
-  once: send them to `https://www.slashvibe.dev/api/auth/github` in a browser, which walks
-  GitHub login → handle claim → token. Tell them to paste the token back, then save it:
+- **No token / no file** → they can still *watch* presence. To talk, they sign in once with
+  GitHub. There is **no token to copy-paste** — the login redirects the token back to a tiny
+  local listener this skill runs (the same proven flow the /vibe CLI uses). Run this; it opens
+  their browser, waits for them to approve, and saves the token automatically:
   ```bash
-  mkdir -p ~/.vibe && python3 - "$TOKEN" <<'PY'
-  import json,os,sys
-  p=os.path.expanduser("~/.vibe/config.json")
-  d=json.load(open(p)) if os.path.exists(p) else {}
-  d["authToken"]=sys.argv[1]
-  json.dump(d,open(p,"w"),indent=2)
-  print("saved")
+  python3 - <<'PY'
+  import http.server, urllib.parse, json, os, webbrowser, time, sys
+  PORT=9876; CB=f"http://localhost:{PORT}/callback"
+  LOGIN=f"https://www.slashvibe.dev/login?redirect={urllib.parse.quote(CB)}"
+  result={}
+  class H(http.server.BaseHTTPRequestHandler):
+      def do_GET(self):
+          u=urllib.parse.urlparse(self.path)
+          if u.path=="/callback":
+              p=urllib.parse.parse_qs(u.query)
+              result["token"]=p.get("token",[""])[0]; result["handle"]=p.get("handle",[""])[0]
+              self.send_response(200); self.send_header("Content-Type","text/html"); self.end_headers()
+              self.wfile.write("<h2 style='font:600 20px system-ui;text-align:center;padding:3rem'>You're in — return to your terminal. 👋</h2>".encode())
+          else:
+              self.send_response(404); self.end_headers()
+      def log_message(self,*a): pass
+  try: srv=http.server.HTTPServer(("127.0.0.1",PORT),H)
+  except OSError: print("PORT_BUSY — run:  lsof -ti:9876 | xargs kill  then retry"); sys.exit(1)
+  print("Opening your browser to sign in to /vibe…"); webbrowser.open(LOGIN)
+  srv.timeout=180; deadline=time.time()+180
+  while not result.get("token") and time.time()<deadline: srv.handle_request()
+  if result.get("token") and result.get("handle"):
+      cfg=os.path.expanduser("~/.vibe/config.json"); os.makedirs(os.path.dirname(cfg),exist_ok=True)
+      d=json.load(open(cfg)) if os.path.exists(cfg) else {}
+      d["authToken"]=result["token"]; d["handle"]=result["handle"]
+      json.dump(d,open(cfg,"w"),indent=2); print(f"SAVED ✓ you're @{result['handle']} — say 'lets vibe' again")
+  else: print("TIMEOUT — no token. Try again, or check you finished the GitHub login.")
   PY
   ```
-  (One time. After that they're a full participant.)
+  If the browser doesn't open (headless/SSH), tell them to open the printed login URL manually
+  on any device on the same machine's network — the token still lands on localhost:9876. One
+  time only; after this they're a full participant.
 
 ## Step 2 — check inbox (when they ask "vibe inbox" / "any messages")
 ```bash
