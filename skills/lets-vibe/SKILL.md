@@ -44,9 +44,17 @@ cat ~/.vibe/config.json 2>/dev/null
   their browser, waits for them to approve, and saves the token automatically:
   ```bash
   python3 - <<'PY'
-  import http.server, urllib.parse, json, os, webbrowser, time, sys
+  import http.server, urllib.parse, json, os, webbrowser, time, sys, urllib.request
   PORT=9876; CB=f"http://localhost:{PORT}/callback"
-  LOGIN=f"https://www.slashvibe.dev/login?redirect={urllib.parse.quote(CB)}"
+  # Ask the server for the OAuth URL with our localhost callback baked into the signed
+  # state (this is /api/auth/start — the purpose-built CLI path; do NOT use /login, whose
+  # redirect threading depends on page JS and silently drops the callback).
+  start=f"https://www.slashvibe.dev/api/auth/start?provider=github&redirect={urllib.parse.quote(CB)}"
+  try:
+      authUrl=json.load(urllib.request.urlopen(start, timeout=15)).get("authUrl")
+  except Exception as e:
+      print("Couldn't reach /vibe auth:", e); sys.exit(1)
+  if not authUrl: print("No authUrl returned"); sys.exit(1)
   result={}
   class H(http.server.BaseHTTPRequestHandler):
       def do_GET(self):
@@ -61,15 +69,17 @@ cat ~/.vibe/config.json 2>/dev/null
       def log_message(self,*a): pass
   try: srv=http.server.HTTPServer(("127.0.0.1",PORT),H)
   except OSError: print("PORT_BUSY — run:  lsof -ti:9876 | xargs kill  then retry"); sys.exit(1)
-  print("Opening your browser to sign in to /vibe…"); webbrowser.open(LOGIN)
-  srv.timeout=180; deadline=time.time()+180
+  print("Opening your browser to sign in to /vibe…\nIf it doesn't open, paste this URL into any browser:\n"+authUrl)
+  try: webbrowser.open(authUrl)
+  except Exception: pass
+  srv.timeout=300; deadline=time.time()+300
   while not result.get("token") and time.time()<deadline: srv.handle_request()
   if result.get("token") and result.get("handle"):
       cfg=os.path.expanduser("~/.vibe/config.json"); os.makedirs(os.path.dirname(cfg),exist_ok=True)
       d=json.load(open(cfg)) if os.path.exists(cfg) else {}
       d["authToken"]=result["token"]; d["handle"]=result["handle"]
       json.dump(d,open(cfg,"w"),indent=2); print(f"SAVED ✓ you're @{result['handle']} — say 'lets vibe' again")
-  else: print("TIMEOUT — no token. Try again, or check you finished the GitHub login.")
+  else: print("TIMEOUT — no token. Re-run and finish the GitHub approval; the page should say 'return to your terminal'.")
   PY
   ```
   If the browser doesn't open (headless/SSH), tell them to open the printed login URL manually
