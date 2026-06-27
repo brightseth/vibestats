@@ -9,11 +9,15 @@ Your instinct is right and the timing is the whole point. But the move is **not 
 
 ```
 AIRC          = the protocol     (open spec — identity + presence + messaging + consent)
-/vibe         = the MCP server   (open source — humans AND agents talk across sessions)
-VibeBuddy     = the client       (open source — buddy list for iOS + macOS)
+/vibe         = the backend      (open source — humans AND agents talk across sessions)
+                 served to three clients at three friction tiers, over one handle/token:
+                   lets-vibe skill  → zero-install, lives in CC as /vibe   (vibestats)
+                   slashvibe-mcp    → claude mcp add, persistent in-session tools
+                   VibeBuddy        → standalone app (iOS + macOS), ambient presence
+conferencing  = the live room     (go-live surface you graduate into — already hot, §5)
 ```
 
-The funnel (install → register/auth → vibe CLI → VibeBuddy) is the right shape. The only real open decision is **auth**, and it has a clean layered answer (below).
+The funnel is the right shape, and the front of it is now *lower-friction than the original "install" step* — the `lets-vibe` skill delivers presence + auth + DM with no `claude mcp add`, fed by vibestats.io's viral share loop. The only real open decision is **auth**, and it has a clean layered answer (below).
 
 ---
 
@@ -52,7 +56,13 @@ Verified by direct repo exploration tonight. This is the inventory the reframe h
 - **iOS:** `vibe/app` — native SwiftUI, iOS 17+, TestFlight CI/CD (Feb 19). 5 tabs: Online/DMs/Rooms/Live/Feed.
 - **Also lurking:** `vibe/terminal` (Tauri "Bloomberg for devs"), plus the whole conferencing family — `conferencing/wanderingstan-vc` (web, prod), `vibeconf-app` (Swift), `vibeconf-native`/VibeMic (menu-bar). These are the GTM-era sprawl.
 
-**The reframe's real job:** name `buddy`(macOS) + `app`(iOS) jointly as **VibeBuddy**, and decide what conferencing *is* relative to it (see §5).
+### vibestats + the `lets-vibe` skill (the zero-install client + acquisition surface) — `~/Projects/vibestats/`
+- **This is the piece the three-layer frame above was missing.** `vibestats.io` is a live, viral **share surface** — a Claude Code "vibecoding personality" engine (8 archetypes, facet radar, shareable OG cards, anonymous reveal links). It's already the top-of-funnel: people share cards, land on the site, and meet `/vibe`.
+- **The `lets-vibe` SKILL is a *third* /vibe client — and the lowest-friction one.** `skills/lets-vibe/SKILL.md` turns any Claude Code session into a /vibe client with **zero install**: `curl .../api/v2/presence` (no auth) shows who's building right now; first message triggers a real GitHub OAuth login (localhost-callback capture, no copy-paste token), stored at `~/.vibe/config.json`; then text-only, consent-gated DMs. Same `slashvibe.dev` backend, same handle/token as the MCP server and VibeBuddy.
+- **Active branch `feat/wave-1-identity`** (commits Jun 24–27): "party-door → full /vibe comms client" upgrade, then two onboarding fixes hardening the OAuth capture flow. This is the funnel's auth Step (§3) actually shipping.
+- **Implication:** the /vibe *client* isn't one thing — it's a **friction ladder of three surfaces** (skill → MCP server → VibeBuddy app) over one protocol/backend. The skill makes the §4 "minimum lovable loop" achievable with no `claude mcp add` at all.
+
+**The reframe's real job:** name `buddy`(macOS) + `app`(iOS) jointly as **VibeBuddy**; recognize the `lets-vibe` skill as the zero-install entry tier; and decide what conferencing *is* relative to all of them (see §5).
 
 ---
 
@@ -82,16 +92,16 @@ Net: **OAuth for humans today · Ed25519/AIRC as the spine · ERC-8004 as the op
 Everything above is consolidation. The *one thing to make undeniable* is the AIM moment — the cross-session message that lands in someone else's live Claude Code:
 
 ```
-1. claude mcp add vibe -- npx -y slashvibe-mcp      # install
-2. vibe (auto GitHub OAuth → AIRC handle minted)    # register/auth, invisible
-3. vibe_who          → see who else is vibecoding right now
-4. vibe_dm @stan "yo, look at this race condition"   → it surfaces IN Stan's session
+1. "lets vibe"   → skill runs; presence shows live (NO install, NO auth)
+2. first DM      → GitHub OAuth (localhost capture) → AIRC handle minted, invisible
+3. who's vibing  → see who else is vibecoding right now
+4. vibe @stan "yo, look at this race condition"   → it surfaces IN Stan's session
 5. Stan replies from his session → it surfaces in yours
 ```
 
-That five-line loop *is* the product. It already mostly works in `platform/mcp-server` v0.5.0. **VibeBuddy's job is ambient presence** — the always-on buddy list so you see who's around *without* a terminal focused, and get pinged when someone reaches into your session. That's the "tag-claude, but peer-to-peer and cross-vendor" wedge.
+That five-line loop *is* the product — and the key insight from the M5 sweep is **step 1 needs no install**: the `lets-vibe` skill (vibestats, `feat/wave-1-identity`) already delivers it. The original `claude mcp add vibe` path (the `slashvibe-mcp` MCP server, working in `platform/mcp-server` v0.5.0) is the **upgrade tier** — persistent `vibe_who`/`vibe_dm` tools for people who vibe often. **VibeBuddy's job is the third tier: ambient presence** — the always-on buddy list so you see who's around *without* a terminal focused, and get pinged when someone reaches into your session. Skill → MCP → app, one handle/token across all three. That's the "tag-claude, but peer-to-peer and cross-vendor" wedge.
 
-Ship that loop rock-solid on one MCP package + one buddy client before touching rooms, spectating, conferencing, gigs, or session-graph.
+Ship that loop rock-solid across the skill + one MCP package + one buddy client before touching rooms, spectating, conferencing, gigs, or session-graph.
 
 ---
 
@@ -116,8 +126,9 @@ The reframe only works if it *subtracts*. Proposed dispositions (all need Seth's
 
 ## 7. Open questions for Seth (not blocking the synthesis)
 
-1. **Un-park AIRC?** (Recommend yes — triggers fired.)
+1. **Resume AIRC now?** (Already un-parked on M5 — the question is whether to pull the one open tap: `/plugin install airc@airc` + CC restart to light up `@seth`'s room. Recommend yes.)
 2. **OK to make `platform/mcp-server` v0.5.0 canonical and retire `vibe/mcp`?**
 3. **ERC-8004 as the explicit Spirit ↔ /vibe identity bridge** — is that a story you want to tell publicly, or kept quiet pre-TGE?
-4. **Conferencing: separate product (recommended) or fold into VibeBuddy's roadmap?**
-5. Does VIBE_VISION.md get rewritten around this three-layer frame, or does this doc sit beside it as the v2 strategy?
+4. **Conferencing sequencing** — it's already a hot, voiced, avatar-capable surface (§5), so the question isn't "separate vs. fold" but *how loudly it features in the launch narrative*: lead with the async buddy loop and tease "go live," or show the produced room day one?
+5. **Does the `lets-vibe` skill (zero-install client) become the canonical Day-1 entry point** over `claude mcp add`? (It already ships presence + OAuth + DM with no install — see §2/§4.)
+6. Does VIBE_VISION.md get rewritten around this frame, or does this doc sit beside it as the v2 strategy?
