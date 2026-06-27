@@ -59,6 +59,8 @@ A **public profile + matchmaker** for Claude Code users — see `docs/ROADMAP.md
 
 The current product is a one-shot vanity moment. The next product is a **persistent identity** (`vibestats.io/u/<gh-handle>`) with an evolution timeline, leaderboards, and pair-finding. The vanity stays; the social tail gets built underneath it.
 
+**Canonical role (ratified Jun 27, 2026):** the `lets-vibe` skill (`skills/lets-vibe/`) is the **canonical Day-1 entry point to the /vibe network** — the zero-install client tier (`/vibe` in any Claude Code session, no `claude mcp add`), ahead of the MCP server and the VibeBuddy app. vibestats is the viral top-of-funnel that feeds it. The full three-layer frame (AIRC protocol · /vibe backend · VibeBuddy client) is canon in `~/Projects/vibe/VIBE_VISION.md`; the argument is in `docs/REPOSITIONING-2026-06-26.md`.
+
 ---
 
 ## Stack
