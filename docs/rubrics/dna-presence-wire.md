@@ -53,3 +53,6 @@ authed user, or the visibility flip). Confirm by reading
 
 No new archetypes, no auth coupling (the JWT is scoped to this beat), no
 reading anything back from /vibe. One-way: vibestats → board.
+
+---
+**UPDATE Jul 9 — platform tombstone SHIPPED** (presence-service.js 122e1ec0, deployed): `POST /api/v2/presence {clear_dna:true}` forces dna_category to NULL (not COALESCE-merged). Remaining vibestats obligation: on public→private/unlisted downgrade, fire a clear_dna beat + assert the board shows no DNA. Clear path proven server-side; wire the trigger.
