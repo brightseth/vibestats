@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Settings | vibestats</title>
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface-2: #14141e;
+      --border: #252535;
+      --text: #e0e0e0;
+      --text-muted: #8888a0;
+      --text-dim: #555568;
+      --accent: #6b8fff;
+      --red: #ef4444;
+      --green: #22c55e;
+      --purple: #a78bfa;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    .shell {
+      width: min(760px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .brand {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h1 {
+      font-size: clamp(34px, 7vw, 56px);
+      line-height: 1;
+      color: #fff;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .sub {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px;
+      margin-top: 16px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+      padding: 16px 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .row:first-child { border-top: 0; padding-top: 0; }
+    .row:last-child { padding-bottom: 0; }
+    .label {
+      color: #fff;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .hint {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    select, input[type="email"], input[type="url"], textarea {
+      min-height: 42px;
+      min-width: 150px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: var(--mono);
+      padding: 0 12px;
+    }
+    input[type="email"] { width: min(260px, 100%); }
+    input[type="url"] { width: 100%; }
+    .digest-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .visibility-controls {
+      display: grid;
+      grid-template-columns: max-content max-content auto;
+      align-items: center;
+      justify-content: end;
+      gap: 10px;
+      min-width: min(360px, 100%);
+    }
+    .intent-controls {
+      display: grid;
+      grid-template-columns: minmax(150px, 190px) minmax(220px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      width: min(560px, 100%);
+    }
+    .cli-controls {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      width: min(560px, 100%);
+    }
+    textarea {
+      width: 100%;
+      min-height: 84px;
+      padding: 10px 12px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+    .check-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .btn:hover { border-color: var(--accent); color: #fff; }
+    .btn.primary {
+      border-color: rgba(107,143,255,0.45);
+      background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
+      color: #9bb5ff;
+    }
+    .btn.muted {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      cursor: default;
+    }
+    .btn.muted:hover {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+    }
+    .btn.danger {
+      border-color: rgba(239,68,68,0.4);
+      color: #ff9a9a;
+      background: rgba(239,68,68,0.08);
+    }
+    .message {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(107,143,255,0.25);
+      background: rgba(107,143,255,0.08);
+      color: #9bb5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .loading {
+      min-height: 50vh;
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+    .signed-out {
+      display: none;
+      min-height: 50vh;
+      place-items: center;
+      text-align: center;
+    }
+    @media (max-width: 620px) {
+      .topbar { align-items: flex-start; }
+      .nav { flex-direction: column; align-items: stretch; }
+      .row { align-items: stretch; flex-direction: column; }
+      .btn, select { width: 100%; }
+      .visibility-controls { grid-template-columns: 1fr; justify-content: stretch; }
+      .digest-controls { justify-content: stretch; }
+      .digest-controls .btn, .digest-controls input[type="email"] { width: 100%; }
+      .intent-controls, .cli-controls { grid-template-columns: 1fr; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <a class="brand" href="/">vibestats</a>
+      <div class="nav">
+        <a class="btn" href="/">Reveal</a>
+        <a class="btn" href="/browse">Browse</a>
+        <a class="btn" href="/promises">Promises</a>
+      </div>
+    </nav>
+
+    <div class="loading" id="loading">Loading settings...</div>
+    <section class="signed-out" id="signed-out">
+      <div>
+        <h1>Settings</h1>
+        <p class="sub" id="signed-out-copy">Sign in to manage your profile.</p>
+        <a class="btn muted" id="settings-sign-in" role="button" aria-disabled="true">Checking profile saves...</a>
+      </div>
+    </section>
+
+    <section id="settings" style="display:none">
+      <h1>Settings</h1>
+      <p class="sub" id="account-line"></p>
+
+      <div class="panel">
+        <div class="row" id="privacy-settings">
+          <div>
+            <div class="label">Profile visibility</div>
+            <div class="hint">Unlisted profiles load by direct URL. Public profiles can appear in browse, match, and leaderboard surfaces.</div>
+          </div>
+          <select id="privacy">
+            <option value="unlisted">Unlisted</option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Profile URL</div>
+            <div class="hint" id="profile-url"></div>
+          </div>
+          <a class="btn" id="profile-link" href="#">Open profile</a>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Public metrics</div>
+            <div class="hint">Visitors see archetype, score, signature, rarity, and coarse activity by default. Exact counts and language count require explicit opt-in.</div>
+          </div>
+          <div class="visibility-controls">
+            <label class="check-row">
+              <input type="checkbox" id="show-raw-counts">
+              <span>Show counts</span>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" id="show-languages">
+              <span>Show language count</span>
+            </label>
+            <button class="btn" id="save-visibility">Save</button>
+          </div>
+        </div>
+        <div class="row" id="weekly-digest-row">
+          <div>
+            <div class="label">Weekly digest</div>
+            <div class="hint" id="digest-hint">Optional email summary of your evolution, streak, and future leaderboard movement.</div>
+            <div class="hint" id="digest-status-proof"></div>
+          </div>
+          <div class="digest-controls" id="digest-controls">
+            <label class="check-row">
+              <input type="checkbox" id="weekly-digest">
+              <span>Opt in</span>
+            </label>
+            <input type="email" id="digest-email" placeholder="you@example.com" autocomplete="email">
+            <button class="btn" id="save-digest">Save</button>
+            <a class="btn" id="preview-digest" href="/api/digest/preview" target="_blank" rel="noopener">Preview</a>
+          </div>
+        </div>
+        <div class="row" id="match-settings">
+          <div>
+            <div class="label">Looking for</div>
+            <div class="hint">Short-lived matchmaker intent. Active states expire after 7 days and only public profiles appear in /match.</div>
+          </div>
+          <div class="intent-controls">
+            <select id="looking-for">
+              <option value="idle">Idle</option>
+              <option value="pair-coding">Pair coding</option>
+              <option value="co-founder">Co-founder</option>
+              <option value="hire">Hiring</option>
+              <option value="mentor">Mentor</option>
+              <option value="mentee">Mentee</option>
+            </select>
+            <input type="url" id="contact-url" placeholder="https://x.com/you" autocomplete="url">
+            <button class="btn" id="save-intent">Save</button>
+          </div>
+        </div>
+        <div class="row" id="cli-sync">
+          <div>
+            <div class="label">CLI sync</div>
+            <div class="hint">Run `curl -fsSL https://vibestats.io/cli.sh | sh -s -- status` to check `/insights` readiness from file counts, `curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal` to preview locally, then `curl -fsSL https://vibestats.io/cli.sh | sh -s --` for terminal-first GitHub approval. Set match intent from the terminal with `curl -fsSL https://vibestats.io/cli.sh | sh -s -- intent pair-coding --contact-url https://x.com/you --public`. Install the Claude Code slash command with `curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command`. It reads the local Claude Code `/insights` directory, keeps raw session data on disk, and `reveal --json` shows the exact derived payload. Manual token commands are a fallback.</div>
+          </div>
+          <div class="cli-controls">
+            <textarea id="sync-command" readonly placeholder="curl -fsSL https://vibestats.io/cli.sh | sh -s --"></textarea>
+            <button class="btn" id="generate-sync-token">Copy fallback</button>
+            <button class="btn danger" id="revoke-sync-tokens">Revoke</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <div>
+            <div class="label">Export data</div>
+            <div class="hint">Exports saved derived metrics and profile settings.</div>
+          </div>
+          <a class="btn" href="/api/settings/export">Download JSON</a>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Sign out</div>
+            <div class="hint">Clears the vibestats session cookie on this device.</div>
+          </div>
+          <button class="btn" id="logout">Sign out</button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Delete account</div>
+            <div class="hint">Deletes your vibestats user and saved uploads.</div>
+          </div>
+          <button class="btn danger" id="delete-account">Delete</button>
+        </div>
+      </div>
+
+      <div class="message" id="message"></div>
+    </section>
+  </main>
+
+  <script>
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function showMessage(text, isError = false) {
+      const el = document.getElementById('message');
+      el.textContent = text;
+      el.style.display = 'block';
+      el.style.borderColor = isError ? 'rgba(239,68,68,0.35)' : 'rgba(107,143,255,0.25)';
+      el.style.background = isError ? 'rgba(239,68,68,0.08)' : 'rgba(107,143,255,0.08)';
+      el.style.color = isError ? '#ff9a9a' : '#9bb5ff';
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    async function fetchIdentityStatus() {
+      try {
+        const res = await fetch('/api/identity-status', { cache: 'no-store' });
+        if (!res.ok) return { profile_save_available: false };
+        return await res.json();
+      } catch {
+        return { profile_save_available: false };
+      }
+    }
+
+    function showSignedOut(identityStatus = {}) {
+      const copy = document.getElementById('signed-out-copy');
+      const signIn = document.getElementById('settings-sign-in');
+      if (identityStatus.profile_save_available === true) {
+        copy.textContent = 'Sign in to manage your profile.';
+        signIn.className = 'btn primary';
+        signIn.href = '/api/auth/github/start?returnTo=/settings';
+        signIn.removeAttribute('aria-disabled');
+        signIn.textContent = 'Sign in with GitHub';
+      } else {
+        copy.textContent = 'Profile saves are not configured on this deployment yet.';
+        signIn.className = 'btn muted';
+        signIn.removeAttribute('href');
+        signIn.setAttribute('aria-disabled', 'true');
+        signIn.textContent = 'Profile saves pending';
+      }
+      document.getElementById('signed-out').style.display = 'grid';
+    }
+
+    function renderDigestControls(settings = {}, identityStatus = {}) {
+      const digestOptIn = Boolean(settings?.weekly_digest_opt_in);
+      const digestReady = identityStatus.weekly_digest_available === true;
+      const checkbox = document.getElementById('weekly-digest');
+      const email = document.getElementById('digest-email');
+      const save = document.getElementById('save-digest');
+      const proof = document.getElementById('digest-status-proof');
+
+      checkbox.checked = digestOptIn;
+      email.value = settings?.digest_email || '';
+      document.getElementById('digest-hint').textContent = digestReady
+        ? 'Optional email summary of your evolution, streak, and future leaderboard movement.'
+        : digestOptIn
+        ? 'Digest consent saved. Delivery starts when weekly email infrastructure is enabled.'
+        : 'Reserve your weekly digest now; delivery starts when email infrastructure is enabled.';
+      checkbox.disabled = false;
+      email.disabled = false;
+      save.disabled = false;
+      proof.textContent = '';
+    }
+
+    async function renderDigestStatusProof() {
+      const proof = document.getElementById('digest-status-proof');
+      try {
+        const res = await fetch('/api/digest/status');
+        if (!res.ok) return;
+        const status = await res.json();
+        const next = status.next_scheduled_at
+          ? new Date(status.next_scheduled_at).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+          : 'next weekly run';
+        const signal = status.latest?.signature_label || status.latest?.archetype || 'your latest profile';
+        proof.textContent = status.reserved
+          ? `${status.delivery_ready ? 'Scheduled' : 'Reserved'} for ${next}. Preview uses ${signal}, streak, rarity, leaderboard, and match links from saved derived metrics only.`
+          : status.can_preview
+          ? `Preview is ready for ${signal}. Add an email to reserve the weekly return loop.`
+          : 'Save one derived profile to unlock a weekly preview.';
+      } catch {
+        proof.textContent = '';
+      }
+    }
+
+    async function init() {
+      const identityStatus = await fetchIdentityStatus();
+      if (identityStatus.profile_save_available !== true) {
+        document.getElementById('loading').style.display = 'none';
+        showSignedOut(identityStatus);
+        return;
+      }
+
+      const res = await fetch('/api/settings');
+      document.getElementById('loading').style.display = 'none';
+      if (!res.ok) {
+        showSignedOut(identityStatus);
+        return;
+      }
+
+      const { user, settings } = await res.json();
+      document.getElementById('settings').style.display = 'block';
+      document.getElementById('account-line').innerHTML = `Signed in as <strong>@${esc(user.gh_handle)}</strong>`;
+      document.getElementById('privacy').value = user.privacy || 'unlisted';
+      document.getElementById('profile-url').textContent = `/u/${user.gh_handle}`;
+      document.getElementById('profile-link').href = `/u/${encodeURIComponent(user.gh_handle)}`;
+      renderDigestControls(settings, identityStatus);
+      document.getElementById('show-raw-counts').checked = Boolean(settings?.show_raw_counts);
+      document.getElementById('show-languages').checked = Boolean(settings?.show_languages);
+      document.getElementById('looking-for').value = settings?.looking_for || 'idle';
+      document.getElementById('contact-url').value = settings?.contact_url || '';
+      renderDigestStatusProof();
+
+      document.getElementById('privacy').addEventListener('change', async (event) => {
+        try {
+          await api('/api/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({ privacy: event.target.value }),
+          });
+          const lookingFor = document.getElementById('looking-for').value;
+          showMessage(event.target.value === 'public' && lookingFor !== 'idle'
+            ? 'Visibility saved. Your active match intent can now appear in browse and /match.'
+            : 'Visibility saved.');
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('save-digest').addEventListener('click', async () => {
+        const optIn = document.getElementById('weekly-digest').checked;
+        const email = document.getElementById('digest-email').value;
+        try {
+          const body = await api('/api/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({
+              weekly_digest_opt_in: optIn,
+              digest_email: optIn ? email : '',
+            }),
+          });
+          renderDigestControls(body.settings || {}, identityStatus);
+          renderDigestStatusProof();
+          showMessage(body.settings?.weekly_digest_opt_in
+            ? (identityStatus.weekly_digest_available === true ? 'Weekly digest saved.' : 'Weekly digest reserved.')
+            : 'Weekly digest off.');
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('save-visibility').addEventListener('click', async () => {
+        const showRawCounts = document.getElementById('show-raw-counts').checked;
+        const showLanguages = document.getElementById('show-languages').checked;
+        try {
+          const body = await api('/api/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({
+              show_raw_counts: showRawCounts,
+              show_languages: showLanguages,
+            }),
+          });
+          document.getElementById('show-raw-counts').checked = Boolean(body.settings?.show_raw_counts);
+          document.getElementById('show-languages').checked = Boolean(body.settings?.show_languages);
+          showMessage('Public metric visibility saved.');
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('save-intent').addEventListener('click', async () => {
+        const lookingFor = document.getElementById('looking-for').value;
+        const contactUrl = document.getElementById('contact-url').value;
+        try {
+          const body = await api('/api/settings', {
+            method: 'PATCH',
+            body: JSON.stringify({
+              looking_for: lookingFor,
+              contact_url: contactUrl,
+            }),
+          });
+          document.getElementById('looking-for').value = body.settings?.looking_for || 'idle';
+          document.getElementById('contact-url').value = body.settings?.contact_url || '';
+          const activeIntent = body.settings?.looking_for && body.settings.looking_for !== 'idle';
+          const privacy = document.getElementById('privacy').value;
+          if (activeIntent && privacy !== 'public') {
+            showMessage('Match intent saved, but your profile is still unlisted. Change visibility to Public above to appear in browse and /match.');
+            document.getElementById('privacy').focus();
+          } else {
+            showMessage(activeIntent ? 'Match intent active for 7 days.' : 'Match intent cleared.');
+          }
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+
+      document.getElementById('generate-sync-token').addEventListener('click', async () => {
+        const command = document.getElementById('sync-command');
+        const button = document.getElementById('generate-sync-token');
+        try {
+          button.textContent = 'Generating...';
+          const body = await api('/api/sync-token', { method: 'POST' });
+          command.value = body.local_command || body.command || '';
+          try {
+            await copyText(command.value);
+            showMessage(`Fallback CLI sync command copied. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
+          } catch {
+            showMessage(`Fallback CLI sync command generated. Token expires ${body.expires_at ? new Date(body.expires_at).toLocaleDateString() : 'later'}.`);
+          }
+          button.textContent = 'Refresh fallback';
+        } catch (err) {
+          showMessage(err.message, true);
+          button.textContent = 'Copy fallback';
+        }
+      });
+
+      document.getElementById('revoke-sync-tokens').addEventListener('click', async () => {
+        if (!confirm('Revoke all previously generated vibestats sync tokens?')) return;
+        const button = document.getElementById('revoke-sync-tokens');
+        try {
+          button.textContent = 'Revoking...';
+          const body = await api('/api/sync-token', { method: 'DELETE' });
+          document.getElementById('sync-command').value = '';
+          const revokedAt = body.sync_token_invalidated_at
+            ? new Date(body.sync_token_invalidated_at).toLocaleString()
+            : 'now';
+          showMessage(`Sync tokens revoked at ${revokedAt}. Generate a new command before syncing again.`);
+        } catch (err) {
+          showMessage(err.message, true);
+        } finally {
+          button.textContent = 'Revoke';
+        }
+      });
+
+      document.getElementById('logout').addEventListener('click', async () => {
+        await api('/api/auth/logout', { method: 'POST' });
+        location.href = '/';
+      });
+
+      document.getElementById('delete-account').addEventListener('click', async () => {
+        if (!confirm('Delete your vibestats account and saved uploads?')) return;
+        try {
+          await api('/api/settings', { method: 'DELETE' });
+          location.href = '/';
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      });
+    }
+
+    init().catch((err) => {
+      document.getElementById('loading').style.display = 'none';
+      showMessage(err.message, true);
+    });
+  </script>
+</body>
+</html>

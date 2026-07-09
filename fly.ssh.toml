@@ -1,0 +1,23 @@
+app = "vibestats-ssh"
+primary_region = "iad"
+
+[build]
+  dockerfile = "services/ssh-shell/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "2222"
+  SSH_BIND_HOST = "0.0.0.0"
+  VIBESTATS_URL = "https://vibestats.io"
+  VIBESTATS_SSH_HOST = "ssh.vibestats.io"
+  VIBESTATS_SSH_SERVICE_READY = "1"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 2222
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 22

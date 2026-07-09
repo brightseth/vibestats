@@ -1,0 +1,10 @@
+{
+  "status": "scheduled",
+  "title": "Terminal Party #1",
+  "when": "2026-06-19T22:00:00Z",
+  "when_human": "Friday June 19, 3:00pm PT / 6:00pm ET",
+  "duration_minutes": 90,
+  "room": null,
+  "info": "https://vibestats.io/party",
+  "note": "Room link appears here when doors open. Say 'lets vibe' to your Claude again on party day."
+}

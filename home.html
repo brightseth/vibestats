@@ -1,0 +1,3420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Reveal Your Vibecoding Personality | vibestats</title>
+  <meta name="description" content="Claude Code already knows how you build. Run /insights, reveal your vibecoding personality, and compare with other coding-agent users.">
+  <meta property="og:title" content="Who would you build best with? | vibestats">
+  <meta property="og:description" content="Claude Code already knows how you build. Reveal your archetype and your pairing chemistry: The Orchestrator, The Shipper, The Deep Diver...">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vibestats.io">
+  <meta property="og:image" content="https://vibestats.io/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://vibestats.io/og-card.png">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface-2: #14141e;
+      --border: #252535;
+      --text: #E0E0E0;
+      --text-muted: #8888a0;
+      --text-dim: #555568;
+      --accent: #6B8FFF;
+      --green: #22c55e;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --purple: #a78bfa;
+      --pink: #ff79c6;
+      --cyan: #22d3ee;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--sans); background: var(--bg); color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== UPLOAD STATE ===== */
+    .upload-page {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 32px;
+      text-align: center;
+    }
+    .upload-page.hidden { display: none; }
+
+    .auth-bar {
+      position: fixed; top: 16px; right: 16px; z-index: 500;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .auth-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      min-height: 40px; padding: 8px 12px; border-radius: 10px;
+      background: rgba(13,13,20,0.88); border: 1px solid var(--border);
+      color: var(--text-muted); text-decoration: none;
+      font-family: var(--mono); font-size: 12px;
+      backdrop-filter: blur(14px);
+    }
+    .auth-pill.primary {
+      color: #9bb5ff;
+      border-color: rgba(107,143,255,0.45);
+      background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
+    }
+    .auth-pill.muted {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+      background: rgba(13,13,20,0.72);
+    }
+    .auth-pill img {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .home-banner {
+      display: inline-flex; align-items: center; gap: 10px;
+      margin-bottom: 28px; padding: 8px 14px; border-radius: 999px;
+      border: 1px solid rgba(107,143,255,0.28);
+      background: rgba(107,143,255,0.07);
+      font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+      text-decoration: none; line-height: 1.3;
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    .home-banner:hover {
+      border-color: rgba(107,143,255,0.5);
+      background: rgba(107,143,255,0.12);
+      color: var(--text);
+    }
+    .home-banner-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      color: #06060a; background: var(--accent);
+      padding: 2px 7px; border-radius: 999px;
+    }
+    .home-banner-arrow { color: var(--accent); }
+    @media (max-width: 600px) {
+      .home-banner { font-size: 11px; padding: 7px 12px; max-width: 92vw; }
+    }
+
+    .upload-logo {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.05em; margin-bottom: 40px;
+    }
+    .upload-title {
+      font-size: clamp(28px, 7vw, 48px); font-weight: 900;
+      color: #fff; letter-spacing: -0.02em; line-height: 1.15;
+      max-width: 600px; margin-bottom: 12px;
+    }
+    .upload-sub {
+      font-size: 16px; color: var(--text-muted); max-width: 480px;
+      line-height: 1.7; margin-bottom: 40px;
+    }
+
+    .drop-zone {
+      width: min(500px, 90vw); padding: 48px 32px;
+      border: 2px dashed var(--border); border-radius: 20px;
+      background: var(--surface); cursor: pointer;
+      transition: all 0.3s; position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(107,143,255,0.04);
+    }
+    .drop-zone-icon {
+      font-size: 40px; margin-bottom: 16px; opacity: 0.5;
+    }
+    .drop-zone-text {
+      font-size: 15px; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .drop-zone-hint {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+
+    .reveal-steps {
+      width: min(560px, 92vw);
+      display: grid;
+      gap: 10px;
+      margin: -14px 0 24px;
+      text-align: left;
+    }
+    .reveal-step {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid rgba(107,143,255,0.18);
+      border-radius: 10px;
+      background: rgba(107,143,255,0.06);
+    }
+    .reveal-step-num {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .reveal-step-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .reveal-step code {
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 13px;
+      word-break: break-word;
+    }
+    .copy-command {
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .copy-command:hover { border-color: var(--accent); color: #fff; }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: -18px 0 24px;
+    }
+    /* Primary CTA — scoped to .hero-actions so it wins over the later .demo-btn base rule */
+    .hero-actions .hero-demo-btn {
+      min-height: 44px;
+      border: 1px solid rgba(155,181,255,0.55);
+      background: linear-gradient(135deg, #6B8FFF, #22d3ee);
+      color: #06060a;
+      font-weight: 700;
+      box-shadow: 0 10px 30px -12px rgba(107,143,255,0.7);
+      transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    .hero-actions .hero-demo-btn:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 14px 36px -12px rgba(107,143,255,0.85);
+      color: #06060a;
+    }
+    .hero-actions .hero-demo-btn:active { transform: translateY(1px); }
+    .hero-actions .hero-secondary-btn {
+      min-height: 44px;
+      padding: 12px 14px;
+      color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
+      box-shadow: none;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+    .hero-actions .hero-secondary-btn:hover {
+      border-color: rgba(107,143,255,0.4);
+      color: #fff;
+      background: rgba(107,143,255,0.06);
+    }
+    .demo-hint.hero-demo-hint {
+      margin: 6px 0 28px;
+      max-width: 520px;
+      line-height: 1.55;
+      color: #8e8ea8;
+      font-size: 12px;
+    }
+
+    /* Reliable hide: author display rules (e.g. .reveal-steps grid) would beat UA [hidden] */
+    [hidden] { display: none !important; }
+
+    /* Show-first reveal teaser: a live, cycling payoff preview */
+    .reveal-teaser { display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+    .reveal-teaser-card {
+      --rt-color: #6B8FFF;
+      width: min(330px, 84vw);
+      padding: 28px 24px 24px;
+      border: 1px solid rgba(107,143,255,0.4);
+      border-radius: 18px;
+      background: radial-gradient(120% 130% at 50% 0%, rgba(255,255,255,0.055), rgba(255,255,255,0.012));
+      box-shadow: 0 22px 60px -26px rgba(107,143,255,0.55);
+      text-align: center;
+    }
+    .reveal-teaser-glyph {
+      font-family: var(--mono); font-size: 34px; font-weight: 800; line-height: 1;
+      color: var(--rt-color); margin-bottom: 14px;
+    }
+    .reveal-teaser-name {
+      font-size: clamp(22px, 4.5vw, 30px); font-weight: 900; letter-spacing: -0.01em;
+      color: var(--rt-color); margin-bottom: 8px;
+    }
+    .reveal-teaser-tag { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+    .reveal-teaser-cap {
+      margin-top: 14px; font-family: var(--mono); font-size: 10px;
+      letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase;
+    }
+    @keyframes rtIn { from { opacity: 0; transform: translateY(8px) scale(0.99); } to { opacity: 1; transform: none; } }
+    .reveal-teaser-card.rt-in { animation: rtIn 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+    @media (prefers-reduced-motion: reduce) { .reveal-teaser-card.rt-in { animation: none; } }
+
+    /* Privacy reassurance: one calm line, full detail on tap */
+    .privacy-line {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin: 2px 0 10px; padding: 6px 10px;
+      background: none; border: 0; cursor: pointer;
+      font-family: var(--mono); font-size: 12px; color: #8e8ea8;
+    }
+    .privacy-line:hover { color: #b8b8cc; }
+    .privacy-line span { color: var(--text-dim); }
+    .privacy-details {
+      width: min(500px, 90vw); margin: 0 auto 18px;
+      font-family: var(--mono); font-size: 12px; line-height: 1.6; color: #8e8ea8;
+    }
+
+    .file-path {
+      margin-top: 32px; padding: 14px 20px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; font-family: var(--mono); font-size: 12px;
+      color: var(--text-dim); max-width: 500px;
+      word-break: break-all; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .file-path:hover { border-color: var(--accent); }
+    .file-path .label {
+      display: block; font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+    }
+    .file-path .subcopy {
+      display: block;
+      margin-top: 6px;
+      color: var(--text-dim);
+      font-size: 10px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+    .file-path code { color: var(--accent); }
+
+    .legacy-upload {
+      width: min(500px, 90vw);
+      margin-top: 18px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-align: left;
+    }
+    .legacy-upload summary {
+      cursor: pointer;
+      text-align: center;
+      list-style: none;
+    }
+    .legacy-upload summary::-webkit-details-marker { display: none; }
+    .legacy-upload summary:hover { color: var(--text-muted); }
+    .legacy-upload .drop-zone {
+      width: 100%;
+      margin-top: 12px;
+      padding: 28px 24px;
+    }
+
+    .upload-error {
+      margin-top: 16px; padding: 12px 20px;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px; font-size: 13px; color: var(--red);
+      display: none; max-width: 500px;
+    }
+    .upload-error.info {
+      background: rgba(107,143,255,0.08);
+      border-color: rgba(107,143,255,0.24);
+      color: #9bb5ff;
+    }
+    .privacy-note {
+      width: min(500px, 90vw);
+      margin: -18px 0 24px;
+      color: #8e8ea8;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .demo-section {
+      margin-top: 32px; text-align: center;
+    }
+    .demo-divider {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+      max-width: 500px; margin-left: auto; margin-right: auto;
+    }
+    .demo-divider::before, .demo-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .demo-divider span {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .demo-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border-radius: 12px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      font-family: var(--mono); font-size: 13px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+    }
+    .demo-btn:hover {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(107,143,255,0.06);
+    }
+    .demo-hint {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      margin-top: 8px;
+    }
+
+    .archetypes-preview {
+      display: flex; gap: 10px; margin-top: 36px; flex-wrap: wrap;
+      justify-content: center; max-width: 600px;
+    }
+    .archetypes-preview-title {
+      flex-basis: 100%;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .archetype-chip {
+      font-family: var(--mono); font-size: 11px;
+      padding: 6px 14px; border-radius: 20px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .archetype-chip:hover, .archetype-chip:focus-visible {
+      border-color: rgba(107,143,255,0.55);
+      color: #fff;
+      background: rgba(107,143,255,0.08);
+      outline: none;
+    }
+
+    /* ===== ANALYZING STATE ===== */
+    .analyzing {
+      position: fixed; inset: 0; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      background: var(--bg); z-index: 200;
+    }
+    .analyzing.hidden { display: none; }
+    .analyzing-text {
+      font-family: var(--mono); font-size: 14px; color: var(--text-muted);
+      transition: opacity 0.3s;
+    }
+    .analyzing-bar {
+      width: 200px; height: 3px; background: var(--surface-2);
+      border-radius: 2px; margin-top: 20px; overflow: hidden;
+    }
+    .analyzing-fill {
+      height: 100%; background: var(--accent); border-radius: 2px;
+      width: 0; transition: width 0.5s ease;
+    }
+
+    /* ===== WRAPPED STATE (reuses wrapped.html patterns) ===== */
+    .wrapped-page { position: fixed; inset: 0; }
+    .wrapped-page.hidden { display: none; }
+    /* Cinematic reveal: hide the persistent nav so the wrapped slideshow owns the screen */
+    body.wrapped-active .auth-bar { display: none; }
+
+    .progress {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; gap: 4px; padding: 12px 16px;
+      background: linear-gradient(to bottom, rgba(6,6,10,0.9), transparent);
+    }
+    .progress-seg {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,0.12);
+      transition: background 0.3s;
+    }
+    .progress-seg.done { background: rgba(255,255,255,0.7); }
+    .progress-seg.active { background: rgba(255,255,255,0.25); }
+    .progress-seg.active::after {
+      content: ''; display: block; height: 100%; border-radius: 2px;
+      background: rgba(255,255,255,0.8);
+      animation: progressFill 5s linear forwards;
+    }
+    @keyframes progressFill { from { width: 0; } to { width: 100%; } }
+
+    .slides { position: relative; width: 100%; height: 100%; }
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 32px 40px;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: scale(0.97); cursor: pointer; overflow: hidden;
+    }
+    .slide.active { opacity: 1; visibility: visible; transform: scale(1); }
+    .slide.exiting {
+      opacity: 0; transform: scale(1.02);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .anim {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1),
+                  transform 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+    .slide.active .anim { opacity: 1; transform: translateY(0); }
+    .slide.active .anim.d1 { transition-delay: 0.15s; }
+    .slide.active .anim.d2 { transition-delay: 0.3s; }
+    .slide.active .anim.d3 { transition-delay: 0.5s; }
+    .slide.active .anim.d4 { transition-delay: 0.7s; }
+    .slide.active .anim.d5 { transition-delay: 0.9s; }
+
+    .slide-label {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 20px;
+    }
+    .big-number {
+      font-family: var(--mono); font-weight: 800;
+      font-size: clamp(64px, 18vw, 140px); line-height: 1;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .big-unit {
+      font-family: var(--sans); font-size: clamp(18px, 4vw, 28px);
+      font-weight: 700; color: var(--text-muted); margin-top: 4px;
+    }
+    .slide-body {
+      font-size: clamp(15px, 3.5vw, 20px); color: var(--text-muted);
+      text-align: center; line-height: 1.7; max-width: 480px;
+    }
+    .slide-body strong { color: #fff; font-weight: 600; }
+    .stat-row {
+      font-family: var(--mono); font-size: clamp(12px, 2.5vw, 15px);
+      color: var(--text-dim); text-align: center; margin-top: 8px;
+    }
+
+    .ratio-visual { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .ratio-block { text-align: center; }
+    .ratio-num {
+      font-family: var(--mono); font-size: clamp(32px, 8vw, 52px);
+      font-weight: 800; line-height: 1;
+    }
+    .ratio-label {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px;
+    }
+    .ratio-sep { font-family: var(--mono); font-size: 28px; color: var(--text-dim); }
+
+    .lang-bars { display: flex; flex-direction: column; gap: 8px; width: min(400px, 85vw); margin: 20px 0; }
+    .lang-bar-row { display: flex; align-items: center; gap: 10px; }
+    .lang-bar-name { font-family: var(--mono); font-size: 12px; color: var(--text-muted); width: 90px; text-align: right; }
+    .lang-bar-track { flex: 1; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+    .lang-bar-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.22,1,0.36,1); }
+    .lang-bar-pct { font-family: var(--mono); font-size: 11px; color: var(--text-dim); width: 36px; }
+
+    .verdict {
+      font-size: clamp(20px, 5vw, 32px); font-weight: 800; color: #fff;
+      text-align: center; margin-top: 24px; line-height: 1.4;
+    }
+
+    /* Archetype card */
+    .archetype-card {
+      width: min(380px, 88vw);
+      background: linear-gradient(145deg, #0d0d18, #12121f);
+      border: 1px solid rgba(107,143,255,0.25);
+      border-radius: 20px; padding: 28px 24px 20px;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .archetype-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .archetype-card::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(107,143,255,0.2), transparent);
+    }
+    .card-label {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .archetype-glyph {
+      width: 64px; height: 64px; margin: 0 auto 14px;
+      display: grid; place-items: center;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.035);
+      font-family: var(--mono); font-size: 28px; font-weight: 800;
+      line-height: 1; letter-spacing: 0;
+    }
+    .archetype-name {
+      font-family: var(--sans); font-size: clamp(28px, 7vw, 40px);
+      font-weight: 900; letter-spacing: -0.02em;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1.15; margin-bottom: 8px;
+    }
+    .archetype-tagline {
+      font-family: var(--mono); font-size: 13px;
+      color: var(--text-muted); font-style: italic; margin-bottom: 24px;
+    }
+    .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .card-stat {
+      padding: 10px 8px; background: rgba(255,255,255,0.02);
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);
+    }
+    .card-stat-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: #fff; }
+    .card-stat-label {
+      font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px;
+    }
+    .card-user { font-size: 14px; font-weight: 600; color: #fff; }
+    .card-period { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+    .card-brand {
+      font-family: var(--mono); font-size: 10px; margin-top: 12px; letter-spacing: 0.1em;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Score breakdown */
+    .score-breakdown {
+      display: flex; flex-direction: column; gap: 5px;
+      width: 100%; margin-top: 16px; padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .score-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .score-name {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      width: 72px; text-align: right; text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .score-track {
+      flex: 1; height: 4px; background: rgba(255,255,255,0.04);
+      border-radius: 2px; overflow: hidden;
+    }
+    .score-fill {
+      height: 100%; border-radius: 2px;
+      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .score-pct {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      width: 28px; text-align: right;
+    }
+    .score-row.primary .score-name { color: var(--text-muted); font-weight: 600; }
+    .score-row.primary .score-pct { color: var(--text-muted); font-weight: 600; }
+
+    /* DNA Barcode */
+    .dna-barcode {
+      display: flex; align-items: flex-end; gap: 2px; justify-content: center;
+      height: 32px; margin-top: 14px; padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .dna-bar {
+      width: 6px; border-radius: 2px 2px 0 0; min-height: 3px;
+      transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .sub-archetype {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .share-row { display: flex; gap: 10px; margin-top: 24px; justify-content: center; flex-wrap: wrap; }
+    .share-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border-radius: 10px; font-family: var(--mono);
+      font-size: 12px; text-decoration: none; cursor: pointer;
+      border: none; transition: all 0.2s; font-weight: 500;
+    }
+    .share-btn-x { background: #fff; color: #000; }
+    .share-btn-x:hover { background: #e0e0e0; }
+    .share-btn-copy {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: var(--text);
+    }
+    .share-btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .share-btn-save {
+      background: linear-gradient(135deg, rgba(107,143,255,0.15), rgba(167,139,250,0.1));
+      border: 1px solid rgba(107,143,255,0.35); color: var(--accent-bright, #8aadff);
+    }
+    .share-btn-save:hover { border-color: var(--accent); }
+    .share-btn-restart {
+      background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .share-btn-restart:hover { border-color: var(--text-muted); color: var(--text-muted); }
+    .profile-save-status {
+      display: none;
+      width: 100%;
+      max-width: min(480px, 88vw);
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(107,143,255,0.25);
+      background: rgba(107,143,255,0.08);
+      color: #9bb5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    .profile-save-status a { color: #fff; text-decoration: none; word-break: break-word; }
+    .post-save-note {
+      margin-top: 8px;
+      color: var(--text-dim);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .post-save-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .post-save-actions a,
+    .post-save-actions button {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(107,143,255,0.35);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.12);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 0 10px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .post-save-actions .primary {
+      border-color: rgba(34,211,238,0.55);
+      background: linear-gradient(135deg, rgba(107,143,255,0.24), rgba(34,211,238,0.12));
+      color: #fff;
+    }
+    .post-save-actions button.secondary,
+    .post-save-actions a.secondary {
+      border-color: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-muted);
+    }
+    .post-save-actions button:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .profile-save-status.muted {
+      color: var(--text-dim);
+      border-color: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+    .profile-save-status.error {
+      color: #ff9a9a;
+      border-color: rgba(239,68,68,0.3);
+      background: rgba(239,68,68,0.08);
+    }
+    .digest-inline {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 10px;
+      text-align: left;
+    }
+    .digest-inline input {
+      min-height: 38px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      background: rgba(6,6,10,0.72);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 0 10px;
+      min-width: 0;
+    }
+    .digest-inline button {
+      min-height: 38px;
+      width: 100%;
+      border: 1px solid rgba(107,143,255,0.35);
+      border-radius: 8px;
+      background: rgba(107,143,255,0.12);
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .digest-inline-note {
+      grid-column: 1 / -1;
+      color: var(--text-dim);
+      font-size: 10px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    /* Animated card glow */
+    @keyframes cardGlow {
+      0%, 100% { box-shadow: 0 0 60px rgba(107,143,255,0.08), 0 0 30px rgba(167,139,250,0.05); }
+      50% { box-shadow: 0 0 90px rgba(107,143,255,0.15), 0 0 50px rgba(167,139,250,0.1); }
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(15deg); }
+      100% { transform: translateX(200%) rotate(15deg); }
+    }
+    @keyframes borderRotate {
+      0% { --border-angle: 0deg; }
+      100% { --border-angle: 360deg; }
+    }
+    .archetype-card {
+      animation: cardGlow 3s ease-in-out infinite;
+    }
+    .archetype-card .shimmer-overlay {
+      position: absolute; inset: 0; overflow: hidden; border-radius: 20px; pointer-events: none; z-index: 10;
+    }
+    .archetype-card .shimmer-overlay::after {
+      content: ''; position: absolute; top: -50%; left: -50%;
+      width: 40%; height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+      animation: shimmer 4s ease-in-out infinite;
+    }
+
+    /* Confetti canvas */
+    .confetti-canvas {
+      position: fixed; inset: 0; z-index: 300; pointer-events: none;
+    }
+
+    /* Depth visualization */
+    .depth-bars {
+      display: flex; align-items: flex-end; gap: 2px;
+      height: 80px; width: min(360px, 85vw); margin: 20px 0;
+    }
+    .depth-bar {
+      flex: 1; border-radius: 2px 2px 0 0;
+      background: var(--accent); opacity: 0.3;
+      transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .depth-bar.highlight { opacity: 1; }
+
+    /* Multi-clauding terminals */
+    .mc-terminals {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 6px; margin: 20px 0; width: min(280px, 75vw);
+    }
+    .mc-term {
+      aspect-ratio: 4/3; border-radius: 5px;
+      border: 1px solid rgba(167,139,250,0.3);
+      background: rgba(167,139,250,0.06);
+      position: relative; overflow: hidden;
+      opacity: 0; transform: scale(0.8);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .slide.active .mc-term { opacity: 1; transform: scale(1); }
+    .mc-term::after {
+      content: ''; position: absolute; top: 5px; left: 5px;
+      width: 3px; height: 8px; background: var(--purple);
+      border-radius: 1px; animation: termBlink 1s step-end infinite;
+    }
+    @keyframes termBlink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+    .slide.active .mc-term:nth-child(1) { transition-delay: 0.3s; }
+    .slide.active .mc-term:nth-child(2) { transition-delay: 0.45s; }
+    .slide.active .mc-term:nth-child(3) { transition-delay: 0.6s; }
+    .slide.active .mc-term:nth-child(4) { transition-delay: 0.75s; }
+    .slide.active .mc-term:nth-child(5) { transition-delay: 0.9s; }
+    .slide.active .mc-term:nth-child(6) { transition-delay: 1.05s; }
+    .slide.active .mc-term:nth-child(7) { transition-delay: 1.2s; }
+    .slide.active .mc-term:nth-child(8) { transition-delay: 1.35s; }
+
+    .tap-hint {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      letter-spacing: 0.1em; z-index: 50;
+      animation: tapPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes tapPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+
+    /* iOS safe areas */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .upload-page { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+      .slide { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+      .tap-hint { bottom: calc(32px + env(safe-area-inset-bottom)); }
+    }
+
+    /* Touch targets: 44px minimum (Apple HIG) */
+    .share-btn { min-height: 44px; }
+    .demo-btn { min-height: 44px; }
+    .drop-zone { -webkit-tap-highlight-color: transparent; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    @media (max-width: 480px) {
+      .auth-bar {
+        position: static;
+        width: 100%;
+        padding: 16px 16px 0;
+        justify-content: center;
+      }
+      .auth-pill {
+        min-height: 36px;
+        padding: 7px 10px;
+        font-size: 11px;
+      }
+      .upload-logo {
+        margin-top: 8px;
+        margin-bottom: 30px;
+      }
+      .slide { padding: 50px 24px 32px; }
+      .archetype-card { padding: 28px 20px 24px; }
+      .share-row { flex-direction: column; align-items: stretch; }
+      .share-btn { justify-content: center; }
+      .upload-page { padding: 24px; }
+      .drop-zone { padding: 36px 20px; }
+      .reveal-step { grid-template-columns: 30px minmax(0, 1fr); }
+      .reveal-step .copy-command { grid-column: 2; justify-self: start; }
+      .hero-actions { align-items: stretch; flex-direction: column; width: min(500px, 90vw); }
+      .hero-actions .demo-btn,
+      .hero-actions .copy-command { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-bar" id="auth-bar"></div>
+
+  <!-- UPLOAD STATE -->
+  <div class="upload-page" id="upload-page">
+    <a class="home-banner" href="/blog">
+      <span class="home-banner-tag">NEW</span>
+      <span>The story behind vibestats &mdash; how we built it without seeing your code</span>
+      <span class="home-banner-arrow" aria-hidden="true">&rarr;</span>
+    </a>
+    <div class="upload-logo">vibestats</div>
+    <div class="reveal-teaser" aria-hidden="true">
+      <div class="reveal-teaser-card rt-in" id="reveal-teaser-card">
+        <div class="reveal-teaser-glyph" id="rt-glyph">&gt;&gt;</div>
+        <div class="reveal-teaser-name" id="rt-name">THE SHIPPER</div>
+        <div class="reveal-teaser-tag" id="rt-tag">Done is better than perfect.</div>
+      </div>
+      <div class="reveal-teaser-cap">a live example &middot; yours uses your real Claude Code activity</div>
+    </div>
+
+    <h1 class="upload-title">Who would you build best with? Claude Code already knows.</h1>
+    <p class="upload-sub">
+      Your coding personality + pairing chemistry &mdash; like Spotify Wrapped, for how you build, but it ends with a teammate. Raw session data never leaves your computer.
+    </p>
+
+    <div class="hero-actions" aria-label="Reveal actions">
+      <button class="demo-btn hero-demo-btn" type="button" onclick="revealMine()">
+        Reveal mine &rarr;
+      </button>
+      <button class="demo-btn hero-secondary-btn" type="button" onclick="runDemo()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        See an example
+      </button>
+    </div>
+    <button class="privacy-line" type="button" id="privacy-toggle" aria-expanded="false">
+      &#128274; Runs on your computer. Nothing leaves it. <span aria-hidden="true">&rsaquo;</span>
+    </button>
+    <div class="privacy-details" id="privacy-details" hidden>
+      Anonymous share links are public unlisted, expire in 30 days, and store only derived snapshot fields. Signed-in saves persist only your archetype, scores, and 5 derived metrics. We never see the raw insights JSON.
+    </div>
+    <div class="demo-hint hero-demo-hint" id="reveal-hint" hidden>Two quick steps on the computer where you use Claude Code. On a phone? Watch an example now and send yourself the command for later.</div>
+
+    <div class="reveal-steps" id="reveal-steps" aria-label="Reveal your vibestats profile" hidden>
+      <div class="reveal-step">
+        <span class="reveal-step-num">1</span>
+        <span>
+          <span class="reveal-step-label">In Claude Code</span>
+          <code>/insights</code>
+        </span>
+        <button class="copy-command" type="button" onclick="copyCommand('/insights', this)">Copy</button>
+      </div>
+      <div class="reveal-step">
+        <span class="reveal-step-num">2</span>
+        <span>
+          <span class="reveal-step-label">Reveal locally, then choose whether to share</span>
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
+        </span>
+        <button class="copy-command" type="button" onclick="copyCommand('curl -fsSL https://vibestats.io/cli.sh | sh -s --', this)">Copy reveal command</button>
+      </div>
+    </div>
+
+    <details class="legacy-upload">
+      <summary>Have a legacy JSON export?</summary>
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-zone-icon">&#x1F4C4;</div>
+        <div class="drop-zone-text">Drop a legacy insights JSON here</div>
+        <div class="drop-zone-hint">or click to browse and reveal locally</div>
+        <input type="file" accept=".json" id="file-input">
+      </div>
+    </details>
+
+    <div class="upload-error" id="upload-error"></div>
+
+    <div class="archetypes-preview">
+      <div class="archetypes-preview-title">Explore sample pairings without data</div>
+      <a class="archetype-chip" href="/compare?a=orchestrator&b=shipper">The Orchestrator</a>
+      <a class="archetype-chip" href="/compare?a=shipper&b=deepdiver">The Shipper</a>
+      <a class="archetype-chip" href="/compare?a=architect&b=sprinter">The Architect</a>
+      <a class="archetype-chip" href="/compare?a=debugger&b=builder">The Debugger</a>
+      <a class="archetype-chip" href="/compare?a=polyglot&b=architect">The Polyglot</a>
+      <a class="archetype-chip" href="/compare?a=sprinter&b=deepdiver">The Sprinter</a>
+      <a class="archetype-chip" href="/compare?a=deepdiver&b=shipper">The Deep Diver</a>
+      <a class="archetype-chip" href="/compare?a=builder&b=orchestrator">The Builder</a>
+    </div>
+
+  </div>
+
+  <!-- ANALYZING STATE -->
+  <div class="analyzing hidden" id="analyzing">
+    <div class="analyzing-text" id="analyzing-text">Reading your data...</div>
+    <div class="analyzing-bar"><div class="analyzing-fill" id="analyzing-fill"></div></div>
+  </div>
+
+  <!-- Confetti canvas -->
+  <canvas class="confetti-canvas hidden" id="confetti-canvas"></canvas>
+
+  <!-- WRAPPED STATE -->
+  <div class="wrapped-page hidden" id="wrapped-page">
+    <div class="progress" id="progress"></div>
+    <div class="slides" id="slides"></div>
+    <div class="tap-hint" id="tap-hint"></div>
+  </div>
+
+  <script src="/lib/html2canvas.min.js"></script>
+  <script src="/lib/compat.js"></script>
+  <script src="/api/archetype-identity"></script>
+  <script>
+    // ========================================
+    // ARCHETYPE DEFINITIONS (from /api/archetype-identity, with a safety net)
+    // ========================================
+    // If the identity endpoint fails to load, synthesize a valid, brand-styled
+    // shape from the eight keys so the reveal degrades gracefully instead of
+    // throwing on an undefined map. No copy is hardcoded here — names derive
+    // from the keys — so this never drifts from the source of truth.
+    const FALLBACK_ARCHETYPE_KEYS = ['orchestrator','shipper','architect','debugger','polyglot','sprinter','deepdiver','builder'];
+    const FALLBACK_SHORT_NAMES = { deepdiver: 'Deep Diver' };
+    const FALLBACK_GLYPHS = { orchestrator: '||', shipper: '>>', architect: '[]', debugger: '??', polyglot: '{}', sprinter: '!!', deepdiver: '__', builder: '++' };
+    function buildFallbackArchetypes() {
+      const map = {};
+      for (const key of FALLBACK_ARCHETYPE_KEYS) {
+        const short = FALLBACK_SHORT_NAMES[key] || key.charAt(0).toUpperCase() + key.slice(1);
+        map[key] = {
+          name: `THE ${short.toUpperCase()}`, short, tagline: '', description: '',
+          color: '#6B8FFF', accent: '#22d3ee',
+          gradient: 'linear-gradient(135deg, #6B8FFF, #22d3ee)',
+          borderGradient: 'linear-gradient(90deg, transparent, #6B8FFF, #22d3ee, transparent)',
+          glyph: FALLBACK_GLYPHS[key] || 'VS',
+        };
+      }
+      return map;
+    }
+    if (!window.VIBESTATS_ARCHETYPES) {
+      console.warn('[vibestats] archetype identity did not load; using built-in fallback.');
+    }
+    const ARCHETYPES = window.VIBESTATS_ARCHETYPES || buildFallbackArchetypes();
+    const ARCHETYPE_PLURALS = window.VIBESTATS_ARCHETYPE_PLURALS
+      || Object.fromEntries(FALLBACK_ARCHETYPE_KEYS.map((k) => [k, (FALLBACK_SHORT_NAMES[k] || k.charAt(0).toUpperCase() + k.slice(1)) + 's']));
+
+    // ========================================
+    // SHOW-FIRST FTUE: teaser, progressive reveal, privacy toggle
+    // ========================================
+    // Cycle archetype cards in the hero so a first-timer SEES the payoff before
+    // doing anything (Spotify-Wrapped style). Uses the shared identity (or its
+    // fallback), so glyphs/colors stay on the single source of truth.
+    function startRevealTeaser() {
+      const card = document.getElementById('reveal-teaser-card');
+      const glyphEl = document.getElementById('rt-glyph');
+      const nameEl = document.getElementById('rt-name');
+      const tagEl = document.getElementById('rt-tag');
+      if (!card || !nameEl) return;
+      const keys = Object.keys(ARCHETYPES || {});
+      if (!keys.length) return;
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let i = 0;
+      function show(idx) {
+        const a = ARCHETYPES[keys[idx]];
+        if (!a) return;
+        const c = a.color || '#6B8FFF';
+        card.style.setProperty('--rt-color', c);
+        card.style.borderColor = c + '66';
+        card.style.boxShadow = '0 22px 60px -26px ' + c + '99';
+        if (glyphEl) glyphEl.textContent = a.glyph || '·';
+        nameEl.textContent = a.name || '';
+        if (tagEl) tagEl.textContent = a.taglineShort || a.tagline || '';
+      }
+      show(0);
+      if (reduce) return;
+      setInterval(function () {
+        i = (i + 1) % keys.length;
+        card.classList.remove('rt-in'); void card.offsetWidth; card.classList.add('rt-in');
+        show(i);
+      }, 2600);
+    }
+
+    // "Reveal mine" reveals the guided steps on demand — first-timers never see
+    // a raw curl command until they opt in.
+    function revealMine() {
+      const hint = document.getElementById('reveal-hint');
+      const steps = document.getElementById('reveal-steps');
+      if (hint) hint.hidden = false;
+      if (steps) { steps.hidden = false; steps.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+
+    (function wirePrivacyToggle() {
+      const toggle = document.getElementById('privacy-toggle');
+      const details = document.getElementById('privacy-details');
+      if (!toggle || !details) return;
+      toggle.addEventListener('click', function () {
+        const opening = details.hidden;
+        details.hidden = !opening;
+        toggle.setAttribute('aria-expanded', String(opening));
+      });
+    })();
+
+    startRevealTeaser();
+
+    // ========================================
+    // ARCHETYPE SCORING (v2 — sigmoid + power-law normalization)
+    // ========================================
+
+    // Smooth 0→1 curve: midpoint = 50% output, steepness controls slope
+    function sig(x, midpoint, steepness) {
+      return 1 / (1 + Math.exp(-(x - midpoint) * steepness));
+    }
+
+    // ========================================
+    // SCORE BREAKDOWN RENDERER
+    // ========================================
+    function buildScoreBreakdown(scores, topArchetype) {
+      const sorted = Object.entries(scores)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5); // Show top 5
+      const rows = sorted.map(([key, score]) => {
+        const a = ARCHETYPES[key];
+        const isPrimary = key === topArchetype;
+        const colors = a.gradient.match(/#[0-9a-fA-F]{6}/g) || ['#6B8FFF'];
+        const barColor = colors[0];
+        return `<div class="score-row${isPrimary ? ' primary' : ''}">
+          <div class="score-name">${key === 'deepdiver' ? 'diver' : key.slice(0, 8)}</div>
+          <div class="score-track"><div class="score-fill" style="width:${Math.round(score)}%;background:${barColor}${isPrimary ? '' : '80'}"></div></div>
+          <div class="score-pct">${Math.round(score)}%</div>
+        </div>`;
+      }).join('');
+      return `<div class="score-breakdown">${rows}</div>`;
+    }
+
+    // ========================================
+    // DNA BARCODE + SUB-ARCHETYPE
+    // ========================================
+    const ARCHETYPE_COLORS = window.VIBESTATS_ARCHETYPE_COLORS
+      || Object.fromEntries(Object.entries(ARCHETYPES).map(([key, value]) => [key, value.color]));
+
+    const SUB_PREFIXES = {
+      orchestrator: 'parallel', shipper: 'high-velocity', architect: 'methodical',
+      debugger: 'investigative', polyglot: 'multi-stack', sprinter: 'rapid-fire',
+      deepdiver: 'deep-session', builder: 'prolific',
+    };
+
+    const ARCHETYPE_SHORT_NAMES = window.VIBESTATS_ARCHETYPE_SHORT_NAMES
+      || Object.fromEntries(Object.entries(ARCHETYPES).map(([key, value]) => [key, value.short || key]));
+
+    function buildDnaBarcode(scores) {
+      const bars = Object.entries(ARCHETYPE_COLORS).map(([key, color]) => {
+        const score = scores[key] || 0;
+        const height = Math.max(3, Math.round(score / 92 * 28));
+        return `<div class="dna-bar" style="height:${height}px;background:${color};opacity:${0.3 + (score/92)*0.7}"></div>`;
+      }).join('');
+      return `<div class="dna-barcode">${bars}</div>`;
+    }
+
+    function getSubArchetype(scores, primary) {
+      const signature = buildVibeSignature(scores, primary);
+      return signature ? `<div class="sub-archetype">You're a ${signature.label}</div>` : '';
+    }
+
+    function buildVibeSignature(scores, primary) {
+      const sorted = Object.entries(scores)
+        .filter(([k]) => k !== primary && !k.startsWith('_'))
+        .sort((a, b) => b[1] - a[1]);
+      if (!sorted.length) return null;
+      const secondary = sorted[0][0];
+      const prefix = SUB_PREFIXES[secondary] || secondary;
+      const primaryShort = ARCHETYPE_SHORT_NAMES[primary] || primary;
+      return {
+        label: `${prefix} ${primaryShort}`,
+        combo: `${secondary}+${primary}`,
+        secondary,
+        fingerprint: buildSignatureFingerprint(scores, primary),
+      };
+    }
+
+    function buildSignatureFingerprint(scores, primary) {
+      const topThree = Object.entries(scores)
+        .filter(([key]) => ARCHETYPES[key])
+        .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+        .slice(0, 3)
+        .map(([key]) => key);
+      if (!topThree.includes(primary)) topThree.unshift(primary);
+      const uniqueTop = [...new Set(topThree)].slice(0, 3);
+      const primaryScore = Math.max(0, Math.min(100, Math.round(Number(scores[primary]) || 0)));
+      const bucket = Math.min(90, Math.floor(primaryScore / 10) * 10);
+      return `${uniqueTop.join('+')}:${bucket}s`;
+    }
+
+    function buildPredictionSlide(scores, primary, slideIndex) {
+      const sorted = Object.entries(scores)
+        .filter(([k]) => k !== primary && !k.startsWith('_'))
+        .sort((a, b) => b[1] - a[1]);
+      const top2 = sorted[0];
+      if (!top2) return '';
+      const curr = ARCHETYPES[primary];
+      const next = ARCHETYPES[top2[0]];
+      if (!curr || !next) return '';
+
+      if (top2[1] >= 55) {
+        return `
+          <div class="slide" data-slide="${slideIndex}" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.06) 50%,transparent 80%)">
+            <div class="slide-label anim">your next evolution</div>
+            <div class="anim d1" style="display:flex;align-items:center;gap:16px;margin:16px 0;flex-wrap:wrap;justify-content:center">
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${curr.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${curr.name}</span>
+              <span style="font-family:var(--mono);font-size:20px;color:var(--text-dim)">&rarr;</span>
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${next.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${next.name}</span>
+            </div>
+            <div class="slide-body anim d2" style="margin-top:16px">
+              Your coding DNA is shifting toward<br><strong>${next.name}</strong>
+            </div>
+            <div class="slide-body anim d3" style="font-size:14px;color:var(--text-dim);margin-top:20px">
+              Secondary signal: ${top2[1]}% — ${next.tagline.toLowerCase()}
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="slide" data-slide="${slideIndex}" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.06) 50%,transparent 80%)">
+            <div class="slide-label anim">your next evolution</div>
+            <div class="big-number anim d1" style="font-size:clamp(28px,7vw,40px);background:${curr.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${curr.name}</div>
+            <div class="slide-body anim d2" style="margin-top:16px">
+              Your style is crystallizing &mdash;<br><strong>pure ${curr.name.replace('THE ', '')}</strong>
+            </div>
+            <div class="slide-body anim d3" style="font-size:14px;color:var(--text-dim);margin-top:20px">
+              No strong secondary signal. You know exactly who you are.
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Non-code languages (don't count toward polyglot archetype)
+    const NON_CODE_LANGS = new Set(['markdown', 'json', 'toml', 'yaml', 'yml', 'xml', 'csv', 'txt', 'ini', 'conf', 'env']);
+    const TOOL_USAGE_KEY = ['tool', 'usage'].join('_');
+    const LANGUAGE_USAGE_KEY = ['language', 'usage'].join('_');
+
+    function scoreArchetypes(data) {
+      const m = data.metrics || {};
+      const tools = m[TOOL_USAGE_KEY] || {};
+      const allLangs = Object.keys(m[LANGUAGE_USAGE_KEY] || {});
+      const langs = allLangs.filter(l => !NON_CODE_LANGS.has(l.toLowerCase()));
+      const totalTools = Object.values(tools).reduce((s, v) => s + v, 0) || 1;
+      const sessions = m.total_sessions || 1;
+      const messages = m.total_messages || 0;
+      const commits = m.commits || 0;
+      const days = parseDays(data);
+
+      const msgsPerSession = messages / sessions;
+      const commitsPerSession = commits / sessions;
+      const sessionsPerDay = sessions / Math.max(days, 1);
+      const bashRate = (tools.bash || 0) / totalTools;
+      const readRate = (tools.read || 0) / totalTools;
+      const editRate = (tools.edit || 0) / totalTools;
+      const writeRate = (tools.write || 0) / totalTools;
+      const grepRate = (tools.grep || 0) / totalTools;
+      const bashEditRatio = (tools.bash || 0) / Math.max(tools.edit || 1, 1);
+      const readWriteRatio = (tools.read || 0) / Math.max((tools.write || 0) + (tools.edit || 0), 1);
+      const writeEditRate = ((tools.write || 0) + (tools.edit || 0)) / totalTools;
+      const mcRate = m.multi_clauding_rate || 0;
+      const frictionRate = (m.buggy_code_events || 0) / sessions;
+
+      // Raw signal strength per archetype (each 0–100, using sigmoid curves)
+      // Primary signal (50%) + secondary (30%) + tertiary/anti-correlation (20%)
+      const raw = {};
+
+      // ORCHESTRATOR: multi-clauding is THE differentiator
+      raw.orchestrator =
+        sig(mcRate, 0.15, 12) * 50 +
+        sig(bashEditRatio, 2.5, 1) * 30 +
+        sig(sessions, 400, 0.005) * 20;
+
+      // SHIPPER: commits per session is THE differentiator
+      raw.shipper =
+        sig(commitsPerSession, 1.0, 2.5) * 50 +
+        sig(commits / Math.max(days, 1), 8, 0.2) * 30 +
+        sig(writeRate, 0.06, 25) * 20;
+
+      // ARCHITECT: read:write ratio is THE differentiator
+      raw.architect =
+        sig(readWriteRatio, 2.5, 1.5) * 50 +
+        sig(readRate, 0.25, 8) * 30 +
+        sig(msgsPerSession, 10, 0.15) * 20;
+
+      // DEBUGGER: grep rate is THE differentiator
+      raw.debugger =
+        sig(grepRate, 0.05, 35) * 50 +
+        sig(frictionRate, 0.03, 40) * 30 +
+        sig(bashRate, 0.4, 5) * 20;
+
+      // POLYGLOT: language count is THE differentiator
+      raw.polyglot =
+        sig(langs.length, 5, 0.8) * 60 +
+        sig(langs.length, 3, 1.5) * 40;
+
+      // SPRINTER: many sessions/day + shorter sessions (anti-deep diver)
+      raw.sprinter =
+        sig(sessionsPerDay, 6, 0.4) * 50 +
+        sig(messages, 4000, 0.0004) * 25 +
+        (1 - sig(msgsPerSession, 12, 0.2)) * 25;
+
+      // DEEP DIVER: deep sessions + few sessions/day (anti-sprinter)
+      raw.deepdiver =
+        sig(msgsPerSession, 12, 0.25) * 50 +
+        (1 - sig(sessionsPerDay, 5, 0.4)) * 30 +
+        sig(msgsPerSession, 20, 0.15) * 20;
+
+      // BUILDER: high write+edit rate + low read:write (anti-architect)
+      raw.builder =
+        sig(writeEditRate, 0.2, 10) * 50 +
+        (1 - sig(readWriteRatio, 2.0, 1)) * 30 +
+        sig((tools.write || 0) + (tools.edit || 0), 1500, 0.001) * 20;
+
+      // Primary signal strengths for percentile (sigmoid output = 0-1)
+      const primarySignals = {
+        orchestrator: sig(mcRate, 0.15, 12),
+        shipper: sig(commitsPerSession, 1.0, 2.5),
+        architect: sig(readWriteRatio, 2.5, 1.5),
+        debugger: sig(grepRate, 0.05, 35),
+        polyglot: sig(langs.length, 5, 0.8),
+        sprinter: sig(sessionsPerDay, 6, 0.4),
+        deepdiver: sig(msgsPerSession, 12, 0.25),
+        builder: sig(writeEditRate, 0.2, 10),
+      };
+
+      // Normalize: power-amplify differences so top archetype stands out
+      const maxRaw = Math.max(...Object.values(raw));
+      const scores = {};
+      for (const k of Object.keys(raw)) {
+        const ratio = maxRaw > 0 ? raw[k] / maxRaw : 0;
+        scores[k] = Math.round(Math.pow(ratio, 1.5) * 92);
+      }
+
+      // Attach percentile: top N% based on primary signal strength
+      scores._percentiles = {};
+      for (const k of Object.keys(primarySignals)) {
+        scores._percentiles[k] = Math.max(1, Math.round((1 - primarySignals[k]) * 100));
+      }
+
+      return scores;
+    }
+
+    function parseDays(data) {
+      try {
+        const range = (data.meta && data.meta.date_range) || '';
+        const parts = range.split(' to ');
+        if (parts.length === 2) {
+          const d1 = new Date(parts[0].trim());
+          const d2 = new Date(parts[1].trim());
+          return Math.max(1, Math.ceil((d2 - d1) / 86400000));
+        }
+      } catch(e) {}
+      // Fallback: estimate from session count
+      return Math.max(1, Math.ceil((data.metrics?.total_sessions || 100) / 20));
+    }
+
+    // Priority order for tiebreaking (most distinctive first)
+    const ARCHETYPE_PRIORITY = [
+      'orchestrator', 'deepdiver', 'polyglot', 'shipper',
+      'debugger', 'sprinter', 'architect', 'builder'
+    ];
+
+    function getTopArchetype(scores) {
+      let best = null, bestScore = -1;
+      // Sort by score descending, then by priority order for ties
+      const sorted = Object.entries(scores).sort((a, b) => {
+        if (b[1] !== a[1]) return b[1] - a[1];
+        return ARCHETYPE_PRIORITY.indexOf(a[0]) - ARCHETYPE_PRIORITY.indexOf(b[0]);
+      });
+      return sorted[0] ? sorted[0][0] : 'builder';
+    }
+
+    // ========================================
+    // SAMPLE DATA PROFILES (for demo mode)
+    // ========================================
+    const DEMO_PROFILES = [
+      {
+        meta: { user: 'Alex Chen', date_range: '2025-12-01 to 2026-01-15' },
+        user_profile: { working_style: 'Fast-moving builder shipping features at high velocity' },
+        metrics: {
+          total_sessions: 280, total_messages: 3360, commits: 980,
+          satisfaction_rate: 0.85, multi_clauding_rate: 0.03,
+          buggy_code_events: 8,
+          [TOOL_USAGE_KEY]: { bash: 6000, read: 4000, edit: 5500, write: 4200, grep: 300 },
+          [LANGUAGE_USAGE_KEY]: { typescript: 45000, javascript: 8000, css: 2000 }
+        }
+      },
+      {
+        meta: { user: 'Jordan Park', date_range: '2026-01-01 to 2026-02-01' },
+        user_profile: { working_style: 'Methodical researcher who goes deep on complex problems' },
+        metrics: {
+          total_sessions: 45, total_messages: 1350, commits: 90,
+          satisfaction_rate: 0.92, multi_clauding_rate: null,
+          buggy_code_events: 2,
+          [TOOL_USAGE_KEY]: { bash: 1800, read: 4800, edit: 1200, write: 200, grep: 900 },
+          [LANGUAGE_USAGE_KEY]: { rust: 28000, toml: 4000, markdown: 2000 }
+        }
+      },
+      {
+        meta: { user: 'Sam Rivera', date_range: '2025-11-15 to 2026-01-30' },
+        user_profile: { working_style: 'Versatile builder across many languages and paradigms' },
+        metrics: {
+          total_sessions: 200, total_messages: 3000, commits: 520,
+          satisfaction_rate: 0.78, multi_clauding_rate: 0.08,
+          buggy_code_events: 15,
+          [TOOL_USAGE_KEY]: { bash: 8000, read: 6000, edit: 5000, write: 2000, grep: 1200 },
+          [LANGUAGE_USAGE_KEY]: { python: 15000, typescript: 12000, go: 8000, rust: 5000, ruby: 3000, sql: 2000, swift: 1500 }
+        }
+      },
+      {
+        meta: { user: 'Morgan Blake', date_range: '2025-12-10 to 2026-02-05' },
+        user_profile: { working_style: 'Multi-session commander running parallel agent workflows' },
+        metrics: {
+          total_sessions: 800, total_messages: 9600, commits: 2400,
+          satisfaction_rate: 0.68, multi_clauding_rate: 0.42,
+          buggy_code_events: 45,
+          [TOOL_USAGE_KEY]: { bash: 38000, read: 10000, edit: 8000, write: 3500, grep: 2800 },
+          [LANGUAGE_USAGE_KEY]: { typescript: 30000, javascript: 18000, python: 5000, markdown: 8000, json: 6000 }
+        }
+      },
+    ];
+
+    function runDemo() {
+      const profile = DEMO_PROFILES[Math.floor(Math.random() * DEMO_PROFILES.length)];
+      runAnalysis(profile, { demo: true });
+    }
+
+    function shouldAutoRunDemo() {
+      const params = new URLSearchParams(location.search);
+      if (!params.has('demo')) return false;
+      const value = String(params.get('demo') || '1').toLowerCase();
+      return value === '1' || value === 'true' || value === 'yes';
+    }
+
+    // ========================================
+    // DATA EXTRACTION
+    // ========================================
+    function extractInsights(data) {
+      const m = data.metrics || {};
+      const tools = m[TOOL_USAGE_KEY] || {};
+      const langUsage = m[LANGUAGE_USAGE_KEY] || {};
+      const days = parseDays(data);
+      const sessions = m.total_sessions || 0;
+      const messages = m.total_messages || 0;
+      const commits = m.commits || 0;
+      const bash = tools.bash || 0;
+      const edit = tools.edit || 0;
+      const write = tools.write || 0;
+      const read = tools.read || 0;
+      const grep = tools.grep || 0;
+
+      // Sort languages (show up to 7 for polyglots)
+      const langs = Object.entries(langUsage)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 7);
+      const topLang = langs[0] ? langs[0][0] : 'Code';
+      const langTotal = langs.reduce((s, [,v]) => s + v, 0) || 1;
+
+      const codeLangs = Object.keys(langUsage).filter(l => !NON_CODE_LANGS.has(l.toLowerCase()));
+      const taskAgentSessions = m.task_agent_sessions != null
+        ? Math.round(Number(m.task_agent_sessions) || 0)
+        : Math.round(sessions * Number(m.multi_clauding_rate || 0));
+
+      return {
+        name: (data.meta && data.meta.user) || 'Anonymous Vibecoder',
+        dateRange: (data.meta && data.meta.date_range) || '',
+        days,
+        sessions,
+        messages,
+        commits,
+        bash, edit, write, read, grep,
+        terminalCommands: bash,
+        longestSessionMinutes: Math.round(Number(m.longest_session_minutes || m.longestSessionMinutes || 0) || 0),
+        filesModified: Math.round(Number(m.files_modified || m.filesModified || 0) || 0),
+        linesChanged: Math.round(Number(m.lines_changed || m.linesChanged || 0) || 0),
+        taskAgentSessions,
+        commitsPerDay: Math.round(commits / days),
+        messagesPerDay: Math.round(messages / days),
+        commandsPerDay: Math.round(bash / days),
+        bashEditRatio: edit > 0 ? (bash / edit).toFixed(1) : 'N/A',
+        satisfaction: m.satisfaction_rate != null ? Math.round(m.satisfaction_rate * 100) : null,
+        multiClauding: m.multi_clauding_rate != null ? Math.round(m.multi_clauding_rate * 100) : null,
+        frictionEvents: (m.buggy_code_events || 0),
+        msgsPerSession: sessions > 0 ? Math.round(messages / sessions) : 0,
+        langs, topLang, langTotal,
+        langCount: Object.keys(langUsage).length,
+        codeLangCount: codeLangs.length,
+        workingStyle: data.user_profile?.working_style || '',
+        isEmerging: sessions < 50,
+        // Depth layer: carried from the CLI preview so browser claims keep "How you build".
+        facetSignals: boundedLocalFacetSignals(m.facet_signals),
+      };
+    }
+
+    // ========================================
+    // MICRO-INSIGHT: "THE REAL NUMBER"
+    // ========================================
+    function pickHolyShitStat(insights) {
+      const candidates = [];
+
+      // Estimated hours pair-programming with Claude (~45sec per message exchange)
+      const estHours = Math.round(insights.messages * 0.75 / 60);
+      if (estHours >= 8) {
+        const comparison = estHours >= 300
+          ? "That's almost two months of full-time work.<br><strong>Your longest collaboration — with an AI.</strong>"
+          : estHours >= 150
+          ? "A full month of working hours.<br><strong>Side by side with an AI.</strong>"
+          : estHours >= 60
+          ? "More than a full work week of pairing.<br><strong>This isn't a tool. It's a partnership.</strong>"
+          : "More than most people spend learning a new framework.<br><strong>You went deep.</strong>";
+        candidates.push({
+          number: estHours, unit: 'hours with Claude', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--purple))',
+          impressiveness: Math.min(estHours / 100, 1),
+        });
+      }
+
+      // Lines of code (estimated from write + edit tool counts, ~12 lines per operation)
+      const linesEst = Math.round(((insights.write || 0) + (insights.edit || 0)) * 12);
+      if (linesEst >= 10000) {
+        const comparison = linesEst >= 100000
+          ? "More than the Linux kernel's first release.<br><strong>You didn't just vibe — you built a world.</strong>"
+          : linesEst >= 50000
+          ? "More code than most open-source libraries.<br><strong>Created with an AI partner.</strong>"
+          : "A serious body of work.<br><strong>Line by line, you built something real.</strong>";
+        candidates.push({
+          number: fmt(linesEst), unit: 'lines of code', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--green))',
+          impressiveness: Math.min(linesEst / 120000, 1),
+        });
+      }
+
+      // Commands executed
+      if (insights.bash >= 5000) {
+        const comparison = insights.bash >= 30000
+          ? "One every few seconds of coding time.<br><strong>Your terminal never sleeps.</strong>"
+          : insights.bash >= 10000
+          ? "That's a command every couple of minutes, all day.<br><strong>You don't just write code — you run systems.</strong>"
+          : "Your terminal has stories to tell.<br><strong>Each command, a decision.</strong>";
+        candidates.push({
+          number: fmt(insights.bash), unit: 'commands executed', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--cyan))',
+          impressiveness: Math.min(insights.bash / 15000, 1),
+        });
+      }
+
+      // Commits shipped
+      if (insights.commits >= 200) {
+        const comparison = insights.commits >= 2000
+          ? "More than most teams ship in a year.<br><strong>You are the team.</strong>"
+          : insights.commits >= 500
+          ? "A commit every few hours, relentlessly.<br><strong>Shipping is not a phase. It's a lifestyle.</strong>"
+          : "Each one a choice to push forward.<br><strong>Consistent velocity.</strong>";
+        candidates.push({
+          number: fmt(insights.commits), unit: 'commits shipped', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--green))',
+          impressiveness: Math.min(insights.commits / 1000, 1),
+        });
+      }
+
+      // Files investigated (read + grep)
+      const filesInvestigated = (insights.read || 0) + (insights.grep || 0);
+      if (filesInvestigated >= 3000) {
+        const comparison = filesInvestigated >= 15000
+          ? "You've read more code than most devs write in a year.<br><strong>Understanding before creating.</strong>"
+          : "A deep investigation of every corner of your codebase.<br><strong>Nothing escapes you.</strong>";
+        candidates.push({
+          number: fmt(filesInvestigated), unit: 'files investigated', comparison,
+          gradient: 'linear-gradient(135deg, #fff 40%, var(--amber))',
+          impressiveness: Math.min(filesInvestigated / 8000, 1),
+        });
+      }
+
+      candidates.sort((a, b) => b.impressiveness - a.impressiveness);
+      return candidates[0] || null;
+    }
+
+    // Semantic language color map
+    const LANG_COLORS = {
+      javascript: '#f7df1e', typescript: '#3178c6', python: '#3776AB',
+      rust: '#dea584', go: '#00ADD8', html: '#e34c26', css: '#264de4',
+      markdown: '#6B8FFF', json: '#a78bfa', sql: '#e38c00',
+      terraform: '#7B42BC', bash: '#4EAA25', toml: '#9c4221',
+      ruby: '#CC342D', java: '#ED8B00', kotlin: '#7F52FF',
+      swift: '#F05138', cpp: '#00599C', c: '#A8B9CC',
+    };
+    const LANG_FALLBACK_COLORS = ['#6B8FFF', '#a78bfa', '#ff79c6', '#22d3ee', '#f59e0b', '#22c55e', '#ef4444'];
+
+    // Title-case language names
+    const LANG_NAMES = {
+      javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python',
+      rust: 'Rust', go: 'Go', html: 'HTML', css: 'CSS', markdown: 'Markdown',
+      json: 'JSON', sql: 'SQL', terraform: 'Terraform', bash: 'Bash',
+      toml: 'TOML', ruby: 'Ruby', java: 'Java', kotlin: 'Kotlin',
+      swift: 'Swift', cpp: 'C++', c: 'C',
+    };
+
+    function fmt(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 10000) return (n / 1000).toFixed(0) + 'K';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return n.toLocaleString();
+    }
+
+    function langColor(name, i) {
+      return LANG_COLORS[name.toLowerCase()] || LANG_FALLBACK_COLORS[i % LANG_FALLBACK_COLORS.length];
+    }
+    function langName(key) {
+      return LANG_NAMES[key.toLowerCase()] || key.charAt(0).toUpperCase() + key.slice(1);
+    }
+
+    // ========================================
+    // SLIDE GENERATION
+    // ========================================
+    function generateSlides(insights, archetype, scores, previousResult, options = {}) {
+      const a = ARCHETYPES[archetype];
+      const slides = [];
+      const emerging = insights.isEmerging;
+      const emergingLabel = emerging ? ' so far' : '';
+
+      // Slide 1: Opening
+      slides.push(`
+        <div class="slide active" data-slide="0" style="background:radial-gradient(ellipse at 50% 80%,rgba(107,143,255,0.08),transparent 70%)">
+          <div class="slide-label anim">vibestats wrapped</div>
+          <div class="big-number anim d1">${insights.days}</div>
+          <div class="big-unit anim d2">days in code${emergingLabel}</div>
+          <div style="font-size:clamp(28px,7vw,48px);font-weight:800;color:#fff;margin-top:28px" class="anim d3">${insights.name}</div>
+          <div style="font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-top:8px" class="anim d4">${insights.dateRange}</div>
+        </div>
+      `);
+
+      // Slide 2: The Pace
+      const paceNarrative = emerging
+        ? (insights.commitsPerDay > 5
+          ? "A strong start.<br><strong>The momentum is building.</strong>"
+          : "Every journey starts somewhere.<br><strong>You've begun.</strong>")
+        : (insights.commitsPerDay > 50
+          ? "That's not a sprint.<br><strong>That's a lifestyle.</strong>"
+          : insights.commitsPerDay > 5
+          ? "Consistent shipping velocity.<br><strong>You keep the momentum.</strong>"
+          : "Deliberate and intentional.<br><strong>Every commit counts.</strong>");
+
+      slides.push(`
+        <div class="slide" data-slide="1" style="background:radial-gradient(ellipse at 50% 30%,rgba(107,143,255,0.15),transparent 60%)">
+          <div class="slide-label anim">your pace</div>
+          <div class="big-number anim d1">${insights.commitsPerDay.toLocaleString()}</div>
+          <div class="big-unit anim d2">commits per day</div>
+          <div class="stat-row anim d3">${insights.messagesPerDay.toLocaleString()} messages &middot; ${insights.commandsPerDay.toLocaleString()} commands &middot; every day</div>
+          ${(() => { const comp = getComparisonMultiple('commitsPerDay', insights.commitsPerDay); return comp ? `<div class="stat-row anim d3" style="color:var(--accent);margin-top:4px">${comp}</div>` : ''; })()}
+          <div class="slide-body anim d4" style="margin-top:24px">${paceNarrative}</div>
+        </div>
+      `);
+
+      // Slide: The Real Number (holy shit stat)
+      const holyShit = pickHolyShitStat(insights);
+      if (holyShit) {
+        slides.push(`
+          <div class="slide" data-slide="${slides.length}" style="background:radial-gradient(ellipse at 50% 50%,rgba(167,139,250,0.15),transparent 60%)">
+            <div class="slide-label anim">the real number</div>
+            <div class="big-number anim d1" style="background:${holyShit.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${typeof holyShit.number === 'number' ? holyShit.number.toLocaleString() : holyShit.number}</div>
+            <div class="big-unit anim d2">${holyShit.unit}</div>
+            <div class="slide-body anim d3" style="margin-top:24px">${holyShit.comparison}</div>
+          </div>
+        `);
+      }
+
+      // Slide 3: Your Signature (tool ratio)
+      slides.push(`
+        <div class="slide" data-slide="2" style="background:radial-gradient(ellipse at 50% 50%,rgba(34,211,238,0.1),transparent 60%)">
+          <div class="slide-label anim">your signature</div>
+          <div class="slide-body anim d1" style="margin-bottom:8px">
+            <strong>For every edit you make,<br>you run ${insights.bashEditRatio} commands.</strong>
+          </div>
+          <div class="ratio-visual anim d2">
+            <div class="ratio-block">
+              <div class="ratio-num" style="color:var(--cyan)">${fmt(insights.bash)}</div>
+              <div class="ratio-label">bash</div>
+            </div>
+            <div class="ratio-sep">:</div>
+            <div class="ratio-block">
+              <div class="ratio-num" style="color:var(--accent)">${fmt(insights.edit)}</div>
+              <div class="ratio-label">edits</div>
+            </div>
+            <div class="ratio-sep">:</div>
+            <div class="ratio-block">
+              <div class="ratio-num" style="color:var(--purple)">${fmt(insights.write)}</div>
+              <div class="ratio-label">writes</div>
+            </div>
+          </div>
+          <div class="slide-body anim d3" style="margin-top:20px">
+            ${parseFloat(insights.bashEditRatio) > 2
+              ? "You don't write code.<br><strong>You orchestrate systems.</strong>"
+              : parseFloat(insights.bashEditRatio) > 1
+              ? "Balanced between execution and creation.<br><strong>A versatile workflow.</strong>"
+              : "You write more than you run.<br><strong>A creator at heart.</strong>"
+            }
+          </div>
+        </div>
+      `);
+
+      // Slide 4: Your Languages
+      const langBars = insights.langs.map(([name, val], i) => {
+        const pct = Math.round(val / insights.langTotal * 100);
+        const isNonCode = NON_CODE_LANGS.has(name.toLowerCase());
+        return `<div class="lang-bar-row">
+          <div class="lang-bar-name" style="${isNonCode ? 'opacity:0.5' : ''}">${langName(name)}</div>
+          <div class="lang-bar-track"><div class="lang-bar-fill" style="width:${pct}%;background:${langColor(name, i)};${isNonCode ? 'opacity:0.4' : ''}"></div></div>
+          <div class="lang-bar-pct">${pct}%</div>
+        </div>`;
+      }).join('');
+
+      // Dominant language insight
+      const topLangPct = insights.langs[0] ? Math.round(insights.langs[0][1] / insights.langTotal * 100) : 0;
+      const topLangDominant = topLangPct >= 60;
+
+      const langNarrative = insights.codeLangCount >= 5
+        ? "A true polyglot.<br>You speak the machine's many dialects."
+        : insights.codeLangCount >= 3
+        ? "A focused versatility.<br>You pick the right tool for the job."
+        : emerging
+        ? "Finding your language.<br><strong>The stack is forming.</strong>"
+        : topLangDominant
+        ? `<strong>${langName(insights.topLang)}</strong> is your native tongue.`
+        : "Deep specialization.<br><strong>One stack, mastered.</strong>";
+
+      slides.push(`
+        <div class="slide" data-slide="3" style="background:radial-gradient(ellipse at 50% 50%,rgba(255,121,198,0.08),transparent 60%)">
+          <div class="slide-label anim">your stack</div>
+          ${topLangDominant && !emerging ? `
+            <div class="big-number anim d1" style="font-size:clamp(36px,9vw,56px);background:linear-gradient(135deg,${langColor(insights.topLang, 0)},#fff 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${topLangPct}% ${langName(insights.topLang)}</div>
+          ` : `
+            <div class="slide-body anim d1" style="margin-bottom:4px">
+              <strong>${insights.codeLangCount} coding language${insights.codeLangCount !== 1 ? 's' : ''}</strong>
+              ${insights.langCount > insights.codeLangCount ? `<span style="font-size:12px;color:var(--text-dim)"> + ${insights.langCount - insights.codeLangCount} config</span>` : ''}
+            </div>
+          `}
+          <div class="lang-bars anim d2">${langBars}</div>
+          <div class="slide-body anim d3" style="font-size:14px">${langNarrative}</div>
+        </div>
+      `);
+
+      // Slide 5: Session Depth / Multi-clauding
+      if (insights.multiClauding !== null && insights.multiClauding > 0) {
+        // Multi-clauding slide
+        const termCount = insights.multiClauding >= 40 ? 8 : insights.multiClauding >= 20 ? 6 : 4;
+        const terms = Array(termCount).fill('<div class="mc-term"></div>').join('');
+        slides.push(`
+          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 50%,rgba(167,139,250,0.12),transparent 60%)">
+            <div class="slide-label anim">the multiplier</div>
+            <div class="big-number anim d1" style="background:linear-gradient(135deg,#fff 30%,var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${insights.multiClauding}%</div>
+            <div class="slide-body anim d2" style="margin-top:12px">
+              of your messages happened<br>
+              <strong>while you were already<br>in another session.</strong>
+            </div>
+            <div class="mc-terminals anim d3">${terms}</div>
+            <div class="slide-body anim d4" style="font-size:14px">
+              ${insights.multiClauding >= 40
+                ? "Most people use one Claude at a time.<br><strong>You run a fleet.</strong>"
+                : insights.multiClauding >= 15
+                ? "You multitask with Claude.<br><strong>Parallel thinking.</strong>"
+                : "Occasionally parallel.<br><strong>You know when to split focus.</strong>"
+              }
+            </div>
+          </div>
+        `);
+      } else {
+        // Session depth slide
+        slides.push(`
+          <div class="slide" data-slide="4" style="background:radial-gradient(ellipse at 50% 40%,rgba(167,139,250,0.1),transparent 60%)">
+            <div class="slide-label anim">session depth</div>
+            <div class="big-number anim d1">${insights.msgsPerSession}</div>
+            <div class="big-unit anim d2">messages per session</div>
+            <div class="stat-row anim d3">${fmt(insights.messages)} total &middot; ${fmt(insights.sessions)} sessions</div>
+            <div class="slide-body anim d4" style="margin-top:20px">
+              ${insights.msgsPerSession > 15
+                ? "When you start, you don't come up for air.<br><strong>Deep work.</strong>"
+                : insights.msgsPerSession > 8
+                ? "Focused sessions with clear intent.<br><strong>Quality conversations.</strong>"
+                : emerging
+                ? "Getting familiar.<br><strong>Your sessions will deepen.</strong>"
+                : "Quick, directed sessions.<br><strong>You know what you need.</strong>"
+              }
+            </div>
+          </div>
+        `);
+      }
+
+      // Slide 6: Resilience / Volume
+      if (insights.satisfaction !== null) {
+        slides.push(`
+          <div class="slide" data-slide="5" style="background:radial-gradient(ellipse at 50% 60%,rgba(34,197,94,0.1),transparent 60%)">
+            <div class="slide-label anim">through the storm</div>
+            <div class="big-number anim d1" style="background:linear-gradient(135deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${insights.satisfaction}%</div>
+            <div class="big-unit anim d2">satisfied</div>
+            ${insights.frictionEvents > 0 ? `<div class="stat-row anim d3">despite ${insights.frictionEvents} friction events</div>` : ''}
+            <div class="verdict anim d4" style="font-size:clamp(20px,5vw,32px);font-weight:800;color:#fff;text-align:center;margin-top:24px;line-height:1.4">
+              ${insights.satisfaction >= 80
+                ? "You and Claude?<br><strong>It's working.</strong>"
+                : insights.satisfaction >= 60
+                ? "Through the friction,<br><strong>you keep building.</strong>"
+                : "Plenty of friction.<br><strong>You push through anyway.</strong>"
+              }
+            </div>
+          </div>
+        `);
+      } else {
+        slides.push(`
+          <div class="slide" data-slide="5" style="background:radial-gradient(ellipse at 50% 40%,rgba(167,139,250,0.1),transparent 60%)">
+            <div class="slide-label anim">your volume</div>
+            <div class="big-number anim d1">${fmt(insights.messages)}</div>
+            <div class="big-unit anim d2">messages exchanged</div>
+            <div class="stat-row anim d3">${fmt(insights.sessions)} sessions &middot; ${fmt(insights.commits)} commits</div>
+            <div class="slide-body anim d4" style="margin-top:20px">
+              <strong>${insights.messages > 10000 ? "A serious partnership." : emerging ? "Just getting started." : "Growing together."}</strong>
+            </div>
+          </div>
+        `);
+      }
+
+      // Evolution slide (if previous result exists)
+      const evoSlide = buildEvolutionSlide(previousResult, archetype, insights);
+      if (evoSlide) slides.push(evoSlide);
+
+      // Prediction slide
+      const predSlide = buildPredictionSlide(scores, archetype, slides.length);
+      if (predSlide) slides.push(predSlide);
+
+      // Archetype Card (the shareable moment)
+      const rarity = getArchetypeRarity(archetype);
+      const communityTotal = aggregateStats ? aggregateStats.total : null;
+      const signature = buildVibeSignature(scores, archetype);
+
+      // Build shareable card URL with encoded params
+      const cardParams = new URLSearchParams({
+        a: archetype, n: insights.name, d: insights.days,
+        c: insights.commitsPerDay, l: insights.codeLangCount,
+        s: insights.sessions,
+      });
+      if (insights.satisfaction !== null) cardParams.set('sat', insights.satisfaction);
+      if (signature) cardParams.set('sig', signature.label);
+      const cardShareUrl = `https://vibestats.io/card?${cardParams}`;
+      // Carry the person: a claimed (logged-in) user's share routes to the asymmetric
+      // "pair with me" link; anonymous users keep the archetype-only share.
+      const shouldShareProfile = Boolean(currentUser && currentUser.gh_handle);
+      const profileShareUrl = shouldShareProfile ? `https://vibestats.io/u/${encodeURIComponent(currentUser.gh_handle)}` : null;
+      const shareClickUrl = shouldShareProfile
+        ? `https://vibestats.io/?compareTo=${encodeURIComponent(currentUser.gh_handle)}&compareArchetype=${encodeURIComponent(archetype)}`
+        : `https://vibestats.io/?compareArchetype=${encodeURIComponent(archetype)}`;
+      const compareSeed = shouldShareProfile ? currentUser.gh_handle : archetype;
+      const compareHref = comparisonIntent()
+        ? comparisonDestination(archetype, null)
+        : `/compare?me=${encodeURIComponent(compareSeed)}`;
+
+      // Tweet variants — pick one randomly
+      const tweetVariants = profileShareUrl
+        ? [
+            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\nSee how you'd pair with me:\nProfile: ${profileShareUrl}\n\nvia vibestats.io #vibestats #claudecode`,
+            `My Claude Code signature: ${signature ? signature.label : a.name}${rarity ? ` — ${rarity}% of vibecoders` : ''}\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n\nCompare yours with mine:\nProfile: ${profileShareUrl}\n\n#vibestats`,
+            `This is how I build with Claude Code: ${signature ? signature.label : a.name}\n\nHow do you compare?\nProfile: ${profileShareUrl}\n\nvia vibestats.io #vibestats`,
+          ]
+        : [
+            `I'm ${a.name}${signature ? ` (${signature.label})` : ''}\n\n"${a.tagline}"\n\n${insights.commitsPerDay} commits/day across ${insights.codeLangCount} languages.\n${insights.days} days of vibecoding.\n\nSee how you'd pair with this archetype:\nCard: ${cardShareUrl}\n\nvia vibestats.io #vibestats`,
+            `${signature ? signature.label : a.name}${rarity ? ` — ${rarity}% of vibecoders` : ''}\n\n"${a.tagline}"\n\n${fmt(insights.sessions)} sessions. ${insights.codeLangCount} languages. ${insights.days} days.\n\nCompare with this archetype:\nCard: ${cardShareUrl}\n\n#vibestats #claudecode`,
+            `My vibecoding signature: ${signature ? signature.label : a.name}\n\n${insights.commitsPerDay} commits/day. ${insights.codeLangCount} languages. ${insights.days} days deep.\n\nSee how you'd pair:\nCard: ${cardShareUrl}\n\nvia vibestats.io #vibestats`,
+          ];
+      const tweetText = tweetVariants[Math.floor(Math.random() * tweetVariants.length)];
+
+      slides.push(`
+        <div class="slide" data-slide="6" data-archetype="${archetype}" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.05) 50%,transparent 80%)">
+          <div class="archetype-card anim d1" id="archetype-card" style="--card-gradient:${a.borderGradient}">
+            <style>.archetype-card::before{background:${a.borderGradient}}</style>
+            <div class="shimmer-overlay"></div>
+            <div class="card-label">your vibecoding personality</div>
+            <div class="archetype-glyph" style="color:${a.color};box-shadow:0 0 34px ${a.color}24">${a.glyph || 'VS'}</div>
+            <div class="archetype-name" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${a.name}</div>
+            ${getSubArchetype(scores, archetype)}<div class="archetype-tagline">"${a.tagline}"</div>
+            ${rarity ? `<div style="font-family:var(--mono);font-size:11px;color:${ARCHETYPES[archetype].gradient.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'};margin-bottom:16px;padding:4px 14px;border:1px solid rgba(107,143,255,0.2);border-radius:20px;display:inline-block">${rarity}% of the vibestats sample are ${ARCHETYPES[archetype].name.replace('THE ', '')}s</div>` : ''}
+            ${signature ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin:${rarity ? '-8px' : '0'} 0 16px">1 of 56 Claude Code signature combos</div>` : ''}
+            <div class="card-stats">
+              <div class="card-stat">
+                <div class="card-stat-val">${fmt(insights.sessions)}</div>
+                <div class="card-stat-label">sessions</div>
+              </div>
+              <div class="card-stat">
+                <div class="card-stat-val">${insights.commitsPerDay}/day</div>
+                <div class="card-stat-label">commits</div>
+              </div>
+              <div class="card-stat">
+                <div class="card-stat-val">${insights.codeLangCount}</div>
+                <div class="card-stat-label">languages</div>
+              </div>
+              <div class="card-stat">
+                <div class="card-stat-val">${insights.satisfaction !== null ? insights.satisfaction + '%' : fmt(insights.messages)}</div>
+                <div class="card-stat-label">${insights.satisfaction !== null ? 'satisfaction' : 'messages'}</div>
+              </div>
+            </div>
+            <div class="card-user">${insights.name}</div>
+            <div class="card-period">${insights.days} days &middot; ${insights.dateRange}</div>
+            ${buildScoreBreakdown(scores, archetype)}
+            ${buildDnaBarcode(scores)}<div class="card-brand">vibestats.io</div>
+            ${communityTotal ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.05em">sample of ${communityTotal.toLocaleString()} &middot; early launch data</div>` : ''}
+          </div>
+          <div class="share-row anim d3">
+            <a class="share-btn share-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareClickUrl)}" target="_blank" rel="noopener">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              Share
+            </a>
+            <button class="share-btn share-btn-save" onclick="saveCard()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Save card
+            </button>
+            <button class="share-btn share-btn-copy" onclick="copyShareLink(this, '${shareClickUrl}')">
+              Copy link
+            </button>
+            <a class="share-btn share-btn-copy" href="${compareHref}" style="text-decoration:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Compare
+            </a>
+            <button class="share-btn share-btn-restart" onclick="location.reload()">
+              Try again
+            </button>
+          </div>
+          <div class="profile-save-status anim d4" id="profile-save-status"></div>
+        </div>
+      `);
+
+      return slides;
+    }
+
+    // ========================================
+    // SLIDE NAVIGATION
+    // ========================================
+    let currentSlide = 0;
+    let totalSlides = 0;
+    let transitioning = false;
+
+    function initSlideshow(slideHTML) {
+      const slidesEl = document.getElementById('slides');
+      slidesEl.innerHTML = slideHTML.join('');
+      totalSlides = slideHTML.length;
+      currentSlide = 0;
+
+      // Build progress bar
+      const progress = document.getElementById('progress');
+      progress.innerHTML = '';
+      for (let i = 0; i < totalSlides; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'progress-seg' + (i === 0 ? ' active' : '');
+        progress.appendChild(seg);
+      }
+
+      // Navigation
+      slidesEl.addEventListener('click', (e) => {
+        if (e.target.closest('.share-btn, .share-row, a, button')) return;
+        const rect = slidesEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        if (x < rect.width * 0.3 && currentSlide > 0) goTo(currentSlide - 1);
+        else if (currentSlide < totalSlides - 1) goTo(currentSlide + 1);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentSlide + 1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentSlide - 1); }
+      });
+
+      let tx = 0;
+      document.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+      document.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - tx;
+        if (Math.abs(dx) > 50) {
+          if (dx < 0) goTo(currentSlide + 1);
+          else goTo(currentSlide - 1);
+        }
+      }, { passive: true });
+    }
+
+    function goTo(index) {
+      if (transitioning || index === currentSlide || index < 0 || index >= totalSlides) return;
+      transitioning = true;
+      const slides = document.querySelectorAll('.slide');
+      slides[currentSlide].classList.add('exiting');
+      slides[currentSlide].classList.remove('active');
+      setTimeout(() => {
+        slides[currentSlide]?.classList.remove('exiting');
+        slides[index].classList.add('active');
+        currentSlide = index;
+        updateProgress();
+        document.getElementById('tap-hint').style.display =
+          index === totalSlides - 1 ? 'none' : '';
+        transitioning = false;
+      }, 300);
+    }
+
+    function updateProgress() {
+      document.querySelectorAll('.progress-seg').forEach((seg, i) => {
+        seg.className = 'progress-seg';
+        if (i < currentSlide) seg.classList.add('done');
+        if (i === currentSlide) seg.classList.add('active');
+      });
+    }
+
+    // ========================================
+    // FILE HANDLING
+    // ========================================
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const errorEl = document.getElementById('upload-error');
+    const authBar = document.getElementById('auth-bar');
+    const PENDING_UPLOAD_KEY = 'vibestats_pending_upload';
+    const PENDING_UPLOAD_TTL_MS = 30 * 60 * 1000;
+    let currentUser = null;
+    let identityStatus = {
+      identity_available: false,
+      profile_save_available: false,
+      weekly_digest_available: false,
+      missing: [],
+    };
+    let authReady = initAuth();
+    renderComparisonIntent();
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) processFile(e.target.files[0]);
+    });
+
+    function processFile(file) {
+      errorEl.style.display = 'none';
+      if (!file.name.endsWith('.json')) {
+        showError('Please upload a .json file');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data.metrics && !data.meta) {
+            showError('This doesn\'t look like a Claude Code insights file. Expected "metrics" or "meta" fields.');
+            return;
+          }
+          runAnalysis(data);
+        } catch (err) {
+          showError('Could not parse JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showError(msg) {
+      errorEl.classList.remove('info');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+
+    function showInfo(msg) {
+      errorEl.classList.add('info');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+
+    function archetypeDisplayName(archetype) {
+      const name = ARCHETYPES[archetype]?.name || '';
+      return name
+        .replace(/^THE /, '')
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function comparisonIntent() {
+      const params = new URLSearchParams(location.search);
+      const handle = String(params.get('compareTo') || '').trim().replace(/^@/, '');
+      const archetype = String(params.get('compareArchetype') || '').trim();
+      if (!ARCHETYPES[archetype]) return null;
+      if (params.has('compareTo')) {
+        if (!handle || !/^[a-zA-Z0-9-]{1,39}$/.test(handle)) return null;
+        return { kind: 'profile', handle, archetype };
+      }
+      return { kind: 'archetype', archetype };
+    }
+
+    // Keystone: every shared compare link lands on a real card + an instant,
+    // in-browser pairing result — before any terminal ask. No upload, nothing
+    // published; the pairing math is synthesized locally by window.VibeCompat.
+    // Fire-and-forget funnel beacon for the compare-intent loop (measures in-browser
+    // drop-off: landed -> saw pairing -> shared -> revealed). Never blocks or throws.
+    function trackFunnel(event, meta) {
+      try {
+        const payload = JSON.stringify({ event, archetype: meta && meta.archetype });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/event', new Blob([payload], { type: 'application/json' }));
+        } else {
+          fetch('/api/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
+        }
+      } catch (e) { /* analytics must never break the page */ }
+    }
+
+    // Hoisted (not a const) so renderComparisonIntent — called during init, before this
+    // point in the script — can use it without a temporal-dead-zone error.
+    function compareArchetypeOrder() {
+      return ['orchestrator', 'shipper', 'architect', 'debugger', 'polyglot', 'sprinter', 'deepdiver', 'builder'];
+    }
+
+    function intentSelectMarkup(defaultType) {
+      const opts = compareArchetypeOrder()
+        .filter((k) => ARCHETYPES[k])
+        .map((k) => `<option value="${k}"${k === defaultType ? ' selected' : ''}>${archetypeDisplayName(k)}</option>`)
+        .join('');
+      return `<select id="ci-select" class="ci-select" aria-label="Your archetype"><option value="">I'm a…</option>${opts}</select>`;
+    }
+
+    function intentPairing(visitorType, host) {
+      const VC = window.VibeCompat;
+      if (!VC || !visitorType || !host?.type) return null;
+      const compat = VC.profileCompatibility(visitorType, host.type, host.handle || '', null, host.subject || null);
+      const pairing = VC.getPairing(visitorType, host.type);
+      const name = pairing && pairing.name && pairing.name !== 'Unknown Pairing' ? pairing.name : '';
+      return { score: compat.score, line: compat.line, name };
+    }
+
+    function renderIntentResult(host) {
+      const sel = document.getElementById('ci-select');
+      const out = document.getElementById('ci-result');
+      if (!sel || !out) return;
+      const v = sel.value;
+      if (!v) { out.innerHTML = ''; return; }
+      const p = intentPairing(v, host);
+      if (!p) { out.innerHTML = ''; return; }
+      const score = Number(p.score) || 0;
+      // The durable, shareable pairing artifact: /compare?a=<your archetype>&b=<host>
+      // unfurls on X as an "X × host = PairingName" card and lands clickers on a page
+      // with a "reveal yours" CTA — so the payoff itself becomes the next share.
+      const hostParam = host.confirmed && host.handle ? host.handle : host.type;
+      const hostName = host.confirmed && host.handle ? `@${host.handle}` : `The ${host.label}`;
+      // Attribute downstream /compare views to the host profile when known (valid u:<handle> ref).
+      const refQ = host.confirmed && host.handle ? `&ref=u:${encodeURIComponent(host.handle)}` : '';
+      const pairUrl = `https://vibestats.io/compare?a=${encodeURIComponent(v)}&b=${encodeURIComponent(hostParam)}${refQ}`;
+      const tweetText = `My Claude Code pairing: ${archetypeDisplayName(v)} × ${hostName} = ${p.name || 'a match'} · ${score}% chemistry\n\nWho would you build with?`;
+      const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(pairUrl)}`;
+      out.innerHTML = `
+        <div class="ci-score">${score}<span>% chemistry</span></div>
+        ${p.name ? `<div class="ci-pairing">${safeHtml(archetypeDisplayName(v))} &times; ${safeHtml(host.label)} = ${safeHtml(p.name)}</div>` : ''}
+        <div class="ci-line">${safeHtml(p.line)}</div>
+        <div class="ci-share-row">
+          <a class="ci-share-btn ci-share-x" href="${xHref}" target="_blank" rel="noopener" onclick="trackFunnel('pairing_share_x')">Share our pairing</a>
+          <button type="button" class="ci-share-btn" onclick="copyShareLink(this, '${pairUrl}'); trackFunnel('pairing_share_copy')">Copy link</button>
+          <a class="ci-share-btn" href="${pairUrl}" onclick="trackFunnel('pairing_open_full')">See full pairing &rarr;</a>
+        </div>
+        <div class="ci-make">Make it real with your own Claude Code data &mdash; <button type="button" class="ci-make-link" onclick="trackFunnel('pairing_reveal_click'); revealMine()">reveal yours &darr;</button></div>`;
+      trackFunnel('pairing_shown', { archetype: v, host_confirmed: host.confirmed });
+    }
+
+    function ciStyleOnce() {
+      if (document.getElementById('ci-style')) return '';
+      return `<style id="ci-style">
+        .ci-panel{max-width:420px;margin:18px auto 8px;display:flex;flex-direction:column;align-items:center;gap:14px}
+        .ci-card{width:100%;border:1px solid;border-image:var(--ci-grad) 1;border-radius:16px;padding:20px 18px;text-align:center;background:rgba(255,255,255,0.02)}
+        .ci-glyph{font-family:var(--mono);font-size:26px;font-weight:700;margin-bottom:6px}
+        .ci-name{font-weight:800;font-size:20px;letter-spacing:0.02em;-webkit-text-fill-color:transparent}
+        .ci-tag{color:var(--text-muted);font-size:13px;margin:4px 0 8px}
+        .ci-meta{font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+        .ci-from{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;letter-spacing:0.05em}
+        .ci-pick{width:100%}
+        .ci-select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(107,143,255,0.3);background:rgba(10,12,20,0.6);color:var(--text);font-size:15px;font-family:inherit;cursor:pointer}
+        .ci-result:empty{display:none}
+        .ci-result{width:100%;text-align:center;border:1px solid rgba(107,143,255,0.18);border-radius:14px;padding:16px;background:radial-gradient(ellipse at 50% 0%,rgba(107,143,255,0.08),transparent 70%)}
+        .ci-score{font-weight:800;font-size:38px;line-height:1}
+        .ci-score span{font-weight:600;font-size:13px;color:var(--text-dim);margin-left:4px}
+        .ci-pairing{font-family:var(--mono);font-size:13px;color:var(--accent);margin:8px 0 6px}
+        .ci-line{color:var(--text-muted);font-size:13px;line-height:1.45}
+        .ci-make{font-size:12px;color:var(--text-dim);margin-top:12px}
+        .ci-make-link{background:none;border:none;color:var(--accent);font:inherit;font-size:12px;cursor:pointer;padding:0;text-decoration:underline}
+        .ci-share-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+        .ci-share-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid rgba(107,143,255,0.3);background:rgba(10,12,20,0.5);color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-decoration:none}
+        .ci-share-btn.ci-share-x{background:var(--accent);border-color:var(--accent);color:#0a0c14;font-weight:600}
+      </style>`;
+    }
+
+    // Idempotent: renders immediately with the URL-archetype preview, then re-renders
+    // when the real profile resolves. The identity claim ("@handle's vibestats") is
+    // shown ONLY when host.confirmed — an unresolved/private/missing handle never gets
+    // a card asserting it is some archetype.
+    function buildIntentPanel(host) {
+      const sub = document.querySelector('.upload-sub');
+      if (!sub) return;
+      const a = ARCHETYPES[host.type] || {};
+      const grad = a.borderGradient || a.gradient || 'var(--accent)';
+      const confirmed = Boolean(host.confirmed && host.handle);
+      const footer = confirmed
+        ? `<div class="ci-from">@${safeHtml(host.handle)}'s vibestats &middot; how do you pair?</div>`
+        : (host.note ? `<div class="ci-from">${safeHtml(host.note)}</div>` : '');
+      const cardHtml = `
+        <div class="ci-card" style="--ci-grad:${grad}">
+          <div class="ci-glyph" style="color:${a.color || 'var(--accent)'}">${safeHtml(a.glyph || 'VS')}</div>
+          <div class="ci-name" style="background:${a.gradient || 'var(--accent)'};-webkit-background-clip:text;background-clip:text">${safeHtml(a.name || host.label)}</div>
+          <div class="ci-tag">"${safeHtml(a.tagline || '')}"</div>
+          ${confirmed && host.card?.signature ? `<div class="ci-meta">${safeHtml(host.card.signature)}</div>` : ''}
+          ${confirmed && host.card?.tier ? `<div class="ci-meta">${safeHtml(host.card.tier)} signature</div>` : ''}
+          ${footer}
+        </div>`;
+      let panel = document.getElementById('compare-intent-panel');
+      if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'compare-intent-panel';
+        panel.className = 'ci-panel';
+        sub.parentNode.insertBefore(panel, sub.nextSibling);
+      }
+      const preserved = (document.getElementById('ci-select') || {}).value || '';
+      panel.innerHTML = `${ciStyleOnce()}${cardHtml}<div class="ci-pick">${intentSelectMarkup(preserved)}</div><div id="ci-result" class="ci-result" aria-live="polite"></div>`;
+      const sel = panel.querySelector('#ci-select');
+      if (sel) {
+        sel.addEventListener('change', () => renderIntentResult(host));
+        if (preserved) renderIntentResult(host); // keep the visitor's result across re-render
+      }
+    }
+
+    async function renderComparisonIntent() {
+      const intent = comparisonIntent();
+      if (!intent) return;
+      trackFunnel('compare_intent_view', { archetype: intent.archetype });
+      const titleEl = document.querySelector('.upload-title');
+      const subEl = document.querySelector('.upload-sub');
+      // The URL archetype is only an UNVERIFIED hint. host.confirmed stays false until a
+      // real profile resolves, so a crafted ?compareTo=realuser&compareArchetype=x can
+      // never render a card claiming that user is archetype x.
+      const host = { type: intent.archetype, label: archetypeDisplayName(intent.archetype), handle: '', confirmed: false, subject: null, card: {}, note: '' };
+
+      const dzh = document.querySelector('.drop-zone-hint');
+      if (dzh) dzh.textContent = 'or use the reveal command above for the real /insights directory';
+
+      if (intent.kind !== 'profile') {
+        if (titleEl) titleEl.textContent = `Compare with The ${host.label}`;
+        if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with The ${host.label} — instantly, no terminal.`;
+        const dzt = document.querySelector('.drop-zone-text');
+        if (dzt) dzt.textContent = `Drop legacy insights JSON to compare with The ${host.label}`;
+        buildIntentPanel(host);
+        return;
+      }
+
+      // Profile intent: show the interactive preview IMMEDIATELY (no fetch wait, no
+      // identity claim yet), then upgrade — or honestly downgrade — once /api/u resolves.
+      if (titleEl) titleEl.textContent = `Compare with @${intent.handle}`;
+      if (subEl) subEl.textContent = `Pick your archetype to see how you'd pair with @${intent.handle} — instantly, no terminal.`;
+      const dzt = document.querySelector('.drop-zone-text');
+      if (dzt) dzt.textContent = `Drop legacy insights JSON to compare with @${intent.handle}`;
+      buildIntentPanel(host);
+
+      try {
+        const res = await fetch(`/api/u/${encodeURIComponent(intent.handle)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const up = data.uploads && data.uploads[0];
+          if (up && up.archetype && ARCHETYPES[up.archetype]) {
+            // Verified: API is the source of truth (sender may have re-uploaded).
+            host.type = up.archetype;
+            host.label = archetypeDisplayName(up.archetype);
+            host.handle = intent.handle;
+            host.confirmed = true;
+            host.subject = Array.isArray(up.facets) && up.facets.length ? { facets: up.facets } : null;
+            host.card = { signature: (up.raw_meta && up.raw_meta.signature) || '', tier: (data.rarity && data.rarity.tier) || '' };
+            buildIntentPanel(host);
+            return;
+          }
+        }
+      } catch (e) {
+        // fall through to the honest unavailable state
+      }
+      // Could not verify @handle: drop the identity claim, preview the archetype only.
+      host.handle = '';
+      host.confirmed = false;
+      host.note = `Couldn't load @${intent.handle} — previewing the ${host.label} archetype`;
+      if (subEl) subEl.textContent = `We couldn't load @${intent.handle}'s profile. Previewing the ${host.label} archetype — reveal yours to compare for real.`;
+      buildIntentPanel(host);
+    }
+
+    // ========================================
+    // AGGREGATE STATS
+    // ========================================
+    let aggregateStats = null;
+
+    async function fetchAggregateStats() {
+      try {
+        const res = await fetch('/api/stats');
+        if (res.ok) aggregateStats = await res.json();
+      } catch (e) { /* graceful degradation */ }
+    }
+
+    async function submitStats(archetype, insights) {
+      try {
+        await fetch('/api/stats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            archetype,
+            commitsPerDay: insights.commitsPerDay,
+            sessions: insights.sessions,
+            languages: insights.codeLangCount,
+            msgsPerSession: insights.msgsPerSession,
+            days: insights.days,
+          }),
+        });
+      } catch (e) { /* fire and forget */ }
+    }
+
+    async function fetchIdentityStatus() {
+      try {
+        const res = await fetch('/api/identity-status', { cache: 'no-store' });
+        const body = res.ok ? await res.json() : {};
+        identityStatus = {
+          identity_available: body.identity_available === true,
+          profile_save_available: body.profile_save_available === true,
+          weekly_digest_available: body.weekly_digest_available === true,
+          missing: Array.isArray(body.missing) ? body.missing : [],
+        };
+      } catch (e) {
+        identityStatus = {
+          identity_available: false,
+          profile_save_available: false,
+          weekly_digest_available: false,
+          missing: ['identity_status'],
+        };
+      }
+      return identityStatus;
+    }
+
+    async function initAuth() {
+      await fetchIdentityStatus();
+      if (!identityStatus.profile_save_available) {
+        currentUser = null;
+        renderAuth();
+        return currentUser;
+      }
+
+      try {
+        const res = await fetch('/api/me', { cache: 'no-store' });
+        currentUser = res.ok ? (await res.json()).user : null;
+      } catch (e) {
+        currentUser = null;
+      }
+      renderAuth();
+      if (currentUser) await resumePendingProfileSave();
+      return currentUser;
+    }
+
+    function boundedMoment(id, value, threshold, weight = 1, max = 1000000) {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n) || n < threshold) return null;
+      const safeValue = Math.min(Math.max(Math.round(n), 0), max);
+      return { id, value: safeValue, score: (safeValue / threshold) * weight };
+    }
+
+    function buildBehavioralMoments(insights) {
+      return [
+        boundedMoment('longest_session_minutes', insights.longestSessionMinutes, 60, 1.25, 60 * 72),
+        boundedMoment('terminal_commands', insights.terminalCommands, 100, 1.1, 1000000),
+        boundedMoment('files_modified', insights.filesModified, 10, 0.9, 100000),
+        boundedMoment('lines_changed', insights.linesChanged, 500, 0.85, 5000000),
+        boundedMoment('task_agent_sessions', insights.taskAgentSessions, 2, 1, 100000),
+        boundedMoment('debug_events', insights.frictionEvents, 2, 0.7, 100000),
+      ]
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map(({ id, value }) => ({ id, value }));
+    }
+
+    function renderAuth() {
+      const returnTo = encodeURIComponent(location.pathname + location.search);
+      if (currentUser) {
+        authBar.innerHTML = `
+          <a class="auth-pill" href="/u/${encodeURIComponent(currentUser.gh_handle)}">
+            ${currentUser.avatar_url ? `<img src="${currentUser.avatar_url}" alt="">` : ''}
+            @${currentUser.gh_handle}
+          </a>
+          <a class="auth-pill" href="/browse">Browse</a>
+          <a class="auth-pill" href="/promises">Promises</a>
+          <a class="auth-pill" href="/settings">Settings</a>
+        `;
+      } else {
+        authBar.innerHTML = identityStatus.profile_save_available
+          ? `
+            <a class="auth-pill" href="/browse">Browse</a>
+            <a class="auth-pill" href="/promises">Promises</a>
+            <a class="auth-pill primary" href="/api/auth/github/start?returnTo=${returnTo}">Sign in with GitHub</a>
+          `
+          : `
+            <a class="auth-pill" href="/browse">Browse</a>
+            <a class="auth-pill" href="/promises">Promises</a>
+            <span class="auth-pill muted">Profile saves pending</span>
+          `;
+      }
+    }
+
+    function cleanClaimCode(value) {
+      const code = String(value || '').trim().toUpperCase();
+      return /^VIBE-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(code) ? code : '';
+    }
+
+    function derivedUploadPayload(archetype, scores, insights, options = {}) {
+      const signature = buildVibeSignature(scores, archetype);
+      const moments = buildBehavioralMoments(insights);
+      const payload = {
+        archetype,
+        scores,
+        metrics: {
+          commitsPerDay: insights.commitsPerDay,
+          sessions: insights.sessions,
+          languages: insights.codeLangCount,
+          msgsPerSession: insights.msgsPerSession,
+          days: insights.days,
+          ...(insights.facetSignals ? { facet_signals: insights.facetSignals } : {}),
+        },
+        raw_meta: {
+          dateRange: insights.dateRange,
+          source: 'browser',
+          version: 'wave-1',
+          ...(signature ? {
+            signature: signature.label,
+            signatureCombo: signature.combo,
+            secondaryArchetype: signature.secondary,
+            signatureFingerprint: signature.fingerprint,
+          } : {}),
+          ...(moments.length ? { moments } : {}),
+        },
+      };
+      const claimCode = cleanClaimCode(options.claimCode);
+      if (claimCode) payload.claim_code = claimCode;
+      return payload;
+    }
+
+    function updateProfileSaveStatus(html, className = '') {
+      const el = document.getElementById('profile-save-status');
+      if (!el) return;
+      el.className = `profile-save-status anim d4 ${className}`.trim();
+      el.style.display = 'block';
+      el.innerHTML = html;
+    }
+
+    function safeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function canonicalVibestatsUrl(pathOrUrl) {
+      try {
+        return new URL(pathOrUrl || '/', 'https://vibestats.io').toString();
+      } catch {
+        return 'https://vibestats.io/';
+      }
+    }
+
+    function currentAttributionRef() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const ref = params.get('ref') || '';
+        if (/^(r|u):[A-Za-z0-9_-]{1,39}$/.test(ref)) return ref;
+        const compareTo = (params.get('compareTo') || '').replace(/^@/, '');
+        if (/^[A-Za-z0-9-]{1,39}$/.test(compareTo)) return `u:${compareTo}`;
+      } catch (e) { /* ignore malformed URL state */ }
+      return '';
+    }
+
+    function payloadWithAttribution(payload, surface = 'homepage') {
+      const ref = currentAttributionRef();
+      if (!ref) return payload;
+      return {
+        ...payload,
+        attribution: { ref, surface },
+      };
+    }
+
+    function pathFromSaveUrl(url, fallback = '/') {
+      if (url) {
+        try {
+          const parsed = new URL(url, location.origin);
+          return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        } catch (e) { /* fall through */ }
+      }
+      return fallback;
+    }
+
+    function profilePathFromSave(profileUrl) {
+      const fallback = `/u/${encodeURIComponent(currentUser?.gh_handle || '')}`;
+      return pathFromSaveUrl(profileUrl, fallback);
+    }
+
+    function comparePathFromSave(compareUrl, archetype) {
+      if (compareUrl) return pathFromSaveUrl(compareUrl, compareUrl);
+      const handle = currentUser?.gh_handle || '';
+      if (!handle) return `/?compareArchetype=${encodeURIComponent(archetype)}`;
+      return `/?compareTo=${encodeURIComponent(handle)}&compareArchetype=${encodeURIComponent(archetype)}`;
+    }
+
+    function badgePathFromSave(badgeUrl, profilePath) {
+      if (badgeUrl) return pathFromSaveUrl(badgeUrl, badgeUrl);
+      return `${profilePath}/badge.svg`;
+    }
+
+    function embedPathFromSave(embedUrl, profilePath) {
+      if (embedUrl) return pathFromSaveUrl(embedUrl, embedUrl);
+      return `${profilePath}/embed`;
+    }
+
+    function postSaveInviteText(profilePath, comparePath, archetype, scores) {
+      const signature = buildVibeSignature(scores || {}, archetype);
+      const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
+      const handle = currentUser?.gh_handle || 'me';
+      const label = signature?.label || arch.name;
+      return `See how you'd pair with @${handle}, a ${label}:\n${canonicalVibestatsUrl(comparePath)}\nProfile: ${canonicalVibestatsUrl(profilePath)}`;
+    }
+
+    function readmeBadgeMarkdown(handle, badgePath, compareUrl) {
+      return `[![vibestats: @${handle}](${canonicalVibestatsUrl(badgePath)})](${compareUrl})`;
+    }
+
+    const INSTALL_CLAUDE_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command';
+
+    function wirePostSaveActions({ profilePath, comparePath, badgePath, embedPath }, archetype, scores) {
+      const handle = currentUser?.gh_handle || '';
+      const canonicalProfile = canonicalVibestatsUrl(profilePath);
+      const canonicalCompare = canonicalVibestatsUrl(comparePath);
+      const badgeMarkdown = readmeBadgeMarkdown(handle, badgePath, canonicalCompare);
+      const embedHtml = `<iframe src="${canonicalVibestatsUrl(embedPath)}" width="600" height="320" loading="lazy" title="@${handle} on vibestats" style="border:0;border-radius:8px;max-width:100%;"></iframe>`;
+      document.getElementById('copy-saved-invite')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, postSaveInviteText(profilePath, comparePath, archetype, scores), 'Invite copied!', 'Copy invite');
+      });
+      document.getElementById('copy-saved-profile')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, canonicalProfile, 'Profile copied!', 'Copy profile');
+      });
+      document.getElementById('copy-saved-badge')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, badgeMarkdown, 'Badge copied!', 'Copy README badge');
+      });
+      document.getElementById('copy-saved-embed')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, embedHtml, 'Embed copied!', 'Copy embed');
+      });
+      document.getElementById('copy-saved-install')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, INSTALL_CLAUDE_COMMAND, '/vibestats copied!', 'Copy /vibestats install');
+      });
+    }
+
+    function renderSavedProfileStatus(saveResult, archetype, scores) {
+      const result = typeof saveResult === 'string' ? { profile_url: saveResult } : (saveResult || {});
+      const profilePath = profilePathFromSave(result.profile_url);
+      const comparePath = comparePathFromSave(result.compare_url, archetype);
+      const badgePath = badgePathFromSave(result.badge_url, profilePath);
+      const embedPath = embedPathFromSave(result.embed_url, profilePath);
+      const privacyPath = pathFromSaveUrl(result.privacy_url, '/settings#privacy-settings');
+      const matchSettingsPath = pathFromSaveUrl(result.match_settings_url, '/settings#match-settings');
+      const leaderboardPath = pathFromSaveUrl(result.leaderboard_url, `/leaderboard/${encodeURIComponent(archetype)}`);
+      const matchPath = pathFromSaveUrl(result.match_url, `/match?goal=pair-coding&archetype=${encodeURIComponent(archetype)}`);
+      const safeProfilePath = safeHtml(profilePath);
+      const safePairingBuilderUrl = safeHtml(`/compare?me=${encodeURIComponent(currentUser?.gh_handle || '')}`);
+      const safePrivacyPath = safeHtml(privacyPath);
+      const safeMatchSettingsPath = safeHtml(matchSettingsPath);
+      const safeLeaderboardPath = safeHtml(leaderboardPath);
+      const safeMatchPath = safeHtml(matchPath);
+      const digestInline = `
+        <div class="digest-inline">
+          <input type="email" id="digest-email-inline" placeholder="you@example.com" autocomplete="email" aria-label="Weekly digest email">
+          <button type="button" id="digest-opt-in-inline">Get weekly digest</button>
+          <div class="digest-inline-note">${identityStatus.weekly_digest_available === true
+            ? 'Monday email with evolution, rarity, and leaderboard movement.'
+            : 'Reserve the Monday digest now; delivery starts when email infrastructure is enabled.'} Raw insights JSON never leaves your browser.</div>
+        </div>`;
+      updateProfileSaveStatus(`
+        Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a>
+        <div class="post-save-note">Your profile starts unlisted. Put the README badge in your GitHub repos; every click opens your compare-first reveal path. Go public only when you want browse, match, and leaderboard discovery.</div>
+        <div class="post-save-actions">
+          <button type="button" id="copy-saved-invite">Copy invite</button>
+          <button type="button" class="secondary" id="copy-saved-profile">Copy profile</button>
+          <a href="${safePairingBuilderUrl}">Create pairing link</a>
+          <a class="secondary" href="${safePrivacyPath}">Go public</a>
+          <a class="secondary" href="${safeMatchSettingsPath}">Set match intent</a>
+          <a class="secondary" href="${safeLeaderboardPath}">View weekly board</a>
+          <a class="secondary" href="${safeMatchPath}">Find matches</a>
+          <a class="secondary" href="/settings#cli-sync">Set up CLI sync</a>
+          <button type="button" class="secondary" id="copy-saved-install">Copy /vibestats install</button>
+          <button type="button" class="secondary" id="copy-saved-badge">Copy README badge</button>
+          <button type="button" class="secondary" id="copy-saved-embed">Copy embed</button>
+        </div>
+        ${digestInline}
+      `);
+      wirePostSaveActions({ profilePath, comparePath, badgePath, embedPath }, archetype, scores);
+      const button = document.getElementById('digest-opt-in-inline');
+      const input = document.getElementById('digest-email-inline');
+      if (!button || !input) return;
+      button.addEventListener('click', async () => {
+        const email = input.value.trim();
+        if (!email) {
+          button.textContent = 'Email required';
+          setTimeout(() => { button.textContent = 'Get weekly digest'; }, 1400);
+          input.focus();
+          return;
+        }
+        button.disabled = true;
+        button.textContent = 'Saving...';
+        try {
+          const res = await fetch('/api/settings', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              weekly_digest_opt_in: true,
+              digest_email: email,
+            }),
+          });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.error || 'Digest opt-in failed');
+          button.textContent = identityStatus.weekly_digest_available === true ? 'Digest on' : 'Digest reserved';
+          input.value = body.settings?.digest_email || email;
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = 'Try again';
+          updateProfileSaveStatus(`Saved to your profile &rarr; <a href="${safeProfilePath}">${safeProfilePath}</a><br>${safeHtml(err.message)}`, 'error');
+        }
+      });
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    async function copyWithButton(button, text, doneLabel, idleLabel) {
+      if (!button) return;
+      try {
+        await copyText(text);
+        button.textContent = doneLabel;
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = idleLabel; }, 1500);
+    }
+
+    function copyShareLink(button, shareUrl) {
+      copyWithButton(button, shareUrl, 'Copied!', 'Copy link');
+    }
+
+    function comparisonDestination(archetype, user = currentUser) {
+      const intent = comparisonIntent();
+      if (!intent) return '';
+      if (intent.kind === 'profile') {
+        return user
+        ? `/u/${encodeURIComponent(intent.handle)}/pair/${encodeURIComponent(user.gh_handle)}`
+        : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(intent.handle)}`;
+      }
+      return user
+        ? `/compare?a=${encodeURIComponent(user.gh_handle)}&b=${encodeURIComponent(intent.archetype)}`
+        : `/compare?a=${encodeURIComponent(archetype)}&b=${encodeURIComponent(intent.archetype)}`;
+    }
+
+    function comparisonReturnLink(archetype) {
+      const intent = comparisonIntent();
+      if (!intent) return '';
+      const compareUrl = comparisonDestination(archetype);
+      const label = intent.kind === 'profile'
+        ? `See your pairing with @${intent.handle}`
+        : `Compare with The ${archetypeDisplayName(intent.archetype)}`;
+      return `<br><a href="${compareUrl}">${label}</a>`;
+    }
+
+    function comparisonTargetLabel(intent) {
+      if (!intent) return 'your comparison';
+      if (intent.kind === 'profile') return `@${intent.handle}`;
+      return `The ${archetypeDisplayName(intent.archetype)}`;
+    }
+
+    function clearPendingProfileSave() {
+      try {
+        localStorage.removeItem(PENDING_UPLOAD_KEY);
+      } catch (e) { /* localStorage unavailable */ }
+    }
+
+    function stashPendingProfileSave(archetype, scores, insights, options = {}) {
+      const intent = comparisonIntent();
+      const pending = {
+        createdAt: Date.now(),
+        compareTo: intent?.kind === 'profile' ? intent.handle : null,
+        compareArchetype: intent?.archetype || null,
+        // Only derived profile data is persisted here. Raw insights JSON is never stored.
+        payload: derivedUploadPayload(archetype, scores, insights, { claimCode: options.claimCode }),
+      };
+      try {
+        localStorage.setItem(PENDING_UPLOAD_KEY, JSON.stringify(pending));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function readPendingProfileSave() {
+      try {
+        const pending = JSON.parse(localStorage.getItem(PENDING_UPLOAD_KEY) || 'null');
+        if (!pending?.payload?.archetype || !ARCHETYPES[pending.payload.archetype]) return null;
+        if (pending.compareTo && !/^[a-zA-Z0-9-]{1,39}$/.test(pending.compareTo)) {
+          clearPendingProfileSave();
+          return null;
+        }
+        if (pending.compareArchetype && !ARCHETYPES[pending.compareArchetype]) {
+          clearPendingProfileSave();
+          return null;
+        }
+        if (!pending.createdAt || Date.now() - pending.createdAt > PENDING_UPLOAD_TTL_MS) {
+          clearPendingProfileSave();
+          return null;
+        }
+        return pending;
+      } catch (e) {
+        clearPendingProfileSave();
+        return null;
+      }
+    }
+
+    async function postDerivedUploadPayload(payload) {
+      const res = await fetch('/api/uploads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadWithAttribution(payload, 'homepage')),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Profile save failed');
+      return body;
+    }
+
+    async function postAnonymousRevealPayload(payload) {
+      const res = await fetch('/api/reveals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadWithAttribution(payload, 'homepage')),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Reveal link failed');
+      return body;
+    }
+
+    function anonymousRevealShareText(archetype, scores, revealUrl) {
+      const signature = buildVibeSignature(scores || {}, archetype);
+      const arch = ARCHETYPES[archetype] || ARCHETYPES.builder;
+      const label = signature?.label || arch.name.replace(/^THE /, '');
+      return `Anonymous vibestats reveal: ${label}. Raw /insights stayed local. What are you? ${revealUrl}`;
+    }
+
+    function revealExpiryLabel(value) {
+      const date = new Date(value || '');
+      if (!Number.isFinite(date.getTime())) return '30 days';
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function renderAnonymousRevealStatus(snapshot, archetype, scores) {
+      const revealPath = pathFromSaveUrl(snapshot.reveal_path || snapshot.reveal_url, '/');
+      const sharePath = pathFromSaveUrl(snapshot.share_path || snapshot.share_url || snapshot.reveal_path || snapshot.reveal_url, revealPath);
+      const revealUrl = canonicalVibestatsUrl(snapshot.share_url || sharePath);
+      const text = anonymousRevealShareText(archetype, scores, revealUrl);
+      const expiry = revealExpiryLabel(snapshot.expires_at);
+      const claimLaterAction = identityStatus.profile_save_available
+        ? `<a class="secondary" href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">Optional GitHub claim</a>`
+        : '';
+      const xUrl = `https://twitter.com/intent/tweet?${new URLSearchParams({
+        text: text.replace(` ${revealUrl}`, ''),
+        url: revealUrl,
+      }).toString()}`;
+      updateProfileSaveStatus(`
+        <strong>Anonymous share link created.</strong>
+        <div class="post-save-note">Public unlisted link; anyone with it can view this derived snapshot until ${safeHtml(expiry)}. No name, GitHub handle, leaderboard entry, or raw /insights data.</div>
+        <div class="post-save-actions">
+          <a class="primary" href="${safeHtml(revealPath)}">Open reveal</a>
+          <button type="button" class="secondary" id="copy-anon-reveal-link">Copy link</button>
+          <button type="button" class="secondary" id="copy-anon-reveal-text">Copy text</button>
+          <a class="secondary" href="${safeHtml(xUrl)}" target="_blank" rel="noopener">Share on X</a>
+          ${claimLaterAction}
+        </div>
+      `);
+      document.getElementById('copy-anon-reveal-link')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, revealUrl, 'Link copied!', 'Copy link');
+      });
+      document.getElementById('copy-anon-reveal-text')?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, text, 'Text copied!', 'Copy text');
+      });
+    }
+
+    function wireAnonymousRevealAction(buttonId, archetype, scores, insights) {
+      document.getElementById(buttonId)?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        const idle = button.textContent;
+        button.textContent = 'Creating...';
+        try {
+          const body = await postAnonymousRevealPayload(derivedUploadPayload(archetype, scores, insights));
+          renderAnonymousRevealStatus(body, archetype, scores);
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = idle;
+          updateProfileSaveStatus(safeHtml(err.message), 'error');
+        }
+      });
+    }
+
+    function wireProfileSaveAction(buttonId, archetype, scores, insights) {
+      document.getElementById(buttonId)?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const idle = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Saving...';
+        updateProfileSaveStatus('Saving derived metrics to your profile...');
+        try {
+          const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights));
+          const compareUrl = comparisonDestination(archetype);
+          if (compareUrl) {
+            updateProfileSaveStatus(`Saved to your profile. Opening your pairing with ${safeHtml(comparisonTargetLabel(comparisonIntent()))}...<br><a href="${compareUrl}">Open now</a>`);
+            setTimeout(() => { location.href = compareUrl; }, 650);
+            return;
+          }
+          renderSavedProfileStatus(body, archetype, scores);
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = idle;
+          updateProfileSaveStatus(err.message, 'error');
+        }
+      });
+    }
+
+    function wireLocalPreviewUrlCopy(buttonId) {
+      document.getElementById(buttonId)?.addEventListener('click', (event) => {
+        copyWithButton(event.currentTarget, location.href, 'Preview URL copied!', 'Copy preview URL');
+      });
+    }
+
+    async function resumePendingProfileSave() {
+      const pending = readPendingProfileSave();
+      if (!pending || !currentUser) return;
+
+      const intent = comparisonIntent();
+      if (pending.compareTo && (!intent || intent.handle !== pending.compareTo)) return;
+      if (!pending.compareTo && pending.compareArchetype && (!intent || intent.kind !== 'archetype' || intent.archetype !== pending.compareArchetype)) return;
+
+      const pendingCompareLabel = pending.compareTo
+        ? `your pairing with @${pending.compareTo}`
+        : pending.compareArchetype
+        ? `your ${archetypeDisplayName(pending.compareArchetype)} comparison`
+        : 'your profile save';
+      showInfo(`Finishing your saved result, then opening ${pendingCompareLabel}...`);
+      try {
+        const body = await postDerivedUploadPayload(pending.payload);
+        clearPendingProfileSave();
+        const destination = pending.compareTo
+          ? `/u/${encodeURIComponent(pending.compareTo)}/pair/${encodeURIComponent(currentUser.gh_handle)}`
+          : pending.compareArchetype
+          ? `/compare?a=${encodeURIComponent(currentUser.gh_handle)}&b=${encodeURIComponent(pending.compareArchetype)}`
+          : pathFromSaveUrl(body.recap_url, body.profile_url || `/u/${encodeURIComponent(currentUser.gh_handle)}`);
+        showInfo('Saved derived metrics. Opening your result...');
+        setTimeout(() => { location.href = destination; }, 650);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    function renderLocalPreviewClaim(archetype, scores, insights, options = {}) {
+      if (!currentUser) {
+        const stashed = identityStatus.profile_save_available
+          ? stashPendingProfileSave(archetype, scores, insights, { claimCode: options.claimCode })
+          : false;
+        const authAction = identityStatus.profile_save_available
+          ? `<a class="secondary" href="/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}">${stashed ? 'Claim with GitHub' : 'Sign in with GitHub'}</a>`
+          : '<button type="button" class="secondary" disabled>GitHub claim unavailable</button>';
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">Share this reveal anonymously without GitHub${identityStatus.profile_save_available ? ', or claim a durable profile later' : ''}. Raw /insights stayed local; this page only has derived preview metrics.</div>
+          <div class="post-save-actions">
+            <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+            <button type="button" class="secondary" id="copy-local-preview-url">Copy preview URL</button>
+            ${authAction}
+          </div>
+        `);
+        wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
+        wireLocalPreviewUrlCopy('copy-local-preview-url');
+        return;
+      }
+
+      if (!identityStatus.profile_save_available) {
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">GitHub profile claiming is not configured on this deployment. You can still create an anonymous unlisted reveal link from derived metrics only.</div>
+          <div class="post-save-actions">
+            <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+            <button type="button" class="secondary" id="copy-local-preview-url">Copy preview URL</button>
+            <button type="button" class="secondary" disabled>Profile saves pending</button>
+          </div>
+        `, 'muted');
+        wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
+        wireLocalPreviewUrlCopy('copy-local-preview-url');
+        return;
+      }
+
+      updateProfileSaveStatus(`
+        <strong>Nothing published yet.</strong>
+        <div class="post-save-note">Share anonymously, or save this derived result to @${safeHtml(currentUser.gh_handle)} and open your wrapped recap. Raw /insights stayed local.</div>
+        <div class="post-save-actions">
+          <button type="button" class="primary" id="create-anon-local-reveal">Create anonymous share link</button>
+          <button type="button" class="secondary" id="copy-local-preview-url">Copy preview URL</button>
+          <button type="button" class="secondary" id="claim-local-preview">Claim this profile</button>
+          <a class="secondary" href="/settings#privacy-settings">Privacy settings</a>
+        </div>
+      `);
+      wireAnonymousRevealAction('create-anon-local-reveal', archetype, scores, insights);
+      wireLocalPreviewUrlCopy('copy-local-preview-url');
+      document.getElementById('claim-local-preview')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = 'Claiming...';
+        try {
+          const body = await postDerivedUploadPayload(derivedUploadPayload(archetype, scores, insights, { claimCode: options.claimCode }));
+          const recapPath = pathFromSaveUrl(body.recap_url, body.profile_url || `/u/${encodeURIComponent(currentUser.gh_handle)}`);
+          updateProfileSaveStatus(`Claimed. Opening your wrapped recap...<br><a href="${safeHtml(recapPath)}">Open now</a>`);
+          setTimeout(() => { location.href = recapPath; }, 650);
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = 'Claim this profile';
+          updateProfileSaveStatus(safeHtml(err.message), 'error');
+        }
+      });
+    }
+
+    async function saveProfileUpload(archetype, scores, insights, options = {}) {
+      await authReady;
+      if (options.localPreview) {
+        renderLocalPreviewClaim(archetype, scores, insights, options);
+        return;
+      }
+      if (options.demo) {
+        updateProfileSaveStatus(`Demo data is not saved to profiles.${comparisonReturnLink(archetype)}`, 'muted');
+        return;
+      }
+      if (!identityStatus.profile_save_available) {
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">Profile saves are not configured on this deployment yet. Create an anonymous unlisted reveal link instead; raw /insights stays local.</div>
+          <div class="post-save-actions">
+            <button type="button" class="primary" id="create-anon-browser-reveal">Create anonymous share link</button>
+            <button type="button" class="secondary" disabled>Profile saves pending</button>
+          </div>
+          ${comparisonReturnLink(archetype)}
+        `, 'muted');
+        wireAnonymousRevealAction('create-anon-browser-reveal', archetype, scores, insights);
+        return;
+      }
+      if (!currentUser) {
+        const stashed = stashPendingProfileSave(archetype, scores, insights);
+        const intent = comparisonIntent();
+        const authHref = `/api/auth/github/start?returnTo=${encodeURIComponent(location.pathname + location.search)}`;
+        const saveCopy = stashed && intent?.kind === 'profile'
+          ? 'Claim with GitHub to save this derived result and open your pairing.'
+          : stashed && intent?.kind === 'archetype'
+          ? 'Claim with GitHub to save this derived result and compare as your profile.'
+          : 'Claim with GitHub to save and track your evolution.';
+        updateProfileSaveStatus(`
+          <strong>Nothing published yet.</strong>
+          <div class="post-save-note">Create an anonymous unlisted reveal link now, or ${safeHtml(saveCopy)}</div>
+          <div class="post-save-actions">
+            <button type="button" class="primary" id="create-anon-browser-reveal">Create anonymous share link</button>
+            <a class="secondary" href="${authHref}">Claim with GitHub</a>
+          </div>
+          ${comparisonReturnLink(archetype)}
+        `, 'muted');
+        wireAnonymousRevealAction('create-anon-browser-reveal', archetype, scores, insights);
+        return;
+      }
+      const intent = comparisonIntent();
+      const saveLabel = intent ? 'Save and compare' : `Save to @${safeHtml(currentUser.gh_handle)}`;
+      updateProfileSaveStatus(`
+        <strong>Nothing published yet.</strong>
+        <div class="post-save-note">Create an anonymous unlisted reveal link, or save this derived result to @${safeHtml(currentUser.gh_handle)}. Raw /insights stayed local.</div>
+        <div class="post-save-actions">
+          <button type="button" class="primary" id="create-anon-browser-reveal">Create anonymous share link</button>
+          <button type="button" class="secondary" id="save-browser-profile">${saveLabel}</button>
+        </div>
+        ${comparisonReturnLink(archetype)}
+      `, 'muted');
+      wireAnonymousRevealAction('create-anon-browser-reveal', archetype, scores, insights);
+      wireProfileSaveAction('save-browser-profile', archetype, scores, insights);
+    }
+
+    function getArchetypeRarity(archetype) {
+      if (!aggregateStats || !aggregateStats.total) return null;
+      const count = (aggregateStats.archetypes || {})[archetype] || 0;
+      const pct = Math.max(1, Math.round(count / aggregateStats.total * 100));
+      return pct;
+    }
+
+    function getComparisonMultiple(metric, value) {
+      if (!aggregateStats || !aggregateStats.averages) return null;
+      const avg = aggregateStats.averages[metric];
+      if (!avg || avg === 0) return null;
+      const multiple = value / avg;
+      if (multiple >= 1.5) return `${multiple.toFixed(1)}x above average`;
+      if (multiple <= 0.67) return `${(1 / multiple).toFixed(1)}x more focused`;
+      return null;
+    }
+
+    // ========================================
+    // EVOLUTION TRACKING (localStorage)
+    // ========================================
+    function saveToHistory(archetype, scores, insights) {
+      try {
+        const history = JSON.parse(localStorage.getItem('vibestats_history') || '[]');
+        history.push({
+          date: new Date().toISOString().split('T')[0],
+          dateRange: insights.dateRange,
+          archetype,
+          topScore: scores[archetype],
+          metrics: {
+            commitsPerDay: insights.commitsPerDay,
+            sessions: insights.sessions,
+            languages: insights.codeLangCount,
+            msgsPerSession: insights.msgsPerSession,
+            days: insights.days,
+          },
+        });
+        // Keep last 10 entries
+        if (history.length > 10) history.splice(0, history.length - 10);
+        localStorage.setItem('vibestats_history', JSON.stringify(history));
+      } catch (e) { /* localStorage unavailable */ }
+    }
+
+    function getPreviousResult() {
+      try {
+        const history = JSON.parse(localStorage.getItem('vibestats_history') || '[]');
+        return history.length > 0 ? history[history.length - 1] : null;
+      } catch (e) { return null; }
+    }
+
+    function buildEvolutionSlide(prev, current, currentInsights) {
+      if (!prev) return null;
+      const prevArch = ARCHETYPES[prev.archetype];
+      const currArch = ARCHETYPES[current];
+      if (!prevArch || !currArch) return null;
+
+      const changed = prev.archetype !== current;
+      const pm = prev.metrics || {};
+
+      // Metric deltas
+      const deltas = [];
+      if (pm.commitsPerDay != null) {
+        const d = currentInsights.commitsPerDay - pm.commitsPerDay;
+        if (d !== 0) deltas.push({ label: 'commits/day', from: pm.commitsPerDay, to: currentInsights.commitsPerDay, delta: d });
+      }
+      if (pm.sessions != null) {
+        const d = currentInsights.sessions - pm.sessions;
+        if (d !== 0) deltas.push({ label: 'sessions', from: pm.sessions, to: currentInsights.sessions, delta: d });
+      }
+      if (pm.languages != null) {
+        const d = currentInsights.codeLangCount - pm.languages;
+        if (d !== 0) deltas.push({ label: 'languages', from: pm.languages, to: currentInsights.codeLangCount, delta: d });
+      }
+      if (pm.msgsPerSession != null) {
+        const d = currentInsights.msgsPerSession - pm.msgsPerSession;
+        if (d !== 0) deltas.push({ label: 'msgs/session', from: pm.msgsPerSession, to: currentInsights.msgsPerSession, delta: d });
+      }
+
+      const deltaHTML = deltas.slice(0, 3).map(d => {
+        const sign = d.delta > 0 ? '+' : '';
+        const color = d.delta > 0 ? 'var(--green)' : 'var(--amber)';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${d.label}</span>
+          <span style="font-family:var(--mono);font-size:13px"><span style="color:var(--text-dim)">${d.from} →</span> <strong style="color:#fff">${d.to}</strong> <span style="color:${color};font-size:11px">${sign}${d.delta}</span></span>
+        </div>`;
+      }).join('');
+
+      const narrative = changed
+        ? `You were <strong style="background:${prevArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${prevArch.name}</strong>.<br>Now you're evolving.`
+        : `Still <strong>${currArch.name}</strong> — but the numbers tell a different story.`;
+
+      return `
+        <div class="slide" data-slide="evo" style="background:radial-gradient(ellipse at 50% 50%,rgba(107,143,255,0.1),rgba(167,139,250,0.06) 50%,transparent 80%)">
+          <div class="slide-label anim">your evolution</div>
+          ${changed ? `
+            <div class="anim d1" style="display:flex;align-items:center;gap:16px;margin:16px 0">
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${prevArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${prevArch.name}</span>
+              <span style="font-family:var(--mono);font-size:20px;color:var(--text-dim)">→</span>
+              <span style="font-size:clamp(16px,4vw,22px);font-weight:800;background:${currArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${currArch.name}</span>
+            </div>
+          ` : `
+            <div class="big-number anim d1" style="font-size:clamp(28px,7vw,40px);background:${currArch.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${currArch.name}</div>
+          `}
+          <div class="slide-body anim d2" style="margin:16px 0">${narrative}</div>
+          ${deltaHTML ? `<div class="anim d3" style="width:min(320px,85vw);margin-top:8px">${deltaHTML}</div>` : ''}
+          <div class="slide-body anim d4" style="font-size:13px;color:var(--text-dim);margin-top:20px">
+            Previous: ${prev.date} &middot; ${prev.dateRange || ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // ========================================
+    // ANALYSIS FLOW
+    // ========================================
+    async function runAnalysis(data, options = {}) {
+      // Hide upload, show analyzing
+      document.getElementById('upload-page').classList.add('hidden');
+      const analyzingEl = document.getElementById('analyzing');
+      analyzingEl.classList.remove('hidden');
+      const textEl = document.getElementById('analyzing-text');
+      const fillEl = document.getElementById('analyzing-fill');
+
+      // Fetch aggregate stats in parallel with animation
+      const statsPromise = fetchAggregateStats();
+
+      // Animated analyzing sequence
+      fillEl.style.width = '30%';
+      textEl.textContent = 'Reading your data...';
+      await wait(600);
+
+      fillEl.style.width = '60%';
+      textEl.textContent = 'Analyzing patterns...';
+      await wait(700);
+
+      fillEl.style.width = '85%';
+      textEl.textContent = 'Calculating archetype...';
+
+      const scores = scoreArchetypes(data);
+      const archetype = getTopArchetype(scores);
+      const insights = extractInsights(data);
+      const localClaimCode = cleanClaimCode(options.claimCode || data?._vibestats?.claim_code);
+
+      // Wait for aggregate stats to finish
+      await statsPromise;
+
+      // Check for evolution (previous result in localStorage)
+      const previousResult = getPreviousResult();
+
+      await wait(800);
+      fillEl.style.width = '100%';
+      textEl.textContent = ARCHETYPES[archetype].name;
+      await wait(600);
+
+      // Generate and show wrapped
+      await authReady.catch(() => null);
+      const slideHTML = generateSlides(insights, archetype, scores, previousResult, options);
+      analyzingEl.classList.add('hidden');
+      document.getElementById('wrapped-page').classList.remove('hidden');
+      document.body.classList.add('wrapped-active');
+      initSlideshow(slideHTML);
+
+      // Save to history + submit aggregate stats (after showing results)
+      saveToHistory(archetype, scores, insights);
+      if (!options.localPreview) submitStats(archetype, insights);
+      saveProfileUpload(archetype, scores, insights, { ...options, claimCode: localClaimCode });
+    }
+
+    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function copyCommand(command, button) {
+      copyText(command).then(() => {
+        const orig = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = orig; }, 1500);
+      }).catch(() => {});
+    }
+
+    function copyPath() {
+      copyText('curl -fsSL https://vibestats.io/cli.sh | sh -s -- status').then(() => {
+        const el = document.querySelector('.file-path code');
+        const orig = el.textContent;
+        el.textContent = 'Copied!';
+        setTimeout(() => el.textContent = orig, 1500);
+      }).catch(() => {});
+    }
+
+    // ========================================
+    // CONFETTI SYSTEM
+    // ========================================
+    let confettiActive = false;
+    function launchConfetti(archetypeKey) {
+      if (confettiActive) return;
+      confettiActive = true;
+      const canvas = document.getElementById('confetti-canvas');
+      canvas.classList.remove('hidden');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext('2d');
+
+      const a = ARCHETYPES[archetypeKey];
+      // Extract colors from gradient
+      const colorMatch = a.gradient.match(/#[0-9a-fA-F]{6}/g) || ['#6B8FFF', '#a78bfa'];
+      const colors = [...colorMatch, '#ffffff', '#ffffff80'];
+
+      const particles = [];
+      for (let i = 0; i < 100; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: -10 - Math.random() * 40,
+          vx: (Math.random() - 0.5) * 3,
+          vy: Math.random() * 3 + 1.5,
+          w: Math.random() * 8 + 3,
+          h: Math.random() * 5 + 2,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 10,
+          gravity: 0.03 + Math.random() * 0.02,
+          drift: (Math.random() - 0.5) * 0.3,
+          opacity: 1,
+          decay: 0.003 + Math.random() * 0.004,
+        });
+      }
+
+      function frame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        for (const p of particles) {
+          if (p.opacity <= 0) continue;
+          alive = true;
+          p.x += p.vx + p.drift;
+          p.vy += p.gravity;
+          p.y += p.vy;
+          p.vx *= 0.99;
+          p.rotation += p.rotSpeed;
+          p.opacity -= p.decay;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation * Math.PI / 180);
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+        if (alive) requestAnimationFrame(frame);
+        else {
+          canvas.classList.add('hidden');
+          confettiActive = false;
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // ========================================
+    // SAVE CARD AS IMAGE
+    // ========================================
+    async function saveCard() {
+      const card = document.getElementById('archetype-card');
+      if (!card || typeof html2canvas === 'undefined') {
+        // Fallback: screenshot instruction
+        alert('Take a screenshot to save your card!');
+        return;
+      }
+      try {
+        const btn = event.target.closest('.share-btn-save');
+        if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+        const canvas = await html2canvas(card, {
+          backgroundColor: '#06060a',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        const link = document.createElement('a');
+        link.download = 'vibestats-card.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        if (btn) {
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Saved!';
+          setTimeout(() => {
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Save card';
+            btn.disabled = false;
+          }, 3000);
+        }
+      } catch (err) {
+        console.error('Save failed:', err);
+        alert('Take a screenshot to save your card!');
+      }
+    }
+
+    // ========================================
+    // TRIGGER CONFETTI ON ARCHETYPE REVEAL
+    // ========================================
+    const origGoTo = goTo;
+    goTo = function(index) {
+      origGoTo(index);
+      // Check if we just landed on the archetype card slide (last slide)
+      setTimeout(() => {
+        const activeSlide = document.querySelector('.slide.active');
+        if (activeSlide && activeSlide.dataset.archetype) {
+          launchConfetti(activeSlide.dataset.archetype);
+        }
+      }, 350);
+    };
+
+    // ========================================
+    // TAP vs CLICK HINT
+    // ========================================
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    document.getElementById('tap-hint').textContent = isTouch ? 'tap to continue' : 'click to continue →';
+
+    function decodeBase64UrlJson(value) {
+      const base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');
+      const binary = atob(padded);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function encodeBase64UrlJson(value) {
+      const bytes = new TextEncoder().encode(JSON.stringify(value));
+      let binary = '';
+      bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    function boundedLocalNumber(value, max) {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n)) return 0;
+      return Math.min(Math.max(Math.round(n), 0), max);
+    }
+
+    function boundedLocalRate(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? Math.min(Math.max(n, 0), 1) : undefined;
+    }
+
+    function boundedLocalMap(source, maxEntries, maxValue) {
+      return Object.fromEntries(Object.entries(source || {})
+        .map(([key, value]) => [
+          String(key || '').trim().replace(/[^a-zA-Z0-9_+-]/g, '').slice(0, 32).toLowerCase(),
+          boundedLocalNumber(value, maxValue),
+        ])
+        .filter(([key, value]) => key && value > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, maxEntries));
+    }
+
+    // Counts-only depth signals from the CLI preview. Client keeps this bounded
+    // (known top-level keys, integer leaf counts); the SERVER allowlist
+    // (sanitizeFacetSignals) is the authoritative boundary on ingest.
+    function boundedLocalFacetSignals(input) {
+      if (!input || typeof input !== 'object') return null;
+      const KEYS = ['outcome_mix', 'helpfulness_mix', 'session_type_mix', 'success_mix', 'satisfaction_mix', 'friction_taxonomy'];
+      const out = {};
+      const sessions = Number(input.sessions_analyzed);
+      if (Number.isFinite(sessions) && sessions > 0) out.sessions_analyzed = Math.min(Math.round(sessions), 10000000);
+      let any = false;
+      for (const key of KEYS) {
+        const src = input[key];
+        if (!src || typeof src !== 'object') continue;
+        const map = {};
+        for (const [k, v] of Object.entries(src).slice(0, 12)) {
+          const n = Number(v);
+          if (typeof k === 'string' && k.length <= 40 && Number.isFinite(n) && n > 0) map[k] = Math.min(Math.round(n), 10000000);
+        }
+        if (Object.keys(map).length) { out[key] = map; any = true; }
+      }
+      return any ? out : null;
+    }
+
+    function localPreviewFromHash() {
+      const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+      const encoded = params.get('vibestatsPreview');
+      if (!encoded) return null;
+      try {
+        const preview = decodeBase64UrlJson(encoded);
+        if (preview?.version !== 'vibestats.local_preview.v1') throw new Error('unsupported preview version');
+        const raw = preview.insights || {};
+        const metrics = raw.metrics || {};
+        const rawUser = String(raw.meta?.user || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+        const legacyCliLabel = ['Local', 'terminal', 'reveal'].join(' ');
+        const user = rawUser === legacyCliLabel ? '' : rawUser;
+        const dateRange = String(raw.meta?.date_range || '').replace(/[^\d to-]/g, '').slice(0, 32);
+        const localMetrics = {
+          total_sessions: boundedLocalNumber(metrics.total_sessions, 100000),
+          total_messages: boundedLocalNumber(metrics.total_messages, 5000000),
+          commits: boundedLocalNumber(metrics.commits, 1000000),
+          satisfaction_rate: boundedLocalRate(metrics.satisfaction_rate),
+          multi_clauding_rate: boundedLocalRate(metrics.multi_clauding_rate),
+          buggy_code_events: boundedLocalNumber(metrics.buggy_code_events, 100000),
+          task_agent_sessions: boundedLocalNumber(metrics.task_agent_sessions, 100000),
+          longest_session_minutes: boundedLocalNumber(metrics.longest_session_minutes, 60 * 72),
+          files_modified: boundedLocalNumber(metrics.files_modified, 100000),
+          lines_changed: boundedLocalNumber(metrics.lines_changed, 5000000),
+          [TOOL_USAGE_KEY]: boundedLocalMap(metrics[TOOL_USAGE_KEY], 12, 5000000),
+          [LANGUAGE_USAGE_KEY]: boundedLocalMap(metrics[LANGUAGE_USAGE_KEY], 20, 5000000),
+        };
+        const localFacetSignals = boundedLocalFacetSignals(metrics.facet_signals);
+        if (localFacetSignals) localMetrics.facet_signals = localFacetSignals;
+        const localMeta = {};
+        if (user) localMeta.user = user;
+        if (dateRange) localMeta.date_range = dateRange;
+        const sharePreview = {
+          version: 'vibestats.local_preview.v1',
+          source: 'cli',
+          insights: {
+            meta: localMeta,
+            metrics: localMetrics,
+          },
+        };
+        const shareHash = `#vibestatsPreview=${encodeBase64UrlJson(sharePreview)}`;
+        if (location.hash !== shareHash) {
+          history.replaceState(null, document.title, location.pathname + location.search + shareHash);
+        }
+        return {
+          _vibestats: {
+            claim_code: cleanClaimCode(preview.claim_code),
+          },
+          meta: {
+            user,
+            date_range: dateRange,
+          },
+          metrics: localMetrics,
+        };
+      } catch (err) {
+        showError(`Could not open private preview: ${err.message}`);
+        return null;
+      }
+    }
+
+    const localPreview = localPreviewFromHash();
+    if (localPreview) {
+      showInfo('Opening private reveal preview. Nothing has been published.');
+      setTimeout(() => runAnalysis(localPreview, { localPreview: true }), 120);
+    } else if (shouldAutoRunDemo()) {
+      setTimeout(runDemo, 120);
+    }
+
+  </script>
+</body>
+</html>

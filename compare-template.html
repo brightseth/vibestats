@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Compare Vibecoding Personalities | vibestats</title>
+  <meta name="description" content="Compare your vibecoding personality with a friend. See your chemistry, dynamic, and pairing name.">
+  <meta property="og:title" content="Compare Vibecoding Personalities | vibestats">
+  <meta property="og:description" content="See how two vibecoding archetypes work together. Chemistry, dynamics, and pairing names.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vibestats.io/compare">
+  <meta property="og:image" content="https://vibestats.io/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://vibestats.io/og-card.png">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a; --surface: #0d0d14; --surface-2: #14141e; --border: #252535;
+      --text: #E0E0E0; --text-muted: #8888a0; --text-dim: #555568;
+      --accent: #6B8FFF; --purple: #a78bfa; --green: #22c55e; --amber: #f59e0b;
+      --red: #ef4444; --pink: #ff79c6; --cyan: #22d3ee;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans); background: var(--bg); color: var(--text);
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 48px 24px 64px; text-align: center;
+    }
+
+    .logo {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; letter-spacing: 0.05em; margin-bottom: 32px;
+      text-decoration: none;
+    }
+
+    h1 {
+      font-size: clamp(24px, 6vw, 40px); font-weight: 900; color: #fff;
+      letter-spacing: -0.02em; line-height: 1.2; max-width: 600px; margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 15px; color: var(--text-muted); max-width: 480px;
+      line-height: 1.6; margin-bottom: 40px;
+    }
+
+    /* Picker grid */
+    .you-label {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 16px;
+    }
+    .you-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 24px; border-radius: 12px; margin-bottom: 32px;
+      font-family: var(--sans); font-size: 18px; font-weight: 800;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .pick-label {
+      font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;
+    }
+
+    .archetype-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+      width: min(440px, 90vw); margin-bottom: 40px;
+    }
+    .arch-pick {
+      padding: 16px 12px; border-radius: 14px; cursor: pointer;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: all 0.2s; text-align: center; text-decoration: none;
+      min-height: 44px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+    }
+    .arch-pick:hover { border-color: var(--accent); background: rgba(107,143,255,0.04); }
+    .arch-pick-name {
+      font-family: var(--sans); font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .arch-pick-tag {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+
+    /* Result card */
+    .result { display: none; width: min(480px, 90vw); }
+    .result.visible { display: block; }
+
+    .pair-card {
+      background: linear-gradient(145deg, #0d0d18, #12121f);
+      border: 1px solid rgba(107,143,255,0.2); border-radius: 20px;
+      padding: 32px 24px; text-align: center; position: relative; overflow: hidden;
+    }
+    .pair-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--purple), transparent);
+    }
+
+    .pair-vs {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .pair-person {
+      display: grid; justify-items: center; gap: 4px; min-width: 0;
+    }
+    .pair-type {
+      font-size: clamp(14px, 3.5vw, 18px); font-weight: 800;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pair-profile-meta {
+      max-width: 180px; color: var(--text-dim); font-family: var(--mono);
+      font-size: 10px; line-height: 1.35;
+    }
+    .pair-x {
+      font-family: var(--mono); font-size: 14px; color: var(--text-dim);
+    }
+
+    .pair-name {
+      font-size: clamp(28px, 7vw, 44px); font-weight: 900; color: #fff;
+      letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 12px;
+    }
+
+    .pair-chemistry {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin-bottom: 16px;
+    }
+    .chem-star {
+      width: 18px; height: 18px; color: var(--amber);
+    }
+    .chem-star.empty { opacity: 0.15; }
+    .chem-label {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+      margin-left: 8px; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+
+    .pair-dynamic {
+      font-size: 16px; color: var(--text-muted); line-height: 1.7;
+      max-width: 400px; margin: 0 auto 24px;
+    }
+    .facet-match {
+      display: none;
+      margin: -6px 0 22px;
+      padding: 12px;
+      border: 1px solid rgba(107,143,255,0.2);
+      border-radius: 12px;
+      background: rgba(107,143,255,0.06);
+      text-align: left;
+    }
+    .facet-match.visible { display: block; }
+    .facet-match-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .facet-match-head strong {
+      color: #fff;
+      font-size: 16px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    .facet-match-line {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .pair-traits {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px;
+    }
+    .pair-trait {
+      padding: 10px; background: rgba(255,255,255,0.02);
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);
+    }
+    .pair-trait-label {
+      font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;
+    }
+    .pair-trait-val {
+      font-size: 13px; font-weight: 600; color: #fff;
+    }
+
+    .pair-brand {
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .result-actions {
+      display: flex; gap: 10px; margin-top: 24px; justify-content: center; flex-wrap: wrap;
+    }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border-radius: 10px; font-family: var(--mono);
+      font-size: 12px; text-decoration: none; cursor: pointer;
+      border: none; transition: all 0.2s; font-weight: 500; min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .action-btn-x { background: #fff; color: #000; }
+    .action-btn-x:hover { background: #e0e0e0; }
+    .action-btn-copy {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: var(--text);
+    }
+    .action-btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .action-btn-cta {
+      background: linear-gradient(135deg, rgba(107,143,255,0.15), rgba(167,139,250,0.1));
+      border: 1px solid rgba(107,143,255,0.35); color: #8aadff;
+    }
+    .action-btn-cta:hover { border-color: var(--accent); }
+
+    .compare-status {
+      min-height: 18px; margin: -24px 0 24px;
+      color: var(--text-dim); font-family: var(--mono); font-size: 12px;
+    }
+    .reveal-cta {
+      display: none; width: min(520px, 90vw); margin: -20px 0 28px;
+      padding: 16px; border: 1px solid rgba(107,143,255,0.24);
+      border-radius: 14px; background: rgba(107,143,255,0.06); text-align: left;
+    }
+    .reveal-cta.visible { display: grid; gap: 12px; }
+    .reveal-cta strong {
+      display: block; color: #fff; font-size: 14px; margin-bottom: 4px;
+    }
+    .reveal-cta span {
+      display: block; color: var(--text-muted); font-size: 13px; line-height: 1.5;
+    }
+    .reveal-command-row {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+      align-items: center;
+    }
+    .reveal-command-row code {
+      min-width: 0; overflow-x: auto; white-space: nowrap;
+      padding: 10px 12px; border-radius: 10px;
+      background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.08);
+      color: #fff; font-family: var(--mono); font-size: 11px;
+    }
+    .copy-command {
+      min-height: 38px; padding: 0 12px; border-radius: 10px;
+      border: 1px solid rgba(107,143,255,0.35);
+      background: rgba(107,143,255,0.12); color: #8aadff;
+      font-family: var(--mono); font-size: 11px; cursor: pointer;
+    }
+    .copy-command:hover { border-color: var(--accent); color: #fff; }
+
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .page { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    }
+
+    @media (max-width: 480px) {
+      .archetype-grid { gap: 8px; }
+      .arch-pick { padding: 12px 8px; }
+      .result-actions { flex-direction: column; align-items: stretch; }
+      .action-btn { justify-content: center; }
+      .pair-vs { gap: 10px; }
+      .reveal-command-row { grid-template-columns: 1fr; }
+      .copy-command { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="logo" href="/">vibestats</a>
+
+    <!-- Picker state -->
+    <div id="picker">
+      <h1 id="picker-title">Compare with a friend</h1>
+      <p class="subtitle" id="picker-subtitle">Pick your friend's archetype to see your chemistry.</p>
+      <div class="compare-status" id="compare-status"></div>
+      <div class="reveal-cta" id="reveal-cta"></div>
+      <div id="you-section"></div>
+      <div class="pick-label" id="pick-label">Your friend is...</div>
+      <div class="archetype-grid" id="archetype-grid"></div>
+      <p style="font-size:13px;color:var(--text-dim);max-width:400px">
+        Don't know their archetype? Send them to
+        <a href="/" style="color:var(--accent);text-decoration:none">vibestats.io</a>
+        to find out.
+      </p>
+    </div>
+
+    <!-- Result state -->
+    <div class="result" id="result">
+      <div class="pair-card" id="pair-card">
+        <div class="pair-vs" id="pair-vs"></div>
+        <div class="pair-name" id="pair-name"></div>
+        <div class="pair-chemistry" id="pair-chemistry"></div>
+        <div class="pair-dynamic" id="pair-dynamic"></div>
+        <div class="pair-traits" id="pair-traits"></div>
+        <div class="pair-brand">vibestats.io</div>
+      </div>
+      <div class="result-actions" id="result-actions"></div>
+    </div>
+  </div>
+
+  <script src="/lib/compat.js"></script>
+  <script src="/api/archetype-identity"></script>
+  <script>
+    const ARCHETYPES = window.VIBESTATS_ARCHETYPES;
+
+    function getCompat(a, b) {
+      return window.VibeCompat.getPairing(a, b);
+    }
+
+    const starSVG = `<svg class="chem-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+    const starEmptySVG = `<svg class="chem-star empty" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+    const HANDLE_RE = /^[a-zA-Z0-9-]{1,39}$/;
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = (n) => Number(n || 0).toLocaleString();
+    const CLAIM_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
+    const STATUS_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- status';
+    const REVEAL_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal';
+    const INSTALL_CLAUDE_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command';
+    let currentComparison = null;
+
+    function renderStars(n) {
+      let html = '';
+      for (let i = 0; i < 5; i++) html += i < n ? starSVG : starEmptySVG;
+      return html;
+    }
+
+    routeCompare();
+
+    function setStatus(message) {
+      const el = document.getElementById('compare-status');
+      if (el) el.textContent = message || '';
+    }
+
+    async function copyCommand(text, button) {
+      const original = button.textContent;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        button.textContent = 'Copied';
+      } catch {
+        button.textContent = 'Failed';
+      }
+      setTimeout(() => { button.textContent = original; }, 1600);
+    }
+
+    function renderRevealCta(subject, options = {}) {
+      const el = document.getElementById('reveal-cta');
+      if (!el) return;
+      const profileLabel = subject?.handle ? `@${subject.handle}` : '';
+      const title = profileLabel
+        ? `What are you against ${profileLabel}?`
+        : 'Claude Code already knows your pattern.';
+      const body = profileLabel
+        ? `Run /insights, check status, then reveal to see your real pairing with ${profileLabel}. The no-npm helper runs locally and raw sessions stay on your machine.`
+        : 'Run /insights, check status, then reveal your real archetype. The no-npm helper runs locally and raw sessions stay on your machine.';
+      const missing = options.missingHandle ? `<span>That profile is not minted yet. Only @${esc(options.missingHandle)} can claim that exact URL with GitHub.</span>` : '';
+      // No-terminal path: the home landing has instant in-browser pairing + the
+      // legacy-JSON drop zone, so nobody dead-ends on the curl commands here.
+      const browserHref = subject?.handle
+        ? `/?compareTo=${encodeURIComponent(subject.handle)}&compareArchetype=${encodeURIComponent(subject.type || '')}`
+        : (subject?.type ? `/?compareArchetype=${encodeURIComponent(subject.type)}` : '/');
+      el.innerHTML = `
+        <div>
+          <strong>${esc(title)}</strong>
+          <span>${esc(body)}</span>
+          ${missing}
+          <span>No terminal handy? <a href="${esc(browserHref)}" style="color:var(--accent)">Reveal in your browser instead &rarr;</a></span>
+        </div>
+        <div class="reveal-command-row">
+          <code>/insights</code>
+          <button class="copy-command" type="button" onclick="copyCommand('/insights', this)">Copy</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(STATUS_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(STATUS_COMMAND, this)">Copy status</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(REVEAL_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(REVEAL_COMMAND, this)">Copy reveal</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(CLAIM_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(CLAIM_COMMAND, this)">Copy claim</button>
+        </div>
+        <div class="reveal-command-row">
+          <code>${esc(INSTALL_CLAUDE_COMMAND)}</code>
+          <button class="copy-command" type="button" onclick="copyCommand(INSTALL_CLAUDE_COMMAND, this)">Copy install</button>
+        </div>
+      `;
+      el.classList.add('visible');
+    }
+
+    function clearRevealCta() {
+      const el = document.getElementById('reveal-cta');
+      if (!el) return;
+      el.innerHTML = '';
+      el.classList.remove('visible');
+    }
+
+    function subjectParam(subject) {
+      return subject?.param || subject?.handle || subject?.type || '';
+    }
+
+    function normalizeSubject(subject) {
+      if (!subject) return null;
+      if (typeof subject === 'string') return ARCHETYPES[subject] ? { type: subject, param: subject } : null;
+      if (!ARCHETYPES[subject.type]) return null;
+      return { ...subject, param: subjectParam(subject) };
+    }
+
+    function subjectLabel(subject) {
+      return subject.handle ? `@${subject.handle}` : ARCHETYPES[subject.type].name;
+    }
+
+    function rarityMeta(rarity) {
+      if (!rarity?.count) return '';
+      const plural = rarity.count === 1 ? 'profile' : 'profiles';
+      return `${rarity.tier} combo: 1 of ${fmt(rarity.count)} saved ${plural} this month`;
+    }
+
+    function leaderboardMeta(leaderboard) {
+      if (!leaderboard?.rank) return '';
+      const label = ARCHETYPES[leaderboard.label]?.short || leaderboard.label || 'archetype';
+      const total = leaderboard.total ? ` of ${fmt(leaderboard.total)}` : '';
+      return `#${fmt(leaderboard.rank)}${total} on weekly ${label} board`;
+    }
+
+    function subjectProofLine(subject) {
+      if (!subject?.handle) return '';
+      return [
+        subject.signature,
+        rarityMeta(subject.rarity),
+        leaderboardMeta(subject.leaderboard),
+      ].filter(Boolean).join(' / ');
+    }
+
+    function subjectMeta(subject) {
+      if (!subject.handle) return '';
+      return subjectProofLine(subject) || ARCHETYPES[subject.type].name;
+    }
+
+    async function resolveCompareSubject(value) {
+      const raw = String(value || '').trim().replace(/^@/, '');
+      if (!raw) return null;
+      if (ARCHETYPES[raw]) return { type: raw, param: raw };
+      if (!HANDLE_RE.test(raw)) return null;
+
+      try {
+        const res = await fetch(`/api/u/${encodeURIComponent(raw)}`);
+        if (!res.ok) return null;
+        const profile = await res.json();
+        const latest = profile.uploads?.[0];
+        if (!latest?.archetype || !ARCHETYPES[latest.archetype]) return null;
+        return {
+          type: latest.archetype,
+          handle: profile.user.gh_handle,
+          signature: latest.raw_meta?.signature || '',
+          rarity: profile.rarity || null,
+          leaderboard: profile.leaderboard || null,
+          facets: latest.facets || [],
+          param: profile.user.gh_handle,
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    function comparisonParamsFromLocation() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('a') || params.get('b') || params.get('me')) return params;
+
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      if (parts[0] === 'u' && parts[2] === 'pair' && parts[1] && parts[3]) {
+        params.set('a', parts[3]);
+        params.set('b', parts[1]);
+      }
+      return params;
+    }
+
+    async function routeCompare() {
+      const params = comparisonParamsFromLocation();
+      const aParam = params.get('a');
+      const bParam = params.get('b');
+      const meParam = params.get('me') || aParam;
+
+      if (aParam && bParam) {
+        setStatus('Resolving profiles...');
+        const [aSubject, bSubject] = await Promise.all([
+          resolveCompareSubject(aParam),
+          resolveCompareSubject(bParam),
+        ]);
+        if (aSubject && bSubject) {
+          setStatus('');
+          showResult(aSubject, bSubject);
+          return;
+        }
+        const knownSubject = aSubject || bSubject;
+        const missingValue = aSubject ? bParam : aParam;
+        if (knownSubject) {
+          const missingHandle = HANDLE_RE.test(String(missingValue || '').trim().replace(/^@/, ''))
+            ? String(missingValue || '').trim().replace(/^@/, '')
+            : '';
+          setStatus('That profile is not minted yet. Preview a pairing or reveal yours.');
+          showPicker(knownSubject, { intent: 'claim', missingHandle });
+          return;
+        }
+        setStatus('Those profiles are not minted yet. Reveal yours or preview archetypes below.');
+        showPicker(null, { intent: 'missing' });
+        return;
+      }
+
+      if (meParam) {
+        setStatus(ARCHETYPES[meParam] ? '' : 'Resolving profile...');
+        const subject = await resolveCompareSubject(meParam);
+        setStatus(subject ? '' : (meParam ? 'Could not load that profile. Reveal yours or pick an archetype instead.' : ''));
+        showPicker(subject, { intent: subject ? '' : 'missing' });
+        return;
+      }
+
+      setStatus('');
+      showPicker(null);
+    }
+
+    function showPicker(mySubject, options = {}) {
+      const subject = normalizeSubject(mySubject);
+      const myType = subject?.type || null;
+      const picker = document.getElementById('picker');
+      const youSection = document.getElementById('you-section');
+      const grid = document.getElementById('archetype-grid');
+      const title = document.getElementById('picker-title');
+      const subtitle = document.getElementById('picker-subtitle');
+      const pickLabel = document.getElementById('pick-label');
+      const claimIntent = options.intent === 'claim';
+
+      if (myType && ARCHETYPES[myType]) {
+        const a = ARCHETYPES[myType];
+        title.textContent = claimIntent && subject.handle ? `Compare with @${subject.handle}` : 'Compare with a friend';
+        subtitle.textContent = claimIntent
+          ? 'Run /insights, check status, then reveal your real pairing, or pick an archetype to preview the chemistry.'
+          : 'Pick their archetype to see your chemistry.';
+        youSection.innerHTML = `
+          <div class="you-label">${subject.handle ? 'Profile' : 'You are'}</div>
+          <div class="you-badge" style="background:${a.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border-color:${a.color}40">${esc(subjectLabel(subject))}</div>
+          ${subjectMeta(subject) ? `<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:-22px;margin-bottom:24px">${esc(subjectMeta(subject))}</div>` : ''}
+        `;
+        pickLabel.textContent = claimIntent ? 'Preview yours as...' : 'Your friend is...';
+        if (claimIntent) renderRevealCta(subject, options);
+        else clearRevealCta();
+      } else {
+        title.textContent = 'Compare two archetypes';
+        subtitle.textContent = 'Pick two vibecoding personalities, or reveal your real Claude Code pattern first.';
+        youSection.innerHTML = '';
+        pickLabel.textContent = 'Pick the first archetype';
+        renderRevealCta(null, options);
+      }
+
+      grid.innerHTML = '';
+      for (const [key, a] of Object.entries(ARCHETYPES)) {
+        const card = document.createElement('a');
+        card.className = 'arch-pick';
+        card.href = '#';
+        card.innerHTML = `
+          <div class="arch-pick-name" style="background:${a.gradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${a.short}</div>
+          <div class="arch-pick-tag">${a.strength}</div>
+        `;
+        card.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (myType) {
+            const url = new URL(window.location);
+            url.searchParams.set('a', subjectParam(subject));
+            url.searchParams.set('b', key);
+            url.searchParams.delete('me');
+            window.history.pushState({}, '', url);
+            showResult(subject, { type: key, param: key });
+          } else {
+            // First pick — now show picker for second
+            const url = new URL(window.location);
+            url.searchParams.set('me', key);
+            window.history.pushState({}, '', url);
+            showPicker({ type: key, param: key });
+          }
+        });
+        grid.appendChild(card);
+      }
+    }
+
+    function pairPersonHtml(subject) {
+      const a = ARCHETYPES[subject.type];
+      const meta = subjectMeta(subject);
+      return `
+        <span class="pair-person">
+          <span class="pair-type" style="background:${a.gradient};-webkit-background-clip:text;background-clip:text">${esc(subjectLabel(subject))}</span>
+          ${meta ? `<span class="pair-profile-meta">${esc(meta)}</span>` : ''}
+        </span>
+      `;
+    }
+
+    function traitLabel(subject) {
+      return subject.handle ? `@${subject.handle}` : ARCHETYPES[subject.type].short;
+    }
+
+    function canonicalShareUrl(aSubject, bSubject) {
+      const profileSubject = primaryProfileSubject(aSubject, bSubject);
+      const ref = profileSubject?.handle ? `u:${profileSubject.handle}` : currentAttributionRef();
+      const url = aSubject.handle && bSubject.handle
+        ? new URL(`/u/${encodeURIComponent(bSubject.handle)}/pair/${encodeURIComponent(aSubject.handle)}`, 'https://vibestats.io')
+        : new URL(`/compare?a=${encodeURIComponent(subjectParam(aSubject))}&b=${encodeURIComponent(subjectParam(bSubject))}`, 'https://vibestats.io');
+      if (ref) url.searchParams.set('ref', ref);
+      return url.toString();
+    }
+
+    function absoluteUrl(path) {
+      return new URL(path, location.origin).toString();
+    }
+
+    function currentAttributionRef() {
+      try {
+        const ref = new URLSearchParams(location.search).get('ref') || '';
+        if (/^(r|u):[A-Za-z0-9_-]{1,39}$/.test(ref)) return ref;
+      } catch (e) { /* ignore malformed URL state */ }
+      return '';
+    }
+
+    function withRef(path, ref) {
+      if (!ref) return path;
+      const url = new URL(path, location.origin);
+      url.searchParams.set('ref', ref);
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    function primaryProfileSubject(aSubject, bSubject) {
+      if (bSubject?.handle) return bSubject;
+      if (aSubject?.handle) return aSubject;
+      return null;
+    }
+
+    function archetypeInviteLabel(subject) {
+      const arch = ARCHETYPES[subject?.type] || ARCHETYPES.builder;
+      return arch.name
+        .replace(/^THE /, '')
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function comparisonClaimAction(aSubject, bSubject) {
+      const profileSubject = primaryProfileSubject(aSubject, bSubject);
+      if (!profileSubject) {
+        const archetypeSubject = aSubject?.type ? aSubject : bSubject;
+        const ref = currentAttributionRef();
+        return {
+          href: withRef(`/?compareArchetype=${encodeURIComponent(archetypeSubject.type)}`, ref),
+          label: `Compare with The ${archetypeInviteLabel(archetypeSubject)}`,
+        };
+      }
+      const ref = `u:${profileSubject.handle}`;
+      return {
+        href: withRef(`/?compareTo=${encodeURIComponent(profileSubject.handle)}&compareArchetype=${encodeURIComponent(profileSubject.type)}`, ref),
+        label: `Compare with @${profileSubject.handle}`,
+      };
+    }
+
+    function comparisonSharePrompt(aSubject, bSubject) {
+      const profileSubject = primaryProfileSubject(aSubject, bSubject);
+      const proof = subjectProofLine(profileSubject);
+      return profileSubject
+        ? `${proof ? `${proof}. ` : ''}See how you'd pair with @${profileSubject.handle}:`
+        : 'Compare your vibecoding personality:';
+    }
+
+    function comparisonInviteText(aSubject, bSubject, compat, shareUrl) {
+      const a = ARCHETYPES[aSubject.type];
+      const b = ARCHETYPES[bSubject.type];
+      const facetLine = compat.facet ? `\nFacet fit: ${compat.facet.score}% - ${compat.facet.top_a.label} x ${compat.facet.top_b.label}.` : '';
+      return `${subjectLabel(aSubject)} (${a.short}) + ${subjectLabel(bSubject)} (${b.short}) = "${compat.name}"\n\n${compat.vibe}. ${compat.chemistry}/5 chemistry. ${compat.profileScore}% match.${facetLine}\n\n${comparisonSharePrompt(aSubject, bSubject)}\n${shareUrl}`;
+    }
+
+    async function copyComparisonInvite(button) {
+      if (!currentComparison?.inviteText) return;
+      const original = button.textContent;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(currentComparison.inviteText);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = currentComparison.inviteText;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        button.textContent = 'Invite copied!';
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => { button.textContent = original; }, 1800);
+    }
+
+    function showResult(aSubjectInput, bSubjectInput) {
+      const aSubject = normalizeSubject(aSubjectInput);
+      const bSubject = normalizeSubject(bSubjectInput);
+      if (!aSubject || !bSubject) {
+        showPicker(null);
+        return;
+      }
+      currentComparison = { a: aSubject, b: bSubject };
+      document.getElementById('picker').style.display = 'none';
+      const result = document.getElementById('result');
+      result.classList.add('visible');
+
+      const aType = aSubject.type;
+      const bType = bSubject.type;
+      const a = ARCHETYPES[aType];
+      const b = ARCHETYPES[bType];
+      const pairing = getCompat(aType, bType);
+      const profileCompat = window.VibeCompat.profileCompatibility(aType, bType, bSubject.handle || aSubject.handle || '', aSubject, bSubject);
+      const compat = {
+        ...pairing,
+        profileScore: profileCompat.score,
+        dynamic: profileCompat.facet ? pairing.dynamic : (profileCompat.line || pairing.dynamic),
+        facet: profileCompat.facet,
+      };
+
+      // Pair types
+      document.getElementById('pair-vs').innerHTML = `
+        ${pairPersonHtml(aSubject)}
+        <span class="pair-x">&times;</span>
+        ${pairPersonHtml(bSubject)}
+      `;
+
+      document.getElementById('pair-name').textContent = compat.name;
+      document.getElementById('pair-chemistry').innerHTML = renderStars(compat.chemistry) + `<span class="chem-label">${compat.chemistry}/5 chemistry · ${compat.profileScore}% match</span>`;
+      document.getElementById('pair-dynamic').textContent = compat.dynamic;
+
+      document.getElementById('pair-traits').innerHTML = `
+        ${compat.facet ? `
+          <div class="facet-match visible" style="grid-column:1/-1">
+            <div class="facet-match-head"><span>facet fit</span><strong>${esc(compat.facet.score)}%</strong></div>
+            <div class="facet-match-line">${esc(compat.facet.line.replace(/^Facet read:\s*/, ''))}</div>
+          </div>
+        ` : ''}
+        <div class="pair-trait">
+          <div class="pair-trait-label">${esc(traitLabel(aSubject))} brings</div>
+          <div class="pair-trait-val">${a.strength}</div>
+        </div>
+        <div class="pair-trait">
+          <div class="pair-trait-label">${esc(traitLabel(bSubject))} brings</div>
+          <div class="pair-trait-val">${b.strength}</div>
+        </div>
+        <div class="pair-trait">
+          <div class="pair-trait-label">${esc(traitLabel(aSubject))}'s style</div>
+          <div class="pair-trait-val">${a.style}</div>
+        </div>
+        <div class="pair-trait">
+          <div class="pair-trait-label">${esc(traitLabel(bSubject))}'s style</div>
+          <div class="pair-trait-val">${b.style}</div>
+        </div>
+      `;
+
+      // Update page title and og
+      document.title = `${subjectLabel(aSubject)} + ${subjectLabel(bSubject)} = ${compat.name} | vibestats`;
+
+      // Share URL
+      const shareUrl = canonicalShareUrl(aSubject, bSubject);
+      const claimAction = comparisonClaimAction(aSubject, bSubject);
+      const inviteText = comparisonInviteText(aSubject, bSubject, compat, shareUrl);
+      currentComparison = { a: aSubject, b: bSubject, shareUrl, inviteText };
+      const tweetText = `${inviteText}\n\n#vibestats #vibecoding`;
+
+      document.getElementById('result-actions').innerHTML = `
+        <a class="action-btn action-btn-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share
+        </a>
+        <button class="action-btn action-btn-copy" onclick="copyComparisonInvite(this)">
+          Copy invite
+        </button>
+        <a class="action-btn action-btn-cta" href="${esc(claimAction.href)}" style="text-decoration:none">
+          ${esc(claimAction.label)} &rarr;
+        </a>
+        <button class="action-btn action-btn-copy" onclick="tryDifferent()" style="border-color:var(--border);color:var(--text-dim)">
+          Try different pair
+        </button>
+      `;
+    }
+
+    function tryDifferent() {
+      const url = new URL(window.location);
+      const seed = currentComparison?.a || null;
+      url.searchParams.delete('b');
+      if (seed) url.searchParams.set('me', subjectParam(seed));
+      window.history.pushState({}, '', url);
+      document.getElementById('result').classList.remove('visible');
+      document.getElementById('picker').style.display = '';
+      showPicker(seed);
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', () => {
+      document.getElementById('result').classList.remove('visible');
+      document.getElementById('picker').style.display = '';
+      routeCompare();
+    });
+  </script>
+</body>
+</html>

@@ -4,6 +4,8 @@
 
 This document is opinionated. It says what we should build and — more importantly — what we shouldn't.
 
+Post-v1 strategic constraints live in [FUTURE-DIRECTIONS.md](./FUTURE-DIRECTIONS.md). They should guide architecture choices without interrupting the current launch path.
+
 ---
 
 ## TL;DR
@@ -41,7 +43,7 @@ The viral hook stays where it already works — the archetype card — but becom
 - **No retention surface.** The user's archetype changes as their CC usage evolves but nothing pulls them back to see it.
 - **8 archetypes is too coarse** to feel rare. "I'm an Orchestrator" is true for 5% of users — meaningful, but not scarce. Need sub-archetypes and rare combos for vanity scarcity.
 - **Naming.** "vibestats" reads as analytics. The social product wants a sub-brand or a verb. "Get vibed." "Match on vibestats." TBD.
-- **No CLI / no auto-import.** Manual download + upload is friction. `npx vibestats sync` would 10x retention.
+- **No CLI / no auto-import.** Manual download + upload is friction. One-command CLI sync would 10x retention.
 
 ---
 
@@ -115,8 +117,8 @@ create index on uploads(user_id, uploaded_at desc);
 2. **Compatibility math lifted out of `compare.html`** into `lib/compat.js`, callable from any page.
 3. **Embed card.** `<iframe src="vibestats.io/u/<handle>/embed">` for personal sites and GitHub READMEs. 600×320, lazy-loaded, link back to full profile.
 4. **GitHub README badge.** Markdown snippet:
-   `[![vibestats](https://vibestats.io/u/brightseth/badge.svg)](https://vibestats.io/u/brightseth)` →
-   tiny SVG with archetype + primary score. This is the credential surface.
+   `[![vibestats](https://vibestats.io/u/brightseth/badge.svg)](https://vibestats.io/?compareTo=brightseth&compareArchetype=builder)` →
+   tiny SVG with archetype + primary score. This is the credential surface; clicks should start comparison.
 5. **Tweak share copy.** Tweet variants currently say "What's YOUR personality?" — change to "See how you'd pair with me: vibestats.io/u/<handle>". Same vanity, asymmetric ask.
 
 **Non-goals:**
@@ -135,7 +137,7 @@ create index on uploads(user_id, uploaded_at desc);
 
 **Deliverables:**
 
-1. **Sub-archetypes (already partly built).** `parallel orchestrator`, `methodical architect`. Lift `SUB_PREFIXES` from `index.html` into `lib/scoring.js`, expose on profile.
+1. **Sub-archetypes (already partly built).** `parallel orchestrator`, `methodical architect`. Lift `SUB_PREFIXES` from `home.html` into `lib/scoring.js`, expose on profile.
 2. **Rare combo detection.** Compute a fingerprint = top-3 archetypes + bucketed primary score. Show "1 of N this month" if N < 50. This is the scarcity vanity.
 3. **Weekly leaderboards** per archetype: top 25 by primary score, with ties broken by recency. Reset weekly. Public at `/leaderboard/<archetype>`.
 4. **Streak tracking.** Uploads more than 7 days apart break a streak. Show "47-day streak" on profile.
@@ -163,12 +165,14 @@ create index on uploads(user_id, uploaded_at desc);
 2. **`/browse` directory.** Filter by archetype, language, looking-for, location (optional, opt-in). Default sort: recently active. Real-time-ish (5min cache).
 3. **Goal-driven match score.** Not just "compatibility" — instead "for what." Pairing a Sprinter with a Deep Diver scores high for pair-coding (complementary), low for co-founding (friction). Build a small matrix.
 4. **`/match` flow.** Pick your goal → see top 10 matches in the directory with that goal. Click one → request intro (just generates a draft message you can copy to X / send via the user's preferred contact link).
-5. **CLI: `npx vibestats sync`.**
-   - Reads insights from `~/.claude/usage-data/agent-insights.json` (already on disk).
+5. **CLI sync.**
+   - Reads the real Claude Code `/insights` output in `~/.claude/usage-data/`: `session-meta/*.json`, `facets/*.json`, and `report.html`.
    - Computes metrics locally.
-   - POSTs to `/api/sync` with a signed token (GitHub auth required).
+   - Keeps prompts, summaries, project paths, session ids, raw tool maps, and raw language maps on disk.
+   - Opens browser approval against the user's GitHub-backed vibestats session, then POSTs to `/api/sync` with a revocable signed token. Manual Settings tokens remain a fallback.
    - Updates profile silently. **This unlocks weekly upload cadence without manual download/upload.**
 6. **Cross-link with Anthropic's `/insights`.** Detect when CC users run /insights and surface a one-line CTA: "Push to vibestats." (Coordinate with Anthropic if they'll embed a CTA. Otherwise just ship the CLI and let users discover it.)
+7. **SSH/TUI route.** `ssh ssh.vibestats.io` becomes a no-install terminal social shell for browsing profiles, leaderboards, matches, and share kits, plus a claim coordinator that prints a local helper command. The HTTP app already exposes `/api/ssh/manifest` as the versioned shell contract, and `services/ssh-shell/server.js` is the first deployable line-oriented service; the SSH host must not read raw `/insights`; local extraction remains the privacy boundary. See `docs/SSH-ROUTE.md`.
 
 **Non-goals:**
 - No in-app messaging. Link out.

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>vibestats | Seth Goldstein — Claude Code Analytics</title>
-  <meta name="description" content="14,859 sessions. 127,605 messages. 17,271 commits. Comprehensive Claude Code usage analytics across two machines.">
-  <meta property="og:title" content="vibestats | Seth Goldstein — Level 50">
-  <meta property="og:description" content="14,859 sessions. 127,605 messages. 17,271 commits across Mac Studio + MacBook.">
+  <title>Seth is an Orchestrator | vibestats</title>
+  <meta name="description" content="See how you'd pair with an Orchestrator. Claude Code already knows how you build: run /insights, check status, reveal yours, and compare.">
+  <meta property="og:title" content="Seth is an Orchestrator | vibestats">
+  <meta property="og:description" content="Claude Code already knows how you build. Run /insights, check status, reveal yours, and see how you'd pair with an Orchestrator.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vibestats.io">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="vibestats | Seth Goldstein — Level 50">
-  <meta name="twitter:description" content="14,859 sessions. 127,605 messages. 17,271 commits. Claude Code power user analytics.">
+  <meta name="twitter:title" content="Seth is an Orchestrator | vibestats">
+  <meta name="twitter:description" content="Run /insights, check status, reveal yours, and see how you'd pair with an Orchestrator.">
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
     :root {
@@ -123,6 +123,25 @@
       text-decoration: none; transition: all 0.2s;
     }
     .share-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .reveal-panel {
+      width: min(620px, 100%); margin: 18px auto 0; padding: 18px;
+      border: 1px solid rgba(107,143,255,0.20); border-radius: 8px;
+      background: rgba(107,143,255,0.045); text-align: left;
+    }
+    .reveal-panel-title { font-size: 14px; color: #fff; font-weight: 700; margin-bottom: 6px; }
+    .reveal-panel-copy { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+    .reveal-command {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;
+      align-items: center; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .reveal-command code {
+      font-family: var(--mono); font-size: 11px; color: #dbe7ff; overflow-wrap: anywhere;
+    }
+    .reveal-command button {
+      min-height: 34px; border: 1px solid rgba(107,143,255,0.35); border-radius: 6px;
+      background: rgba(107,143,255,0.10); color: var(--accent-bright); padding: 0 10px;
+      font-family: var(--mono); font-size: 11px; cursor: pointer;
+    }
 
     /* Hero stats */
     .hero-stats {
@@ -432,7 +451,7 @@
       <a class="share-btn" href="/wrapped" style="background:linear-gradient(135deg,rgba(107,143,255,0.15),rgba(167,139,250,0.1));border-color:rgba(107,143,255,0.35);color:var(--accent-bright)">
         Your Wrapped &rarr;
       </a>
-      <a class="share-btn" href="https://twitter.com/intent/tweet?text=Level%2050%20on%20vibestats%20%E2%80%94%2014%2C859%20sessions%2C%20127K%20messages%2C%2017K%20commits%20across%20two%20machines.%20%23vibestats&url=https%3A%2F%2Fvibestats.io" target="_blank" rel="noopener">
+      <a class="share-btn" href="https://twitter.com/intent/tweet?text=Level%2050%20on%20vibestats%20%E2%80%94%2014%2C859%20sessions%2C%20127K%20messages%2C%2017K%20commits%20across%20two%20machines.%20See%20how%20you%27d%20pair%20with%20an%20Orchestrator.%20Card%3A%20https%3A%2F%2Fvibestats.io%2Fdashboard%20%23vibestats&url=https%3A%2F%2Fvibestats.io%2F%3FcompareArchetype%3Dorchestrator" target="_blank" rel="noopener">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
         Share
       </a>
@@ -662,7 +681,7 @@
       </div>
       <div class="project-grid">
         <div class="project-card" style="border-left-color:var(--accent)">
-          <div class="name">/vibe Platform</div>
+          <div class="name">Developer Social Platform</div>
           <div class="meta" style="color:var(--accent)">~20 sessions + primary workstream</div>
           <p>Social network for developers. Presence APIs, artifact sharing, MCP server, Vercel deployments. Led to USV $250K commitment.</p>
         </div>
@@ -777,14 +796,38 @@
 
     <!-- Footer -->
     <div class="fun-ending reveal" style="margin-top:32px;border-color:rgba(107,143,255,0.2)">
-      <div class="headline" style="color:var(--accent)">What's your vibecoding personality?</div>
-      <div class="detail">Upload your Claude Code insights and discover your archetype. The Orchestrator, The Shipper, The Architect, The Debugger... Everything runs in your browser — no data leaves your machine.</div>
-      <a href="/" class="share-btn" style="margin-top:16px;display:inline-flex;background:linear-gradient(135deg,rgba(107,143,255,0.15),rgba(167,139,250,0.1));border-color:rgba(107,143,255,0.35);color:var(--accent-bright)">Find your archetype &rarr;</a>
+      <div class="headline" style="color:var(--accent)">How would you pair with an Orchestrator?</div>
+      <div class="detail">Claude Code already has your build fingerprint. Reveal your archetype locally, then compare against this Orchestrator pattern. Raw sessions stay on your machine.</div>
+      <a href="/?compareArchetype=orchestrator" class="share-btn" style="margin-top:16px;display:inline-flex;background:linear-gradient(135deg,rgba(107,143,255,0.15),rgba(167,139,250,0.1));border-color:rgba(107,143,255,0.35);color:var(--accent-bright)">Compare with Orchestrator &rarr;</a>
+      <div class="reveal-panel" aria-label="Reveal your own vibestats">
+        <div class="reveal-panel-title">What are you?</div>
+        <div class="reveal-panel-copy">Run /insights in Claude Code, then use the no-npm local helper. Only derived metrics publish if you decide to claim a profile.</div>
+        <div class="reveal-command">
+          <code>/insights</code>
+          <button type="button" data-copy="/insights">Copy</button>
+        </div>
+        <div class="reveal-command">
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s -- status">Copy status</button>
+        </div>
+        <div class="reveal-command">
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy</button>
+        </div>
+        <div class="reveal-command">
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s --">Copy claim</button>
+        </div>
+        <div class="reveal-command">
+          <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
+          <button type="button" data-copy="curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command">Copy install</button>
+        </div>
+      </div>
     </div>
 
     <div class="footer">
       <span>vibestats.io &middot; Feb 2026</span>
-      <span>made with <a href="https://slashvibe.dev">/vibe</a></span>
+      <span>derived-only Claude Code reveal</span>
     </div>
   </div>
 
@@ -947,10 +990,39 @@
     sTxt.textContent = '91%';
     satSvg.appendChild(sTxt);
 
+    async function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    document.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const idle = button.textContent;
+        try {
+          await copyText(button.getAttribute('data-copy') || '');
+          button.textContent = 'COPIED';
+        } catch (e) {
+          button.textContent = 'FAILED';
+        }
+        setTimeout(() => { button.textContent = idle; }, 1400);
+      });
+    });
+
     // Copy prompts
     function copyPrompt(el) {
       const text = el.textContent.replace('COPY', '').trim();
-      navigator.clipboard.writeText(text).then(() => {
+      copyText(text).then(() => {
         el.classList.add('copied');
         el.querySelector('.copy-hint').textContent = 'COPIED';
         setTimeout(() => {

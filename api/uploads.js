@@ -1,0 +1,73 @@
+import { requireUser } from './_lib/auth.js';
+import { sql } from './_lib/db.js';
+import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin, safeErrorMessage } from './_lib/http.js';
+import { profileLinks } from './_lib/profile-links.js';
+import { attachClaimSession, cleanClaimCode } from './_lib/ssh-claims.js';
+import { sanitizeUploadPayload } from './_lib/uploads.js';
+import { attributionRefFromBody, attributionSurfaceFromBody, recordViralEvent } from './_lib/viral-events.js';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return methodNotAllowed(res, ['POST'], NO_STORE_HEADERS);
+
+  try {
+    requireSameOrigin(req);
+    const user = await requireUser(req);
+    if (!user) return json(res, 401, { error: 'Not authenticated' }, NO_STORE_HEADERS);
+
+    const recent = await sql()`
+      select count(*)::int as count
+      from uploads
+      where user_id = ${user.id}
+        and uploaded_at > now() - interval '1 day'
+    `;
+    if ((recent[0]?.count || 0) >= 5) {
+      return json(res, 429, { error: 'Upload limit reached: 5 profile saves per day' }, NO_STORE_HEADERS);
+    }
+
+    const body = await readJson(req);
+    const claimCode = cleanClaimCode(body.claim_code || body.claimCode, { optional: true });
+    const payload = sanitizeUploadPayload(body);
+    const rows = await sql()`
+      insert into uploads (user_id, archetype, scores, metrics, raw_meta)
+      values (
+        ${user.id},
+        ${payload.archetype},
+        ${sql().json(payload.scores)},
+        ${sql().json(payload.metrics)},
+        ${sql().json(payload.raw_meta)}
+      )
+      returning id, archetype, scores, metrics, raw_meta, uploaded_at
+    `;
+    await sql()`update users set last_seen_at = now() where id = ${user.id}`;
+    const links = profileLinks(user, payload.archetype);
+    try {
+      await recordViralEvent({
+        eventName: 'profile_claimed',
+        sourceRef: attributionRefFromBody(body),
+        sourceSurface: attributionSurfaceFromBody(body, 'homepage'),
+        profileHandle: user.gh_handle,
+        archetype: payload.archetype,
+      });
+    } catch (err) {
+      console.error('POST /api/uploads viral event error:', err);
+    }
+    let claimSession = null;
+    if (claimCode) {
+      try {
+        claimSession = await attachClaimSession(claimCode, user, links);
+      } catch {
+        claimSession = { state: 'unavailable' };
+      }
+    }
+
+    json(res, 201, {
+      ok: true,
+      ...links,
+      claim_session: claimSession,
+      upload: rows[0],
+    }, NO_STORE_HEADERS);
+  } catch (err) {
+    console.error('POST /api/uploads error:', err);
+    json(res, err.statusCode || 500, { error: safeErrorMessage(err, 'Upload failed') }, NO_STORE_HEADERS);
+  }
+}

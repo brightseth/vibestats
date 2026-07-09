@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>vibestats recap</title>
+  <meta name="description" content="A privacy-preserving weekly recap for a Claude Code vibestats profile.">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface-2: #14141e;
+      --border: #252535;
+      --text: #e0e0e0;
+      --text-muted: #8888a0;
+      --text-dim: #555568;
+      --accent: #6B8FFF;
+      --purple: #a78bfa;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --mono: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    .shell {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+    .topbar, .actions, .hero-head, .proof-row {
+      display: flex;
+      align-items: center;
+    }
+    .topbar {
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 34px;
+    }
+    .brand {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav, .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: var(--accent); color: #fff; }
+    .btn.primary {
+      border-color: rgba(107,143,255,0.45);
+      background: linear-gradient(135deg, rgba(107,143,255,0.18), rgba(167,139,250,0.12));
+      color: #c8d5ff;
+    }
+    .loading, .error {
+      min-height: 64vh;
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      text-align: center;
+      line-height: 1.7;
+    }
+    .recap { display: none; }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 16px;
+    }
+    .hero-card, .side-card, .panel {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .hero-card {
+      min-height: 360px;
+      display: grid;
+      align-content: end;
+      padding: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: var(--arch-gradient);
+    }
+    .hero-head {
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      background: var(--surface-2);
+      object-fit: cover;
+    }
+    .kicker {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    h1 {
+      margin-top: 5px;
+      color: #fff;
+      font-size: clamp(36px, 8vw, 76px);
+      line-height: 0.95;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+    .subtitle {
+      max-width: 720px;
+      margin-top: 18px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .side-card {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      padding: 22px;
+      text-align: center;
+    }
+    .score-ring {
+      width: 164px;
+      height: 164px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, #11111d 58%, transparent 60%),
+        conic-gradient(var(--arch-color) var(--score-deg), rgba(255,255,255,0.08) 0deg);
+    }
+    .score-ring strong {
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 38px;
+    }
+    .score-label {
+      margin-top: 16px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .panel {
+      min-height: 164px;
+      padding: 16px;
+    }
+    .panel.wide { grid-column: span 2; }
+    .panel-title {
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .panel-value {
+      margin-top: 10px;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+    .panel-copy {
+      margin-top: 10px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .command-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .command-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .command-row code {
+      min-width: 0;
+      overflow: hidden;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: #090911;
+      color: #dbe4ff;
+      font-family: var(--mono);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .proof-row {
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 7px 10px;
+      border: 1px solid rgba(107,143,255,0.25);
+      border-radius: 999px;
+      background: rgba(107,143,255,0.08);
+      color: #c8d5ff;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .facet-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .facet-row {
+      display: grid;
+      grid-template-columns: 126px minmax(0, 1fr) 42px;
+      gap: 9px;
+      align-items: center;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .bar {
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+    }
+    .bar span {
+      display: block;
+      width: var(--w);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+    }
+    .privacy {
+      margin-top: 14px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .actions {
+      margin-top: 18px;
+      justify-content: flex-start;
+    }
+    @media (max-width: 860px) {
+      .hero, .grid { grid-template-columns: 1fr; }
+      .panel.wide { grid-column: auto; }
+      .side-card { min-height: 260px; }
+    }
+    @media (max-width: 520px) {
+      .shell { width: 100%; padding: 24px 16px 56px; overflow: hidden; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .nav, .actions { align-items: stretch; flex-direction: column; width: 100%; }
+      .btn { width: 100%; }
+      .command-row { grid-template-columns: 1fr; }
+      .hero-card { min-height: 420px; padding: 20px; }
+      .hero-head { align-items: flex-start; flex-direction: column; }
+      .facet-row { grid-template-columns: 1fr; gap: 5px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <a class="brand" href="/">vibestats</a>
+      <div class="nav">
+        <a class="btn" href="/">Reveal yours</a>
+        <a class="btn" href="/browse">Browse</a>
+      </div>
+    </nav>
+
+    <div class="loading" id="loading">Loading recap...</div>
+    <div class="error" id="error" style="display:none"></div>
+    <section class="recap" id="recap">
+      <div class="hero">
+        <section class="hero-card">
+          <div class="hero-head">
+            <img class="avatar" id="avatar" alt="">
+            <div>
+              <div class="kicker" id="eyebrow">weekly recap</div>
+              <h1 id="title"></h1>
+            </div>
+          </div>
+          <p class="subtitle" id="subtitle"></p>
+          <div class="proof-row" id="proof-row"></div>
+          <div class="actions">
+            <a class="btn primary" id="compare-cta" href="/">Compare with this recap</a>
+            <button class="btn" id="copy-recap" type="button">Copy recap</button>
+            <a class="btn" id="share-x" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener">Share on X</a>
+            <a class="btn" id="profile-cta" href="/">Open profile</a>
+            <button class="btn" id="copy-sync" type="button" style="display:none">Copy sync command</button>
+            <button class="btn" id="copy-install" type="button" style="display:none">Copy /vibestats install</button>
+            <a class="btn" id="digest-cta" href="/settings#weekly-digest-row" style="display:none">Weekly email</a>
+          </div>
+          <div class="privacy">Raw Claude Code /insights data stays local. This recap uses only saved derived profile signals.</div>
+        </section>
+        <aside class="side-card">
+          <div class="score-ring" id="score-ring"><strong id="score-value"></strong></div>
+          <div class="score-label" id="score-label"></div>
+        </aside>
+      </div>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="panel-title">collectible proof</div>
+          <div class="panel-value" id="badge-value"></div>
+          <div class="panel-copy" id="badge-copy"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-title">return pulse</div>
+          <div class="panel-value" id="return-value"></div>
+          <div class="panel-copy" id="return-copy"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-title">activity view</div>
+          <div class="panel-value" id="activity-value"></div>
+          <div class="panel-copy" id="activity-copy"></div>
+        </article>
+        <article class="panel wide">
+          <div class="panel-title">facet shape</div>
+          <div class="facet-list" id="facet-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-title">next click</div>
+          <div class="panel-value">Compare</div>
+          <div class="panel-copy" id="next-copy"></div>
+        </article>
+        <article class="panel wide" id="recipient-reveal">
+          <div class="panel-title">your turn</div>
+          <div class="panel-value">What are you?</div>
+          <div class="panel-copy">Claude Code already has your build fingerprint. Use the no-npm local helper, claim only when you want a persistent GitHub-backed profile, then install /vibestats for the next recap.</div>
+          <div class="command-list" aria-label="Reveal and claim commands">
+            <div class="command-row">
+              <code>/insights</code>
+              <button class="btn" type="button" data-copy-command="/insights">Copy</button>
+            </div>
+            <div class="command-row">
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- status">Copy status</button>
+            </div>
+            <div class="command-row">
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy reveal</button>
+            </div>
+            <div class="command-row">
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s --">Copy claim</button>
+            </div>
+            <div class="command-row">
+              <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
+              <button class="btn" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command">Copy install</button>
+            </div>
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script src="/api/archetype-identity"></script>
+  <script>
+    const ARCHETYPES = window.VIBESTATS_ARCHETYPES;
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = (n) => Number(n || 0).toLocaleString();
+
+    function handleFromLocation() {
+      const query = new URLSearchParams(location.search).get('handle');
+      if (query) return query;
+      const parts = location.pathname.split('/').filter(Boolean);
+      if (parts[0] === 'u' && parts[2] === 'recap') return parts[1];
+      return '';
+    }
+
+    function canonicalUrl(path) {
+      return new URL(path || '/', 'https://vibestats.io').toString();
+    }
+
+    const SYNC_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s --';
+    const INSTALL_COMMAND = 'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command';
+    const RESET_COPY = {
+      '/insights': 'Copy',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s -- status': 'Copy status',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal': 'Copy reveal',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s --': 'Copy claim',
+      'curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command': 'Copy install',
+    };
+
+    function profileProofLine(profile, latest) {
+      const proof = [];
+      if (latest?.raw_meta?.signature) proof.push(latest.raw_meta.signature);
+      if (profile?.rarity?.count) {
+        const plural = profile.rarity.count === 1 ? 'profile' : 'profiles';
+        proof.push(`${profile.rarity.tier} combo: 1 of ${fmt(profile.rarity.count)} saved ${plural} this month`);
+      }
+      if (profile?.leaderboard?.rank) {
+        proof.push(`#${fmt(profile.leaderboard.rank)} weekly ${ARCHETYPES[profile.leaderboard.label]?.short || profile.leaderboard.label} board`);
+      }
+      return proof.filter(Boolean).join(' / ');
+    }
+
+    function topAchievement(profile) {
+      const achievements = Array.isArray(profile?.achievements) ? profile.achievements : [];
+      return achievements[0] || null;
+    }
+
+    function returnPulse(profile, latest) {
+      if (profile?.evolution?.label) {
+        return { value: profile.evolution.label, copy: profile.evolution.detail || 'Changed since the previous upload.' };
+      }
+      if (profile?.streak?.label) {
+        return { value: profile.streak.label, copy: profile.streak.detail || 'Saved profile cadence.' };
+      }
+      return { value: latest?.updated?.label || 'fresh profile', copy: 'Sync again after more Claude Code work to watch the profile move.' };
+    }
+
+    function shareText(handle, profile, latest, recapUrl, compareUrl) {
+      const proof = profileProofLine(profile, latest);
+      const label = latest?.raw_meta?.signature || ARCHETYPES[latest?.archetype]?.short || 'Claude Code profile';
+      return `@${handle}'s vibestats recap: ${label}.${proof ? `\n${proof}` : ''}\nSee how you'd pair: ${compareUrl}\nRecap: ${recapUrl}`;
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    function renderFacets(upload) {
+      const facets = Array.isArray(upload?.facets) ? upload.facets.slice() : [];
+      const top = facets.sort((a, b) => Number(b.value || 0) - Number(a.value || 0)).slice(0, 4);
+      document.getElementById('facet-list').innerHTML = top.map((facet) => `
+        <div class="facet-row" title="${esc(facet.detail || '')}">
+          <span>${esc(facet.label)}</span>
+          <div class="bar"><span style="--w:${Math.max(0, Math.min(100, Number(facet.value) || 0))}%"></span></div>
+          <span>${esc(facet.value)}%</span>
+        </div>
+      `).join('');
+    }
+
+    async function renderRecap() {
+      const handle = handleFromLocation();
+      const res = await fetch(`/api/u/${encodeURIComponent(handle)}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status === 404 ? 'Profile not found' : 'Recap unavailable');
+      const profile = await res.json();
+      const latest = profile.uploads?.[0];
+      if (!latest) throw new Error('Profile has no saved recap yet');
+
+      const arch = ARCHETYPES[latest.archetype] || ARCHETYPES.builder;
+      const score = Number(latest.scores?.[latest.archetype] || 0);
+      const proof = profileProofLine(profile, latest);
+      const achievement = topAchievement(profile);
+      const pulse = returnPulse(profile, latest);
+      const profilePath = `/u/${encodeURIComponent(profile.user.gh_handle)}`;
+      const recapPath = `${profilePath}/recap`;
+      const comparePath = `/?compareTo=${encodeURIComponent(profile.user.gh_handle)}&compareArchetype=${encodeURIComponent(latest.archetype)}`;
+      const recapUrl = canonicalUrl(recapPath);
+      const compareUrl = canonicalUrl(comparePath);
+      const invite = shareText(profile.user.gh_handle, profile, latest, recapUrl, compareUrl);
+
+      document.title = `@${profile.user.gh_handle} recap | vibestats`;
+      document.documentElement.style.setProperty('--arch-color', arch.color);
+      document.documentElement.style.setProperty('--arch-gradient', arch.gradient);
+      document.documentElement.style.setProperty('--score-deg', `${Math.round(score / 100 * 360)}deg`);
+      document.getElementById('avatar').src = profile.user.avatar_url || '';
+      document.getElementById('avatar').alt = `@${profile.user.gh_handle}`;
+      document.getElementById('eyebrow').textContent = `${latest.updated?.label || 'weekly recap'} / @${profile.user.gh_handle}`;
+      document.getElementById('title').textContent = latest.raw_meta?.signature || arch.name;
+      document.getElementById('subtitle').textContent = `${arch.name}. ${proof || 'A privacy-preserving Claude Code profile with derived public signals.'}`;
+      document.getElementById('proof-row').innerHTML = [
+        latest.activity?.cadence,
+        latest.activity?.depth,
+        latest.activity?.days,
+      ].filter(Boolean).map((item) => `<span class="pill">${esc(item)}</span>`).join('');
+      document.getElementById('score-value').textContent = `${score}%`;
+      document.getElementById('score-label').textContent = `${arch.short} signal`;
+      document.getElementById('badge-value').textContent = achievement?.value || (profile.rarity?.count ? `1 of ${fmt(profile.rarity.count)}` : 'warming up');
+      document.getElementById('badge-copy').textContent = achievement ? `${achievement.label}: ${achievement.detail}` : 'Scarcity and badges appear as the profile keeps syncing.';
+      document.getElementById('return-value').textContent = pulse.value;
+      document.getElementById('return-copy').textContent = pulse.copy;
+      document.getElementById('activity-value').textContent = latest.activity?.cadence || 'activity private';
+      document.getElementById('activity-copy').textContent = `${latest.activity?.days || 'fresh profile'} / ${latest.activity?.depth || 'history private'}`;
+      document.getElementById('next-copy').textContent = profile.is_owner
+        ? 'Run CLI sync after more Claude Code work to refresh this recap. Raw /insights data stays local.'
+        : `Open the compare loop to see how your local /insights data pairs with @${profile.user.gh_handle}.`;
+      document.getElementById('compare-cta').href = comparePath;
+      document.getElementById('profile-cta').href = profilePath;
+      if (profile.is_owner) {
+        document.getElementById('digest-cta').style.display = 'inline-flex';
+        document.getElementById('copy-sync').style.display = 'inline-flex';
+        document.getElementById('copy-install').style.display = 'inline-flex';
+      }
+      document.getElementById('share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(invite)}&url=${encodeURIComponent(compareUrl)}`;
+      document.getElementById('copy-recap').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        try {
+          await copyText(invite);
+          button.textContent = 'Recap copied!';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = 'Copy recap'; }, 1500);
+      });
+      document.getElementById('copy-sync').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        try {
+          await copyText(SYNC_COMMAND);
+          button.textContent = 'Sync copied!';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = 'Copy sync command'; }, 1500);
+      });
+      document.getElementById('copy-install').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        try {
+          await copyText(INSTALL_COMMAND);
+          button.textContent = '/vibestats copied!';
+        } catch {
+          button.textContent = 'Copy failed';
+        }
+        setTimeout(() => { button.textContent = 'Copy /vibestats install'; }, 1500);
+      });
+      document.querySelectorAll('[data-copy-command]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          const target = event.currentTarget;
+          const command = target.getAttribute('data-copy-command') || '';
+          const reset = RESET_COPY[command] || 'Copy';
+          try {
+            await copyText(command);
+            target.textContent = 'Copied!';
+          } catch {
+            target.textContent = 'Copy failed';
+          }
+          setTimeout(() => { target.textContent = reset; }, 1500);
+        });
+      });
+      renderFacets(latest);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('recap').style.display = 'block';
+    }
+
+    renderRecap().catch((err) => {
+      document.getElementById('loading').style.display = 'none';
+      const error = document.getElementById('error');
+      error.style.display = 'grid';
+      error.innerHTML = `<div><strong>${esc(err.message)}</strong><br><a href="/" style="color:var(--accent)">Reveal yours</a></div>`;
+    });
+  </script>
+</body>
+</html>

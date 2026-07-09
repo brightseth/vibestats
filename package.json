@@ -1,7 +1,49 @@
 {
+  "name": "@lets-vibe/vibestats",
+  "version": "0.1.0",
+  "description": "Privacy-preserving Claude Code /insights reveal and profile sync CLI.",
   "type": "module",
+  "bin": {
+    "vibestats": "./bin/vibestats.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brightseth/vibestats.git"
+  },
+  "homepage": "https://vibestats.io",
+  "bugs": {
+    "url": "https://github.com/brightseth/vibestats/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "insights",
+    "vibecoding",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node scripts/facet-signals-test.mjs && node scripts/funnel-events-test.mjs && node scripts/compat-test.mjs && node scripts/smoke.mjs",
+    "doctor:identity": "node scripts/identity-doctor.mjs",
+    "audit:package": "node scripts/package-audit.mjs",
+    "audit:launch": "node scripts/launch-audit.mjs",
+    "audit:ssh": "node scripts/ssh-audit.mjs",
+    "traffic:launch": "node scripts/launch-traffic.mjs",
+    "share:kit": "node scripts/share-kit.mjs",
+    "reveal:delete": "node scripts/delete-reveal-snapshot.mjs",
+    "ssh:dev": "node services/ssh-shell/server.js",
+    "dev": "vercel dev",
+    "serve": "vercel dev",
+    "migrate": "node scripts/migrate.mjs"
+  },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
-    "satori": "^0.19.1"
+    "postgres": "^3.4.9",
+    "satori": "^0.19.1",
+    "ssh2": "^1.17.0"
   }
 }

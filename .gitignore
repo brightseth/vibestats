@@ -6,3 +6,11 @@ test-results
 
 # Unlisted personal report shares
 r/
+.gstack/
+
+# personal launch follow-along (not for deploy)
+launch-guide.html
+
+# personal social-graph + outreach data (never commit — repo is PUBLIC)
+research/
+.claude/scheduled_tasks.lock
