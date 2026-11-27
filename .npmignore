@@ -1,0 +1,16 @@
+*
+!README.md
+!package.json
+!bin
+!bin/vibestats.js
+!lib
+!lib/claude-insights-extractor.js
+!lib/insights-derived.js
+!lib/share-kit.js
+!api
+!api/_lib
+!api/_lib/moments.js
+!api/_lib/signatures.js
+!.claude
+!.claude/commands
+!.claude/commands/vibestats.md

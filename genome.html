@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>The Coding Genome | vibestats</title>
-  <meta name="description" content="How the Claude Code community codes. Live archetype distribution, community averages, and the coding genome barcode. Updated in real time.">
+  <meta name="description" content="How Claude Code builders code. See the launch baseline and live reveal contributions, then run /insights to reveal where your derived profile lands.">
   <meta property="og:title" content="The Coding Genome | vibestats">
-  <meta property="og:description" content="How the Claude Code community codes. Live archetype distribution, community averages, and genome barcode.">
+  <meta property="og:description" content="Claude Code already knows how you build. See the launch baseline and live reveal contributions, then run /insights to reveal where you land.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://vibestats.io/genome">
   <meta property="og:image" content="https://vibestats.io/og-card.png">
@@ -100,8 +100,53 @@
     .hero-counter .count-label {
       color: var(--text-muted); font-size: 12px;
     }
+    .source-note {
+      margin-top: 10px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+    }
 
     @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ---- Reveal Path ---- */
+    .reveal-strip {
+      width: 100%; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.75fr) minmax(180px, 0.75fr);
+      gap: 14px; align-items: stretch; padding: 20px;
+      background: linear-gradient(135deg, rgba(107,143,255,0.16), rgba(34,197,94,0.08));
+      border: 1px solid rgba(107,143,255,0.28); border-radius: 16px;
+      margin: 0 0 56px; text-align: left;
+    }
+    .reveal-title {
+      font-size: clamp(20px, 3vw, 28px); color: #fff; font-weight: 900;
+      letter-spacing: -0.02em; margin: 2px 0 8px;
+    }
+    .reveal-copy { color: var(--text-muted); line-height: 1.55; font-size: 14px; max-width: 620px; }
+    .command-card {
+      display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+      min-height: 128px; padding: 16px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.24);
+    }
+    .command-card span {
+      font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .command-card code {
+      display: block; color: #fff; font-family: var(--mono); font-size: 12px;
+      line-height: 1.45; overflow-wrap: anywhere;
+    }
+    .command-copy {
+      align-self: flex-start; padding: 8px 12px; border-radius: 10px;
+      border: 1px solid rgba(107,143,255,0.35); background: rgba(107,143,255,0.12);
+      color: #9bb4ff; font-family: var(--mono); font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .command-copy:hover { color: #fff; border-color: var(--accent); transform: translateY(-1px); }
+    .privacy-note {
+      grid-column: 1 / -1; color: var(--text-dim); font-family: var(--mono);
+      font-size: 11px; line-height: 1.5; padding-top: 4px;
+    }
 
     /* ---- Skeleton ---- */
     .skeleton {
@@ -121,7 +166,9 @@
     .dist-name {
       font-family: var(--mono); font-size: 13px; font-weight: 600;
       text-transform: capitalize; text-align: right;
+      display: inline-flex; justify-content: flex-end; align-items: center; gap: 8px;
     }
+    .dist-glyph { min-width: 22px; text-align: center; font-weight: 800; }
     .dist-bar-track {
       height: 28px; background: var(--surface); border-radius: 6px;
       overflow: hidden; position: relative;
@@ -208,6 +255,14 @@
       font-family: var(--sans); font-size: 16px; font-weight: 800;
       margin-bottom: 2px;
     }
+    .profile-glyph {
+      width: 44px; height: 44px; margin-bottom: 12px;
+      display: grid; place-items: center;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.035);
+      font-family: var(--mono); font-size: 20px; font-weight: 800;
+    }
     .profile-tagline {
       font-family: var(--mono); font-size: 11px; font-style: italic;
       margin-bottom: 10px; line-height: 1.4;
@@ -275,52 +330,12 @@
       background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text);
     }
     .cta-secondary:hover { border-color: var(--accent); color: var(--accent); }
-    .cta-vibe {
-      background: linear-gradient(135deg, rgba(107,143,255,0.2), rgba(167,139,250,0.15));
-      border: 1px solid rgba(107,143,255,0.5); color: #8aadff;
-    }
-    .cta-vibe:hover {
-      border-color: var(--accent); color: #fff;
-      background: linear-gradient(135deg, rgba(107,143,255,0.3), rgba(167,139,250,0.2));
-    }
-
-    /* ---- /vibe Footer ---- */
-    .vibe-footer { margin-top: 16px; width: min(400px, 90vw); }
-    .vibe-footer-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: 20px 24px; text-align: center;
-    }
-    .vibe-footer-logo {
-      font-family: var(--mono); font-size: 16px; font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), var(--purple));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .vibe-footer-tagline { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-    .vibe-footer-presence {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 11px; color: var(--text-muted);
-      margin: 12px 0;
-    }
-    .vibe-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
-      animation: dotPulse 2s ease-in-out infinite;
-    }
-    .vibe-footer-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 20px; border-radius: 10px;
-      background: linear-gradient(135deg, rgba(107,143,255,0.12), rgba(167,139,250,0.08));
-      border: 1px solid rgba(107,143,255,0.3);
-      font-family: var(--mono); font-size: 12px; font-weight: 500;
-      color: #8aadff; text-decoration: none; transition: all 0.2s;
-    }
-    .vibe-footer-btn:hover { border-color: var(--accent); color: #fff; }
-
     /* ---- Responsive ---- */
     @media (max-width: 768px) {
       .nav { padding: 16px 20px; }
       .nav-links { gap: 16px; }
       .hero { padding: 40px 0 32px; }
+      .reveal-strip { grid-template-columns: 1fr; }
       .avg-grid { grid-template-columns: repeat(3, 1fr); }
       .profile-grid { grid-template-columns: repeat(2, 1fr); }
       .dist-row { grid-template-columns: 90px 1fr 50px; gap: 8px; }
@@ -356,7 +371,7 @@
   <nav class="nav">
     <a class="nav-logo" href="/">vibestats</a>
     <div class="nav-links">
-      <a href="/">Quiz</a>
+      <a href="/">Reveal</a>
       <a href="/compare">Compare</a>
       <a href="/genome" class="active">Genome</a>
     </div>
@@ -367,12 +382,47 @@
     <!-- Hero -->
     <section class="hero">
       <h1>The Coding Genome</h1>
-      <p class="hero-subtitle">How the Claude Code community codes. Updated live.</p>
+      <p class="hero-subtitle">A transparent launch baseline that blends in live anonymous reveal submissions.</p>
       <div class="hero-counter">
         <span class="pulse-dot"></span>
         <span class="count" id="hero-total">&mdash;</span>
-        <span class="count-label">coders mapped</span>
+        <span class="count-label">profiles modeled</span>
       </div>
+      <div class="source-note" id="source-note">Launch baseline; live submissions update this as people reveal.</div>
+    </section>
+
+    <section class="reveal-strip" aria-label="Reveal your place in the genome">
+      <div>
+        <div class="section-label">your place in the genome</div>
+        <h2 class="reveal-title">What are you?</h2>
+        <p class="reveal-copy">Claude Code already knows how you build. Run <code>/insights</code>, then use the terminal helper to reveal where your derived profile lands.</p>
+      </div>
+      <div class="command-card">
+        <span>Step 1 in Claude Code</span>
+        <code>/insights</code>
+        <button class="command-copy" type="button" data-copy-command="/insights">Copy /insights</button>
+      </div>
+      <div class="command-card">
+        <span>Step 2 in terminal</span>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- status</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- status">Copy status preflight</button>
+      </div>
+      <div class="command-card">
+        <span>Step 3 in terminal</span>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- reveal">Copy reveal command</button>
+      </div>
+      <div class="command-card">
+        <span>Step 4 when ready</span>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s --</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s --">Copy claim command</button>
+      </div>
+      <div class="command-card">
+        <span>Install /vibestats for next time</span>
+        <code>curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command</code>
+        <button class="command-copy" type="button" data-copy-command="curl -fsSL https://vibestats.io/cli.sh | sh -s -- install-claude-command">Copy install command</button>
+      </div>
+      <div class="privacy-note">Raw Claude Code /insights data stays local. Anonymous share links store derived snapshots only; claimed profiles store derived profile metrics only.</div>
     </section>
 
     <!-- Archetype Distribution -->
@@ -429,92 +479,17 @@
     <!-- CTAs -->
     <section class="section" style="text-align:center">
       <div class="cta-row">
-        <a class="cta-btn cta-primary" href="/">Discover your archetype &rarr;</a>
-        <a class="cta-btn cta-secondary" href="/compare">Compare with a friend</a>
-        <a class="cta-btn cta-vibe" href="https://www.slashvibe.dev/join?ref=vibestats_genome" target="_blank" rel="noopener">Join the community on /vibe &rarr;</a>
+        <a class="cta-btn cta-primary" href="/">Reveal yours &rarr;</a>
+        <a class="cta-btn cta-secondary" href="/compare?a=orchestrator&b=shipper">Try sample pairing</a>
       </div>
     </section>
-
-    <!-- /vibe Footer -->
-    <div class="vibe-footer">
-      <div class="vibe-footer-card">
-        <div class="vibe-footer-logo">/vibe</div>
-        <div class="vibe-footer-tagline">The social network for Claude Code</div>
-        <div class="vibe-footer-presence">
-          <span class="vibe-dot"></span>
-          <span id="vibe-online-count">&mdash;</span> online now
-        </div>
-        <br>
-        <a class="vibe-footer-btn" href="https://www.slashvibe.dev/join?ref=vibestats_genome" target="_blank" rel="noopener">
-          Join /vibe &rarr;
-        </a>
-      </div>
-    </div>
   </div>
 
+  <script src="/api/archetype-identity"></script>
   <script>
     /* ===== Constants ===== */
-    const ARCHETYPE_COLORS = {
-      orchestrator: '#6B8FFF',
-      shipper:      '#22c55e',
-      architect:    '#3b82f6',
-      debugger:     '#f59e0b',
-      polyglot:     '#ff79c6',
-      sprinter:     '#ef4444',
-      deepdiver:    '#1e40af',
-      builder:      '#16a34a',
-    };
-
-    const ARCHETYPE_PROFILES = {
-      orchestrator: {
-        name: 'The Orchestrator',
-        tagline: "You don't code \u2014 you conduct.",
-        desc: 'Multi-session maestro running parallel agents. Coordinates complexity across terminals, delegates with precision, and sees the whole board at once.',
-        gradient: 'linear-gradient(135deg, #6B8FFF, #a78bfa)',
-      },
-      shipper: {
-        name: 'The Shipper',
-        tagline: 'Done is better than perfect. You live this.',
-        desc: 'High commit velocity. Features go from idea to production before the standup ends. The git log tells the story.',
-        gradient: 'linear-gradient(135deg, #22c55e, #22d3ee)',
-      },
-      architect: {
-        name: 'The Architect',
-        tagline: 'You read before you write. You plan before you build.',
-        desc: 'Deep reader, careful planner. Systems are designed on paper before a single line is written. Every abstraction is intentional.',
-        gradient: 'linear-gradient(135deg, #3b82f6, #6B8FFF)',
-      },
-      debugger: {
-        name: 'The Debugger',
-        tagline: "You don't guess. You investigate.",
-        desc: 'High grep usage, systematic problem solver. Traces the bug from symptom to root cause with detective-grade precision.',
-        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-      },
-      polyglot: {
-        name: 'The Polyglot',
-        tagline: 'One language is never enough.',
-        desc: 'Diverse tech stack, versatile builder. Moves between TypeScript, Python, Rust, and Go like a native speaker in each.',
-        gradient: 'linear-gradient(135deg, #ff79c6, #f59e0b)',
-      },
-      sprinter: {
-        name: 'The Sprinter',
-        tagline: 'Fast, focused, ferocious.',
-        desc: 'High-intensity sessions, rapid-fire. Short bursts of extreme output. The session timer barely starts before the commits roll in.',
-        gradient: 'linear-gradient(135deg, #ef4444, #ff79c6)',
-      },
-      deepdiver: {
-        name: 'The Deep Diver',
-        tagline: 'You go deep, not wide.',
-        desc: 'Fewer sessions but much deeper. Hours-long explorations into a single problem. The code that emerges is surgical.',
-        gradient: 'linear-gradient(135deg, #1e40af, #3b82f6)',
-      },
-      builder: {
-        name: 'The Builder',
-        tagline: "You build things that didn't exist before.",
-        desc: 'High write-to-read ratio. Greenfield energy. Every session produces something new, tangible, and real.',
-        gradient: 'linear-gradient(135deg, #16a34a, #22c55e)',
-      },
-    };
+    const ARCHETYPE_COLORS = window.VIBESTATS_ARCHETYPE_COLORS;
+    const ARCHETYPE_PROFILES = window.VIBESTATS_ARCHETYPE_PROFILES;
 
     const AVG_METRICS = [
       { key: 'commitsPerDay', label: 'Commits / Day', threshold: 20, format: v => v.toFixed(1) },
@@ -546,6 +521,7 @@
           <div class="profile-card">
             <div class="profile-accent" style="background:${p.gradient}"></div>
             <div class="profile-body">
+              <div class="profile-glyph" style="color:${color};box-shadow:0 0 24px ${color}20">${p.glyph || 'VS'}</div>
               <div class="profile-name" style="color:${color}">${p.name}</div>
               <div class="profile-tagline" style="color:${color}99">${p.tagline}</div>
               <div class="profile-pct" id="profile-pct-${key}">&mdash;% of community</div>
@@ -558,15 +534,13 @@
 
     /* ===== Data Fetch ===== */
     async function loadData() {
-      const [statsResult, archetypeStatsResult] = await Promise.allSettled([
-        fetch('/api/stats').then(r => r.ok ? r.json() : null),
-        fetch('https://www.slashvibe.dev/api/archetype-stats').then(r => r.ok ? r.json() : null),
-      ]);
-
-      const stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+      const stats = await fetch('/api/stats')
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
 
       if (stats) {
         renderHeroCount(stats.total);
+        renderSourceNote(stats.source);
         renderDistribution(stats.total, stats.archetypes);
         renderAverages(stats.averages);
         renderBarcode(stats.total, stats.archetypes);
@@ -576,10 +550,50 @@
       }
     }
 
+    function copyText(text) {
+      if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        return Promise.resolve();
+      } finally {
+        textarea.remove();
+      }
+    }
+
+    document.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-copy-command]');
+      if (!button) return;
+      const original = button.textContent;
+      try {
+        await copyText(button.dataset.copyCommand);
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = original; }, 1200);
+      } catch (err) {
+        button.textContent = 'Copy failed';
+        setTimeout(() => { button.textContent = original; }, 1200);
+      }
+    });
+
     /* ===== Render: Hero Count ===== */
     function renderHeroCount(total) {
       const el = document.getElementById('hero-total');
       animateCount(el, total, 1200);
+    }
+
+    function renderSourceNote(source) {
+      const el = document.getElementById('source-note');
+      if (!el || !source) return;
+      const live = Number(source.live_total || 0);
+      el.textContent = live > 0
+        ? `${Number(source.baseline_total || 0).toLocaleString()} launch baseline profiles + ${live.toLocaleString()} live anonymous submissions.`
+        : source.note || 'Launch baseline shown until live anonymous submissions accumulate.';
     }
 
     function animateCount(el, target, duration) {
@@ -606,7 +620,7 @@
         const color = ARCHETYPE_COLORS[key];
         return `
           <div class="dist-row">
-            <div class="dist-name" style="color:${color}">${key}</div>
+            <div class="dist-name" style="color:${color}"><span class="dist-glyph">${ARCHETYPE_PROFILES[key]?.glyph || 'VS'}</span><span>${key}</span></div>
             <div class="dist-bar-track">
               <div class="dist-bar-fill" style="background:${color}" data-width="${barPct}%"></div>
             </div>
@@ -714,19 +728,6 @@
       document.getElementById('avg-grid').innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:16px 0;grid-column:1/-1">Data temporarily unavailable.</p>';
       document.getElementById('barcode-vis').innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:16px 0">Barcode loading...</p>';
     }
-
-    /* ===== /vibe Presence ===== */
-    (async function fetchVibePresence() {
-      try {
-        const res = await fetch('https://www.slashvibe.dev/api/presence');
-        if (res.ok) {
-          const data = await res.json();
-          const count = Array.isArray(data) ? data.length : (data.online || data.count || 0);
-          const el = document.getElementById('vibe-online-count');
-          if (el && count > 0) el.textContent = count;
-        }
-      } catch (e) { /* graceful degradation */ }
-    })();
 
     /* ===== Init ===== */
     loadData();

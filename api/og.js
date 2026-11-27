@@ -1,16 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { archetypeMap } from '../lib/archetype-identity.js';
+import { runInNewContext } from 'node:vm';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
+import { NO_STORE_HEADERS, methodNotAllowed } from './_lib/http.js';
 
-const ARCHETYPES = {
-  orchestrator: { name: 'THE ORCHESTRATOR', tagline: "You don't code — you conduct.", color: '#6B8FFF' },
-  shipper:      { name: 'THE SHIPPER',      tagline: 'Done is better than perfect. You live this.', color: '#22c55e' },
-  architect:    { name: 'THE ARCHITECT',     tagline: 'You read before you write. You plan before you build.', color: '#6B8FFF' },
-  debugger:     { name: 'THE DEBUGGER',      tagline: "You don't guess. You investigate.", color: '#f59e0b' },
-  polyglot:     { name: 'THE POLYGLOT',      tagline: 'One language is never enough.', color: '#ff79c6' },
-  sprinter:     { name: 'THE SPRINTER',      tagline: 'Fast, focused, ferocious.', color: '#ef4444' },
-  deepdiver:    { name: 'THE DEEP DIVER',    tagline: 'You go deep, not wide.', color: '#3b82f6' },
-  builder:      { name: 'THE BUILDER',       tagline: "You build things that didn't exist before.", color: '#22c55e' },
-};
+const ARCHETYPES = archetypeMap(['name', 'tagline', 'color', 'glyph']);
+
+const COMPAT_SOURCE = readFileSync(new URL('../lib/compat.js', import.meta.url), 'utf8');
+const compatContext = { window: {} };
+runInNewContext(COMPAT_SOURCE, compatContext);
+const VibeCompat = compatContext.window.VibeCompat;
+const FALLBACK_OG = readFileSync(new URL('../og-card.png', import.meta.url));
 
 let fontCache = null;
 
@@ -23,119 +24,86 @@ async function loadFont() {
   return fontCache;
 }
 
+function firstParam(value) {
+  return String(Array.isArray(value) ? value[0] : value ?? '').trim();
+}
+
+function labelParam(value, fallback, max = 42) {
+  const label = firstParam(value)
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/[<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .slice(0, max)
+    .trim();
+  return label || fallback;
+}
+
+function numberParam(value, fallback, { min = 0, max = 100, decimals = 0 } = {}) {
+  const raw = firstParam(value);
+  if (!raw) return fallback;
+  const n = Number(raw.replace(/,/g, ''));
+  if (!Number.isFinite(n)) return fallback;
+  const bounded = Math.min(Math.max(n, min), max);
+  if (decimals === 0) return String(Math.round(bounded));
+  return String(Number(bounded.toFixed(decimals))).replace(/\.0$/, '');
+}
+
+function shortName(key) {
+  return (ARCHETYPES[key]?.name || 'VIBECODER').replace(/^THE /, '');
+}
+
+export function sanitizeOgQuery(query = {}) {
+  const aRaw = firstParam(query.a);
+  const bRaw = firstParam(query.b);
+  const aKey = ARCHETYPES[aRaw] ? aRaw : 'builder';
+  const bKey = ARCHETYPES[bRaw] ? bRaw : 'shipper';
+
+  // Depth: signature subtitle + up to 3 behavioral moments (public-safe labels/values,
+  // already bucketed upstream unless the owner opted into raw counts).
+  const sig = labelParam(query.sig, '', 36);
+  const moments = [];
+  for (let i = 1; i <= 3; i += 1) {
+    const value = labelParam(query[`m${i}v`], '', 24);
+    const label = labelParam(query[`m${i}l`], '', 24);
+    if (value && label) moments.push({ value, label });
+  }
+
+  return {
+    mode: firstParam(query.mode) === 'pair' ? 'pair' : 'archetype',
+    aKey,
+    bKey,
+    arch: ARCHETYPES[aKey],
+    name: labelParam(query.n, 'Vibecoder'),
+    days: numberParam(query.d, '?', { max: 5000 }),
+    commits: numberParam(query.c, '?', { max: 500, decimals: 1 }),
+    langs: numberParam(query.l, '?', { max: 200 }),
+    sessions: numberParam(query.s, '?', { max: 100000 }),
+    aLabel: labelParam(query.an, shortName(aKey)),
+    bLabel: labelParam(query.bn, shortName(bKey)),
+    sig,
+    moments,
+  };
+}
+
+export function sendFallbackOg(res) {
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  res.status(200).send(FALLBACK_OG);
+}
+
 export default async function handler(req, res) {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET'], NO_STORE_HEADERS);
+
   try {
-    const { a: key, n, d, c, l, s } = req.query;
-    const arch = ARCHETYPES[key] || ARCHETYPES.builder;
-    const name = n || 'Vibecoder';
-    const days = d || '?';
-    const commits = c || '?';
-    const langs = l || '?';
-    const sessions = s || '?';
+    const sanitized = sanitizeOgQuery(req.query);
 
     const fontData = await loadFont();
+    const card = sanitized.mode === 'pair'
+      ? pairCard(sanitized)
+      : archetypeCard(sanitized);
 
     const svg = await satori(
-      {
-        type: 'div',
-        props: {
-          style: {
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#06060a',
-            padding: '60px 80px',
-            fontFamily: 'Inter',
-          },
-          children: [
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: '14px',
-                  color: '#555568',
-                  letterSpacing: '0.25em',
-                  textTransform: 'uppercase',
-                  marginBottom: '20px',
-                },
-                children: 'VIBECODING PERSONALITY',
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: '72px',
-                  fontWeight: 900,
-                  color: arch.color,
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1.1,
-                  marginBottom: '16px',
-                },
-                children: arch.name,
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: '20px',
-                  color: '#8888a0',
-                  fontStyle: 'italic',
-                  marginBottom: '48px',
-                  textAlign: 'center',
-                },
-                children: `"${arch.tagline}"`,
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  gap: '24px',
-                  marginBottom: '40px',
-                },
-                children: [
-                  sb(sessions, 'SESSIONS'),
-                  sb(`${commits}/day`, 'COMMITS'),
-                  sb(langs, 'LANGUAGES'),
-                  sb(`${days}d`, 'VIBECODING'),
-                ],
-              },
-            },
-            {
-              type: 'div',
-              props: {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                },
-                children: [
-                  {
-                    type: 'div',
-                    props: {
-                      style: { fontSize: '22px', fontWeight: 900, color: '#ffffff' },
-                      children: name,
-                    },
-                  },
-                  {
-                    type: 'div',
-                    props: {
-                      style: { fontSize: '14px', color: '#6B8FFF', letterSpacing: '0.1em', marginTop: '12px' },
-                      children: 'vibestats.io',
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
+      card,
       {
         width: 1200,
         height: 630,
@@ -154,8 +122,300 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
     res.status(200).send(Buffer.from(png));
   } catch (e) {
-    res.status(500).send(`OG Error: ${e.message}\n${e.stack}`);
+    console.error('OG image generation failed:', e);
+    sendFallbackOg(res);
   }
+}
+
+function page(children) {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#06060a',
+        padding: '60px 80px',
+        fontFamily: 'Inter',
+      },
+      children,
+    },
+  };
+}
+
+function archetypeCard({ arch, name, days, commits, langs, sessions, sig = '', moments = [] }) {
+  return page([
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '14px',
+          color: '#555568',
+          letterSpacing: '0.25em',
+          textTransform: 'uppercase',
+          marginBottom: '20px',
+        },
+        children: 'VIBECODING PERSONALITY',
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          width: '92px',
+          height: '92px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '24px',
+          border: `2px solid ${arch.color}`,
+          backgroundColor: '#111118',
+          color: arch.color,
+          fontSize: '42px',
+          fontWeight: 900,
+          lineHeight: 1,
+          marginBottom: '22px',
+        },
+        children: arch.glyph || 'VS',
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '72px',
+          fontWeight: 900,
+          color: arch.color,
+          letterSpacing: '-0.03em',
+          lineHeight: 1.1,
+          marginBottom: '16px',
+        },
+        children: arch.name,
+      },
+    },
+    // Signature subtitle (e.g. "high-velocity Deep Diver") — the rare-combo identity line.
+    ...(sig ? [{
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '26px',
+          fontWeight: 900,
+          color: '#c9cfe2',
+          marginBottom: '10px',
+          textAlign: 'center',
+        },
+        children: sig,
+      },
+    }] : []),
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '20px',
+          color: '#8888a0',
+          fontStyle: 'italic',
+          marginBottom: sig ? '36px' : '48px',
+          textAlign: 'center',
+        },
+        children: `"${arch.tagline}"`,
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          display: 'flex',
+          gap: '24px',
+          marginBottom: '40px',
+        },
+        // Brag-worthy behavioral moments when available; coarse stats otherwise.
+        children: moments.length
+          ? moments.map((m) => sb(m.value, m.label.toUpperCase()))
+          : [
+            sb(sessions, 'SESSIONS'),
+            sb(`${commits}/day`, 'COMMITS'),
+            sb(langs, 'LANGUAGES'),
+            sb(`${days}d`, 'VIBECODING'),
+          ],
+      },
+    },
+    brandBlock(name),
+  ]);
+}
+
+function pairCard({
+  aKey = 'builder',
+  bKey = 'shipper',
+  aLabel = shortName(aKey),
+  bLabel = shortName(bKey),
+} = {}) {
+  const a = ARCHETYPES[aKey];
+  const b = ARCHETYPES[bKey];
+  const pairing = VibeCompat.getPairing(aKey, bKey);
+
+  return page([
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '14px',
+          color: '#555568',
+          letterSpacing: '0.25em',
+          textTransform: 'uppercase',
+          marginBottom: '26px',
+        },
+        children: 'CLAUDE CODE PAIRING',
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '22px',
+          marginBottom: '28px',
+        },
+        children: [
+          pairPerson(aLabel, shortName(aKey), a.color, a.glyph),
+          {
+            type: 'div',
+            props: {
+              style: { fontSize: '26px', color: '#555568', fontWeight: 900 },
+              children: '+',
+            },
+          },
+          pairPerson(bLabel, shortName(bKey), b.color, b.glyph),
+        ],
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '70px',
+          fontWeight: 900,
+          color: '#ffffff',
+          textAlign: 'center',
+          lineHeight: 1.05,
+          marginBottom: '18px',
+        },
+        children: pairing.name,
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: {
+          fontSize: '22px',
+          color: '#8888a0',
+          textAlign: 'center',
+          lineHeight: 1.4,
+          maxWidth: '860px',
+          marginBottom: '34px',
+        },
+        children: pairing.vibe,
+      },
+    },
+    {
+      type: 'div',
+      props: {
+        style: { display: 'flex', gap: '20px', marginBottom: '34px' },
+        children: [
+          sb(`${pairing.chemistry}/5`, 'CHEMISTRY'),
+          sb('CLAIM YOURS', 'NEXT MOVE'),
+        ],
+      },
+    },
+    brandBlock('See how you pair'),
+  ]);
+}
+
+function pairPerson(label, type, color, glyph = 'VS') {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '320px',
+        padding: '22px 26px',
+        backgroundColor: '#111118',
+        borderRadius: '18px',
+        border: `2px solid ${color}`,
+      },
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: {
+              width: '52px',
+              height: '52px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '14px',
+              border: `1px solid ${color}`,
+              color,
+              fontSize: '24px',
+              fontWeight: 900,
+              marginBottom: '12px',
+            },
+            children: glyph,
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '30px', fontWeight: 900, color, textAlign: 'center' },
+            children: label,
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '12px', color: '#8888a0', letterSpacing: '0.12em', marginTop: '10px' },
+            children: type,
+          },
+        },
+      ],
+    },
+  };
+}
+
+function brandBlock(name) {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      },
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '22px', fontWeight: 900, color: '#ffffff' },
+            children: name,
+          },
+        },
+        {
+          type: 'div',
+          props: {
+            style: { fontSize: '14px', color: '#6B8FFF', letterSpacing: '0.1em', marginTop: '12px' },
+            children: 'vibestats.io',
+          },
+        },
+      ],
+    },
+  };
 }
 
 function sb(value, label) {

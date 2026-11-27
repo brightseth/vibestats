@@ -1,3 +1,7 @@
+> **HISTORICAL (June 2026):** Codex built Wave 1 from this brief. Authorship has since
+> transitioned to Claude (Fable 5) — see /CLAUDE.md (engineering charter) and
+> docs/HANDOFF.md. Codex remains the cross-model reviewer via /codex review.
+
 # Codex Kickoff: vibestats Wave 1
 
 **You're picking up vibestats.io to add persistent identity.** This doc is everything you need to start.
@@ -8,7 +12,7 @@ Read this, then `README.md`, then `docs/ROADMAP.md`. In that order.
 
 ## What vibestats is
 
-A Claude Code personality engine. Users upload their `/insights` JSON (from `~/.claude/usage-data/agent-insights.json`), get an archetype + a shareable card. Privacy-first: JSON never leaves the browser, only aggregate counts go to Redis.
+A Claude Code personality engine. Users upload insights in the browser or run the GitHub-backed CLI command against the real Claude Code `/insights` output in `~/.claude/usage-data/` (`session-meta/`, `facets/`, `report.html`), get an archetype + a shareable card. The CLI opens browser approval against the existing GitHub session; Settings token copy is only a fallback. Privacy-first: raw insight/session data stays local, only aggregate counts go to Redis.
 
 Live: [vibestats.io](https://vibestats.io). Repo: `brightseth/vibestats`.
 
@@ -22,24 +26,25 @@ Full Wave 1 spec is in `docs/ROADMAP.md`. The constraint: **don't break the priv
 
 ## Architecture you're inheriting
 
-**Front-end:** static HTML pages with inline JS (`index.html`, `wrapped.html`, `dashboard.html`, `compare.html`, `genome.html`). All scoring math is in `index.html`. The other pages duplicate slices of it — keep duplicates in sync OR (better) lift scoring to `lib/scoring.js` and import.
+**Front-end:** static HTML pages with inline JS (`home.html`, `wrapped.html`, `dashboard.html`, `compare.html`, `genome.html`). All scoring math is in `home.html`. The other pages duplicate slices of it — keep duplicates in sync OR (better) lift scoring to `lib/scoring.js` and import.
 
-**Back-end:** Vercel Edge Functions in `api/`:
+**Back-end:** Vercel Functions in `api/`:
 - `api/stats.js` — POST archetype + 5 averages to Upstash Redis (aggregate counters, rate-limited 1/IP/hr).
 - `api/og.js` — Satori-rendered SVG → PNG for share cards.
 - `api/card.js` — share landing page (`/card?a=…`), reads URL params, renders OG + redirects.
+- Wave 1 branch adds `api/auth/*`, `api/me.js`, `api/uploads.js`, `api/u/[handle].js`, and `api/settings*`.
 
-**Storage:** Upstash Redis (`KV_REST_API_URL` + `KV_REST_API_TOKEN`). Aggregate-only — no per-user data.
+**Storage:** Upstash Redis (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) for anonymous aggregates; Neon Postgres for authenticated derived metrics.
 
 **Hosting:** Vercel project `lets-vibe/vibestats`, aliased to `vibestats.io`. `vercel.json` has `cleanUrls: true` and a strict CSP — read it before you add external resources.
 
-**Auth:** none yet. Adding it is your job.
+**Auth:** Wave 1 branch adds custom GitHub OAuth with a signed `vibestats_auth` cookie.
 
 **Conventions:**
 - Branch discipline: feature branch → PR → merge to main. Don't push to main directly.
 - Pre-push hygiene: scan diff for secrets, transcripts, internal notes.
 - ESM everywhere (`"type": "module"` in package.json).
-- No build step today — static files + Edge Functions. If you need a build step (for example, to bundle React for `/u/<handle>`), commit to it deliberately and update the README.
+- No build step today — static files + Vercel Functions. If you need a build step (for example, to bundle React for `/u/<handle>`), commit to it deliberately and update the README.
 
 ---
 
@@ -77,6 +82,19 @@ create table uploads (
   uploaded_at timestamptz default now()
 );
 
+create table profile_settings (
+  user_id uuid primary key references users(id) on delete cascade,
+  weekly_digest_opt_in boolean not null default false,
+  digest_email text,
+  email_consent_at timestamptz,
+  weekly_digest_sent_at timestamptz,
+  looking_for text not null default 'idle',
+  looking_for_expires_at timestamptz,
+  contact_url text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create index uploads_user_time_idx on uploads(user_id, uploaded_at desc);
 create index users_handle_idx on users(gh_handle);
 ```
@@ -92,7 +110,7 @@ create index users_handle_idx on users(gh_handle);
 
 ### Frontend changes
 
-- **`index.html`**: after archetype reveal, if user is logged in, show a "Saved to your profile →" pill linking to `/u/<handle>`. If logged out, show "Sign in with GitHub to save & track" CTA next to the share buttons. Don't block the share flow on auth.
+- **`home.html`**: after archetype reveal, if user is logged in, show a "Saved to your profile →" pill linking to `/u/<handle>`. If logged out, show "Sign in with GitHub to save & track" CTA next to the share buttons. Don't block the share flow on auth.
 - **New: `u.html`** or `pages/u/[handle].astro` or whatever you pick. Render: avatar + handle, archetype card (reuse OG card markup), evolution sparkline (last 12 uploads, primary archetype score), 5 community-relative stats ("you're in the top 12% of Orchestrators by commitsPerDay").
 - **New: `/settings`** (gated). Privacy toggle, delete account, download my data (return uploads as JSON).
 
@@ -103,13 +121,15 @@ create index users_handle_idx on users(gh_handle);
 3. `/u/<handle>` minimum-viable: card + sparkline + percentile chip.
 4. README + ROADMAP updates if anything changes shape.
 
+The `feat/wave-1-identity` branch has a first pass of these pieces. Continue from there rather than rebuilding them.
+
 What to **not** ship in week 1: leaderboards, compatibility, embed badge, weekly email. Those are Wave 2 and 3.
 
 ---
 
 ## Things to be careful about
 
-1. **The privacy promise.** Audit your flow: the `agent-insights.json` file should still never leave the browser. Compute archetype client-side, send only the derived `{archetype, scores, metrics, raw_meta}` to `/api/uploads`. Add a visible note in the upload UI: "We save your archetype and 5 derived metrics. We never see your raw insights file."
+1. **The privacy promise.** Audit your flow: raw `/insights` exports and session metadata should still never leave the browser or local CLI host. Compute archetype client-side or locally, send only the derived `{archetype, scores, metrics, raw_meta}` to `/api/uploads` or `/api/sync`. Add a visible note in the upload UI: "We save your archetype and 5 derived metrics. We never see your raw insights file."
 2. **The 8-archetype canon.** Don't add a 9th archetype. It cascades through scoring, OG, share URLs, community aggregates, compatibility math. Sub-archetypes (Wave 3) are additive and fine.
 3. **CSP in `vercel.json`.** Strict. If you add an external resource (analytics, fonts, anything), update CSP explicitly. Don't widen to `*`.
 4. **CLI tradition.** vibestats is "no build step" today. If you reach for Next.js, justify it in the PR — it changes deploy semantics, dev experience, and the README.
@@ -147,10 +167,9 @@ git checkout -b feat/wave-1-identity
 npm install
 vercel link --project vibestats --scope lets-vibe
 vercel env pull .env.local
-npx serve .          # static surface
-vercel dev           # to test api/*
+npm run dev          # Vercel routing, homepage metadata, and api/*
 ```
 
-Then read `index.html` end-to-end. It's 88KB and is the source of truth for archetypes, scoring, and the share flow. Everything you build is a layer over it.
+Then read `home.html` end-to-end. It is the source of truth for archetypes, scoring, and the share flow. Everything you build is a layer over it.
 
 Good luck. Ship the profile.

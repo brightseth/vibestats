@@ -2,6 +2,8 @@
 // Set env vars: KV_REST_API_URL + KV_REST_API_TOKEN (Vercel KV)
 // or: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
 
+import { NO_STORE_HEADERS, json, methodNotAllowed, readJson, requireSameOrigin } from './_lib/http.js';
+
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -36,31 +38,58 @@ const BASELINE = {
   },
 };
 
+function statsSource(realTotal = 0) {
+  return {
+    kind: realTotal > 0 ? 'launch-baseline-plus-live' : 'launch-baseline',
+    baseline_total: BASELINE.total,
+    live_total: realTotal,
+    note: realTotal > 0
+      ? 'Launch baseline blended with live anonymous submissions.'
+      : 'Launch baseline shown until live anonymous submissions accumulate.',
+  };
+}
+
+function baselineStats() {
+  return {
+    ...BASELINE,
+    source: statsSource(0),
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Cache-Control', NO_STORE_HEADERS['Cache-Control']);
+    return res.status(200).end();
+  }
 
   const hasRedis = REDIS_URL && REDIS_TOKEN;
 
   if (req.method === 'POST') {
-    if (!hasRedis) return res.status(200).json({ ok: true, stored: false });
+    try {
+      requireSameOrigin(req);
+    } catch (err) {
+      return json(res, err.statusCode || 403, { error: err.message || 'Stats mutation blocked' }, NO_STORE_HEADERS);
+    }
+    if (!hasRedis) return json(res, 200, { ok: true, stored: false }, NO_STORE_HEADERS);
 
     try {
+      const body = await readJson(req, { maxBytes: 16 * 1024 });
+      const { archetype, commitsPerDay, sessions, languages, msgsPerSession, days } = body || {};
+      if (!archetype || !ARCHETYPE_KEYS.includes(archetype)) {
+        return json(res, 400, { error: 'valid archetype required' }, NO_STORE_HEADERS);
+      }
+
       // Rate limit: 1 submission per IP per hour
       const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
       const rlKey = `vs:rl:${ip}`;
       const rlCheck = await pipeline([['GET', rlKey]]);
       if (rlCheck[0]?.result) {
-        return res.status(429).json({ error: 'Rate limited — 1 submission per hour' });
+        return json(res, 429, { error: 'Rate limited — 1 submission per hour' }, NO_STORE_HEADERS);
       }
       await pipeline([['SET', rlKey, '1', 'EX', '3600']]);
-
-      const { archetype, commitsPerDay, sessions, languages, msgsPerSession, days } = req.body || {};
-      if (!archetype || !ARCHETYPE_KEYS.includes(archetype)) {
-        return res.status(400).json({ error: 'valid archetype required' });
-      }
 
       // Clamp numeric values to prevent extreme inputs
       const clamp = (v, max) => Math.min(Math.max(Number(v) || 0, 0), max);
@@ -75,15 +104,15 @@ export default async function handler(req, res) {
         ['INCRBYFLOAT', 'vs:sum:days', String(clamp(days, 1000))],
       ]);
 
-      res.status(200).json({ ok: true, stored: true });
+      json(res, 200, { ok: true, stored: true }, NO_STORE_HEADERS);
     } catch (err) {
       console.error('Stats POST error:', err);
-      res.status(200).json({ ok: true, stored: false });
+      json(res, 200, { ok: true, stored: false }, NO_STORE_HEADERS);
     }
   } else if (req.method === 'GET') {
     if (!hasRedis) {
       res.setHeader('Cache-Control', 'public, s-maxage=3600');
-      return res.status(200).json(BASELINE);
+      return res.status(200).json(baselineStats());
     }
 
     try {
@@ -121,13 +150,13 @@ export default async function handler(req, res) {
       };
 
       res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-      res.status(200).json({ total, archetypes, averages });
+      res.status(200).json({ total, archetypes, averages, source: statsSource(realTotal) });
     } catch (err) {
       console.error('Stats GET error:', err);
       res.setHeader('Cache-Control', 'public, s-maxage=3600');
-      res.status(200).json(BASELINE);
+      res.status(200).json(baselineStats());
     }
   } else {
-    res.status(405).json({ error: 'Method not allowed' });
+    return methodNotAllowed(res, ['GET', 'POST', 'OPTIONS'], NO_STORE_HEADERS);
   }
 }
