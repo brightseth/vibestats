@@ -1809,7 +1809,7 @@
 
       // Archetype Card (the shareable moment)
       const rarity = getArchetypeRarity(archetype);
-      const communityTotal = aggregateStats ? aggregateStats.total : null;
+      const communityTotal = hasLiveAggregateStats() ? aggregateStats.source.live_total : null;
       const signature = buildVibeSignature(scores, archetype);
 
       // Build shareable card URL with encoded params
@@ -2978,15 +2978,19 @@
       wireProfileSaveAction('save-browser-profile', archetype, scores, insights);
     }
 
+    function hasLiveAggregateStats() {
+      return Boolean(aggregateStats && aggregateStats.source && aggregateStats.source.live_total > 0);
+    }
+
     function getArchetypeRarity(archetype) {
-      if (!aggregateStats || !aggregateStats.total) return null;
+      if (!hasLiveAggregateStats() || !aggregateStats.total) return null;
       const count = (aggregateStats.archetypes || {})[archetype] || 0;
       const pct = Math.max(1, Math.round(count / aggregateStats.total * 100));
       return pct;
     }
 
     function getComparisonMultiple(metric, value) {
-      if (!aggregateStats || !aggregateStats.averages) return null;
+      if (!hasLiveAggregateStats() || !aggregateStats.averages) return null;
       const avg = aggregateStats.averages[metric];
       if (!avg || avg === 0) return null;
       const multiple = value / avg;
