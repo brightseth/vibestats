@@ -835,10 +835,39 @@
     .slide.active .mc-term:nth-child(8) { transition-delay: 1.35s; }
 
     .tap-hint {
-      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
       font-family: var(--mono); font-size: 11px; color: var(--text-dim);
       letter-spacing: 0.1em; z-index: 50;
-      animation: tapPulse 2.5s ease-in-out infinite;
+      display: flex; align-items: center; gap: 12px;
+      animation: none;
+    }
+    .wrapped-topbar {
+      position: fixed; top: 26px; left: 16px; right: 16px; z-index: 105;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      pointer-events: none;
+    }
+    .wrapped-topbar > * { pointer-events: auto; }
+    .wrapped-exit-btn, .wrapped-nav-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      min-height: 44px; padding: 0 14px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(12,12,20,0.82); color: #e8e8f2;
+      font-family: var(--mono); font-size: 12px; cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .wrapped-exit-btn:hover, .wrapped-nav-btn:hover {
+      border-color: var(--accent); color: #fff;
+    }
+    .wrapped-nav-btn:disabled { opacity: 0.35; cursor: default; }
+    .wrapped-sample-badge {
+      padding: 6px 12px; border-radius: 999px;
+      border: 1px solid rgba(107,143,255,0.45);
+      background: rgba(107,143,255,0.14); color: #b7c8ff;
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .wrapped-sample-badge[hidden] { display: none; }
+    .wrapped-counter {
+      font-family: var(--mono); font-size: 11px; color: var(--text-muted); min-width: 44px; text-align: center;
     }
     @keyframes tapPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
 
@@ -984,8 +1013,16 @@
   <!-- WRAPPED STATE -->
   <div class="wrapped-page hidden" id="wrapped-page">
     <div class="progress" id="progress"></div>
+    <div class="wrapped-topbar" id="wrapped-topbar">
+      <button type="button" class="wrapped-exit-btn" id="wrapped-exit-btn" onclick="exitWrapped()" aria-label="Back to vibestats">&larr; Back</button>
+      <span class="wrapped-sample-badge" id="wrapped-sample-badge" hidden>Sample reveal</span>
+    </div>
     <div class="slides" id="slides"></div>
-    <div class="tap-hint" id="tap-hint"></div>
+    <div class="tap-hint" id="tap-hint">
+      <button type="button" class="wrapped-nav-btn" id="wrapped-prev-btn" onclick="goTo(currentSlide - 1)" aria-label="Previous slide">&larr; Prev</button>
+      <span class="wrapped-counter" id="wrapped-counter">1 / 1</span>
+      <button type="button" class="wrapped-nav-btn" id="wrapped-next-btn" onclick="goTo(currentSlide + 1)" aria-label="Next slide">Next &rarr;</button>
+    </div>
   </div>
 
   <script src="/lib/html2canvas.min.js"></script>
@@ -1404,7 +1441,15 @@
 
     function runDemo() {
       const profile = DEMO_PROFILES[Math.floor(Math.random() * DEMO_PROFILES.length)];
-      runAnalysis(profile, { demo: true });
+      runAnalysis(profile, { demo: true, localPreview: true });
+    }
+
+    function exitWrapped() {
+      const wrappedEl = document.getElementById('wrapped-page');
+      const uploadEl = document.getElementById('upload-page');
+      if (wrappedEl) wrappedEl.classList.add('hidden');
+      if (uploadEl) uploadEl.classList.remove('hidden');
+      document.body.classList.remove('wrapped-active');
     }
 
     function shouldAutoRunDemo() {
@@ -1931,29 +1976,38 @@
         progress.appendChild(seg);
       }
 
-      // Navigation
-      slidesEl.addEventListener('click', (e) => {
-        if (e.target.closest('.share-btn, .share-row, a, button')) return;
-        const rect = slidesEl.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        if (x < rect.width * 0.3 && currentSlide > 0) goTo(currentSlide - 1);
-        else if (currentSlide < totalSlides - 1) goTo(currentSlide + 1);
-      });
+      // Navigation (bind once so exit + re-enter never duplicates handlers)
+      if (!window.__vibestatsSlideshowBound) {
+        window.__vibestatsSlideshowBound = true;
+        slidesEl.addEventListener('click', (e) => {
+          if (e.target.closest('.share-btn, .share-row, a, button')) return;
+          const rect = slidesEl.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          if (x < rect.width * 0.3 && currentSlide > 0) goTo(currentSlide - 1);
+          else if (currentSlide < totalSlides - 1) goTo(currentSlide + 1);
+        });
 
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentSlide + 1); }
-        if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentSlide - 1); }
-      });
+        document.addEventListener('keydown', (e) => {
+          if (!document.body.classList.contains('wrapped-active')) return;
+          if (e.key === 'Escape') { exitWrapped(); return; }
+          if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentSlide + 1); }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentSlide - 1); }
+        });
 
-      let tx = 0;
-      document.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
-      document.addEventListener('touchend', (e) => {
-        const dx = e.changedTouches[0].clientX - tx;
-        if (Math.abs(dx) > 50) {
-          if (dx < 0) goTo(currentSlide + 1);
-          else goTo(currentSlide - 1);
-        }
-      }, { passive: true });
+        let tx = 0;
+        document.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+          if (!document.body.classList.contains('wrapped-active')) return;
+          const dx = e.changedTouches[0].clientX - tx;
+          if (Math.abs(dx) > 50) {
+            if (dx < 0) goTo(currentSlide + 1);
+            else goTo(currentSlide - 1);
+          }
+        }, { passive: true });
+      }
+      const tapHintEl = document.getElementById('tap-hint');
+      if (tapHintEl) tapHintEl.style.display = totalSlides > 1 ? '' : 'none';
+      updateProgress();
     }
 
     function goTo(index) {
@@ -1979,6 +2033,12 @@
         if (i < currentSlide) seg.classList.add('done');
         if (i === currentSlide) seg.classList.add('active');
       });
+      const counter = document.getElementById('wrapped-counter');
+      if (counter) counter.textContent = `${currentSlide + 1} / ${totalSlides}`;
+      const prevBtn = document.getElementById('wrapped-prev-btn');
+      if (prevBtn) prevBtn.disabled = currentSlide <= 0;
+      const nextBtn = document.getElementById('wrapped-next-btn');
+      if (nextBtn) nextBtn.disabled = currentSlide >= totalSlides - 1;
     }
 
     // ========================================
@@ -3141,6 +3201,8 @@
       analyzingEl.classList.add('hidden');
       document.getElementById('wrapped-page').classList.remove('hidden');
       document.body.classList.add('wrapped-active');
+      const sampleBadge = document.getElementById('wrapped-sample-badge');
+      if (sampleBadge) sampleBadge.hidden = !options.demo;
       initSlideshow(slideHTML);
 
       // Save to history + submit aggregate stats (after showing results)
